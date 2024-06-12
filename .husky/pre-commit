@@ -1,0 +1,2 @@
+forge test
+pnpm exec solhint 'src/**/*.sol'
