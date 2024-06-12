@@ -1,0 +1,25 @@
+:wq# Compiler files
+cache/
+out/
+
+# Ignores development broadcast logs
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+broadcast/*
+
+# Docs
+docs/
+
+# Dotenv file
+.env
+
+# Node modules
+node_modules/
+node_modules
+
+report/
+lcov.info
+
+# Mac files
+.DS_Store
