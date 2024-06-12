@@ -29,6 +29,6 @@ contract Vault is
         address to,
         uint256 value
     ) internal virtual override(ERC20PausableUpgradeable, ERC20Upgradeable) {
-        return ERC20Upgradeable._update(from, to, value);
+        return ERC20PausableUpgradeable._update(from, to, value);
     }
 }
