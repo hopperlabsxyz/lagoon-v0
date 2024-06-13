@@ -23,12 +23,6 @@ contract Vault is
     ERC20PermitUpgradeable,
     AccessControlUpgradeable
 {
-    /**
-     * @notice This error is emitted when the user try to make a request
-     * on behalf of someone else.
-     */
-    error CantRequestDepositOnBehalfOf();
-
     /// @custom:storage-location erc7201:hopper.storage.vault
     struct VaultStorage {
         uint256 totalAssets;

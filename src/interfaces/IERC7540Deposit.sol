@@ -1,8 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-
 interface IERC7540Deposit {
     /**
      * owner has locked assets in the Vault to Request a deposit with request ID requestId.
