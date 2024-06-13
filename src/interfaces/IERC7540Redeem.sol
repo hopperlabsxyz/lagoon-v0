@@ -17,10 +17,12 @@ interface IERC7540Redeem {
     ) external returns (uint256 requestId);
 
     function pendingRedeemRequest(
-        address owner
+        uint256 requestId,
+        address controller
     ) external view returns (uint256 shares);
 
     function claimableRedeemRequest(
-        address owner
+        uint256 requestId,
+        address controller
     ) external view returns (uint256 shares);
 }

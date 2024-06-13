@@ -117,7 +117,7 @@ contract Vault is
     function isOperator(
         address controller,
         address operator
-    ) external returns (bool) {
+    ) external view returns (bool) {
         VaultStorage storage $ = _getVaultStorage();
         return $.isOperator[controller][operator];
     }
@@ -136,11 +136,12 @@ contract Vault is
         uint256 assets,
         address controller,
         address owner
-    ) external whenNotPaused returns (uint256 requestId) {
+    ) external whenNotPaused returns (uint256) {
         VaultStorage storage $ = _getVaultStorage();
         IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
 
         _requestDeposit(assets, controller, owner);
+        return $.epochId;
     }
 
     function _requestDeposit(
@@ -184,5 +185,31 @@ contract Vault is
         else return $.epochs[requestId].depositRequest[controller];
     }
 
-    // ## Requests ##
+    function requestRedeem(
+        uint256 assets,
+        address controller,
+        address owner
+    ) external whenNotPaused returns (uint256 requestId) {}
+
+    function pendingRedeemRequest(
+        uint256 requestId,
+        address controller
+    ) external view returns (uint256 shares) {}
+
+    function claimableRedeemRequest(
+        uint256 requestId,
+        address controller
+    ) external view returns (uint256 shares) {}
+
+    function deposit(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) public view {}
+
+    function mint(
+        uint256 shares,
+        address receiver,
+        address controller
+    ) public view {}
 }
