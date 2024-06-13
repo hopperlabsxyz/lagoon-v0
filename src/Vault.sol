@@ -9,6 +9,7 @@ import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/toke
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Silo} from "./Silo.sol";
 // import {console} from "forge-std/console.sol";
 
 using Math for uint256;
@@ -24,6 +25,9 @@ contract Vault is
     /// @custom:storage-location erc7201:openzeppelin.storage.ERC4626
     struct VaultStorage {
         uint256 totalAssets;
+        // uint256 epochId;
+        Silo pendingSilo;
+        Silo claimableSilo;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopperprotocol.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
@@ -44,6 +48,21 @@ contract Vault is
         _disableInitializers();
     }
 
+    function initialize(
+        IERC20 underlying,
+        string memory name,
+        string memory symbol
+    ) public virtual onlyInitializing {
+        __ERC4626_init(underlying);
+        __ERC20_init(name, symbol);
+        __ERC20Permit_init(name);
+        __ERC20Pausable_init();
+        VaultStorage memory $ = _getVaultStorage();
+        $.claimableSilo = new Silo(underlying);
+        $.pendingSilo = new Silo(underlying);
+    }
+
+    // ## Overrides ##
     function totalAssets() public pure override returns (uint256) {
         VaultStorage memory $ = _getVaultStorage();
         return $.totalAssets;
