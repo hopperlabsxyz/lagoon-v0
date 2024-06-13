@@ -23,10 +23,12 @@ interface IERC7540Deposit {
     ) external returns (uint256 requestId);
 
     function pendingDepositRequest(
-        address owner
+        uint256 requestId,
+        address controller
     ) external view returns (uint256 assets);
 
     function claimableDepositRequest(
-        address owner
+        uint256 requestId,
+        address controller
     ) external view returns (uint256 assets);
 }

@@ -5,18 +5,31 @@ import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC2
 import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
-import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20Upgradeable, IERC20, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {IERC7540} from "./interfaces/IERC7540.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Silo} from "./Silo.sol";
-// import {IERC7540} from "./IERC7540.sol";
 
 using Math for uint256;
 using SafeERC20 for IERC20;
 
-// IERC7540,
+struct EpochData {
+    uint256 totalSupply;
+    uint256 totalAssets;
+    mapping(address => uint256) depositRequest;
+    mapping(address => uint256) redeemRequest;
+}
+
+struct Request {
+    uint256 epochId;
+    uint256 amount;
+}
+
 contract Vault is
+    IERC7540,
     ERC4626Upgradeable,
     ERC20BurnableUpgradeable,
     ERC20PausableUpgradeable,
@@ -30,6 +43,9 @@ contract Vault is
         Silo pendingSilo;
         Silo claimableSilo;
         mapping(address controller => mapping(address operator => bool)) isOperator;
+        mapping(uint256 epochId => EpochData epoch) epochs;
+        mapping(address user => uint256 epochId) lastDepositRequestId;
+        mapping(address user => uint256 epochId) lastRedeemRequestId;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopperprotocol.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
@@ -65,7 +81,12 @@ contract Vault is
     }
 
     // ## Overrides ##
-    function totalAssets() public view override returns (uint256) {
+    function totalAssets()
+        public
+        view
+        override(IERC4626, ERC4626Upgradeable)
+        returns (uint256)
+    {
         VaultStorage storage $ = _getVaultStorage();
         return $.totalAssets;
     }
@@ -73,7 +94,7 @@ contract Vault is
     function decimals()
         public
         view
-        override(ERC4626Upgradeable, ERC20Upgradeable)
+        override(ERC4626Upgradeable, ERC20Upgradeable, IERC20Metadata)
         returns (uint8)
     {
         return ERC4626Upgradeable.decimals();
@@ -85,6 +106,82 @@ contract Vault is
         uint256 value
     ) internal virtual override(ERC20PausableUpgradeable, ERC20Upgradeable) {
         return ERC20PausableUpgradeable._update(from, to, value);
+    }
+
+    // ## EIP7575 ##
+    function share() external view returns (address) {
+        return (address(this));
+    }
+
+    // ## EIP7540 ##
+    function isOperator(
+        address controller,
+        address operator
+    ) external returns (bool) {
+        VaultStorage storage $ = _getVaultStorage();
+        return $.isOperator[controller][operator];
+    }
+
+    function setOperator(
+        address operator,
+        bool approved
+    ) external returns (bool success) {
+        VaultStorage storage $ = _getVaultStorage();
+        $.isOperator[msg.sender][operator] = approved;
+        return true; //todo how could it return false ??
+    }
+
+    // ## EIP7540 Deposit ##
+    function requestDeposit(
+        uint256 assets,
+        address controller,
+        address owner
+    ) external whenNotPaused returns (uint256 requestId) {
+        VaultStorage storage $ = _getVaultStorage();
+        IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
+
+        _requestDeposit(assets, controller, owner);
+    }
+
+    function _requestDeposit(
+        uint256 assets,
+        address controller,
+        address owner
+    ) internal {
+        VaultStorage storage $ = _getVaultStorage();
+        $.epochs[$.epochId].depositRequest[controller] += assets;
+        if ($.lastDepositRequestId[controller] != $.epochId) {
+            $.lastDepositRequestId[controller] = $.epochId;
+        }
+        emit DepositRequest(controller, owner, $.epochId, _msgSender(), assets);
+    }
+
+    function pendingDepositRequest(
+        uint256 requestId,
+        address controller
+    ) external view returns (uint256 assets) {
+        VaultStorage storage $ = _getVaultStorage();
+
+        if (requestId == 0)
+            return $.epochs[$.epochId].depositRequest[controller];
+        else if (requestId == $.epochId) return 0;
+        else return $.epochs[requestId].depositRequest[controller];
+    }
+
+    function claimableDepositRequest(
+        uint256 requestId,
+        address controller
+    ) external view returns (uint256 assets) {
+        VaultStorage storage $ = _getVaultStorage();
+
+        if (requestId == 0) {
+            uint256 lastDepositRequestId = $.lastDepositRequestId[controller];
+            if (lastDepositRequestId == $.epochId) return 0;
+            else
+                return
+                    $.epochs[lastDepositRequestId].depositRequest[controller];
+        } else if (requestId == $.epochId) return 0;
+        else return $.epochs[requestId].depositRequest[controller];
     }
 
     // ## Requests ##
