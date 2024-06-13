@@ -2,6 +2,7 @@
 pragma solidity 0.8.25;
 
 import "forge-std/Test.sol";
+import {Vault} from "@src/Vault.sol";
 
 contract ContractBTest is Test {
     uint256 testNumber;
@@ -11,6 +12,8 @@ contract ContractBTest is Test {
     }
 
     function test_NumberIs42() public view {
+        // Vault test = new Vault();
+        // test;
         assertEq(testNumber, 42);
     }
 
