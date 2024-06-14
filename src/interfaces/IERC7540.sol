@@ -25,16 +25,4 @@ interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7575, IERC165 {
         address operator,
         bool approved
     ) external returns (bool success);
-
-    function deposit(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) external;
-
-    function mint(
-        uint256 shares,
-        address receiver,
-        address controller
-    ) external;
 }
