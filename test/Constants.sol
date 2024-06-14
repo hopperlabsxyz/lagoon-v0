@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Vault} from "@src/Vault.sol";
 import {VmSafe} from "forge-std/Vm.sol";
-import {Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
+import {Upgrades, Options} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import "forge-std/console.sol";
@@ -13,15 +13,20 @@ import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20P
 
 abstract contract Constants is Test {
     // ERC20 tokens
-    ERC20Permit immutable USDC = ERC20Permit(vm.envAddress("USDC_MAINNET"));
-    ERC20 immutable WETH = ERC20(vm.envAddress("WETH_MAINNET"));
-    ERC20 immutable WBTC = ERC20(vm.envAddress("WBTC_MAINNET"));
-    ERC20 immutable ETH = ERC20(vm.envAddress("ETH_MAINNET"));
+    string network = vm.envString("NETWORK");
+    ERC20Permit immutable USDC =
+        ERC20Permit(vm.envAddress(string.concat("USDC_", network)));
+    ERC20 immutable WETH =
+        ERC20(vm.envAddress(string.concat("WETH_", network)));
+    ERC20 immutable WBTC =
+        ERC20(vm.envAddress(string.concat("WBTC_", network)));
+    ERC20 immutable ETH = ERC20(vm.envAddress(string.concat("ETH_", network)));
 
     uint8 decimalsOffset = 0;
 
     //ERC20 whales
-    address immutable USDC_WHALE = vm.envAddress("USDC_WHALE");
+    address immutable USDC_WHALE =
+        vm.envAddress(string.concat("USDC_WHALE", "_", network));
 
     string underlyingName = vm.envString("UNDERLYING_NAME");
     Vault vault;
@@ -29,7 +34,8 @@ abstract contract Constants is Test {
     string vaultSymbol = "hop_vault_";
 
     //Underlying
-    ERC20 immutable underlying = ERC20(vm.envAddress(underlyingName));
+    ERC20 immutable underlying =
+        ERC20(vm.envAddress(string.concat(underlyingName, "_", network)));
     ERC20Permit immutable underlyingPermit;
 
     // Users
@@ -85,7 +91,7 @@ abstract contract Constants is Test {
             vault = _proxyDeploy(beacon, underlying, vaultName, vaultSymbol);
         } else {
             vm.startPrank(owner.addr);
-            vault = new Vault();
+            vault = new Vault(false);
             vault.initialize(underlying, vaultName, vaultSymbol);
             vm.stopPrank();
         }
@@ -98,6 +104,8 @@ abstract contract Constants is Test {
         string memory contractName,
         address _owner
     ) internal returns (UpgradeableBeacon) {
+        Options memory deploy;
+        deploy.constructorData = abi.encode(true);
         return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner));
     }
 

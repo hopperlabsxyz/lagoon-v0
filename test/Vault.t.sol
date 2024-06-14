@@ -2,22 +2,23 @@
 pragma solidity 0.8.25;
 
 import "forge-std/Test.sol";
-import {Vault} from "@src/Vault.sol";
+import {Vault, IERC20} from "@src/Vault.sol";
+import {BaseTest} from "./Base.t.sol";
 
-contract ContractBTest is Test {
-    uint256 testNumber;
-
+contract TestRequestDeposit is BaseTest {
     function setUp() public {
-        testNumber = 42;
+        dealAndApprove(user1.addr);
     }
 
-    function test_NumberIs42() public view {
-        // Vault test = new Vault();
-        // test;
-        assertEq(testNumber, 42);
+    function test_requestDeposit() public {
+        uint256 userBalance = assetBalance(user1.addr);
+        requestDeposit(user1.addr, userBalance);
+        assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance);
     }
 
-    function testFail_Subtract43() public {
-        testNumber -= 43;
+    function test_requestDeposit_notEnoughBalance() public {
+        uint256 userBalance = assetBalance(user1.addr);
+        vm.expectRevert();
+        requestDeposit(user1.addr, userBalance + 1);
     }
 }

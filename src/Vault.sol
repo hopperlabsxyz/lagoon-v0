@@ -62,15 +62,15 @@ contract Vault is
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
-    constructor() {
-        _disableInitializers();
+    constructor(bool disable) {
+        if (disable) _disableInitializers();
     }
 
     function initialize(
         IERC20 underlying,
         string memory name,
         string memory symbol
-    ) public virtual onlyInitializing {
+    ) public virtual initializer {
         __ERC4626_init(underlying);
         __ERC20_init(name, symbol);
         __ERC20Permit_init(name);
