@@ -22,6 +22,18 @@ interface IERC7540Deposit {
         address owner
     ) external returns (uint256 requestId);
 
+    function deposit(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) external returns (uint256 shares);
+
+    function mint(
+        uint256 shares,
+        address receiver,
+        address controller
+    ) external returns (uint256 assets);
+
     function pendingDepositRequest(
         uint256 requestId,
         address controller
