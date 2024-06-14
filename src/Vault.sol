@@ -6,7 +6,7 @@ import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/toke
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {ERC20Upgradeable, IERC20, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {IERC7540, IERC7540Redeem} from "./interfaces/IERC7540.sol";
+import {IERC7540} from "./interfaces/IERC7540.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -133,7 +133,7 @@ contract Vault is
         return true;
     }
 
-    // ## EIP7540 Deposit ##
+    // ## EIP7540 Deposit Flow ##
     function requestDeposit(
         uint256 assets,
         address controller,
@@ -142,6 +142,10 @@ contract Vault is
         address msgSender = _msgSender();
         require(assets != 0);
         require(owner == msgSender || isOperator(owner, msgSender));
+
+        uint256 claimbaleDeposit = claimableDepositRequest(0, controller);
+        if (claimbaleDeposit > 0)
+            _deposit(claimbaleDeposit, controller, controller);
 
         VaultStorage storage $ = _getVaultStorage();
 
@@ -182,14 +186,14 @@ contract Vault is
     ) public view returns (uint256 assets) {
         VaultStorage storage $ = _getVaultStorage();
 
-        if (requestId == 0) {
+        if (requestId == $.epochId) return 0;
+        else if (requestId == 0) {
             uint256 lastDepositRequestId = $.lastDepositRequestId[controller];
             if (lastDepositRequestId == $.epochId) return 0;
             else
                 return
                     $.epochs[lastDepositRequestId].depositRequest[controller];
-        } else if (requestId == $.epochId) return 0;
-        else return $.epochs[requestId].depositRequest[controller];
+        } else return $.epochs[requestId].depositRequest[controller];
     }
 
     function deposit(
@@ -259,7 +263,7 @@ contract Vault is
         uint256 requestId = $.lastDepositRequestId[controller];
         require(requestId != $.epochId);
 
-        assets = _convertToAssets(shares, requestId, Math.Rounding.Floor);
+        assets = convertToAssets(shares, requestId);
 
         $.epochs[requestId].depositRequest[controller] -= assets;
         _update(address($.claimableSilo), receiver, shares);
@@ -267,33 +271,135 @@ contract Vault is
         return assets;
     }
 
+    // ## EIP7540 Redeem flow ##
+    /** @dev if paused will revert thanks to _update() */
     function requestRedeem(
-        uint256 assets,
+        uint256 shares,
         address controller,
         address owner
-    ) external whenNotPaused returns (uint256 requestId) {}
+    ) external returns (uint256) {
+        if (_msgSender() != owner && !isOperator(owner, _msgSender()))
+            _spendAllowance(owner, _msgSender(), shares);
+
+        uint256 claimable = claimableRedeemRequest(0, controller);
+        if (claimable > 0) _redeem(claimable, controller, controller);
+
+        VaultStorage storage $ = _getVaultStorage();
+        _update(owner, address($.pendingSilo), shares);
+        $.epochs[$.epochId].redeemRequest[controller] += shares;
+        if ($.lastRedeemRequestId[controller] != $.epochId) {
+            $.lastRedeemRequestId[controller] = $.epochId;
+        }
+
+        emit RedeemRequest(controller, owner, $.epochId, _msgSender(), shares);
+        return $.epochId;
+    }
 
     function pendingRedeemRequest(
         uint256 requestId,
         address controller
-    ) external view returns (uint256 shares) {}
+    ) external view returns (uint256 shares) {
+        VaultStorage storage $ = _getVaultStorage();
+
+        if (requestId == 0)
+            return $.epochs[$.epochId].redeemRequest[controller];
+        else if (requestId == $.epochId) return 0;
+        else return $.epochs[requestId].redeemRequest[controller];
+    }
 
     function claimableRedeemRequest(
         uint256 requestId,
         address controller
-    ) external view returns (uint256 shares) {}
+    ) public view returns (uint256 shares) {
+        VaultStorage storage $ = _getVaultStorage();
+
+        if (requestId == 0) {
+            uint256 lastRedeemRequestId = $.lastRedeemRequestId[controller];
+            if (lastRedeemRequestId == $.epochId) return 0;
+            else return $.epochs[lastRedeemRequestId].redeemRequest[controller];
+        } else if (requestId == $.epochId) return 0;
+        else return $.epochs[requestId].redeemRequest[controller];
+    }
 
     function redeem(
         uint256 shares,
         address receiver,
         address controller
-    ) public override(ERC4626Upgradeable, IERC4626) returns (uint256) {}
+    )
+        public
+        override(ERC4626Upgradeable, IERC4626)
+        whenNotPaused
+        returns (uint256)
+    {
+        require(
+            controller == _msgSender() || isOperator(controller, _msgSender())
+        );
+        return _redeem(shares, receiver, controller);
+    }
+
+    function _redeem(
+        uint256 shares,
+        address receiver,
+        address controller
+    ) private returns (uint256 assets) {
+        require(shares > 0);
+
+        VaultStorage storage $ = _getVaultStorage();
+
+        uint256 requestId = $.lastRedeemRequestId[controller];
+        require(requestId != $.epochId);
+
+        $.epochs[requestId].redeemRequest[controller] -= shares;
+        assets = convertToAssets(shares, requestId);
+        IERC20(asset()).safeTransferFrom(
+            address($.claimableSilo),
+            receiver,
+            assets
+        );
+        emit Withdraw(_msgSender(), receiver, controller, assets, shares);
+        return assets;
+    }
 
     function withdraw(
         uint256 assets,
         address receiver,
         address controller
-    ) public override(ERC4626Upgradeable, IERC4626) returns (uint256) {}
+    )
+        public
+        override(ERC4626Upgradeable, IERC4626)
+        whenNotPaused
+        returns (uint256)
+    {
+        require(
+            controller == _msgSender() || isOperator(controller, _msgSender())
+        );
+        return _withdraw(assets, receiver, controller);
+    }
+
+    function _withdraw(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) private returns (uint256 shares) {
+        require(assets > 0);
+
+        VaultStorage storage $ = _getVaultStorage();
+
+        uint256 requestId = $.lastRedeemRequestId[controller];
+        require(requestId != $.epochId);
+
+        shares = convertToShares(assets, requestId);
+        $.epochs[requestId].redeemRequest[controller] -= shares;
+        IERC20(asset()).safeTransferFrom(
+            address($.claimableSilo),
+            receiver,
+            assets
+        );
+        emit Withdraw(_msgSender(), receiver, controller, assets, shares);
+        return shares;
+    }
+
+    // ## Conversion functions ##
 
     function convertToShares(
         uint256 assets,
@@ -311,9 +417,17 @@ contract Vault is
         if (requestId == $.epochId) return 0;
 
         uint256 _totalAssets = $.epochs[requestId].totalAssets + 1;
-        uint256 _totalSupply = $.epochs[requestId].totalSupply + 1;
+        uint256 _totalSupply = $.epochs[requestId].totalSupply +
+            10 ** _decimalsOffset();
 
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
+    }
+
+    function convertToAssets(
+        uint256 shares,
+        uint256 requestId
+    ) public view returns (uint256) {
+        return _convertToAssets(shares, requestId, Math.Rounding.Floor);
     }
 
     function _convertToAssets(
@@ -325,7 +439,8 @@ contract Vault is
         if (requestId == $.epochId) return 0;
 
         uint256 _totalAssets = $.epochs[requestId].totalAssets + 1;
-        uint256 _totalSupply = $.epochs[requestId].totalSupply + 1;
+        uint256 _totalSupply = $.epochs[requestId].totalSupply +
+            10 ** _decimalsOffset();
 
         return shares.mulDiv(_totalAssets, _totalSupply, rounding);
     }

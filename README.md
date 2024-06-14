@@ -3,5 +3,6 @@
 TODO:
 
 [] Do EIP165 function
-[] Check controle flow of function
 [] Governance functions and role
+[] Make sure a user deposit/redeem before making a new request
+[] override maxDeposit and maxRedeem with claimable values
