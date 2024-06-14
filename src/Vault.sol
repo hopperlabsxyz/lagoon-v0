@@ -444,4 +444,14 @@ contract Vault is
 
         return shares.mulDiv(_totalAssets, _totalSupply, rounding);
     }
+
+    function pendingSilo() public view returns (address) {
+        VaultStorage storage $ = _getVaultStorage();
+        return address($.pendingSilo);
+    }
+
+    function claimableSilo() public view returns (address) {
+        VaultStorage storage $ = _getVaultStorage();
+        return address($.claimableSilo);
+    }
 }
