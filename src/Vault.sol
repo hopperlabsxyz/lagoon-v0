@@ -78,6 +78,7 @@ contract Vault is
         VaultStorage storage $ = _getVaultStorage();
         $.claimableSilo = new Silo(underlying);
         $.pendingSilo = new Silo(underlying);
+        $.epochId = 1;
     }
 
     // ## Overrides ##
