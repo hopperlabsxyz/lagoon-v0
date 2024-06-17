@@ -8,9 +8,41 @@ import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4
 import "forge-std/Test.sol";
 
 contract BaseTest is Test, Constants {
-    function requestDeposit(address user, uint256 amount) internal {
+    function requestDeposit(
+        uint256 amount,
+        address controller,
+        address owner
+    ) internal returns (uint256) {
+        vm.prank(owner);
+        return vault.requestDeposit(amount, controller, owner);
+    }
+
+    function requestDeposit(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
         vm.prank(user);
-        vault.requestDeposit(amount, user, user);
+        return vault.requestDeposit(amount, user, user);
+    }
+
+    function deposit(
+        uint256 amount,
+        address controller,
+        address operator,
+        address receiver
+    ) internal returns (uint256) {
+        vm.prank(operator);
+        return vault.deposit(amount, receiver, controller);
+    }
+
+    function deposit(uint256 amount, address user) internal returns (uint256) {
+        vm.prank(user);
+        return vault.deposit(amount, user);
+    }
+
+    function settle(uint256 newTotalAssets) internal {
+        // vm.prank(owner);
+        vault.settle(newTotalAssets);
     }
 
     function dealAndApprove(address user) public {

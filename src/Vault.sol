@@ -16,6 +16,8 @@ import {Silo} from "./Silo.sol";
 using Math for uint256;
 using SafeERC20 for IERC20;
 
+uint256 constant BPS_DIVIDER = 10_000;
+
 struct EpochData {
     uint256 totalSupply;
     uint256 totalAssets;
@@ -490,5 +492,171 @@ contract Vault is
     function claimableSilo() public view returns (address) {
         VaultStorage storage $ = _getVaultStorage();
         return address($.claimableSilo);
+    }
+
+    struct SettleValues {
+        uint256 lastSavedBalance;
+        uint256 fees;
+        uint256 pendingRedeem;
+        uint256 sharesToMint;
+        uint256 pendingDeposit;
+        uint256 assetsToWithdraw;
+        uint256 totalAssetsSnapshot;
+        uint256 totalSupplySnapshot;
+    }
+
+    address vaultOwner = address(1);
+    address treasury;
+    uint256 toUnwind;
+    uint256 lastSavedBalance;
+    uint256 feesInBps;
+
+    function settle(uint256 newSavedBalance) public returns (uint256, uint256) {
+        (
+            uint256 assetsToOwner,
+            uint256 assetsToVault,
+            ,
+            SettleValues memory settleValues
+        ) = previewSettle(newSavedBalance);
+
+        if (settleValues.fees > 0) {
+            IERC20(asset()).safeTransferFrom(
+                vaultOwner,
+                treasury,
+                settleValues.fees
+            );
+        }
+
+        // Settle the shares balance
+        _burn(address(pendingSilo()), settleValues.pendingRedeem);
+        _mint(address(claimableSilo()), settleValues.sharesToMint);
+
+        ///////////////////////////
+        // Settle assets balance //
+        ///////////////////////////
+        // either there are more deposits than withdrawals
+        if (settleValues.pendingDeposit > settleValues.assetsToWithdraw) {
+            IERC20(asset()).safeTransferFrom(
+                address(pendingSilo()),
+                vaultOwner,
+                assetsToOwner
+            );
+            if (settleValues.assetsToWithdraw > 0) {
+                IERC20(asset()).safeTransferFrom(
+                    address(pendingSilo()),
+                    address(claimableSilo()),
+                    settleValues.assetsToWithdraw
+                );
+            }
+        } else if (
+            settleValues.pendingDeposit < settleValues.assetsToWithdraw
+        ) {
+            toUnwind += assetsToVault;
+            if (settleValues.pendingDeposit > 0) {
+                IERC20(asset()).safeTransferFrom(
+                    address(pendingSilo()),
+                    address(claimableSilo()),
+                    settleValues.pendingDeposit
+                );
+            }
+        } else if (settleValues.pendingDeposit > 0) {
+            IERC20(asset()).safeTransferFrom(
+                address(pendingSilo()),
+                address(claimableSilo()),
+                settleValues.assetsToWithdraw
+            );
+        }
+
+        settleValues.lastSavedBalance =
+            settleValues.lastSavedBalance -
+            settleValues.fees +
+            settleValues.pendingDeposit -
+            settleValues.assetsToWithdraw;
+
+        lastSavedBalance = settleValues.lastSavedBalance;
+
+        VaultStorage storage $ = _getVaultStorage();
+        $.epochs[$.epochId].totalSupply = settleValues.totalSupplySnapshot;
+        $.epochs[$.epochId].totalAssets = settleValues.totalAssetsSnapshot;
+
+        $.epochId++;
+
+        return (settleValues.lastSavedBalance, totalSupply());
+    }
+
+    function previewSettle(
+        uint256 newSavedBalance
+    )
+        public
+        view
+        returns (
+            uint256 assetsToOwner,
+            uint256 assetsToVault,
+            uint256 expectedAssetFromOwner,
+            SettleValues memory settleValues
+        )
+    {
+        uint256 _lastSavedBalance = lastSavedBalance;
+
+        // calculate the fees between lastSavedBalance and newSavedBalance
+        uint256 fees = _computeFees(_lastSavedBalance, newSavedBalance);
+        uint256 totalSupply = totalSupply();
+
+        // taking fees if positive yield
+        _lastSavedBalance = newSavedBalance - fees;
+
+        address pendingSiloAddr = address(pendingSilo());
+        uint256 pendingRedeem = balanceOf(pendingSiloAddr);
+        uint256 pendingDeposit = IERC20(asset()).balanceOf(pendingSiloAddr);
+
+        uint256 sharesToMint = pendingDeposit.mulDiv(
+            totalSupply + 1,
+            _lastSavedBalance + 1,
+            Math.Rounding.Floor
+        );
+
+        uint256 totalAssetsSnapshot = _lastSavedBalance;
+        uint256 totalSupplySnapshot = totalSupply;
+
+        uint256 assetsToWithdraw = pendingRedeem.mulDiv(
+            _lastSavedBalance + pendingDeposit + 1,
+            totalSupply + sharesToMint + 1,
+            Math.Rounding.Floor
+        );
+
+        settleValues = SettleValues({
+            lastSavedBalance: _lastSavedBalance + fees,
+            fees: fees,
+            pendingRedeem: pendingRedeem,
+            sharesToMint: sharesToMint,
+            pendingDeposit: pendingDeposit,
+            assetsToWithdraw: assetsToWithdraw,
+            totalAssetsSnapshot: totalAssetsSnapshot,
+            totalSupplySnapshot: totalSupplySnapshot
+        });
+
+        if (pendingDeposit > assetsToWithdraw) {
+            assetsToOwner = pendingDeposit - assetsToWithdraw;
+        } else if (pendingDeposit < assetsToWithdraw) {
+            assetsToVault = assetsToWithdraw - pendingDeposit;
+        }
+        expectedAssetFromOwner = fees + assetsToVault;
+    }
+
+    function _computeFees(
+        uint256 _lastSavedBalance,
+        uint256 newSavedBalance
+    ) internal view returns (uint256 fees) {
+        if (newSavedBalance > _lastSavedBalance && feesInBps > 0) {
+            uint256 profits;
+            unchecked {
+                profits = newSavedBalance - _lastSavedBalance;
+            }
+            fees = (profits).mulDiv(
+                feesInBps,
+                BPS_DIVIDER,
+                Math.Rounding.Floor
+            );
+        }
     }
 }
