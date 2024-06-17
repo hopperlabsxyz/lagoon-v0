@@ -352,6 +352,12 @@ contract Vault is
         else return $.epochs[requestId].redeemRequest[controller];
     }
 
+    function maxRedeem(
+        address controller
+    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+        return claimableRedeemRequest(0, controller);
+    }
+
     function redeem(
         uint256 shares,
         address receiver,
