@@ -345,12 +345,12 @@ contract Vault is
         address controller
     ) public view returns (uint256 shares) {
         VaultStorage storage $ = _getVaultStorage();
-
+        uint256 epochId = $.epochId;
         if (requestId == 0) {
             uint256 lastRedeemRequestId = $.lastRedeemRequestId[controller];
-            if (lastRedeemRequestId == $.epochId) return 0;
+            if (lastRedeemRequestId == epochId) return 0;
             else return $.epochs[lastRedeemRequestId].redeemRequest[controller];
-        } else if (requestId == $.epochId) return 0;
+        } else if (requestId == epochId) return 0;
         else return $.epochs[requestId].redeemRequest[controller];
     }
 
@@ -528,8 +528,8 @@ contract Vault is
         }
 
         // Settle the shares balance
-        _burn(address(pendingSilo()), settleValues.pendingRedeem);
-        _mint(address(claimableSilo()), settleValues.sharesToMint);
+        _burn(pendingSilo(), settleValues.pendingRedeem);
+        _mint(claimableSilo(), settleValues.sharesToMint);
 
         ///////////////////////////
         // Settle assets balance //
@@ -537,14 +537,14 @@ contract Vault is
         // either there are more deposits than withdrawals
         if (settleValues.pendingDeposit > settleValues.assetsToWithdraw) {
             IERC20(asset()).safeTransferFrom(
-                address(pendingSilo()),
+                pendingSilo(),
                 vaultOwner,
                 assetsToOwner
             );
             if (settleValues.assetsToWithdraw > 0) {
                 IERC20(asset()).safeTransferFrom(
-                    address(pendingSilo()),
-                    address(claimableSilo()),
+                    pendingSilo(),
+                    claimableSilo(),
                     settleValues.assetsToWithdraw
                 );
             }
@@ -554,15 +554,15 @@ contract Vault is
             toUnwind += assetsToVault;
             if (settleValues.pendingDeposit > 0) {
                 IERC20(asset()).safeTransferFrom(
-                    address(pendingSilo()),
-                    address(claimableSilo()),
+                    pendingSilo(),
+                    claimableSilo(),
                     settleValues.pendingDeposit
                 );
             }
         } else if (settleValues.pendingDeposit > 0) {
             IERC20(asset()).safeTransferFrom(
-                address(pendingSilo()),
-                address(claimableSilo()),
+                pendingSilo(),
+                claimableSilo(),
                 settleValues.assetsToWithdraw
             );
         }
@@ -605,7 +605,7 @@ contract Vault is
         // taking fees if positive yield
         _lastSavedBalance = newSavedBalance - fees;
 
-        address pendingSiloAddr = address(pendingSilo());
+        address pendingSiloAddr = pendingSilo();
         uint256 pendingRedeem = balanceOf(pendingSiloAddr);
         uint256 pendingDeposit = IERC20(asset()).balanceOf(pendingSiloAddr);
 
@@ -658,5 +658,60 @@ contract Vault is
                 Math.Rounding.Floor
             );
         }
+    }
+
+    function newSettle(uint256 newTotalAssets) public {
+        VaultStorage storage $ = _getVaultStorage();
+
+        // First we update the vault value.
+        $.totalAssets = newTotalAssets;
+
+        // Then we proceed the deposit request
+        uint256 pendingAssets = IERC20(asset()).balanceOf(
+            address($.pendingSilo)
+        );
+        uint256 shares = previewDeposit(
+            _convertToShares(pendingAssets, Math.Rounding.Floor)
+        );
+        if (shares > 0) _mint(address($.claimableSilo), shares);
+
+        // Then we proceed the redeem request
+        uint256 assets = _convertToAssets(
+            balanceOf(address($.pendingSilo)),
+            Math.Rounding.Floor
+        );
+        if (assets > 0) {
+            _burn(address($.pendingSilo), balanceOf(address($.pendingSilo)));
+            $.totalAssets -= assets;
+            toUnwind += assets;
+        }
+
+        // Then we put a maximum of assets in the claimable silo so that user can fully withdraw
+        if (pendingAssets > 0 && toUnwind > 0)
+            _unwind(pendingAssets, pendingSilo());
+
+        // If there is a surplus of assets, we send those to the asset manager
+        pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
+        if (pendingAssets > 0)
+            IERC20(asset()).safeTransferFrom(
+                pendingSilo(),
+                vaultOwner,
+                pendingAssets
+            );
+
+        // we save the parameters for users to claim
+        $.epochs[$.epochId].totalAssets = $.totalAssets;
+        $.epochs[$.epochId].totalSupply = totalSupply();
+        $.epochId++;
+    }
+
+    function unwind(uint256 amount) external {
+        _unwind(amount, vaultOwner);
+    }
+
+    function _unwind(uint256 amount, address from) internal {
+        if (amount > toUnwind) amount = toUnwind;
+        toUnwind -= amount;
+        IERC20(asset()).safeTransferFrom(from, claimableSilo(), amount);
     }
 }
