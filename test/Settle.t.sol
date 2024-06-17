@@ -1,0 +1,48 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.25;
+
+import "forge-std/Test.sol";
+import {Vault, IERC20} from "@src/Vault.sol";
+import {BaseTest} from "./Base.t.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+using Math for uint256;
+
+contract TestSettle is BaseTest {
+    function setUp() public {
+        dealAndApprove(user1.addr);
+        uint256 user1Assets = assetBalance(user1.addr);
+        requestDeposit(user1Assets / 2, user1.addr);
+        dealAndApprove(user2.addr);
+
+        settle(0);
+        deposit(user1Assets / 2, user1.addr);
+    }
+
+    function test_settle() public {
+        uint256 user1Assets = assetBalance(user1.addr);
+
+        uint256 user1Shares = vault.balanceOf(user1.addr);
+        uint256 user2Assets = IERC20(vault.asset()).balanceOf(user2.addr);
+
+        requestRedeem(user1Shares, user1.addr);
+        requestDeposit(user2Assets, user2.addr);
+        uint256 totalAssets = vault.totalAssets();
+        settle(totalAssets.mulDiv(150, 100));
+
+        redeem(user1Shares, user1.addr);
+        // uint256 user1NewAssets = assetBalance(user1.addr);
+        // user1 assets: user1Assets + user1Shares.muldiv(75*1e6 + 1, 50e1e6 + 1, Math.Round.floor)
+        // assertEq(
+        //     user1NewAssets,
+        //     user1Assets +
+        //         user1Shares.mulDiv(
+        //             175 * 1e6 + 1,
+        //             50 * 1e6 + 1,
+        //             Math.Rounding.Floor
+        //         )
+        // );
+
+        // uint256
+    }
+}

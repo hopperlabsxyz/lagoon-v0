@@ -5,6 +5,7 @@ import {Constants} from "./Constants.sol";
 import {Vault} from "@src/Vault.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+
 import "forge-std/Test.sol";
 
 contract BaseTest is Test, Constants {
@@ -40,9 +41,49 @@ contract BaseTest is Test, Constants {
         return vault.deposit(amount, user);
     }
 
+    function requestRedeem(
+        uint256 amount,
+        address controller,
+        address owner
+    ) internal returns (uint256) {
+        vm.prank(owner);
+        return vault.requestRedeem(amount, controller, owner);
+    }
+
+    function requestRedeem(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
+        vm.prank(user);
+        return vault.requestRedeem(amount, user, user);
+    }
+
+    function redeem(uint256 amount, address user) internal returns (uint256) {
+        vm.prank(user);
+        return vault.redeem(amount, user, user);
+    }
+
+    function redeem(
+        uint256 amount,
+        address controller,
+        address operator,
+        address receiver
+    ) internal returns (uint256) {
+        vm.prank(operator);
+        return vault.redeem(amount, receiver, controller);
+    }
+
     function settle(uint256 newTotalAssets) internal {
         // vm.prank(owner);
-        vault.settle(newTotalAssets);
+        vault.newSettle(newTotalAssets);
+    }
+
+    function unwind() internal {
+        dealAndApprove(vault.vaultOwner());
+        uint256 toUnwind = vault.toUnwind();
+        console.log("tounwind", toUnwind);
+        vm.prank(vault.vaultOwner());
+        vault.unwind(toUnwind);
     }
 
     function dealAndApprove(address user) public {
@@ -51,9 +92,9 @@ contract BaseTest is Test, Constants {
         dealAsset(
             vault.asset(),
             user,
-            10000 * 10 ** IERC20Metadata(asset).decimals()
+            100000 * 10 ** IERC20Metadata(asset).decimals()
         );
-        vm.prank(user1.addr);
+        vm.prank(user);
         IERC4626(asset).approve(address(vault), UINT256_MAX);
     }
 
