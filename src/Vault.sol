@@ -109,6 +109,30 @@ contract Vault is
         return ERC20PausableUpgradeable._update(from, to, value);
     }
 
+    function previewDeposit(
+        uint256 assets
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        require(false);
+    }
+
+    function previewMint(
+        uint256 shares
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        require(false);
+    }
+
+    function previewRedeem(
+        uint256 shares
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        require(false);
+    }
+
+    function previewWithdraw(
+        uint256 assets
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        require(false);
+    }
+
     // ## EIP7575 ##
     function share() external view returns (address) {
         return (address(this));
@@ -195,6 +219,12 @@ contract Vault is
                 return
                     $.epochs[lastDepositRequestId].depositRequest[controller];
         } else return $.epochs[requestId].depositRequest[controller];
+    }
+
+    function maxDeposit(
+        address controller
+    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+        return claimableDepositRequest(0, controller);
     }
 
     function deposit(
