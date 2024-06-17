@@ -12,6 +12,8 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Silo} from "./Silo.sol";
+// import {console} from "forge-std/console.sol";
+// import {console2} from "forge-std/console2.sol";
 
 using Math for uint256;
 using SafeERC20 for IERC20;
@@ -19,8 +21,10 @@ using SafeERC20 for IERC20;
 uint256 constant BPS_DIVIDER = 10_000;
 
 struct EpochData {
-    uint256 totalSupply;
-    uint256 totalAssets;
+    uint256 totalSupplyDeposit;
+    uint256 totalAssetsDeposit;
+    uint256 totalAssetsRedeem;
+    uint256 totalSupplyRedeem;
     mapping(address => uint256) depositRequest;
     mapping(address => uint256) redeemRequest;
 }
@@ -455,8 +459,8 @@ contract Vault is
         VaultStorage storage $ = _getVaultStorage();
         if (requestId == $.epochId) return 0;
 
-        uint256 _totalAssets = $.epochs[requestId].totalAssets + 1;
-        uint256 _totalSupply = $.epochs[requestId].totalSupply +
+        uint256 _totalAssets = $.epochs[requestId].totalAssetsDeposit + 1;
+        uint256 _totalSupply = $.epochs[requestId].totalSupplyDeposit +
             10 ** _decimalsOffset();
 
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
@@ -477,8 +481,8 @@ contract Vault is
         VaultStorage storage $ = _getVaultStorage();
         if (requestId == $.epochId) return 0;
 
-        uint256 _totalAssets = $.epochs[requestId].totalAssets + 1;
-        uint256 _totalSupply = $.epochs[requestId].totalSupply +
+        uint256 _totalAssets = $.epochs[requestId].totalAssetsRedeem + 1;
+        uint256 _totalSupply = $.epochs[requestId].totalSupplyRedeem +
             10 ** _decimalsOffset();
 
         return shares.mulDiv(_totalAssets, _totalSupply, rounding);
@@ -505,143 +509,11 @@ contract Vault is
         uint256 totalSupplySnapshot;
     }
 
-    address vaultOwner = address(1);
+    address public vaultOwner = address(1);
     address treasury;
-    uint256 toUnwind;
+    uint256 public toUnwind;
     uint256 lastSavedBalance;
     uint256 feesInBps;
-
-    function settle(uint256 newSavedBalance) public returns (uint256, uint256) {
-        (
-            uint256 assetsToOwner,
-            uint256 assetsToVault,
-            ,
-            SettleValues memory settleValues
-        ) = previewSettle(newSavedBalance);
-
-        if (settleValues.fees > 0) {
-            IERC20(asset()).safeTransferFrom(
-                vaultOwner,
-                treasury,
-                settleValues.fees
-            );
-        }
-
-        // Settle the shares balance
-        _burn(pendingSilo(), settleValues.pendingRedeem);
-        _mint(claimableSilo(), settleValues.sharesToMint);
-
-        ///////////////////////////
-        // Settle assets balance //
-        ///////////////////////////
-        // either there are more deposits than withdrawals
-        if (settleValues.pendingDeposit > settleValues.assetsToWithdraw) {
-            IERC20(asset()).safeTransferFrom(
-                pendingSilo(),
-                vaultOwner,
-                assetsToOwner
-            );
-            if (settleValues.assetsToWithdraw > 0) {
-                IERC20(asset()).safeTransferFrom(
-                    pendingSilo(),
-                    claimableSilo(),
-                    settleValues.assetsToWithdraw
-                );
-            }
-        } else if (
-            settleValues.pendingDeposit < settleValues.assetsToWithdraw
-        ) {
-            toUnwind += assetsToVault;
-            if (settleValues.pendingDeposit > 0) {
-                IERC20(asset()).safeTransferFrom(
-                    pendingSilo(),
-                    claimableSilo(),
-                    settleValues.pendingDeposit
-                );
-            }
-        } else if (settleValues.pendingDeposit > 0) {
-            IERC20(asset()).safeTransferFrom(
-                pendingSilo(),
-                claimableSilo(),
-                settleValues.assetsToWithdraw
-            );
-        }
-
-        settleValues.lastSavedBalance =
-            settleValues.lastSavedBalance -
-            settleValues.fees +
-            settleValues.pendingDeposit -
-            settleValues.assetsToWithdraw;
-
-        lastSavedBalance = settleValues.lastSavedBalance;
-
-        VaultStorage storage $ = _getVaultStorage();
-        $.epochs[$.epochId].totalSupply = settleValues.totalSupplySnapshot;
-        $.epochs[$.epochId].totalAssets = settleValues.totalAssetsSnapshot;
-
-        $.epochId++;
-
-        return (settleValues.lastSavedBalance, totalSupply());
-    }
-
-    function previewSettle(
-        uint256 newSavedBalance
-    )
-        public
-        view
-        returns (
-            uint256 assetsToOwner,
-            uint256 assetsToVault,
-            uint256 expectedAssetFromOwner,
-            SettleValues memory settleValues
-        )
-    {
-        uint256 _lastSavedBalance = lastSavedBalance;
-
-        // calculate the fees between lastSavedBalance and newSavedBalance
-        uint256 fees = _computeFees(_lastSavedBalance, newSavedBalance);
-        uint256 totalSupply = totalSupply();
-
-        // taking fees if positive yield
-        _lastSavedBalance = newSavedBalance - fees;
-
-        address pendingSiloAddr = pendingSilo();
-        uint256 pendingRedeem = balanceOf(pendingSiloAddr);
-        uint256 pendingDeposit = IERC20(asset()).balanceOf(pendingSiloAddr);
-
-        uint256 sharesToMint = pendingDeposit.mulDiv(
-            totalSupply + 1,
-            _lastSavedBalance + 1,
-            Math.Rounding.Floor
-        );
-
-        uint256 totalAssetsSnapshot = _lastSavedBalance;
-        uint256 totalSupplySnapshot = totalSupply;
-
-        uint256 assetsToWithdraw = pendingRedeem.mulDiv(
-            _lastSavedBalance + pendingDeposit + 1,
-            totalSupply + sharesToMint + 1,
-            Math.Rounding.Floor
-        );
-
-        settleValues = SettleValues({
-            lastSavedBalance: _lastSavedBalance + fees,
-            fees: fees,
-            pendingRedeem: pendingRedeem,
-            sharesToMint: sharesToMint,
-            pendingDeposit: pendingDeposit,
-            assetsToWithdraw: assetsToWithdraw,
-            totalAssetsSnapshot: totalAssetsSnapshot,
-            totalSupplySnapshot: totalSupplySnapshot
-        });
-
-        if (pendingDeposit > assetsToWithdraw) {
-            assetsToOwner = pendingDeposit - assetsToWithdraw;
-        } else if (pendingDeposit < assetsToWithdraw) {
-            assetsToVault = assetsToWithdraw - pendingDeposit;
-        }
-        expectedAssetFromOwner = fees + assetsToVault;
-    }
 
     function _computeFees(
         uint256 _lastSavedBalance,
@@ -666,16 +538,24 @@ contract Vault is
         // First we update the vault value.
         $.totalAssets = newTotalAssets;
 
-        // Then we proceed the deposit request
+        // Then we proceed the deposit request and save the deposit parameters
+        $.epochs[$.epochId].totalAssetsDeposit = $.totalAssets;
+        $.epochs[$.epochId].totalSupplyDeposit = totalSupply();
         uint256 pendingAssets = IERC20(asset()).balanceOf(
             address($.pendingSilo)
         );
-        uint256 shares = previewDeposit(
-            _convertToShares(pendingAssets, Math.Rounding.Floor)
-        );
-        if (shares > 0) _mint(address($.claimableSilo), shares);
+        if (pendingAssets > 0) {
+            uint256 shares = _convertToShares(
+                pendingAssets,
+                Math.Rounding.Floor
+            );
+            _mint(address($.claimableSilo), shares);
+            $.totalAssets += pendingAssets;
+        }
 
-        // Then we proceed the redeem request
+        // Then we proceed the redeem request and save the redeem parameters
+        $.epochs[$.epochId].totalAssetsRedeem = $.totalAssets;
+        $.epochs[$.epochId].totalSupplyRedeem = totalSupply();
         uint256 assets = _convertToAssets(
             balanceOf(address($.pendingSilo)),
             Math.Rounding.Floor
@@ -686,7 +566,7 @@ contract Vault is
             toUnwind += assets;
         }
 
-        // Then we put a maximum of assets in the claimable silo so that user can fully withdraw
+        // Then we put a maximum of assets in the claimable silo so that user can claim
         if (pendingAssets > 0 && toUnwind > 0)
             _unwind(pendingAssets, pendingSilo());
 
@@ -699,9 +579,6 @@ contract Vault is
                 pendingAssets
             );
 
-        // we save the parameters for users to claim
-        $.epochs[$.epochId].totalAssets = $.totalAssets;
-        $.epochs[$.epochId].totalSupply = totalSupply();
         $.epochId++;
     }
 
@@ -711,6 +588,11 @@ contract Vault is
 
     function _unwind(uint256 amount, address from) internal {
         if (amount > toUnwind) amount = toUnwind;
+        // console.log("going to unwind amount", amount);
+        // console.log(
+        //     "PENDING SILo balance",
+        //     IERC20(asset()).balanceOf(pendingSilo())
+        // );
         toUnwind -= amount;
         IERC20(asset()).safeTransferFrom(from, claimableSilo(), amount);
     }
