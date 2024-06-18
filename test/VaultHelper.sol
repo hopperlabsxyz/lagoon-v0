@@ -48,4 +48,14 @@ contract VaultHelper is Vault {
         VaultStorage storage $ = _getVaultStorage();
         return $.epochs[$.epochId - 1].totalAssetsRedeem;
     }
+
+    function vaultOwner() public view returns (address) {
+        VaultStorage storage $ = _getVaultStorage();
+        return $.vaultOwner;
+    }
+
+    function toUnwind() public view returns (uint256) {
+        VaultStorage storage $ = _getVaultStorage();
+        return $.toUnwind;
+    }
 }

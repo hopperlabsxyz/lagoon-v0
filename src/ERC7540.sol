@@ -1,13 +1,19 @@
 //SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
-import {IERC7540} from "./interfaces/IERC7540.sol";
+import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
+import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 struct ERC7540Storage {
     mapping(address controller => mapping(address operator => bool)) isOperator;
 }
 
-contract ERC7540Upgradeable is IERC7540, ERC4626Upgradeable {
+abstract contract ERC7540Upgradeable is
+    IERC7540Deposit,
+    IERC7540Redeem,
+    ERC4626Upgradeable
+{
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant erc7540Storage =
         0x0db0cd9880e84ca0b573fff91a05faddfecad925c5f393111a47359314e28e00;
@@ -53,8 +59,34 @@ contract ERC7540Upgradeable is IERC7540, ERC4626Upgradeable {
     }
 
     // ## EIP165 ##
-    function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public pure virtual returns (bool) {
         interfaceId;
         return true;
+    }
+
+    function previewDeposit(
+        uint256
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        require(false);
+    }
+
+    function previewMint(
+        uint256
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        require(false);
+    }
+
+    function previewRedeem(
+        uint256
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        require(false);
+    }
+
+    function previewWithdraw(
+        uint256
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        require(false);
     }
 }

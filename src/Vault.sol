@@ -6,9 +6,7 @@ import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/toke
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {ERC20Upgradeable, IERC20, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {ERC7540Deposit} from "./ERC7540Deposit.sol";
 import {ERC7540Upgradeable} from "./ERC7540.sol";
-import {ERC7540Redeem} from "./ERC7540Redeem.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -32,14 +30,8 @@ struct EpochData {
     mapping(address => uint256) redeemRequest;
 }
 
-struct Request {
-    uint256 epochId;
-    uint256 amount;
-}
-
 contract Vault is
-    ERC7540Deposit,
-    ERC7540Redeem,
+    ERC7540Upgradeable,
     ERC20BurnableUpgradeable,
     ERC20PausableUpgradeable,
     ERC20PermitUpgradeable,
@@ -49,6 +41,8 @@ contract Vault is
     struct VaultStorage {
         uint256 totalAssets;
         uint256 epochId;
+        uint256 toUnwind;
+        address vaultOwner;
         Silo pendingSilo;
         Silo claimableSilo;
         mapping(uint256 epochId => EpochData epoch) epochs;
@@ -87,6 +81,7 @@ contract Vault is
         $.claimableSilo = new Silo(underlying);
         $.pendingSilo = new Silo(underlying);
         $.epochId = 1;
+        $.vaultOwner = address(1);
     }
 
     // ## Overrides ##
@@ -115,30 +110,6 @@ contract Vault is
         uint256 value
     ) internal virtual override(ERC20PausableUpgradeable, ERC20Upgradeable) {
         return ERC20PausableUpgradeable._update(from, to, value);
-    }
-
-    function previewDeposit(
-        uint256
-    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        require(false);
-    }
-
-    function previewMint(
-        uint256
-    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        require(false);
-    }
-
-    function previewRedeem(
-        uint256
-    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        require(false);
-    }
-
-    function previewWithdraw(
-        uint256
-    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        require(false);
     }
 
     // ## EIP7540 Deposit Flow ##
@@ -475,31 +446,15 @@ contract Vault is
         return address($.claimableSilo);
     }
 
-    struct SettleValues {
-        uint256 lastSavedBalance;
-        uint256 fees;
-        uint256 pendingRedeem;
-        uint256 sharesToMint;
-        uint256 pendingDeposit;
-        uint256 assetsToWithdraw;
-        uint256 totalAssetsSnapshot;
-        uint256 totalSupplySnapshot;
-    }
-
-    address public vaultOwner = address(1);
-    address treasury;
-    uint256 public toUnwind;
-    uint256 lastSavedBalance;
-    uint256 feesInBps;
-
     function _computeFees(
-        uint256 _lastSavedBalance,
-        uint256 newSavedBalance
-    ) internal view returns (uint256 fees) {
-        if (newSavedBalance > _lastSavedBalance && feesInBps > 0) {
+        uint256 previousBalance,
+        uint256 newBalance,
+        uint256 feesInBps
+    ) internal pure returns (uint256 fees) {
+        if (newBalance > previousBalance && feesInBps > 0) {
             uint256 profits;
             unchecked {
-                profits = newSavedBalance - _lastSavedBalance;
+                profits = newBalance - previousBalance;
             }
             fees = (profits).mulDiv(
                 feesInBps,
@@ -540,11 +495,11 @@ contract Vault is
         if (assets > 0) {
             _burn(address($.pendingSilo), balanceOf(address($.pendingSilo)));
             $.totalAssets -= assets;
-            toUnwind += assets;
+            $.toUnwind += assets;
         }
 
         // Then we put a maximum of assets in the claimable silo so that user can claim
-        if (pendingAssets > 0 && toUnwind > 0)
+        if (pendingAssets > 0 && $.toUnwind > 0)
             _unwind(pendingAssets, pendingSilo());
 
         // If there is a surplus of assets, we send those to the asset manager
@@ -552,7 +507,7 @@ contract Vault is
         if (pendingAssets > 0)
             IERC20(asset()).safeTransferFrom(
                 pendingSilo(),
-                vaultOwner,
+                $.vaultOwner,
                 pendingAssets
             );
 
@@ -560,17 +515,15 @@ contract Vault is
     }
 
     function unwind(uint256 amount) external {
-        _unwind(amount, vaultOwner);
+        VaultStorage storage $ = _getVaultStorage();
+        _unwind(amount, $.vaultOwner);
     }
 
     function _unwind(uint256 amount, address from) internal {
-        if (amount > toUnwind) amount = toUnwind;
-        // console.log("going to unwind amount", amount);
-        // console.log(
-        //     "PENDING SILo balance",
-        //     IERC20(asset()).balanceOf(pendingSilo())
-        // );
-        toUnwind -= amount;
+        VaultStorage storage $ = _getVaultStorage();
+
+        if (amount > $.toUnwind) amount = $.toUnwind;
+        $.toUnwind -= amount;
         IERC20(asset()).safeTransferFrom(from, claimableSilo(), amount);
     }
 
@@ -579,7 +532,7 @@ contract Vault is
     )
         public
         pure
-        override(ERC7540Upgradeable, AccessControlUpgradeable, IERC165)
+        override(ERC7540Upgradeable, AccessControlUpgradeable)
         returns (bool)
     {
         return true;
