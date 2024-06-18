@@ -1,7 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
-interface IERC7540Redeem {
+import {IERC7540} from "./IERC7540.sol";
+
+interface IERC7540Redeem is IERC7540 {
     event RedeemRequest(
         address indexed controller,
         address indexed owner,

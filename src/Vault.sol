@@ -6,8 +6,11 @@ import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/toke
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {ERC20Upgradeable, IERC20, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {IERC7540} from "./interfaces/IERC7540.sol";
+import {ERC7540Deposit} from "./ERC7540Deposit.sol";
+import {ERC7540Upgradeable} from "./ERC7540.sol";
+import {ERC7540Redeem} from "./ERC7540Redeem.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -35,8 +38,8 @@ struct Request {
 }
 
 contract Vault is
-    IERC7540,
-    ERC4626Upgradeable,
+    ERC7540Deposit,
+    ERC7540Redeem,
     ERC20BurnableUpgradeable,
     ERC20PausableUpgradeable,
     ERC20PermitUpgradeable,
@@ -48,7 +51,6 @@ contract Vault is
         uint256 epochId;
         Silo pendingSilo;
         Silo claimableSilo;
-        mapping(address controller => mapping(address operator => bool)) isOperator;
         mapping(uint256 epochId => EpochData epoch) epochs;
         mapping(address user => uint256 epochId) lastDepositRequestId;
         mapping(address user => uint256 epochId) lastRedeemRequestId;
@@ -59,7 +61,7 @@ contract Vault is
     bytes32 private constant HopperVaultStorage =
         0xfdb0cd9880e84ca0b573fff91a05faddfecad925c5f393111a47359314e28e00;
 
-    function _getVaultStorage() private pure returns (VaultStorage storage $) {
+    function _getVaultStorage() internal pure returns (VaultStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := HopperVaultStorage
@@ -116,52 +118,27 @@ contract Vault is
     }
 
     function previewDeposit(
-        uint256 assets
+        uint256
     ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         require(false);
     }
 
     function previewMint(
-        uint256 shares
+        uint256
     ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         require(false);
     }
 
     function previewRedeem(
-        uint256 shares
+        uint256
     ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         require(false);
     }
 
     function previewWithdraw(
-        uint256 assets
+        uint256
     ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         require(false);
-    }
-
-    // ## EIP7575 ##
-    function share() external view returns (address) {
-        return (address(this));
-    }
-
-    // ## EIP7540 ##
-    function isOperator(
-        address controller,
-        address operator
-    ) public view returns (bool) {
-        VaultStorage storage $ = _getVaultStorage();
-        return $.isOperator[controller][operator];
-    }
-
-    function setOperator(
-        address operator,
-        bool approved
-    ) external returns (bool success) {
-        VaultStorage storage $ = _getVaultStorage();
-        address msgSender = _msgSender();
-        $.isOperator[msgSender][operator] = approved;
-        emit OperatorSet(msgSender, operator, approved);
-        return true;
     }
 
     // ## EIP7540 Deposit Flow ##
@@ -595,5 +572,16 @@ contract Vault is
         // );
         toUnwind -= amount;
         IERC20(asset()).safeTransferFrom(from, claimableSilo(), amount);
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    )
+        public
+        pure
+        override(ERC7540Upgradeable, AccessControlUpgradeable, IERC165)
+        returns (bool)
+    {
+        return true;
     }
 }

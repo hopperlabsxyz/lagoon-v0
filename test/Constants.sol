@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import {Test} from "forge-std/Test.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {VaultHelper} from "./VaultHelper.sol";
 import {Vault} from "@src/Vault.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 import {Upgrades, Options} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
@@ -29,7 +30,7 @@ abstract contract Constants is Test {
         vm.envAddress(string.concat("USDC_WHALE", "_", network));
 
     string underlyingName = vm.envString("UNDERLYING_NAME");
-    Vault vault;
+    VaultHelper vault;
     string vaultName = "vault_";
     string vaultSymbol = "hop_vault_";
 
@@ -91,7 +92,7 @@ abstract contract Constants is Test {
             vault = _proxyDeploy(beacon, underlying, vaultName, vaultSymbol);
         } else {
             vm.startPrank(owner.addr);
-            vault = new Vault(false);
+            vault = new VaultHelper(false);
             vault.initialize(underlying, vaultName, vaultSymbol);
             vm.stopPrank();
         }
@@ -114,7 +115,7 @@ abstract contract Constants is Test {
         ERC20 _underlying,
         string memory _vaultName,
         string memory _vaultSymbol
-    ) internal returns (Vault) {
+    ) internal returns (VaultHelper) {
         BeaconProxy proxy = BeaconProxy(
             payable(
                 Upgrades.deployBeaconProxy(
@@ -127,6 +128,6 @@ abstract contract Constants is Test {
             )
         );
 
-        return Vault(address(proxy));
+        return VaultHelper(address(proxy));
     }
 }
