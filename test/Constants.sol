@@ -93,7 +93,14 @@ abstract contract Constants is Test {
         } else {
             vm.startPrank(owner.addr);
             vault = new VaultHelper(false);
-            vault.initialize(underlying, vaultName, vaultSymbol);
+            vault.initialize(
+                underlying,
+                vaultName,
+                vaultSymbol,
+                address(this),
+                address(this),
+                address(this)
+            );
             vm.stopPrank();
         }
         vm.label(address(vault), vaultName);
@@ -122,7 +129,14 @@ abstract contract Constants is Test {
                     address(beacon),
                     abi.encodeCall(
                         Vault.initialize,
-                        (_underlying, _vaultName, _vaultSymbol)
+                        (
+                            _underlying,
+                            _vaultName,
+                            _vaultSymbol,
+                            address(this),
+                            address(this),
+                            address(this)
+                        )
                     )
                 )
             )

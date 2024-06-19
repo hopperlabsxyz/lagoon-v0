@@ -8,8 +8,8 @@ import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/
 import {ERC20Upgradeable, IERC20, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC7540Upgradeable} from "./ERC7540.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
-import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import {IAccessControl, AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Silo} from "./Silo.sol";
@@ -30,19 +30,22 @@ struct EpochData {
     mapping(address => uint256) redeemRequest;
 }
 
+bytes32 constant ASSET_MANAGER_ROLE = keccak256("ASSET_MANAGER");
+bytes32 constant VALORIZATION_ROLE = keccak256("VALORIZATION_MANAGER");
+bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
+
 contract Vault is
     ERC7540Upgradeable,
     ERC20BurnableUpgradeable,
     ERC20PausableUpgradeable,
     ERC20PermitUpgradeable,
-    AccessControlUpgradeable
+    AccessControlEnumerableUpgradeable
 {
     /// @custom:storage-location erc7201:hopper.storage.vault
     struct VaultStorage {
         uint256 totalAssets;
         uint256 epochId;
         uint256 toUnwind;
-        address vaultOwner;
         Silo pendingSilo;
         Silo claimableSilo;
         mapping(uint256 epochId => EpochData epoch) epochs;
@@ -71,7 +74,10 @@ contract Vault is
     function initialize(
         IERC20 underlying,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        address assetManager,
+        address valorization,
+        address admin
     ) public virtual initializer {
         __ERC4626_init(underlying);
         __ERC20_init(name, symbol);
@@ -81,7 +87,18 @@ contract Vault is
         $.claimableSilo = new Silo(underlying);
         $.pendingSilo = new Silo(underlying);
         $.epochId = 1;
-        $.vaultOwner = address(1);
+
+        _grantRole(HOPPER_ROLE, address(2)); // TODO PUT A REAL ADDRESS
+        _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE); // only hopper manage itself
+        _grantRole(ASSET_MANAGER_ROLE, assetManager);
+        _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+        // console.log(getRoleMemberCount(ASSET_MANAGER_ROLE));
+
+        _grantRole(VALORIZATION_ROLE, valorization);
+        _setRoleAdmin(VALORIZATION_ROLE, DEFAULT_ADMIN_ROLE);
+        // console.log(getRoleMemberCount(VALORIZATION_ROLE));
+
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
     // ## Overrides ##
@@ -464,7 +481,9 @@ contract Vault is
         }
     }
 
-    function newSettle(uint256 newTotalAssets) public {
+    function newSettle(
+        uint256 newTotalAssets
+    ) public onlyRole(VALORIZATION_ROLE) {
         VaultStorage storage $ = _getVaultStorage();
 
         // First we update the vault value.
@@ -504,19 +523,21 @@ contract Vault is
 
         // If there is a surplus of assets, we send those to the asset manager
         pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
+
+        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+        require(assetManager != address(0));
         if (pendingAssets > 0)
             IERC20(asset()).safeTransferFrom(
                 pendingSilo(),
-                $.vaultOwner,
+                assetManager,
                 pendingAssets
             );
 
         $.epochId++;
     }
 
-    function unwind(uint256 amount) external {
-        VaultStorage storage $ = _getVaultStorage();
-        _unwind(amount, $.vaultOwner);
+    function unwind(uint256 amount) external onlyRole(ASSET_MANAGER_ROLE) {
+        _unwind(amount, _msgSender());
     }
 
     function _unwind(uint256 amount, address from) internal {
@@ -532,7 +553,7 @@ contract Vault is
     )
         public
         pure
-        override(ERC7540Upgradeable, AccessControlUpgradeable)
+        override(ERC7540Upgradeable, AccessControlEnumerableUpgradeable)
         returns (bool)
     {
         return true;
