@@ -28,21 +28,34 @@ contract TestSettle is BaseTest {
         requestRedeem(user1Shares, user1.addr);
         requestDeposit(user2Assets, user2.addr);
         uint256 totalAssets = vault.totalAssets();
+        uint256 totalSupply = vault.totalSupply();
+
         settle(totalAssets.mulDiv(150, 100));
 
-        redeem(user1Shares, user1.addr);
-        // uint256 user1NewAssets = assetBalance(user1.addr);
-        // user1 assets: user1Assets + user1Shares.muldiv(75*1e6 + 1, 50e1e6 + 1, Math.Round.floor)
-        // assertEq(
-        //     user1NewAssets,
-        //     user1Assets +
-        //         user1Shares.mulDiv(
-        //             175 * 1e6 + 1,
-        //             50 * 1e6 + 1,
-        //             Math.Rounding.Floor
-        //         )
-        // );
+        // when settle-deposit:
+        uint256 totalAssetsWhenDeposit = totalAssets.mulDiv(150, 100);
+        uint256 totalSupplyWhenDeposit = totalSupply;
 
-        // uint256
+        // totalAssets when settle-redeem:
+        uint256 totalAssetsWhenRedeem = totalAssetsWhenDeposit + user2Assets;
+        uint256 user2Shares = user2Assets.mulDiv(
+            totalSupplyWhenDeposit + 1,
+            totalAssetsWhenDeposit + 1,
+            Math.Rounding.Floor
+        );
+        uint256 totalSupplyWhenRedeem = totalSupplyWhenDeposit + user2Shares;
+        redeem(user1Shares, user1.addr);
+        deposit(user2Assets, user2.addr);
+        uint256 user1NewAssets = assetBalance(user1.addr);
+        // user1 assets: user1Assets + user1Shares.muldiv(75*1e6 + 1, 50e1e6 + 1, Math.Round.floor)
+        assertEq(
+            user1NewAssets,
+            user1Assets +
+                user1Shares.mulDiv(
+                    totalAssetsWhenRedeem,
+                    totalSupplyWhenRedeem,
+                    Math.Rounding.Floor
+                )
+        );
     }
 }

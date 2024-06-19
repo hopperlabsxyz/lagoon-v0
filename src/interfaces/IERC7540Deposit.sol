@@ -1,7 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
+import {IERC7540} from "./IERC7540.sol";
 
-interface IERC7540Deposit {
+interface IERC7540Deposit is IERC7540 {
     /**
      * owner has locked assets in the Vault to Request a deposit with request ID requestId.
      * controller controls this Request.

@@ -6,9 +6,10 @@ import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/toke
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {ERC20Upgradeable, IERC20, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {IERC7540} from "./interfaces/IERC7540.sol";
+import {ERC7540Upgradeable} from "./ERC7540.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import {IAccessControl, AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Silo} from "./Silo.sol";
@@ -29,26 +30,24 @@ struct EpochData {
     mapping(address => uint256) redeemRequest;
 }
 
-struct Request {
-    uint256 epochId;
-    uint256 amount;
-}
+bytes32 constant ASSET_MANAGER_ROLE = keccak256("ASSET_MANAGER");
+bytes32 constant VALORIZATION_ROLE = keccak256("VALORIZATION_MANAGER");
+bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
 
 contract Vault is
-    IERC7540,
-    ERC4626Upgradeable,
+    ERC7540Upgradeable,
     ERC20BurnableUpgradeable,
     ERC20PausableUpgradeable,
     ERC20PermitUpgradeable,
-    AccessControlUpgradeable
+    AccessControlEnumerableUpgradeable
 {
     /// @custom:storage-location erc7201:hopper.storage.vault
     struct VaultStorage {
         uint256 totalAssets;
         uint256 epochId;
+        uint256 toUnwind;
         Silo pendingSilo;
         Silo claimableSilo;
-        mapping(address controller => mapping(address operator => bool)) isOperator;
         mapping(uint256 epochId => EpochData epoch) epochs;
         mapping(address user => uint256 epochId) lastDepositRequestId;
         mapping(address user => uint256 epochId) lastRedeemRequestId;
@@ -59,7 +58,7 @@ contract Vault is
     bytes32 private constant HopperVaultStorage =
         0xfdb0cd9880e84ca0b573fff91a05faddfecad925c5f393111a47359314e28e00;
 
-    function _getVaultStorage() private pure returns (VaultStorage storage $) {
+    function _getVaultStorage() internal pure returns (VaultStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := HopperVaultStorage
@@ -75,7 +74,10 @@ contract Vault is
     function initialize(
         IERC20 underlying,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        address assetManager,
+        address valorization,
+        address admin
     ) public virtual initializer {
         __ERC4626_init(underlying);
         __ERC20_init(name, symbol);
@@ -85,6 +87,18 @@ contract Vault is
         $.claimableSilo = new Silo(underlying);
         $.pendingSilo = new Silo(underlying);
         $.epochId = 1;
+
+        _grantRole(HOPPER_ROLE, address(2)); // TODO PUT A REAL ADDRESS
+        _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE); // only hopper manage itself
+        _grantRole(ASSET_MANAGER_ROLE, assetManager);
+        _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+        // console.log(getRoleMemberCount(ASSET_MANAGER_ROLE));
+
+        _grantRole(VALORIZATION_ROLE, valorization);
+        _setRoleAdmin(VALORIZATION_ROLE, DEFAULT_ADMIN_ROLE);
+        // console.log(getRoleMemberCount(VALORIZATION_ROLE));
+
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
     // ## Overrides ##
@@ -113,55 +127,6 @@ contract Vault is
         uint256 value
     ) internal virtual override(ERC20PausableUpgradeable, ERC20Upgradeable) {
         return ERC20PausableUpgradeable._update(from, to, value);
-    }
-
-    function previewDeposit(
-        uint256 assets
-    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        require(false);
-    }
-
-    function previewMint(
-        uint256 shares
-    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        require(false);
-    }
-
-    function previewRedeem(
-        uint256 shares
-    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        require(false);
-    }
-
-    function previewWithdraw(
-        uint256 assets
-    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        require(false);
-    }
-
-    // ## EIP7575 ##
-    function share() external view returns (address) {
-        return (address(this));
-    }
-
-    // ## EIP7540 ##
-    function isOperator(
-        address controller,
-        address operator
-    ) public view returns (bool) {
-        VaultStorage storage $ = _getVaultStorage();
-        return $.isOperator[controller][operator];
-    }
-
-    function setOperator(
-        address operator,
-        bool approved
-    ) external returns (bool success) {
-        VaultStorage storage $ = _getVaultStorage();
-        address msgSender = _msgSender();
-        $.isOperator[msgSender][operator] = approved;
-        emit OperatorSet(msgSender, operator, approved);
-        return true;
     }
 
     // ## EIP7540 Deposit Flow ##
@@ -498,31 +463,15 @@ contract Vault is
         return address($.claimableSilo);
     }
 
-    struct SettleValues {
-        uint256 lastSavedBalance;
-        uint256 fees;
-        uint256 pendingRedeem;
-        uint256 sharesToMint;
-        uint256 pendingDeposit;
-        uint256 assetsToWithdraw;
-        uint256 totalAssetsSnapshot;
-        uint256 totalSupplySnapshot;
-    }
-
-    address public vaultOwner = address(1);
-    address treasury;
-    uint256 public toUnwind;
-    uint256 lastSavedBalance;
-    uint256 feesInBps;
-
     function _computeFees(
-        uint256 _lastSavedBalance,
-        uint256 newSavedBalance
-    ) internal view returns (uint256 fees) {
-        if (newSavedBalance > _lastSavedBalance && feesInBps > 0) {
+        uint256 previousBalance,
+        uint256 newBalance,
+        uint256 feesInBps
+    ) internal pure returns (uint256 fees) {
+        if (newBalance > previousBalance && feesInBps > 0) {
             uint256 profits;
             unchecked {
-                profits = newSavedBalance - _lastSavedBalance;
+                profits = newBalance - previousBalance;
             }
             fees = (profits).mulDiv(
                 feesInBps,
@@ -532,7 +481,9 @@ contract Vault is
         }
     }
 
-    function newSettle(uint256 newTotalAssets) public {
+    function newSettle(
+        uint256 newTotalAssets
+    ) public onlyRole(VALORIZATION_ROLE) {
         VaultStorage storage $ = _getVaultStorage();
 
         // First we update the vault value.
@@ -563,37 +514,48 @@ contract Vault is
         if (assets > 0) {
             _burn(address($.pendingSilo), balanceOf(address($.pendingSilo)));
             $.totalAssets -= assets;
-            toUnwind += assets;
+            $.toUnwind += assets;
         }
 
         // Then we put a maximum of assets in the claimable silo so that user can claim
-        if (pendingAssets > 0 && toUnwind > 0)
+        if (pendingAssets > 0 && $.toUnwind > 0)
             _unwind(pendingAssets, pendingSilo());
 
         // If there is a surplus of assets, we send those to the asset manager
         pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
+
+        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+        require(assetManager != address(0));
         if (pendingAssets > 0)
             IERC20(asset()).safeTransferFrom(
                 pendingSilo(),
-                vaultOwner,
+                assetManager,
                 pendingAssets
             );
 
         $.epochId++;
     }
 
-    function unwind(uint256 amount) external {
-        _unwind(amount, vaultOwner);
+    function unwind(uint256 amount) external onlyRole(ASSET_MANAGER_ROLE) {
+        _unwind(amount, _msgSender());
     }
 
     function _unwind(uint256 amount, address from) internal {
-        if (amount > toUnwind) amount = toUnwind;
-        // console.log("going to unwind amount", amount);
-        // console.log(
-        //     "PENDING SILo balance",
-        //     IERC20(asset()).balanceOf(pendingSilo())
-        // );
-        toUnwind -= amount;
+        VaultStorage storage $ = _getVaultStorage();
+
+        if (amount > $.toUnwind) amount = $.toUnwind;
+        $.toUnwind -= amount;
         IERC20(asset()).safeTransferFrom(from, claimableSilo(), amount);
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    )
+        public
+        pure
+        override(ERC7540Upgradeable, AccessControlEnumerableUpgradeable)
+        returns (bool)
+    {
+        return true;
     }
 }
