@@ -74,15 +74,14 @@ contract BaseTest is Test, Constants {
     }
 
     function settle(uint256 newTotalAssets) internal {
-        // vm.prank(owner);
+        vm.prank(vault.vaultValorizationRole());
         vault.newSettle(newTotalAssets);
     }
 
     function unwind() internal {
-        dealAndApprove(vault.vaultOwner());
+        dealAndApprove(vault.vaultAM());
         uint256 toUnwind = vault.toUnwind();
-        console.log("tounwind", toUnwind);
-        vm.prank(vault.vaultOwner());
+        vm.prank(vault.vaultAM());
         vault.unwind(toUnwind);
     }
 
