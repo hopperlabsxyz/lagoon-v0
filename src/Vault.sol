@@ -13,6 +13,7 @@ import {IAccessControl, AccessControlUpgradeable} from "@openzeppelin/contracts-
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Silo} from "./Silo.sol";
+import {FeeManager} from "./FeeManager.sol";
 // import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
@@ -39,7 +40,8 @@ contract Vault is
     ERC20BurnableUpgradeable,
     ERC20PausableUpgradeable,
     ERC20PermitUpgradeable,
-    AccessControlEnumerableUpgradeable
+    AccessControlEnumerableUpgradeable,
+    FeeManager
 {
     /// @custom:storage-location erc7201:hopper.storage.vault
     struct VaultStorage {
@@ -557,5 +559,27 @@ contract Vault is
         returns (bool)
     {
         return true;
+    }
+
+    function collectFees() public override {
+        VaultStorage storage $ = _getVaultStorage();
+
+        uint256 managementFee = calculateManagementFee($.totalAssets);
+        uint256 performanceFee = calculatePerformanceFee($.totalAssets);
+
+        lastFeeTime = block.timestamp;
+        highWaterMark = $.totalAssets;
+
+        if (managementFee > 0) {
+            // need find the best way to take fees here
+            // vault.withdraw();
+            payable(manager).transfer(managementFee);
+        }
+
+        if (performanceFee > 0) {
+            // need find the best way to take fees here
+            // vault.withdraw();
+            payable(manager).transfer(performanceFee);
+        }
     }
 }
