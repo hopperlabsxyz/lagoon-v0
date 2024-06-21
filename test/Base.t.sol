@@ -73,9 +73,20 @@ contract BaseTest is Test, Constants {
         return vault.redeem(amount, receiver, controller);
     }
 
-    function settle(uint256 newTotalAssets) internal {
+    function updateTotalAssets(uint256 newTotalAssets) internal {
         vm.prank(vault.vaultValorizationRole());
-        vault.settle(newTotalAssets);
+        vault.updateTotalAssets(newTotalAssets);
+    }
+
+    function settle() internal {
+        vm.prank(vault.vaultValorizationRole());
+        vault.settle();
+    }
+
+    function updateAndSettle(uint256 newTotalAssets) internal {
+        updateTotalAssets(newTotalAssets);
+        vm.warp(block.timestamp + 1 days);
+        settle();
     }
 
     function unwind() internal {
