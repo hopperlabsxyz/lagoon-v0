@@ -465,7 +465,7 @@ contract Vault is
         return address($.claimableSilo);
     }
 
-    function newSettle(
+    function settle(
         uint256 newTotalAssets
     ) public onlyRole(VALORIZATION_ROLE) {
         VaultStorage storage $ = _getVaultStorage();
