@@ -543,7 +543,7 @@ contract Vault is
         return true;
     }
 
-    function collectFees(uint256 newTotalAssets) public override onlyRole(VALORIZATION_ROLE) {
+    function _collectFees(uint256 newTotalAssets) internal override onlyRole(VALORIZATION_ROLE) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 managementFee = calculateManagementFee(newTotalAssets);

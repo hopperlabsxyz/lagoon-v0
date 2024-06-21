@@ -82,6 +82,6 @@ abstract contract FeeManager is Initializable {
         return 0;
     }
 
-    function collectFees(uint256 newTotalAssets) external virtual;
+    function _collectFees(uint256 newTotalAssets) internal virtual;
 }
 
