@@ -34,7 +34,7 @@ contract TestRequestDeposit is BaseTest {
     function test_requestDeposit_withClaimableBalance() public {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance / 2, user1.addr);
-        settle(0);
+        updateAndSettle(0);
         assertEq(
             vault.claimableDepositRequest(0, user1.addr),
             userBalance / 2,
