@@ -465,24 +465,6 @@ contract Vault is
         return address($.claimableSilo);
     }
 
-    function _computeFees(
-        uint256 previousBalance,
-        uint256 newBalance,
-        uint256 feesInBps
-    ) internal pure returns (uint256 fees) {
-        if (newBalance > previousBalance && feesInBps > 0) {
-            uint256 profits;
-            unchecked {
-                profits = newBalance - previousBalance;
-            }
-            fees = (profits).mulDiv(
-                feesInBps,
-                BPS_DIVIDER,
-                Math.Rounding.Floor
-            );
-        }
-    }
-
     function newSettle(
         uint256 newTotalAssets
     ) public onlyRole(VALORIZATION_ROLE) {
