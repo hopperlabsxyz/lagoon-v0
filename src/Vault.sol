@@ -13,7 +13,8 @@ import {IAccessControl, AccessControlUpgradeable} from "@openzeppelin/contracts-
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Silo} from "./Silo.sol";
-import {console} from "forge-std/console.sol";
+import {FeeManager, FeeManagerStorage} from "./FeeManager.sol";
+// import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
 using Math for uint256;
@@ -39,7 +40,8 @@ contract Vault is
     ERC20BurnableUpgradeable,
     ERC20PausableUpgradeable,
     ERC20PermitUpgradeable,
-    AccessControlEnumerableUpgradeable
+    AccessControlEnumerableUpgradeable,
+    FeeManager
 {
     /// @custom:storage-location erc7201:hopper.storage.vault
     struct VaultStorage {
@@ -58,10 +60,10 @@ contract Vault is
         // uint256 newTotalAssetsExpiry;
     }
 
-    // keccak256(abi.encode(uint256(keccak256("hopperprotocol.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
+    // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant HopperVaultStorage =
-        0xfdb0cd9880e84ca0b573fff91a05faddfecad925c5f393111a47359314e28e00;
+        0x0e6b3200a60a991c539f47dddaca04a18eb4bcf2b53906fb44751d827f001400;
 
     function _getVaultStorage() internal pure returns (VaultStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
@@ -83,12 +85,16 @@ contract Vault is
         address assetManager,
         address valorization,
         address admin,
+        uint256 managementFee,
+        uint256 performanceFee,
+        uint256 protocolFee,
         uint256 cooldown
     ) public virtual initializer {
         __ERC4626_init(underlying);
         __ERC20_init(name, symbol);
         __ERC20Permit_init(name);
         __ERC20Pausable_init();
+        __FeeManager_init(managementFee, performanceFee, protocolFee);
         VaultStorage storage $ = _getVaultStorage();
         $.claimableSilo = new Silo(underlying);
         $.pendingSilo = new Silo(underlying);
@@ -512,8 +518,10 @@ contract Vault is
         // caching the value
         uint256 epochId = $.epochId;
 
-        // First we update the vault value.
+        // First we update the vault value and collect fees.
+        _collectFees($.newTotalAssets);
         $.totalAssets = $.newTotalAssets;
+        // First we update the vault value.
 
         // Then we proceed the deposit request and save the deposit parameters
         uint256 pendingAssets = IERC20(asset()).balanceOf(
@@ -585,5 +593,47 @@ contract Vault is
         returns (bool)
     {
         return true;
+    }
+
+    function setProtocolFeeSwitch(
+        bool isActivated
+    ) external onlyRole(HOPPER_ROLE) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        $.protocolFeeSwitch = isActivated;
+    }
+
+    function _collectFees(
+        uint256 newTotalAssets
+    ) internal override onlyRole(VALORIZATION_ROLE) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+
+        uint256 managementFee = calculateManagementFee(newTotalAssets);
+        uint256 performanceFee = calculatePerformanceFee(newTotalAssets);
+        (uint256 managementFees, uint256 protocolFee) = calculateProtocolFee(
+            managementFee + performanceFee
+        );
+
+        $.lastFeeTime = block.timestamp;
+
+        if (newTotalAssets > $.highWaterMark) {
+            $.highWaterMark = newTotalAssets;
+        }
+
+        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+        address hopperDao = getRoleMember(HOPPER_ROLE, 0);
+        uint256 totalSupply = totalSupply();
+
+        if (managementFees > 0) {
+            uint256 newShares = managementFees.mulDiv(
+                totalSupply,
+                newTotalAssets
+            );
+            _mint(assetManager, newShares);
+        }
+
+        if (protocolFee > 0) {
+            uint256 newShares = protocolFee.mulDiv(totalSupply, newTotalAssets);
+            _mint(hopperDao, newShares);
+        }
     }
 }
