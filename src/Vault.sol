@@ -55,10 +55,10 @@ contract Vault is
         mapping(address user => uint256 epochId) lastRedeemRequestId;
     }
 
-    // keccak256(abi.encode(uint256(keccak256("hopperprotocol.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
+    // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant HopperVaultStorage =
-        0xfdb0cd9880e84ca0b573fff91a05faddfecad925c5f393111a47359314e28e00;
+        0x0e6b3200a60a991c539f47dddaca04a18eb4bcf2b53906fb44751d827f001400;
 
     function _getVaultStorage() internal pure returns (VaultStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
