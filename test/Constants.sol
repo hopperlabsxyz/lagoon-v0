@@ -99,7 +99,10 @@ abstract contract Constants is Test {
                 vaultSymbol,
                 address(this),
                 address(this),
-                address(this)
+                address(this),
+                0,
+                0,
+                0
             );
             vm.stopPrank();
         }
@@ -135,7 +138,10 @@ abstract contract Constants is Test {
                             _vaultSymbol,
                             address(this),
                             address(this),
-                            address(this)
+                            address(this),
+                            0,
+                            0,
+                            0
                         )
                     )
                 )

@@ -6,9 +6,9 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 struct FeeManagerStorage {
-    address manager;
     uint256 managementFee;
     uint256 performanceFee;
+    uint256 protocolFee;
     uint256 lastFeeTime;
     uint256 highWaterMark;
 }
@@ -30,13 +30,13 @@ abstract contract FeeManager is Initializable {
       }
     }
 
-    function initialize(uint256 _highWaterMark, uint256 _managementFee, uint256 _performanceFee, address _manager) public {
+    function __FeeManager_init(uint256 _managementFee, uint256 _performanceFee, uint256 _protocolFee) internal onlyInitializing {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.manager = _manager;
+        $.highWaterMark = 0;
         $.managementFee = _managementFee;
         $.performanceFee = _performanceFee;
+        $.protocolFee = _protocolFee;
         $.lastFeeTime = block.timestamp;
-        $.highWaterMark = _highWaterMark;
     }
 
     function managementFee() external view returns(uint256){
@@ -80,6 +80,10 @@ abstract contract FeeManager is Initializable {
           return profit.mulDiv($.performanceFee, BPS_DIVIDER, Math.Rounding.Floor);
         }
         return 0;
+    }
+
+    function calculateProtocolFee(uint256) internal pure returns (uint256) {
+      return 0;
     }
 
     function _collectFees(uint256 newTotalAssets) internal virtual;

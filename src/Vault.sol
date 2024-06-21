@@ -79,12 +79,16 @@ contract Vault is
         string memory symbol,
         address assetManager,
         address valorization,
-        address admin
+        address admin,
+        uint256 managementFee,
+        uint256 performanceFee,
+        uint256 protocolFee
     ) public virtual initializer {
         __ERC4626_init(underlying);
         __ERC20_init(name, symbol);
         __ERC20Permit_init(name);
         __ERC20Pausable_init();
+        __FeeManager_init(managementFee, performanceFee, protocolFee);
         VaultStorage storage $ = _getVaultStorage();
         $.claimableSilo = new Silo(underlying);
         $.pendingSilo = new Silo(underlying);
@@ -470,8 +474,9 @@ contract Vault is
     ) public onlyRole(VALORIZATION_ROLE) {
         VaultStorage storage $ = _getVaultStorage();
 
-        // First we update the vault value.
+        // First we update the vault value and collect fees.
         $.totalAssets = newTotalAssets;
+        _collectFees(newTotalAssets);
 
         // Then we proceed the deposit request and save the deposit parameters
         $.epochs[$.epochId].totalAssetsDeposit = $.totalAssets;
@@ -548,6 +553,7 @@ contract Vault is
 
         uint256 managementFee = calculateManagementFee(newTotalAssets);
         uint256 performanceFee = calculatePerformanceFee(newTotalAssets);
+        uint256 protocolFee = calculateProtocolFee(newTotalAssets);
 
         $.lastFeeTime = block.timestamp;
 
@@ -555,13 +561,23 @@ contract Vault is
           $.highWaterMark = newTotalAssets;
         }
 
-        address manager = $.manager;
+        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+        address hopperDao = getRoleMember(HOPPER_ROLE, 0);
+        uint256 totalSupply = totalSupply();
+
         if (managementFee > 0) {
-            payable(manager).transfer(managementFee);
+            uint256 newShares = managementFee.mulDiv(totalSupply, newTotalAssets);
+            _mint(assetManager, newShares);
         }
 
         if (performanceFee > 0) {
-            payable(manager).transfer(performanceFee);
+            uint256 newShares = performanceFee.mulDiv(totalSupply, newTotalAssets);
+            _mint(assetManager, newShares);
+        }
+
+        if (protocolFee > 0) {
+            uint256 newShares = protocolFee.mulDiv(totalSupply, newTotalAssets);
+            _mint(hopperDao, newShares);
         }
     }
 }
