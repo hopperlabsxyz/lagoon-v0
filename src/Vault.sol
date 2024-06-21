@@ -548,12 +548,17 @@ contract Vault is
         return true;
     }
 
+    function setProtocolFeeSwitch(bool isActivated) external onlyRole(HOPPER_ROLE) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        $.protocolFeeSwitch = isActivated;
+    }
+
     function _collectFees(uint256 newTotalAssets) internal override onlyRole(VALORIZATION_ROLE) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 managementFee = calculateManagementFee(newTotalAssets);
         uint256 performanceFee = calculatePerformanceFee(newTotalAssets);
-        uint256 protocolFee = calculateProtocolFee(newTotalAssets);
+        (uint256 managementFees, uint256 protocolFee) = calculateProtocolFee(managementFee + performanceFee);
 
         $.lastFeeTime = block.timestamp;
 
@@ -565,13 +570,9 @@ contract Vault is
         address hopperDao = getRoleMember(HOPPER_ROLE, 0);
         uint256 totalSupply = totalSupply();
 
-        if (managementFee > 0) {
-            uint256 newShares = managementFee.mulDiv(totalSupply, newTotalAssets);
-            _mint(assetManager, newShares);
-        }
 
-        if (performanceFee > 0) {
-            uint256 newShares = performanceFee.mulDiv(totalSupply, newTotalAssets);
+        if (managementFees > 0) {
+            uint256 newShares = managementFees.mulDiv(totalSupply, newTotalAssets);
             _mint(assetManager, newShares);
         }
 
