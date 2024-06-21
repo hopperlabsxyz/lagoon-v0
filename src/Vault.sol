@@ -6,6 +6,12 @@ import {ERC7540Upgradeable} from "./ERC7540.sol";
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {IAccessControl, AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
+import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import {ERC20Upgradeable, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager, FeeManagerStorage} from "./FeeManager.sol";
 // import {console} from "forge-std/console.sol";
@@ -22,6 +28,8 @@ bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
 
 contract Vault is
     ERC7540Upgradeable,
+    ERC20BurnableUpgradeable,
+    ERC20PermitUpgradeable,
     AccessControlEnumerableUpgradeable,
     FeeManager
 {
@@ -85,6 +93,23 @@ contract Vault is
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
+    function _update(
+        address from,
+        address to,
+        uint256 value
+    ) internal virtual override(ERC7540Upgradeable, ERC20Upgradeable) {
+        return ERC20PausableUpgradeable._update(from, to, value);
+    }
+
+    function decimals()
+        public
+        view
+        override(ERC20Upgradeable, ERC7540Upgradeable)
+        returns (uint8)
+    {
+        return ERC4626Upgradeable.decimals();
+    }
+
     function _computeFees(
         uint256 previousBalance,
         uint256 newBalance,
@@ -110,78 +135,6 @@ contract Vault is
         $.newTotalAssets = _newTotalAssets;
         $.newTotalAssetsTimestamp = block.timestamp;
     }
-
-    // function settle() public onlyRole(VALORIZATION_ROLE) {
-    //     VaultStorage storage $ = _getVaultStorage();
-
-    //     // we allowe to settle only if the newTotalAssets:
-    //     // - is not to recent (must be > 1 day)
-    //     // - is not to old (must be < 2 days)
-    //     require(
-    //         $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown <=
-    //             block.timestamp
-    //     );
-    //     // require($.newTotalAssetsTimestamp + 2 days >= block.timestamp);
-
-    //     // avoid settle using same newTotalAssets input
-    //     $.newTotalAssetsTimestamp = 0;
-
-    //     // caching the value
-    //     uint256 epochId = $.epochId;
-
-    //     // First we update the vault value and collect fees.
-    //     _collectFees($.newTotalAssets);
-    //     $.totalAssets = $.newTotalAssets;
-    //     // First we update the vault value.
-
-    //     // Then we proceed the deposit request and save the deposit parameters
-    //     uint256 pendingAssets = IERC20(asset()).balanceOf(
-    //         address($.pendingSilo)
-    //     );
-    //     if (pendingAssets > 0) {
-    //         $.epochs[epochId].totalAssetsDeposit = $.totalAssets;
-    //         $.epochs[epochId].totalSupplyDeposit = totalSupply();
-    //         uint256 shares = _convertToShares(
-    //             pendingAssets,
-    //             Math.Rounding.Floor
-    //         );
-    //         _mint(address($.claimableSilo), shares);
-    //         $.totalAssets += pendingAssets;
-    //     }
-
-    //     // Then we proceed the redeem request and save the redeem parameters
-    //     uint256 assets = _convertToAssets(
-    //         balanceOf(address($.pendingSilo)),
-    //         Math.Rounding.Floor
-    //     );
-    //     if (assets > 0) {
-    //         $.epochs[epochId].totalAssetsRedeem = $.totalAssets;
-    //         $.epochs[epochId].totalSupplyRedeem = totalSupply();
-    //         _burn(address($.pendingSilo), balanceOf(address($.pendingSilo)));
-    //         $.totalAssets -= assets;
-    //         $.toUnwind += assets;
-    //     }
-
-    //     // Then we put a maximum of assets in the claimable silo so that user can claim
-    //     if (pendingAssets > 0 && $.toUnwind > 0)
-    //         _unwind(pendingAssets, pendingSilo());
-
-    //     // If there is a surplus of assets, we send those to the asset manager
-    //     pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
-
-    //     if (pendingAssets > 0) {
-    //         address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
-    //         // there must be an asset manager
-    //         require(assetManager != address(0));
-    //         IERC20(asset()).safeTransferFrom(
-    //             pendingSilo(),
-    //             assetManager,
-    //             pendingAssets
-    //         );
-    //     }
-
-    //     $.epochId++;
-    // }
 
     function settle() public override onlyRole(VALORIZATION_ROLE) {
         VaultStorage storage $ = _getVaultStorage();
