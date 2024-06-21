@@ -53,6 +53,11 @@ contract Vault is
         mapping(uint256 epochId => EpochData epoch) epochs;
         mapping(address user => uint256 epochId) lastDepositRequestId;
         mapping(address user => uint256 epochId) lastRedeemRequestId;
+        // totalAssets maj
+        uint256 newTotalAssets;
+        uint256 newTotalAssetsTimestamp;
+        uint256 newTotalAssetsCooldown;
+        // uint256 newTotalAssetsExpiry;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
@@ -82,7 +87,8 @@ contract Vault is
         address admin,
         uint256 managementFee,
         uint256 performanceFee,
-        uint256 protocolFee
+        uint256 protocolFee,
+        uint256 cooldown
     ) public virtual initializer {
         __ERC4626_init(underlying);
         __ERC20_init(name, symbol);
@@ -93,16 +99,15 @@ contract Vault is
         $.claimableSilo = new Silo(underlying);
         $.pendingSilo = new Silo(underlying);
         $.epochId = 1;
+        $.newTotalAssetsCooldown = cooldown;
 
         _grantRole(HOPPER_ROLE, address(2)); // TODO PUT A REAL ADDRESS
         _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE); // only hopper manage itself
         _grantRole(ASSET_MANAGER_ROLE, assetManager);
         _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
-        // console.log(getRoleMemberCount(ASSET_MANAGER_ROLE));
 
         _grantRole(VALORIZATION_ROLE, valorization);
         _setRoleAdmin(VALORIZATION_ROLE, DEFAULT_ADMIN_ROLE);
-        // console.log(getRoleMemberCount(VALORIZATION_ROLE));
 
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
@@ -469,22 +474,62 @@ contract Vault is
         return address($.claimableSilo);
     }
 
-    function settle(
-        uint256 newTotalAssets
+    function _computeFees(
+        uint256 previousBalance,
+        uint256 newBalance,
+        uint256 feesInBps
+    ) internal pure returns (uint256 fees) {
+        if (newBalance > previousBalance && feesInBps > 0) {
+            uint256 profits;
+            unchecked {
+                profits = newBalance - previousBalance;
+            }
+            fees = (profits).mulDiv(
+                feesInBps,
+                BPS_DIVIDER,
+                Math.Rounding.Floor
+            );
+        }
+    }
+
+    function updateTotalAssets(
+        uint256 _newTotalAssets
     ) public onlyRole(VALORIZATION_ROLE) {
         VaultStorage storage $ = _getVaultStorage();
+        $.newTotalAssets = _newTotalAssets;
+        $.newTotalAssetsTimestamp = block.timestamp;
+    }
+
+    function settle() public onlyRole(VALORIZATION_ROLE) {
+        VaultStorage storage $ = _getVaultStorage();
+
+        // we allowe to settle only if the newTotalAssets:
+        // - is not to recent (must be > 1 day)
+        // - is not to old (must be < 2 days)
+        require(
+            $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown <=
+                block.timestamp
+        );
+        // require($.newTotalAssetsTimestamp + 2 days >= block.timestamp);
+
+        // avoid settle using same newTotalAssets input
+        $.newTotalAssetsTimestamp = 0;
+
+        // caching the value
+        uint256 epochId = $.epochId;
 
         // First we update the vault value and collect fees.
-        $.totalAssets = newTotalAssets;
-        _collectFees(newTotalAssets);
+        _collectFees($.newTotalAssets);
+        $.totalAssets = $.newTotalAssets;
+        // First we update the vault value.
 
         // Then we proceed the deposit request and save the deposit parameters
-        $.epochs[$.epochId].totalAssetsDeposit = $.totalAssets;
-        $.epochs[$.epochId].totalSupplyDeposit = totalSupply();
         uint256 pendingAssets = IERC20(asset()).balanceOf(
             address($.pendingSilo)
         );
         if (pendingAssets > 0) {
+            $.epochs[epochId].totalAssetsDeposit = $.totalAssets;
+            $.epochs[epochId].totalSupplyDeposit = totalSupply();
             uint256 shares = _convertToShares(
                 pendingAssets,
                 Math.Rounding.Floor
@@ -494,13 +539,13 @@ contract Vault is
         }
 
         // Then we proceed the redeem request and save the redeem parameters
-        $.epochs[$.epochId].totalAssetsRedeem = $.totalAssets;
-        $.epochs[$.epochId].totalSupplyRedeem = totalSupply();
         uint256 assets = _convertToAssets(
             balanceOf(address($.pendingSilo)),
             Math.Rounding.Floor
         );
         if (assets > 0) {
+            $.epochs[epochId].totalAssetsRedeem = $.totalAssets;
+            $.epochs[epochId].totalSupplyRedeem = totalSupply();
             _burn(address($.pendingSilo), balanceOf(address($.pendingSilo)));
             $.totalAssets -= assets;
             $.toUnwind += assets;
@@ -513,14 +558,16 @@ contract Vault is
         // If there is a surplus of assets, we send those to the asset manager
         pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
 
-        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
-        require(assetManager != address(0));
-        if (pendingAssets > 0)
+        if (pendingAssets > 0) {
+            address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+            // there must be an asset manager
+            require(assetManager != address(0));
             IERC20(asset()).safeTransferFrom(
                 pendingSilo(),
                 assetManager,
                 pendingAssets
             );
+        }
 
         $.epochId++;
     }
@@ -548,31 +595,39 @@ contract Vault is
         return true;
     }
 
-    function setProtocolFeeSwitch(bool isActivated) external onlyRole(HOPPER_ROLE) {
+    function setProtocolFeeSwitch(
+        bool isActivated
+    ) external onlyRole(HOPPER_ROLE) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         $.protocolFeeSwitch = isActivated;
     }
 
-    function _collectFees(uint256 newTotalAssets) internal override onlyRole(VALORIZATION_ROLE) {
+    function _collectFees(
+        uint256 newTotalAssets
+    ) internal override onlyRole(VALORIZATION_ROLE) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 managementFee = calculateManagementFee(newTotalAssets);
         uint256 performanceFee = calculatePerformanceFee(newTotalAssets);
-        (uint256 managementFees, uint256 protocolFee) = calculateProtocolFee(managementFee + performanceFee);
+        (uint256 managementFees, uint256 protocolFee) = calculateProtocolFee(
+            managementFee + performanceFee
+        );
 
         $.lastFeeTime = block.timestamp;
 
         if (newTotalAssets > $.highWaterMark) {
-          $.highWaterMark = newTotalAssets;
+            $.highWaterMark = newTotalAssets;
         }
 
         address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
         address hopperDao = getRoleMember(HOPPER_ROLE, 0);
         uint256 totalSupply = totalSupply();
 
-
         if (managementFees > 0) {
-            uint256 newShares = managementFees.mulDiv(totalSupply, newTotalAssets);
+            uint256 newShares = managementFees.mulDiv(
+                totalSupply,
+                newTotalAssets
+            );
             _mint(assetManager, newShares);
         }
 

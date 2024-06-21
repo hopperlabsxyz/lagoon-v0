@@ -15,7 +15,7 @@ contract TestSettle is BaseTest {
         requestDeposit(user1Assets / 2, user1.addr);
         dealAndApprove(user2.addr);
 
-        settle(0);
+        updateAndSettle(0);
         deposit(user1Assets / 2, user1.addr);
     }
 
@@ -30,7 +30,7 @@ contract TestSettle is BaseTest {
         uint256 totalAssets = vault.totalAssets();
         uint256 totalSupply = vault.totalSupply();
 
-        settle(totalAssets.mulDiv(150, 100));
+        updateAndSettle(totalAssets.mulDiv(150, 100));
 
         // when settle-deposit:
         uint256 totalAssetsWhenDeposit = totalAssets.mulDiv(150, 100);
@@ -58,4 +58,22 @@ contract TestSettle is BaseTest {
                 )
         );
     }
+
+    function test_settleAfterUpdate_TooSoon() public {
+        updateTotalAssets(1);
+
+        vm.startPrank(vault.vaultValorizationRole());
+        vm.expectRevert();
+        vault.settle();
+        vm.stopPrank();
+    }
+
+    // function test_settleAfterUpdate_TooLate() public {
+    //     updateTotalAssets(1);
+    //     vm.warp(block.timestamp + 3 days);
+    //     vm.startPrank(vault.vaultValorizationRole());
+    //     vm.expectRevert();
+    //     vault.settle();
+    //     vm.stopPrank();
+    // }
 }
