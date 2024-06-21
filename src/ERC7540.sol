@@ -3,9 +3,7 @@ pragma solidity "0.8.25";
 import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
-import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, ERC20Upgradeable, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
@@ -38,9 +36,7 @@ using Math for uint256;
 abstract contract ERC7540Upgradeable is
     IERC7540Redeem,
     IERC7540Deposit,
-    ERC20BurnableUpgradeable,
     ERC20PausableUpgradeable,
-    ERC20PermitUpgradeable,
     ERC4626Upgradeable
 {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
@@ -80,6 +76,7 @@ abstract contract ERC7540Upgradeable is
     function decimals()
         public
         view
+        virtual
         override(ERC4626Upgradeable, ERC20Upgradeable, IERC20Metadata)
         returns (uint8)
     {
