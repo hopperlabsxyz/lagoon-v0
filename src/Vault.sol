@@ -607,7 +607,8 @@ contract Vault is
 
         uint256 managementFee = calculateManagementFee(newTotalAssets);
         uint256 performanceFee = calculatePerformanceFee(newTotalAssets);
-        (uint256 managementFees, uint256 protocolFee) = calculateProtocolFee(
+
+        (uint256 managerFees, uint256 protocolFee) = calculateProtocolFee(
             managementFee + performanceFee
         );
 
@@ -621,8 +622,8 @@ contract Vault is
         address hopperDao = getRoleMember(HOPPER_ROLE, 0);
         uint256 totalSupply = totalSupply();
 
-        if (managementFees > 0) {
-            uint256 newShares = managementFees.mulDiv(
+        if (managerFees > 0) {
+            uint256 newShares = managerFees.mulDiv(
                 totalSupply,
                 newTotalAssets
             );
