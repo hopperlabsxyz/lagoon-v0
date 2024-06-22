@@ -84,14 +84,14 @@ abstract contract FeeManager is Initializable {
         return 0;
     }
 
-    function calculateProtocolFee(uint256 _managementFees) internal view returns (uint256 managementFees, uint256 protocolFees) {
+    function calculateProtocolFee(uint256 _assetsFees) internal view returns (uint256 managerFees, uint256 protocolFees) {
       FeeManagerStorage storage $ = _getFeeManagerStorage();
       if ($.protocolFeeSwitch) {
-        protocolFees = _managementFees.mulDiv($.protocolFee, BPS_DIVIDER, Math.Rounding.Floor);
-        managementFees = _managementFees - protocolFees;
+        protocolFees = _assetsFees.mulDiv($.protocolFee, BPS_DIVIDER, Math.Rounding.Floor);
+        managerFees = _assetsFees - protocolFees;
       } else {
         protocolFees = 0;
-        managementFees = _managementFees;
+        managerFees = _assetsFees;
       }
     }
 
