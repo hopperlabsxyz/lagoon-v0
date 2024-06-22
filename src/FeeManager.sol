@@ -11,7 +11,6 @@ struct FeeManagerStorage {
     uint256 protocolFee;
     uint256 lastFeeTime;
     uint256 highWaterMark;
-    bool protocolFeeSwitch;
 }
 
 uint256 constant ONE_YEAR = 365 days;
@@ -38,7 +37,6 @@ abstract contract FeeManager is Initializable {
         $.performanceFee = _performanceFee;
         $.protocolFee = _protocolFee;
         $.lastFeeTime = block.timestamp;
-        $.protocolFeeSwitch = false;
     }
 
     function managementFee() external view returns(uint256){
@@ -86,7 +84,7 @@ abstract contract FeeManager is Initializable {
 
     function calculateProtocolFee(uint256 _assetsFees) internal view returns (uint256 managerFees, uint256 protocolFees) {
       FeeManagerStorage storage $ = _getFeeManagerStorage();
-      if ($.protocolFeeSwitch) {
+      if ($.protocolFee > 0) {
         protocolFees = _assetsFees.mulDiv($.protocolFee, BPS_DIVIDER, Math.Rounding.Floor);
         managerFees = _assetsFees - protocolFees;
       } else {
@@ -96,5 +94,7 @@ abstract contract FeeManager is Initializable {
     }
 
     function _collectFees(uint256 newTotalAssets) internal virtual;
+
+    function setProtocolFee(uint256 protocolFee) external virtual;
 }
 
