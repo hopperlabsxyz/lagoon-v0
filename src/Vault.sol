@@ -2,7 +2,7 @@
 pragma solidity "0.8.25";
 
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {ERC7540Upgradeable} from "./ERC7540.sol";
+import {ERC7540Upgradeable, ERC7540Storage, EpochData} from "./ERC7540.sol";
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {IAccessControl, AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -137,36 +137,41 @@ contract Vault is
     }
 
     function settle() public override onlyRole(VALORIZATION_ROLE) {
-        VaultStorage storage $ = _getVaultStorage();
+        VaultStorage storage $vault = _getVaultStorage();
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         // we allowe to settle only if the newTotalAssets:
         // - is not to recent (must be > $.newTotalAssetsCooldown
         require(
-            $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown <=
+            $vault.newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown <=
                 block.timestamp
         );
 
         // avoid settle using same newTotalAssets input
-        $.newTotalAssetsTimestamp = 0;
+        $vault.newTotalAssetsTimestamp = 0;
 
         // caching the value
-        uint256 epochId = epochId();
+        uint256 epochId = $erc7540.epochId;
 
         // First we update the vault value and collect fees.
-        _collectFees($.newTotalAssets);
-        setTotalAssets($.newTotalAssets);
+        _collectFees($vault.newTotalAssets);
+        $erc7540.totalAssets = $vault.newTotalAssets;
+
+        EpochData storage epoch = $erc7540.epochs[epochId];
+        uint256 totalAssets = totalAssets();
+        uint256 totalSupply = totalSupply();
 
         // Then we proceed the deposit request and save the deposit parameters
         uint256 pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
         if (pendingAssets > 0) {
-            setTotalAssetsDeposit(totalAssets(), epochId);
-            setTotalSupplyDeposit(totalSupply(), epochId);
+            epoch.totalAssetsDeposit = totalAssets;
+            epoch.totalSupplyDeposit = totalSupply;
             uint256 shares = _convertToShares(
                 pendingAssets,
                 Math.Rounding.Floor
             );
             _mint(claimableSilo(), shares);
-            setTotalAssets(totalAssets() + pendingAssets);
+            $erc7540.totalAssets = totalAssets + pendingAssets;
         }
 
         // Then we proceed the redeem request and save the redeem parameters
@@ -175,15 +180,15 @@ contract Vault is
             Math.Rounding.Floor
         );
         if (assets > 0) {
-            setTotalAssetsRedeem(totalAssets(), epochId);
-            setTotalSupplyRedeem(totalSupply(), epochId);
+            epoch.totalAssetsRedeem = totalAssets;
+            epoch.totalSupplyRedeem = totalSupply;
             _burn(pendingSilo(), balanceOf(pendingSilo()));
-            setTotalAssets(totalAssets() - assets);
-            $.toUnwind += assets;
+            $erc7540.totalAssets = totalAssets - assets;
+            $vault.toUnwind += assets;
         }
 
         // Then we put a maximum of assets in the claimable silo so that user can claim
-        if (pendingAssets > 0 && $.toUnwind > 0)
+        if (pendingAssets > 0 && $vault.toUnwind > 0)
             _unwind(pendingAssets, pendingSilo());
 
         // If there is a surplus of assets, we send those to the asset manager
@@ -200,7 +205,7 @@ contract Vault is
             );
         }
 
-        increaseEpochId();
+        $erc7540.epochId = epochId + 1;
     }
 
     function unwind(uint256 amount) external onlyRole(ASSET_MANAGER_ROLE) {
