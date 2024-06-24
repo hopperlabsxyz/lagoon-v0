@@ -2,7 +2,7 @@
 pragma solidity 0.8.25;
 
 import "forge-std/Test.sol";
-import {Vault, IERC20Metadata} from "@src/Vault.sol";
+import {Vault} from "@src/Vault.sol";
 import {BaseTest} from "./Base.t.sol";
 
 contract TestFeeManager is BaseTest {
