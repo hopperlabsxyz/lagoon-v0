@@ -487,47 +487,47 @@ abstract contract ERC7540Upgradeable is
         return $.epochId;
     }
 
-    function setTotalAssets(uint256 _totalAssets) internal {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        $.totalAssets = _totalAssets;
-    }
+    // function setTotalAssets(uint256 _totalAssets) internal {
+    //     ERC7540Storage storage $ = _getERC7540Storage();
+    //     $.totalAssets = _totalAssets;
+    // }
 
-    function setTotalAssetsDeposit(
-        uint256 _totalAssets,
-        uint256 _epochId
-    ) internal {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        $.epochs[_epochId].totalAssetsDeposit = _totalAssets;
-    }
+    // function setTotalAssetsDeposit(
+    //     uint256 _totalAssets,
+    //     uint256 _epochId
+    // ) internal {
+    //     ERC7540Storage storage $ = _getERC7540Storage();
+    //     $.epochs[_epochId].totalAssetsDeposit = _totalAssets;
+    // }
 
-    function setTotalSupplyDeposit(
-        uint256 _totalSupply,
-        uint256 _epochId
-    ) internal {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        $.epochs[_epochId].totalSupplyDeposit = _totalSupply;
-    }
+    // function setTotalSupplyDeposit(
+    //     uint256 _totalSupply,
+    //     uint256 _epochId
+    // ) internal {
+    //     ERC7540Storage storage $ = _getERC7540Storage();
+    //     $.epochs[_epochId].totalSupplyDeposit = _totalSupply;
+    // }
 
-    function setTotalAssetsRedeem(
-        uint256 _totalAssets,
-        uint256 _epochId
-    ) internal {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        $.epochs[_epochId].totalAssetsRedeem = _totalAssets;
-    }
+    // function setTotalAssetsRedeem(
+    //     uint256 _totalAssets,
+    //     uint256 _epochId
+    // ) internal {
+    //     ERC7540Storage storage $ = _getERC7540Storage();
+    //     $.epochs[_epochId].totalAssetsRedeem = _totalAssets;
+    // }
 
-    function setTotalSupplyRedeem(
-        uint256 _totalSupply,
-        uint256 _epochId
-    ) internal {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        $.epochs[_epochId].totalSupplyRedeem = _totalSupply;
-    }
+    // function setTotalSupplyRedeem(
+    //     uint256 _totalSupply,
+    //     uint256 _epochId
+    // ) internal {
+    //     ERC7540Storage storage $ = _getERC7540Storage();
+    //     $.epochs[_epochId].totalSupplyRedeem = _totalSupply;
+    // }
 
-    function increaseEpochId() internal {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        $.epochId++;
-    }
+    // function increaseEpochId() internal {
+    //     ERC7540Storage storage $ = _getERC7540Storage();
+    //     $.epochId++;
+    // }
 
     function settle() public virtual;
 }
