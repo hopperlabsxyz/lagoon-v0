@@ -441,7 +441,7 @@ abstract contract ERC7540Upgradeable is
         uint256 request = $.epochs[$.epochId].redeemRequest[msgSender];
         require(request > 0);
         $.epochs[$.epochId].redeemRequest[msgSender] = 0;
-        transferFrom(pendingSilo(), msgSender, request);
+        _transfer(pendingSilo(), msgSender, request);
     }
 
     // ## Conversion functions ##
