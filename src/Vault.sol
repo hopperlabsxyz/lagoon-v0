@@ -13,7 +13,7 @@ import {IAccessControl, AccessControlUpgradeable} from "@openzeppelin/contracts-
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Silo} from "./Silo.sol";
-import {FeeManager, FeeManagerStorage} from "./FeeManager.sol";
+import {FeeManager, FeeManagerStorage, FeeSchema} from "./FeeManager.sol";
 // import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
@@ -29,6 +29,13 @@ struct EpochData {
     uint256 totalSupplyRedeem;
     mapping(address => uint256) depositRequest;
     mapping(address => uint256) redeemRequest;
+}
+
+struct RoleSchema {
+    address assetManager;
+    address valorization;
+    address admin;
+    address dao;
 }
 
 bytes32 constant ASSET_MANAGER_ROLE = keccak256("ASSET_MANAGER");
@@ -82,35 +89,31 @@ contract Vault is
         IERC20 underlying,
         string memory name,
         string memory symbol,
-        address assetManager,
-        address valorization,
-        address admin,
-        uint256 managementFee,
-        uint256 performanceFee,
-        uint256 protocolFee,
+        RoleSchema calldata roleSchema,
+        FeeSchema calldata feeSchema,
         uint256 cooldown
     ) public virtual initializer {
         __ERC4626_init(underlying);
         __ERC20_init(name, symbol);
         __ERC20Permit_init(name);
         __ERC20Pausable_init();
-        __FeeManager_init(managementFee, performanceFee, protocolFee);
+        __FeeManager_init(feeSchema);
         VaultStorage storage $ = _getVaultStorage();
         $.claimableSilo = new Silo(underlying);
         $.pendingSilo = new Silo(underlying);
         $.epochId = 1;
         $.newTotalAssetsCooldown = cooldown;
 
-        _grantRole(HOPPER_ROLE, address(2)); // TODO PUT A REAL ADDRESS
+        _grantRole(HOPPER_ROLE, roleSchema.dao); // TODO PUT A REAL ADDRESS
         _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE); // only hopper manage itself
 
-        _grantRole(ASSET_MANAGER_ROLE, assetManager);
+        _grantRole(ASSET_MANAGER_ROLE, roleSchema.assetManager);
         _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
 
-        _grantRole(VALORIZATION_ROLE, valorization);
+        _grantRole(VALORIZATION_ROLE, roleSchema.valorization);
         _setRoleAdmin(VALORIZATION_ROLE, DEFAULT_ADMIN_ROLE);
 
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        _grantRole(DEFAULT_ADMIN_ROLE, roleSchema.admin);
     }
 
     // ## Overrides ##
