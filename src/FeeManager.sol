@@ -117,7 +117,7 @@ abstract contract FeeManager is Initializable {
 
     function setPerformanceFee(uint256 _performanceFee) public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.managementFee = _performanceFee;
+        $.performanceFee = _performanceFee;
     }
 
     function _collectFees(uint256 newTotalAssets) internal virtual;
