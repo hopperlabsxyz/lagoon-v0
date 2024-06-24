@@ -92,8 +92,17 @@ abstract contract Constants is Test {
             beacon = _beaconDeploy("Vault.sol", owner.addr);
             vault = _proxyDeploy(beacon, underlying, vaultName, vaultSymbol);
         } else {
-            FeeSchema memory _feeSchema = FeeSchema({managementFee: 0, performanceFee: 0, protocolFee: 0});
-            RoleSchema memory _roleSchema = RoleSchema({assetManager: address(this), valorization: address(this), admin: address(this), dao: address(this)});
+            FeeSchema memory _feeSchema = FeeSchema({
+                managementFee: 0,
+                performanceFee: 0,
+                protocolFee: 0
+            });
+            RoleSchema memory _roleSchema = RoleSchema({
+                assetManager: address(this),
+                valorization: address(this),
+                admin: address(this),
+                dao: address(this)
+            });
             vm.startPrank(owner.addr);
             vault = new VaultHelper(false);
             vault.initialize(
@@ -126,8 +135,17 @@ abstract contract Constants is Test {
         string memory _vaultName,
         string memory _vaultSymbol
     ) internal returns (VaultHelper) {
-        FeeSchema memory _feeSchema = FeeSchema({managementFee: 0, performanceFee: 0, protocolFee: 0});
-        RoleSchema memory _roleSchema = RoleSchema({assetManager: address(this), valorization: address(this), admin: address(this), dao: address(this)});
+        FeeSchema memory _feeSchema = FeeSchema({
+            managementFee: 0,
+            performanceFee: 0,
+            protocolFee: 0
+        });
+        RoleSchema memory _roleSchema = RoleSchema({
+            assetManager: address(this),
+            valorization: address(this),
+            admin: address(this),
+            dao: address(this)
+        });
         BeaconProxy proxy = BeaconProxy(
             payable(
                 Upgrades.deployBeaconProxy(

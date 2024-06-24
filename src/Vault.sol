@@ -231,21 +231,25 @@ contract Vault is
         return true;
     }
 
-    function setProtocolFee(uint256 _protocolFee) public override onlyRole(HOPPER_ROLE) {
+    function setProtocolFee(
+        uint256 _protocolFee
+    ) public override onlyRole(HOPPER_ROLE) {
         super.setProtocolFee(_protocolFee);
     }
 
-    function setManagementFee(uint256 _managementFee) public override onlyRole(ASSET_MANAGER_ROLE) {
+    function setManagementFee(
+        uint256 _managementFee
+    ) public override onlyRole(ASSET_MANAGER_ROLE) {
         super.setManagementFee(_managementFee);
     }
 
-    function setPerformanceFee(uint256 _performanceFee) public override onlyRole(ASSET_MANAGER_ROLE) {
-      super.setPerformanceFee(_performanceFee);
+    function setPerformanceFee(
+        uint256 _performanceFee
+    ) public override onlyRole(ASSET_MANAGER_ROLE) {
+        super.setPerformanceFee(_performanceFee);
     }
 
-    function _collectFees(
-        uint256 newTotalAssets
-    ) internal override {
+    function _collectFees(uint256 newTotalAssets) internal override {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 _averageAUM = (newTotalAssets + totalAssets()) / 2;
@@ -269,10 +273,7 @@ contract Vault is
         uint256 totalSupply = totalSupply();
 
         if (managerFees > 0) {
-            uint256 newShares = managerFees.mulDiv(
-                totalSupply,
-                newTotalAssets
-            );
+            uint256 newShares = managerFees.mulDiv(totalSupply, newTotalAssets);
             _mint(assetManager, newShares);
         }
 

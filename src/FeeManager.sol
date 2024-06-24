@@ -39,7 +39,9 @@ abstract contract FeeManager is Initializable {
         }
     }
 
-    function __FeeManager_init(FeeSchema calldata feeSchema) internal onlyInitializing {
+    function __FeeManager_init(
+        FeeSchema calldata feeSchema
+    ) internal onlyInitializing {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         $.highWaterMark = 0;
@@ -59,14 +61,14 @@ abstract contract FeeManager is Initializable {
         return $.performanceFee;
     }
 
-    function protocolFee() external view returns(uint256){
-      FeeManagerStorage storage $ = _getFeeManagerStorage();
-      return $.protocolFee;
+    function protocolFee() external view returns (uint256) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        return $.protocolFee;
     }
 
-    function lastFeeTime() external view returns(uint256){
-      FeeManagerStorage storage $ = _getFeeManagerStorage();
-      return $.lastFeeTime;
+    function lastFeeTime() external view returns (uint256) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        return $.lastFeeTime;
     }
 
     function highWaterMark() external view returns (uint256) {
@@ -74,38 +76,57 @@ abstract contract FeeManager is Initializable {
         return $.highWaterMark;
     }
 
-    function calculateManagementFee(uint256 _averageAUM) public view returns (uint256) {
+    function calculateManagementFee(
+        uint256 _averageAUM
+    ) public view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         uint256 timeElapsed;
         unchecked {
             timeElapsed = block.timestamp - $.lastFeeTime;
         }
-        uint256 annualFee = _averageAUM.mulDiv($.managementFee, BPS_DIVIDER, Math.Rounding.Floor);
+        uint256 annualFee = _averageAUM.mulDiv(
+            $.managementFee,
+            BPS_DIVIDER,
+            Math.Rounding.Floor
+        );
         return annualFee.mulDiv(timeElapsed, ONE_YEAR);
     }
 
-    function calculatePerformanceFee(uint256 _netAUM) public view returns (uint256) {
+    function calculatePerformanceFee(
+        uint256 _netAUM
+    ) public view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         uint256 hwm = $.highWaterMark;
         if (_netAUM > hwm) {
-          uint256 profit;
-          unchecked {
-            profit = _netAUM - hwm; 
-          }
-          return profit.mulDiv($.performanceFee, BPS_DIVIDER, Math.Rounding.Floor);
+            uint256 profit;
+            unchecked {
+                profit = _netAUM - hwm;
+            }
+            return
+                profit.mulDiv(
+                    $.performanceFee,
+                    BPS_DIVIDER,
+                    Math.Rounding.Floor
+                );
         }
         return 0;
     }
 
-    function calculateProtocolFee(uint256 _totalFees) public view returns (uint256 managerFees, uint256 protocolFees) {
-      FeeManagerStorage storage $ = _getFeeManagerStorage();
-      if ($.protocolFee > 0) {
-        protocolFees = _totalFees.mulDiv($.protocolFee, BPS_DIVIDER, Math.Rounding.Floor);
-        managerFees = _totalFees - protocolFees;
-      } else {
-        protocolFees = 0;
-        managerFees = _totalFees;
-      }
+    function calculateProtocolFee(
+        uint256 _totalFees
+    ) public view returns (uint256 managerFees, uint256 protocolFees) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        if ($.protocolFee > 0) {
+            protocolFees = _totalFees.mulDiv(
+                $.protocolFee,
+                BPS_DIVIDER,
+                Math.Rounding.Floor
+            );
+            managerFees = _totalFees - protocolFees;
+        } else {
+            protocolFees = 0;
+            managerFees = _totalFees;
+        }
     }
 
     function setProtocolFee(uint256 _protocolFee) public virtual {
