@@ -93,8 +93,21 @@ abstract contract FeeManager is Initializable {
       }
     }
 
-    function _collectFees(uint256 newTotalAssets) internal virtual;
+    function setProtocolFee(uint256 _protocolFee) public virtual {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        $.protocolFee = _protocolFee;
+    }
 
-    function setProtocolFee(uint256 protocolFee) external virtual;
+    function setManagementFee(uint256 _managementFee) public virtual {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        $.managementFee = _managementFee;
+    }
+
+    function setPerformanceFee(uint256 _performanceFee) public virtual {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        $.managementFee = _performanceFee;
+    }
+
+    function _collectFees(uint256 newTotalAssets) internal virtual;
 }
 
