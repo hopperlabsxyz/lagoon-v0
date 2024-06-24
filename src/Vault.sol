@@ -248,8 +248,11 @@ contract Vault is
     ) internal override {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        uint256 managementFee = calculateManagementFee(newTotalAssets);
-        uint256 performanceFee = calculatePerformanceFee(newTotalAssets);
+        uint256 _averageAUM = (newTotalAssets + totalAssets()) / 2;
+        uint256 managementFee = calculateManagementFee(_averageAUM);
+
+        uint256 _netAUM = newTotalAssets - managementFee;
+        uint256 performanceFee = calculatePerformanceFee(_netAUM);
 
         (uint256 managerFees, uint256 protocolFee) = calculateProtocolFee(
             managementFee + performanceFee
@@ -257,8 +260,8 @@ contract Vault is
 
         $.lastFeeTime = block.timestamp;
 
-        if (newTotalAssets > $.highWaterMark) {
-            $.highWaterMark = newTotalAssets;
+        if (_netAUM > $.highWaterMark) {
+            $.highWaterMark = _netAUM;
         }
 
         address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
