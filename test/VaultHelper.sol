@@ -71,8 +71,8 @@ contract VaultHelper is Vault {
         return $.toUnwind;
     }
 
-    function underlyingDecimals() public view returns(uint256) {
-      IERC20Metadata asset = IERC20Metadata(asset());
-      return asset.decimals();
+    function underlyingDecimals() public view returns (uint256) {
+        IERC20Metadata asset = IERC20Metadata(asset());
+        return asset.decimals();
     }
 }
