@@ -58,4 +58,52 @@ contract TestRequestDeposit is BaseTest {
             "wrong shares balance"
         );
     }
+
+    function test_requestDeposit_asAnOperator() public {
+        address owner = user1.addr;
+        address operator = user2.addr;
+        address controller = user3.addr;
+        uint256 ownerBalance = assetBalance(owner);
+        uint256 operatorBalance = assetBalance(operator);
+        uint256 controllerBalance = assetBalance(controller);
+        vm.prank(owner);
+        vault.setOperator(operator, true);
+        requestDeposit(ownerBalance, controller, owner, operator);
+        assertEq(
+            operatorBalance,
+            assetBalance(operator),
+            "operator balance should not change"
+        );
+        assertEq(
+            controllerBalance,
+            assetBalance(controller),
+            "controller balance should not change"
+        );
+        assertEq(
+            ownerBalance,
+            vault.pendingDepositRequest(0, controller),
+            "owner should be the controller"
+        );
+        assertEq(assetBalance(owner), 0, "owner balance should be 0");
+    }
+
+    function test_requestDeposit_asAnOperatorNotAllowed() public {
+        address owner = user1.addr;
+        address operator = user2.addr;
+        address controller = user3.addr;
+        uint256 ownerBalance = assetBalance(owner);
+        vm.expectRevert();
+        requestDeposit(ownerBalance, controller, owner, operator);
+    }
+
+    function test_requestDeposit_asAnOperatorButOwnerNotEnoughApprove() public {
+        address owner = user2.addr;
+        address operator = user1.addr;
+        address controller = user3.addr;
+        uint256 ownerBalance = assetBalance(owner);
+        vm.prank(owner);
+        vault.setOperator(operator, true);
+        vm.expectRevert();
+        requestDeposit(ownerBalance, controller, owner, operator);
+    }
 }
