@@ -49,6 +49,10 @@ contract VaultHelper is Vault {
         return $.epochs[$.epochId - 1].totalAssetsRedeem;
     }
 
+    function vaultHopper() public view returns (address) {
+        return getRoleMember(HOPPER_ROLE, 0);
+    }
+
     function vaultAdmin() public view returns (address) {
         return getRoleMember(DEFAULT_ADMIN_ROLE, 0);
     }
@@ -64,5 +68,10 @@ contract VaultHelper is Vault {
     function toUnwind() public view returns (uint256) {
         VaultStorage storage $ = _getVaultStorage();
         return $.toUnwind;
+    }
+
+    function underlyingDecimals() public view returns(uint256) {
+      IERC20Metadata asset = IERC20Metadata(asset());
+      return asset.decimals();
     }
 }
