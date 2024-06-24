@@ -103,6 +103,7 @@ contract Vault is
 
         _grantRole(HOPPER_ROLE, address(2)); // TODO PUT A REAL ADDRESS
         _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE); // only hopper manage itself
+
         _grantRole(ASSET_MANAGER_ROLE, assetManager);
         _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
 
@@ -599,17 +600,17 @@ contract Vault is
         super.setProtocolFee(_protocolFee);
     }
 
-    function setManagementFee(uint256 _managementFee) public override onlyRole(HOPPER_ROLE) {
+    function setManagementFee(uint256 _managementFee) public override onlyRole(ASSET_MANAGER_ROLE) {
         super.setManagementFee(_managementFee);
     }
 
-    function setPerformanceFee(uint256 _performanceFee) public override onlyRole(HOPPER_ROLE) {
+    function setPerformanceFee(uint256 _performanceFee) public override onlyRole(ASSET_MANAGER_ROLE) {
       super.setPerformanceFee(_performanceFee);
     }
 
     function _collectFees(
         uint256 newTotalAssets
-    ) internal override onlyRole(VALORIZATION_ROLE) {
+    ) internal override {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 managementFee = calculateManagementFee(newTotalAssets);
