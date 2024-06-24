@@ -4,7 +4,8 @@ pragma solidity 0.8.25;
 import {Test} from "forge-std/Test.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {VaultHelper} from "./VaultHelper.sol";
-import {Vault} from "@src/Vault.sol";
+import {Vault, RoleSchema} from "@src/Vault.sol";
+import {FeeSchema} from "@src/FeeManager.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 import {Upgrades, Options} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -91,18 +92,16 @@ abstract contract Constants is Test {
             beacon = _beaconDeploy("Vault.sol", owner.addr);
             vault = _proxyDeploy(beacon, underlying, vaultName, vaultSymbol);
         } else {
+            FeeSchema memory _feeSchema = FeeSchema({managementFee: 0, performanceFee: 0, protocolFee: 0});
+            RoleSchema memory _roleSchema = RoleSchema({assetManager: address(this), valorization: address(this), admin: address(this), dao: address(this)});
             vm.startPrank(owner.addr);
             vault = new VaultHelper(false);
             vault.initialize(
                 underlying,
                 vaultName,
                 vaultSymbol,
-                address(this),
-                address(this),
-                address(this),
-                0,
-                0,
-                0,
+                _roleSchema,
+                _feeSchema,
                 1 days
             );
             vm.stopPrank();
@@ -127,6 +126,8 @@ abstract contract Constants is Test {
         string memory _vaultName,
         string memory _vaultSymbol
     ) internal returns (VaultHelper) {
+        FeeSchema memory _feeSchema = FeeSchema({managementFee: 0, performanceFee: 0, protocolFee: 0});
+        RoleSchema memory _roleSchema = RoleSchema({assetManager: address(this), valorization: address(this), admin: address(this), dao: address(this)});
         BeaconProxy proxy = BeaconProxy(
             payable(
                 Upgrades.deployBeaconProxy(
@@ -137,12 +138,8 @@ abstract contract Constants is Test {
                             _underlying,
                             _vaultName,
                             _vaultSymbol,
-                            address(this),
-                            address(this),
-                            address(this),
-                            0,
-                            0,
-                            0,
+                            _roleSchema,
+                            _feeSchema,
                             1 days
                         )
                     )
