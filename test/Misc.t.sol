@@ -42,4 +42,30 @@ contract TestMisc is BaseTest {
         uint256 vaultDecimals = vault.decimals();
         assertEq(underlyingDecimals, vaultDecimals);
     }
+
+    function test_epochId() public {
+        uint256 epochId = vault.epochId();
+        assertEq(epochId, 1);
+        updateAndSettle(0);
+        epochId = vault.epochId();
+        assertEq(epochId, 2);
+    }
+
+    function test_pendingSilo() public view {
+        address pendingSilo = vault.pendingSilo();
+        assertNotEq(pendingSilo, address(0));
+        assertEq(
+            type(uint256).max,
+            underlying.allowance(pendingSilo, address(vault))
+        );
+    }
+
+    function test_claimableSilo() public view {
+        address claimableSilo = vault.claimableSilo();
+        assertNotEq(claimableSilo, address(0));
+        assertEq(
+            type(uint256).max,
+            underlying.allowance(claimableSilo, address(vault))
+        );
+    }
 }
