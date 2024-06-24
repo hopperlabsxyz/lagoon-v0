@@ -62,6 +62,16 @@ contract BaseTest is Test, Constants {
 
     function requestRedeem(
         uint256 amount,
+        address controller,
+        address owner,
+        address operator
+    ) internal returns (uint256) {
+        vm.prank(operator);
+        return vault.requestRedeem(amount, controller, owner);
+    }
+
+    function requestRedeem(
+        uint256 amount,
         address user
     ) internal returns (uint256) {
         vm.prank(user);
