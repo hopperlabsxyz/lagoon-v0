@@ -595,9 +595,16 @@ contract Vault is
         return true;
     }
 
-    function setProtocolFee(uint256 protocolFee) external override onlyRole(HOPPER_ROLE) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.protocolFee = protocolFee;
+    function setProtocolFee(uint256 _protocolFee) public override onlyRole(HOPPER_ROLE) {
+        super.setProtocolFee(_protocolFee);
+    }
+
+    function setManagementFee(uint256 _managementFee) public override onlyRole(HOPPER_ROLE) {
+        super.setManagementFee(_managementFee);
+    }
+
+    function setPerformanceFee(uint256 _performanceFee) public override onlyRole(HOPPER_ROLE) {
+      super.setPerformanceFee(_performanceFee);
     }
 
     function _collectFees(
