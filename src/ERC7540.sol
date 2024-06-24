@@ -292,6 +292,15 @@ abstract contract ERC7540Upgradeable is
         return assets;
     }
 
+    function cancelRequestDeposit() external {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        address msgSender = _msgSender();
+        uint256 request = $.epochs[$.epochId].depositRequest[msgSender];
+        require(request > 0);
+        $.epochs[$.epochId].depositRequest[msgSender] = 0;
+        IERC20(asset()).safeTransferFrom(pendingSilo(), msgSender, request);
+    }
+
     // ## EIP7540 Redeem flow ##
     /** @dev if paused will revert thanks to _update() */
     function requestRedeem(
@@ -424,6 +433,15 @@ abstract contract ERC7540Upgradeable is
         );
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
         return shares;
+    }
+
+    function cancelRequestRedeem() external {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        address msgSender = _msgSender();
+        uint256 request = $.epochs[$.epochId].redeemRequest[msgSender];
+        require(request > 0);
+        $.epochs[$.epochId].redeemRequest[msgSender] = 0;
+        _transfer(pendingSilo(), msgSender, request);
     }
 
     // ## Conversion functions ##
