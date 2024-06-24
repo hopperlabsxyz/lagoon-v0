@@ -13,6 +13,12 @@ struct FeeManagerStorage {
     uint256 highWaterMark;
 }
 
+struct FeeSchema {
+    uint256 managementFee;
+    uint256 performanceFee;
+    uint256 protocolFee;
+}
+
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS_DIVIDER = 10_000;
 
@@ -30,12 +36,13 @@ abstract contract FeeManager is Initializable {
       }
     }
 
-    function __FeeManager_init(uint256 _managementFee, uint256 _performanceFee, uint256 _protocolFee) internal onlyInitializing {
+    function __FeeManager_init(FeeSchema calldata feeSchema) internal onlyInitializing {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
+
         $.highWaterMark = 0;
-        $.managementFee = _managementFee;
-        $.performanceFee = _performanceFee;
-        $.protocolFee = _protocolFee;
+        $.managementFee = feeSchema.managementFee;
+        $.performanceFee = feeSchema.performanceFee;
+        $.protocolFee = feeSchema.protocolFee;
         $.lastFeeTime = block.timestamp;
     }
 
@@ -47,6 +54,11 @@ abstract contract FeeManager is Initializable {
     function performanceFee() external view returns(uint256){
       FeeManagerStorage storage $ = _getFeeManagerStorage();
       return $.performanceFee;
+    }
+
+    function protocolFee() external view returns(uint256){
+      FeeManagerStorage storage $ = _getFeeManagerStorage();
+      return $.protocolFee;
     }
 
     function lastFeeTime() external view returns(uint256){
