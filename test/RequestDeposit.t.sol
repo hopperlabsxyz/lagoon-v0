@@ -82,7 +82,7 @@ contract TestRequestDeposit is BaseTest {
         assertEq(
             ownerBalance,
             vault.pendingDepositRequest(0, controller),
-            "owner should be the controller"
+            "owner balance should be the controller pending deposit request"
         );
         assertEq(assetBalance(owner), 0, "owner balance should be 0");
     }
