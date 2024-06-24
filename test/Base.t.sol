@@ -120,4 +120,19 @@ contract BaseTest is Test, Constants {
     function assetBalance(address user) public view returns (uint256) {
         return IERC4626(vault.asset()).balanceOf(user);
     }
+
+    function setManagementFee(uint256 _fee, address _caller) public {
+      vm.prank(_caller);
+      vault.setManagementFee(_fee);
+    }
+
+    function setPerformanceFee(uint256 _fee, address _caller) public {
+      vm.prank(_caller);
+      vault.setPerformanceFee(_fee);
+    }
+
+    function setProtocolFee(uint256 _fee, address _caller) public {
+      vm.prank(_caller);
+      vault.setProtocolFee(_fee);
+    }
 }
