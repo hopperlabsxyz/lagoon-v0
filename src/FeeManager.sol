@@ -71,37 +71,37 @@ abstract contract FeeManager is Initializable {
       return $.highWaterMark;
     }
 
-    function calculateManagementFee(uint256 totalAssets) internal view returns (uint256) {
+    function calculateManagementFee(uint256 _averageAUM) public view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         uint256 timeElapsed;
         unchecked {
           timeElapsed = block.timestamp - $.lastFeeTime;
         }
-        uint256 annualFee = totalAssets.mulDiv($.managementFee, BPS_DIVIDER, Math.Rounding.Floor);
+        uint256 annualFee = _averageAUM.mulDiv($.managementFee, BPS_DIVIDER, Math.Rounding.Floor);
         return annualFee.mulDiv(timeElapsed, ONE_YEAR);
     }
 
-    function calculatePerformanceFee(uint256 totalAssets) internal view returns (uint256) {
+    function calculatePerformanceFee(uint256 _netAUM) public view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         uint256 hwm = $.highWaterMark;
-        if (totalAssets > hwm) {
+        if (_netAUM > hwm) {
           uint256 profit;
           unchecked {
-            profit = totalAssets - hwm; 
+            profit = _netAUM - hwm; 
           }
           return profit.mulDiv($.performanceFee, BPS_DIVIDER, Math.Rounding.Floor);
         }
         return 0;
     }
 
-    function calculateProtocolFee(uint256 _assetsFees) internal view returns (uint256 managerFees, uint256 protocolFees) {
+    function calculateProtocolFee(uint256 _totalFees) public view returns (uint256 managerFees, uint256 protocolFees) {
       FeeManagerStorage storage $ = _getFeeManagerStorage();
       if ($.protocolFee > 0) {
-        protocolFees = _assetsFees.mulDiv($.protocolFee, BPS_DIVIDER, Math.Rounding.Floor);
-        managerFees = _assetsFees - protocolFees;
+        protocolFees = _totalFees.mulDiv($.protocolFee, BPS_DIVIDER, Math.Rounding.Floor);
+        managerFees = _totalFees - protocolFees;
       } else {
         protocolFees = 0;
-        managerFees = _assetsFees;
+        managerFees = _totalFees;
       }
     }
 
