@@ -158,20 +158,20 @@ contract Vault is
         $erc7540.totalAssets = $vault.newTotalAssets;
 
         EpochData storage epoch = $erc7540.epochs[epochId];
-        uint256 totalAssets = totalAssets();
-        uint256 totalSupply = totalSupply();
+        uint256 _totalAssets = totalAssets();
 
         // Then we proceed the deposit request and save the deposit parameters
         uint256 pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
         if (pendingAssets > 0) {
-            epoch.totalAssetsDeposit = totalAssets;
-            epoch.totalSupplyDeposit = totalSupply;
+            epoch.totalAssetsDeposit = _totalAssets;
+            epoch.totalSupplyDeposit = totalSupply();
             uint256 shares = _convertToShares(
                 pendingAssets,
                 Math.Rounding.Floor
             );
             _mint(claimableSilo(), shares);
-            $erc7540.totalAssets = totalAssets + pendingAssets;
+            _totalAssets += pendingAssets;
+            $erc7540.totalAssets = _totalAssets;
         }
 
         // Then we proceed the redeem request and save the redeem parameters
@@ -180,10 +180,10 @@ contract Vault is
             Math.Rounding.Floor
         );
         if (assets > 0) {
-            epoch.totalAssetsRedeem = totalAssets;
-            epoch.totalSupplyRedeem = totalSupply;
+            epoch.totalAssetsRedeem = _totalAssets;
+            epoch.totalSupplyRedeem = totalSupply();
             _burn(pendingSilo(), balanceOf(pendingSilo()));
-            $erc7540.totalAssets = totalAssets - assets;
+            $erc7540.totalAssets = _totalAssets - assets;
             $vault.toUnwind += assets;
         }
 
@@ -193,7 +193,6 @@ contract Vault is
 
         // If there is a surplus of assets, we send those to the asset manager
         pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
-
         if (pendingAssets > 0) {
             address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
             // there must be an asset manager
