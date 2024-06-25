@@ -9,6 +9,7 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, ERC20Upgradeable, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {Silo} from "./Silo.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {console} from "forge-std/console.sol";
 
 struct EpochData {
     uint256 totalSupplyDeposit;
@@ -392,6 +393,7 @@ abstract contract ERC7540Upgradeable is
             receiver,
             assets
         );
+
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
         return assets;
     }
