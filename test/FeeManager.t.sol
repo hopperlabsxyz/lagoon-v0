@@ -5,6 +5,10 @@ import "forge-std/Test.sol";
 import {Vault} from "@src/Vault.sol";
 import {BaseTest} from "./Base.t.sol";
 
+bytes32 constant ASSET_MANAGER_ROLE = keccak256("ASSET_MANAGER");
+bytes32 constant VALORIZATION_ROLE = keccak256("VALORIZATION_MANAGER");
+bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
+
 contract TestFeeManager is BaseTest {
     uint256 _1K;
     uint256 _10K;
@@ -86,5 +90,31 @@ contract TestFeeManager is BaseTest {
         (managerFees, protocolFees) = vault.calculateProtocolFee(_10M);
         assertEq(managerFees, _10M - _100K);
         assertEq(protocolFees, _100K);
+    }
+
+    function test_collect_fees() public {
+        dealAndApprove(user1.addr);
+
+        setProtocolFee(0, vault.vaultAM());
+        setPerformanceFee(100, vault.vaultAM());
+        setManagementFee(100, vault.vaultHopper());
+
+        address assetManager = vault.getRoleMember(ASSET_MANAGER_ROLE, 0);
+        address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
+
+        assertEq(vault.balanceOf(assetManager), 0);
+        assertEq(vault.balanceOf(hopperDao), 0);
+
+        uint256 userBalance = assetBalance(user1.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+
+        assertEq(vault.balanceOf(assetManager), 0);
+        assertEq(vault.balanceOf(hopperDao), 0);
+
+        updateAndSettle(userBalance);
+        console.log("user balance", userBalance);
+        // assertEq(vault.balanceOf(assetManager), 0);
+        assertEq(vault.balanceOf(hopperDao), 0);
     }
 }

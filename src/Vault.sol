@@ -252,10 +252,12 @@ contract Vault is
     function _collectFees(uint256 newTotalAssets) internal override {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        uint256 _averageAUM = (newTotalAssets + totalAssets()) / 2;
+        uint256 _averageAUM = newTotalAssets;
         uint256 managementFee = calculateManagementFee(_averageAUM);
-
-        uint256 _netAUM = newTotalAssets - managementFee;
+        uint256 _netAUM;
+        unchecked {
+            _netAUM = newTotalAssets - managementFee;
+        }
         uint256 performanceFee = calculatePerformanceFee(_netAUM);
 
         (uint256 managerFees, uint256 protocolFee) = calculateProtocolFee(
