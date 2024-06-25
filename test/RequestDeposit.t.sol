@@ -37,13 +37,13 @@ contract TestRequestDeposit is BaseTest {
         requestDeposit(userBalance / 2, user1.addr);
         updateAndSettle(0);
         assertEq(
-            vault.claimableDepositRequest(0, user1.addr),
+            vault.maxDeposit(user1.addr),
             userBalance / 2,
             "wrong claimable deposit value"
         );
         requestDeposit(userBalance / 2, user1.addr);
         assertEq(
-            vault.claimableDepositRequest(0, user1.addr),
+            vault.maxDeposit(user1.addr),
             0,
             "wrong claimable deposit value"
         );
