@@ -20,6 +20,16 @@ contract BaseTest is Test, Constants {
 
     function requestDeposit(
         uint256 amount,
+        address controller,
+        address owner,
+        address operator
+    ) internal returns (uint256) {
+        vm.prank(operator);
+        return vault.requestDeposit(amount, controller, owner);
+    }
+
+    function requestDeposit(
+        uint256 amount,
         address user
     ) internal returns (uint256) {
         vm.prank(user);
@@ -47,6 +57,16 @@ contract BaseTest is Test, Constants {
         address owner
     ) internal returns (uint256) {
         vm.prank(owner);
+        return vault.requestRedeem(amount, controller, owner);
+    }
+
+    function requestRedeem(
+        uint256 amount,
+        address controller,
+        address owner,
+        address operator
+    ) internal returns (uint256) {
+        vm.prank(operator);
         return vault.requestRedeem(amount, controller, owner);
     }
 
@@ -134,5 +154,9 @@ contract BaseTest is Test, Constants {
     function setProtocolFee(uint256 _fee, address _caller) public {
         vm.prank(_caller);
         vault.setProtocolFee(_fee);
+    }
+
+    function balance(address user) public view returns (uint256) {
+        return vault.balanceOf(user);
     }
 }

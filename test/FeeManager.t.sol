@@ -3,7 +3,7 @@ pragma solidity 0.8.25;
 
 import "forge-std/Test.sol";
 import {Vault} from "@src/Vault.sol";
-import {BaseTest} from "./Base.t.sol";
+import {BaseTest} from "./Base.sol";
 
 bytes32 constant ASSET_MANAGER_ROLE = keccak256("ASSET_MANAGER");
 bytes32 constant VALORIZATION_ROLE = keccak256("VALORIZATION_MANAGER");
