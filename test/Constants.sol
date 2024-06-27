@@ -52,6 +52,11 @@ abstract contract Constants is Test {
     VmSafe.Wallet user9 = vm.createWallet("user9");
     VmSafe.Wallet user10 = vm.createWallet("user10");
     VmSafe.Wallet owner = vm.createWallet("owner");
+    VmSafe.Wallet assetManager = vm.createWallet("assetManager");
+    VmSafe.Wallet valorizator = vm.createWallet("valorizator");
+    VmSafe.Wallet admin = vm.createWallet("admin");
+    VmSafe.Wallet dao = vm.createWallet("dao");
+
     VmSafe.Wallet[] users;
 
     // Wallet
@@ -98,10 +103,10 @@ abstract contract Constants is Test {
                 protocolFee: 0
             });
             RoleSchema memory _roleSchema = RoleSchema({
-                assetManager: address(this),
-                valorization: address(this),
-                admin: address(this),
-                dao: address(this)
+                assetManager: assetManager.addr,
+                valorization: valorizator.addr,
+                admin: admin.addr,
+                dao: dao.addr
             });
             vm.startPrank(owner.addr);
             vault = new VaultHelper(false);
@@ -141,10 +146,10 @@ abstract contract Constants is Test {
             protocolFee: 0
         });
         RoleSchema memory _roleSchema = RoleSchema({
-            assetManager: address(this),
-            valorization: address(this),
-            admin: address(this),
-            dao: address(this)
+            assetManager: assetManager.addr,
+            valorization: valorizator.addr,
+            admin: admin.addr,
+            dao: dao.addr
         });
         BeaconProxy proxy = BeaconProxy(
             payable(

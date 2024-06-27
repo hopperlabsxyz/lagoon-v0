@@ -33,9 +33,9 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_100_bips() public {
-        setProtocolFee(100, vault.vaultAM());
+        setProtocolFee(100, vault.vaultHopper());
         setPerformanceFee(100, vault.vaultAM());
-        setManagementFee(100, vault.vaultHopper());
+        setManagementFee(100, vault.vaultAM());
 
         assertEq(vault.managementFee(), 100);
         assertEq(vault.performanceFee(), 100);
@@ -80,7 +80,7 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_protocol_fees() public {
-        setProtocolFee(100, vault.vaultAM()); // 1% fees on total fees collected
+        setProtocolFee(100, vault.vaultHopper()); // 1% fees on total fees collected
 
         (uint256 managerFees, uint256 protocolFees) = vault
             .calculateProtocolFee(_100M);
@@ -95,9 +95,9 @@ contract TestFeeManager is BaseTest {
     function test_collect_fees() public {
         dealAndApprove(user1.addr);
 
-        setProtocolFee(0, vault.vaultAM());
+        setProtocolFee(0, vault.vaultHopper());
         setPerformanceFee(100, vault.vaultAM());
-        setManagementFee(100, vault.vaultHopper());
+        setManagementFee(100, vault.vaultAM());
 
         address assetManager = vault.getRoleMember(ASSET_MANAGER_ROLE, 0);
         address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
