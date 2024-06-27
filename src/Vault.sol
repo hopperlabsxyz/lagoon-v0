@@ -83,7 +83,7 @@ contract Vault is
         $.newTotalAssetsCooldown = cooldown;
 
         _grantRole(HOPPER_ROLE, roleSchema.dao); // TODO PUT A REAL ADDRESS
-        _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE); // only hopper manage itself
+        _setRoleAdmin(HOPPER_ROLE, DEFAULT_ADMIN_ROLE); // only hopper manage itself
 
         _grantRole(ASSET_MANAGER_ROLE, roleSchema.assetManager);
         _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
