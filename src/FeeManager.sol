@@ -21,7 +21,7 @@ struct FeeSchema {
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS_DIVIDER = 10_000;
 
-abstract contract FeeManager is Initializable {
+contract FeeManager is Initializable {
     using Math for uint256;
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
@@ -144,5 +144,33 @@ abstract contract FeeManager is Initializable {
         $.performanceFee = _performanceFee;
     }
 
-    function _collectFees(uint256 newTotalAssets) internal virtual;
+    function _calculateFees(
+        uint256 newTotalAssets,
+        uint256 pendingDepositAssets
+    ) internal returns (uint256 managerFees, uint256 protocolFees) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+
+        if (pendingDepositAssets > 0) {
+            $.highWaterMark += pendingDepositAssets;
+        }
+
+        uint256 _managementFee = calculateManagementFee(newTotalAssets);
+        uint256 _netAUM;
+        unchecked {
+            _netAUM = newTotalAssets - _managementFee;
+        }
+        uint256 _performanceFee = calculatePerformanceFee(_netAUM);
+
+        (managerFees, protocolFees) = calculateProtocolFee(
+            _managementFee + _performanceFee
+        );
+
+        $.lastFeeTime = block.timestamp;
+
+        if (_netAUM > $.highWaterMark) {
+            $.highWaterMark = _netAUM;
+        }
+
+        return (managerFees, protocolFees);
+    }
 }

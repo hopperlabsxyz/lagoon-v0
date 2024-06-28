@@ -2,14 +2,13 @@
 pragma solidity 0.8.25;
 
 import "forge-std/Test.sol";
-import {Vault} from "@src/Vault.sol";
+import {Vault, ASSET_MANAGER_ROLE, VALORIZATION_ROLE, HOPPER_ROLE} from "@src/Vault.sol";
+import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
 
-bytes32 constant ASSET_MANAGER_ROLE = keccak256("ASSET_MANAGER");
-bytes32 constant VALORIZATION_ROLE = keccak256("VALORIZATION_MANAGER");
-bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
-
 contract TestFeeManager is BaseTest {
+    using Math for uint256;
     uint256 _1K;
     uint256 _10K;
     uint256 _100K;
@@ -71,6 +70,7 @@ contract TestFeeManager is BaseTest {
     function test_management_fees() public {
         setManagementFee(100, vault.vaultAM()); // 1% fees on average AUM since last NAV
 
+        // Fees over 1 year
         vm.warp(vm.getBlockTimestamp() + 365 days);
 
         assertEq(vault.calculateManagementFee(_100M), _1M);
@@ -93,28 +93,56 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_collect_fees() public {
-        dealAndApprove(user1.addr);
+        dealAmountAndApprove(user1.addr, 10_000_000);
 
-        setProtocolFee(0, vault.vaultHopper());
-        setPerformanceFee(100, vault.vaultAM());
-        setManagementFee(100, vault.vaultAM());
+        // 20% perf. fees / 2% management fees / 1% protocol fees
+        setProtocolFee(100, vault.vaultHopper());
+        setPerformanceFee(2000, vault.vaultAM());
+        setManagementFee(200, vault.vaultAM());
 
         address assetManager = vault.getRoleMember(ASSET_MANAGER_ROLE, 0);
         address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
 
         assertEq(vault.balanceOf(assetManager), 0);
         assertEq(vault.balanceOf(hopperDao), 0);
+        assertEq(vault.highWaterMark(), 0);
+        assertEq(vault.totalSupply(), 0);
 
         uint256 userBalance = assetBalance(user1.addr);
+        assertEq(userBalance, _10M);
         requestDeposit(userBalance, user1.addr);
         updateAndSettle(0);
 
         assertEq(vault.balanceOf(assetManager), 0);
         assertEq(vault.balanceOf(hopperDao), 0);
+        assertEq(vault.highWaterMark(), _10M); // The high water mark is raised so that the deposit is not subject to performance fees
+        assertEq(vault.totalSupply(), 10_000_000 * 10 ** vault.decimals()); // Now user1 got 10M shares for his deposit
 
-        updateAndSettle(userBalance);
-        console.log("user balance", userBalance);
-        // assertEq(vault.balanceOf(assetManager), 0);
-        assertEq(vault.balanceOf(hopperDao), 0);
+        // Fees over 1 year
+        // /!\ 364 days because there is 1 days timelock period before settle is called
+        vm.warp(vm.getBlockTimestamp() + 364 days);
+
+        uint256 expectedTotalFees = 19_600_000 *
+            10 ** vault.underlyingDecimals();
+        uint256 expectedProtocolFees = expectedTotalFees / 100;
+        uint256 expectedManagerFees = expectedTotalFees - expectedProtocolFees;
+
+        uint256 expectedManagerNewShares = expectedManagerFees.mulDiv(
+            vault.totalSupply(),
+            _100M,
+            Math.Rounding.Floor
+        );
+
+        uint256 expectedProtocolNewShares = expectedProtocolFees.mulDiv(
+            vault.totalSupply(),
+            _100M,
+            Math.Rounding.Floor
+        );
+
+        updateAndSettle(_100M);
+
+        assertEq(vault.balanceOf(address(vault.claimableSilo())), userBalance);
+        assertEq(vault.balanceOf(assetManager), expectedManagerNewShares);
+        assertEq(vault.balanceOf(hopperDao), expectedProtocolNewShares);
     }
 }

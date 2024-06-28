@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
+import "forge-std/Test.sol";
 import {ERC7540Upgradeable, ERC7540Storage, EpochData} from "./ERC7540.sol";
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -77,8 +78,8 @@ contract Vault is
         __ERC20_init(name, symbol);
         __ERC20Permit_init(name);
         __ERC20Pausable_init();
-        __FeeManager_init(feeSchema);
         __ERC7540_init(underlying);
+        __FeeManager_init(feeSchema);
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = cooldown;
 
@@ -141,6 +142,9 @@ contract Vault is
         VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
+        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+        address hopperDao = getRoleMember(HOPPER_ROLE, 0);
+
         // we allowe to settle only if the newTotalAssets:
         // - is not to recent (must be > $.newTotalAssetsCooldown
         require(
@@ -154,15 +158,29 @@ contract Vault is
         // caching the value
         uint256 epochId = $erc7540.epochId;
 
-        // First we update the vault value and collect fees.
-        _collectFees($vault.newTotalAssets);
         $erc7540.totalAssets = $vault.newTotalAssets;
 
         EpochData storage epoch = $erc7540.epochs[epochId];
         uint256 _totalAssets = totalAssets();
 
-        // Then we proceed the deposit request and save the deposit parameters
         uint256 pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
+
+        // First calculate fees.
+        (uint256 managerFees, uint256 protocolFees) = _calculateFees(
+            _totalAssets,
+            pendingAssets
+        );
+
+        uint256 managerNewShares = _convertToShares(
+            managerFees,
+            Math.Rounding.Floor
+        );
+        uint256 protocolNewShares = _convertToShares(
+            protocolFees,
+            Math.Rounding.Floor
+        );
+
+        // Then we proceed the deposit request and save the deposit parameters
         if (pendingAssets > 0) {
             epoch.totalAssetsDeposit = _totalAssets;
             epoch.totalSupplyDeposit = totalSupply();
@@ -195,7 +213,6 @@ contract Vault is
         // If there is a surplus of assets, we send those to the asset manager
         pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
         if (pendingAssets > 0) {
-            address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
             // there must be an asset manager
             require(assetManager != address(0));
             IERC20(asset()).safeTransferFrom(
@@ -203,6 +220,14 @@ contract Vault is
                 assetManager,
                 pendingAssets
             );
+        }
+
+        if (managerNewShares > 0) {
+            _mint(assetManager, managerNewShares);
+        }
+
+        if (protocolNewShares > 0) {
+            _mint(hopperDao, protocolNewShares);
         }
 
         $erc7540.epochId = epochId + 1;
@@ -247,41 +272,5 @@ contract Vault is
         uint256 _performanceFee
     ) public override onlyRole(ASSET_MANAGER_ROLE) {
         super.setPerformanceFee(_performanceFee);
-    }
-
-    function _collectFees(uint256 newTotalAssets) internal override {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-
-        uint256 _averageAUM = newTotalAssets;
-        uint256 managementFee = calculateManagementFee(_averageAUM);
-        uint256 _netAUM;
-        unchecked {
-            _netAUM = newTotalAssets - managementFee;
-        }
-        uint256 performanceFee = calculatePerformanceFee(_netAUM);
-
-        (uint256 managerFees, uint256 protocolFee) = calculateProtocolFee(
-            managementFee + performanceFee
-        );
-
-        $.lastFeeTime = block.timestamp;
-
-        if (_netAUM > $.highWaterMark) {
-            $.highWaterMark = _netAUM;
-        }
-
-        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
-        address hopperDao = getRoleMember(HOPPER_ROLE, 0);
-        uint256 totalSupply = totalSupply();
-
-        if (managerFees > 0) {
-            uint256 newShares = managerFees.mulDiv(totalSupply, newTotalAssets);
-            _mint(assetManager, newShares);
-        }
-
-        if (protocolFee > 0) {
-            uint256 newShares = protocolFee.mulDiv(totalSupply, newTotalAssets);
-            _mint(hopperDao, newShares);
-        }
     }
 }

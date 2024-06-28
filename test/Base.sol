@@ -128,6 +128,18 @@ contract BaseTest is Test, Constants {
         IERC4626(asset).approve(address(vault), UINT256_MAX);
     }
 
+    function dealAmountAndApprove(address user, uint256 amount) public {
+        address asset = vault.asset();
+        deal(user, type(uint256).max);
+        dealAsset(
+            vault.asset(),
+            user,
+            amount * 10 ** IERC20Metadata(asset).decimals()
+        );
+        vm.prank(user);
+        IERC4626(asset).approve(address(vault), UINT256_MAX);
+    }
+
     function dealAsset(address asset, address owner, uint256 amount) public {
         if (asset == address(USDC)) {
             vm.prank(USDC_WHALE);
