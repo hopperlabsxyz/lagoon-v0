@@ -77,14 +77,14 @@ contract FeeManager is Initializable {
     }
 
     function calculateManagementFee(
-        uint256 _averageAUM
+        uint256 _AUM
     ) public view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         uint256 timeElapsed;
         unchecked {
             timeElapsed = block.timestamp - $.lastFeeTime;
         }
-        uint256 annualFee = _averageAUM.mulDiv(
+        uint256 annualFee = _AUM.mulDiv(
             $.managementFee,
             BPS_DIVIDER,
             Math.Rounding.Floor
