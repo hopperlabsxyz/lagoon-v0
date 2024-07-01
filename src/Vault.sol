@@ -230,7 +230,7 @@ contract Vault is
             );
         }
 
-        setHighWaterMark(newHighWaterMark);
+        _setHighWaterMark(newHighWaterMark);
 
         if (managerShares > 0) {
             _mint(assetManager, managerShares);
