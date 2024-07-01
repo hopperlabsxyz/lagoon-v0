@@ -144,14 +144,15 @@ contract FeeManager is Initializable {
         $.performanceFee = _performanceFee;
     }
 
-    function setHighWaterMark(
+    function _setHighWaterMark(
         uint256 _newHighWaterMark
-    ) public virtual returns (uint256 _highWaterMark) {
+    ) internal returns (uint256 _highWaterMark) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if (_newHighWaterMark > $.highWaterMark) {
+        _highWaterMark = $.highWaterMark;
+        if (_newHighWaterMark > _highWaterMark) {
             $.highWaterMark = _newHighWaterMark;
+            _highWaterMark = _newHighWaterMark;
         }
-        return $.highWaterMark;
     }
 
     function _calculateFees(
