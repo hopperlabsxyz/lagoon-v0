@@ -144,33 +144,34 @@ contract FeeManager is Initializable {
         $.performanceFee = _performanceFee;
     }
 
+    function setHighWaterMark(
+        uint256 _newHighWaterMark
+    ) public virtual returns (uint256 _highWaterMark) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        if (_newHighWaterMark > $.highWaterMark) {
+            $.highWaterMark = _newHighWaterMark;
+        }
+        return $.highWaterMark;
+    }
+
     function _calculateFees(
-        uint256 newTotalAssets,
-        uint256 pendingDepositAssets
-    ) internal returns (uint256 managerFees, uint256 protocolFees) {
+        uint256 newTotalAssets
+    )
+        internal
+        returns (uint256 managerFees, uint256 protocolFees, uint256 netAUM)
+    {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        if (pendingDepositAssets > 0) {
-            $.highWaterMark += pendingDepositAssets;
-        }
-
         uint256 _managementFee = calculateManagementFee(newTotalAssets);
-        uint256 _netAUM;
         unchecked {
-            _netAUM = newTotalAssets - _managementFee;
+            netAUM = newTotalAssets - _managementFee;
         }
-        uint256 _performanceFee = calculatePerformanceFee(_netAUM);
+        uint256 _performanceFee = calculatePerformanceFee(netAUM);
 
         (managerFees, protocolFees) = calculateProtocolFee(
             _managementFee + _performanceFee
         );
 
         $.lastFeeTime = block.timestamp;
-
-        if (_netAUM > $.highWaterMark) {
-            $.highWaterMark = _netAUM;
-        }
-
-        return (managerFees, protocolFees);
     }
 }
