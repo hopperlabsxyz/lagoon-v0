@@ -1,2 +1,2 @@
-forge test
+forge test --rpc-url https://eth.llamarpc.com
 pnpm exec solhint 'src/**/*.sol'
