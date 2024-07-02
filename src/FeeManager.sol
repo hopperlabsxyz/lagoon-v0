@@ -5,6 +5,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 struct FeeManagerStorage {
+    uint256 totalCollectedFees;
     uint256 managementFee;
     uint256 performanceFee;
     uint256 protocolFee;
@@ -49,6 +50,11 @@ contract FeeManager is Initializable {
         $.performanceFee = feeSchema.performanceFee;
         $.protocolFee = feeSchema.protocolFee;
         $.lastFeeTime = block.timestamp;
+    }
+
+    function totalCollectedFees() external view returns (uint256) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        return $.totalCollectedFees;
     }
 
     function managementFee() external view returns (uint256) {
