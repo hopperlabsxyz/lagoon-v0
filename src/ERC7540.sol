@@ -127,25 +127,49 @@ abstract contract ERC7540Upgradeable is
 
     function previewDeposit(
         uint256
-    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    )
+        public
+        pure
+        override(ERC4626Upgradeable, IERC4626)
+        returns (uint256 shares)
+    {
+        shares;
         require(false);
     }
 
     function previewMint(
         uint256
-    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    )
+        public
+        pure
+        override(ERC4626Upgradeable, IERC4626)
+        returns (uint256 assets)
+    {
+        assets;
         require(false);
     }
 
     function previewRedeem(
         uint256
-    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    )
+        public
+        pure
+        override(ERC4626Upgradeable, IERC4626)
+        returns (uint256 assets)
+    {
+        assets;
         require(false);
     }
 
     function previewWithdraw(
         uint256
-    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    )
+        public
+        pure
+        override(ERC4626Upgradeable, IERC4626)
+        returns (uint256 shares)
+    {
+        shares;
         require(false);
     }
 
@@ -175,7 +199,7 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address controller,
         address owner
-    ) internal {
+    ) internal virtual {
         ERC7540Storage storage $ = _getERC7540Storage();
         $.epochs[$.epochId].depositRequest[controller] += assets;
         if ($.lastDepositRequestId[controller] != $.epochId) {
@@ -240,7 +264,7 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address receiver,
         address controller
-    ) private returns (uint256 shares) {
+    ) internal virtual returns (uint256 shares) {
         require(assets > 0);
 
         ERC7540Storage storage $ = _getERC7540Storage();
@@ -278,7 +302,7 @@ abstract contract ERC7540Upgradeable is
         uint256 shares,
         address receiver,
         address controller
-    ) internal returns (uint256 assets) {
+    ) internal virtual returns (uint256 assets) {
         require(shares > 0);
         ERC7540Storage storage $ = _getERC7540Storage();
 
