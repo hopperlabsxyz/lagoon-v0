@@ -124,20 +124,16 @@ contract TestFeeManager is BaseTest {
 
         uint256 expectedTotalFees = 19_600_000 *
             10 ** vault.underlyingDecimals();
-        uint256 expectedProtocolFees = expectedTotalFees / 100;
-        uint256 expectedManagerFees = expectedTotalFees - expectedProtocolFees;
 
-        uint256 expectedManagerNewShares = expectedManagerFees.mulDiv(
-            vault.totalSupply(),
-            _100M,
+        uint256 expectedTotalNewShares = vault.totalSupply().mulDiv(
+            expectedTotalFees,
+            _100M - expectedTotalFees,
             Math.Rounding.Floor
         );
 
-        uint256 expectedProtocolNewShares = expectedProtocolFees.mulDiv(
-            vault.totalSupply(),
-            _100M,
-            Math.Rounding.Floor
-        );
+        uint256 expectedProtocolNewShares = expectedTotalNewShares / 100;
+        uint256 expectedManagerNewShares = expectedTotalNewShares -
+            expectedProtocolNewShares;
 
         updateAndSettle(_100M);
 

@@ -5,7 +5,6 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 struct FeeManagerStorage {
-    uint256 totalCollectedFees;
     uint256 managementFee;
     uint256 performanceFee;
     uint256 protocolFee;
@@ -50,11 +49,6 @@ contract FeeManager is Initializable {
         $.performanceFee = feeSchema.performanceFee;
         $.protocolFee = feeSchema.protocolFee;
         $.lastFeeTime = block.timestamp;
-    }
-
-    function totalCollectedFees() external view returns (uint256) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        return $.totalCollectedFees;
     }
 
     function managementFee() external view returns (uint256) {
@@ -119,19 +113,19 @@ contract FeeManager is Initializable {
     }
 
     function calculateProtocolFee(
-        uint256 _totalFees
+        uint256 _totalFeeShares
     ) public view returns (uint256 managerFees, uint256 protocolFees) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         if ($.protocolFee > 0) {
-            protocolFees = _totalFees.mulDiv(
+            protocolFees = _totalFeeShares.mulDiv(
                 $.protocolFee,
                 BPS_DIVIDER,
                 Math.Rounding.Floor
             );
-            managerFees = _totalFees - protocolFees;
+            managerFees = _totalFeeShares - protocolFees;
         } else {
             protocolFees = 0;
-            managerFees = _totalFees;
+            managerFees = _totalFeeShares;
         }
     }
 
@@ -152,32 +146,43 @@ contract FeeManager is Initializable {
 
     function _setHighWaterMark(
         uint256 _newHighWaterMark
-    ) internal returns (uint256 _highWaterMark) {
+    ) internal returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        _highWaterMark = $.highWaterMark;
+
+        uint256 _highWaterMark = $.highWaterMark;
+
         if (_newHighWaterMark > _highWaterMark) {
             $.highWaterMark = _newHighWaterMark;
-            _highWaterMark = _newHighWaterMark;
+            return _newHighWaterMark;
         }
+
+        return _highWaterMark;
     }
 
     function _calculateFees(
-        uint256 newTotalAssets
-    )
-        internal
-        returns (uint256 managerFees, uint256 protocolFees, uint256 netAUM)
-    {
+        uint256 newTotalAssets,
+        uint256 totalSupply
+    ) internal returns (uint256 managerShares, uint256 protocolShares) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        uint256 _managementFee = calculateManagementFee(newTotalAssets);
-        unchecked {
-            netAUM = newTotalAssets - _managementFee;
-        }
-        uint256 _performanceFee = calculatePerformanceFee(netAUM);
-
-        (managerFees, protocolFees) = calculateProtocolFee(
-            _managementFee + _performanceFee
+        uint256 _managementFees = calculateManagementFee(newTotalAssets);
+        uint256 _performanceFees = calculatePerformanceFee(
+            newTotalAssets - _managementFees
         );
+
+        uint256 _totalFees = _managementFees + _performanceFees;
+
+        uint256 _netAUM = newTotalAssets - _totalFees;
+        uint256 _totalFeeShares;
+        if (_netAUM != 0) {
+            _totalFeeShares = totalSupply.mulDiv(
+                _totalFees,
+                _netAUM,
+                Math.Rounding.Floor
+            );
+        }
+
+        (managerShares, protocolShares) = calculateProtocolFee(_totalFeeShares);
 
         $.lastFeeTime = block.timestamp;
     }
