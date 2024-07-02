@@ -93,14 +93,14 @@ contract FeeManager is Initializable {
     }
 
     function calculatePerformanceFee(
-        uint256 _netAUM
+        uint256 _AUM
     ) public view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         uint256 hwm = $.highWaterMark;
-        if (_netAUM > hwm) {
+        if (_AUM > hwm) {
             uint256 profit;
             unchecked {
-                profit = _netAUM - hwm;
+                profit = _AUM - hwm;
             }
             return
                 profit.mulDiv(
