@@ -162,22 +162,22 @@ contract Vault is
 
         EpochData storage epoch = $erc7540.epochs[epochId];
         uint256 _totalAssets = totalAssets();
-        (
-            uint256 managerFees,
-            uint256 protocolFees,
-            uint256 netAUM
-        ) = _calculateFees(_totalAssets);
+        uint256 _totalSupply = totalSupply();
 
-        uint256 managerShares = _convertToShares(
-            managerFees,
-            Math.Rounding.Floor
-        );
-        uint256 protocolShares = _convertToShares(
-            protocolFees,
-            Math.Rounding.Floor
+        (uint256 managerShares, uint256 protocolShares) = _calculateFees(
+            _totalAssets,
+            _totalSupply
         );
 
-        uint256 newHighWaterMark = netAUM;
+        if (managerShares > 0) {
+            _mint(assetManager, managerShares);
+        }
+
+        if (protocolShares > 0) {
+            _mint(hopperDao, protocolShares);
+        }
+
+        uint256 newHighWaterMark = _totalAssets;
 
         // Then we proceed the deposit request and save the deposit parameters
         uint256 pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
@@ -187,7 +187,7 @@ contract Vault is
 
         if (pendingAssets > 0) {
             epoch.totalAssetsDeposit = _totalAssets;
-            epoch.totalSupplyDeposit = totalSupply();
+            epoch.totalSupplyDeposit = _totalSupply;
             uint256 shares = _convertToShares(
                 pendingAssets,
                 Math.Rounding.Floor
@@ -231,14 +231,6 @@ contract Vault is
         }
 
         _setHighWaterMark(newHighWaterMark);
-
-        if (managerShares > 0) {
-            _mint(assetManager, managerShares);
-        }
-
-        if (protocolShares > 0) {
-            _mint(hopperDao, protocolShares);
-        }
 
         $erc7540.epochId = epochId + 1;
     }
