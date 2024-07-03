@@ -119,16 +119,6 @@ abstract contract ERC7540Upgradeable is
     }
 
     // ## EIP165 ##
-    // function supportsInterface(
-    //     bytes4 interfaceId
-    // ) public pure virtual returns (bool) {
-    //     interfaceId;
-    //     if (
-    //         interfaceId == type(IERC7540Redeem).interfaceId ||
-    //         interfaceId == type(IERC7540Deposit).interfaceId
-    //     ) return true;
-    // }
-
     function supportsInterface(
         bytes4 interfaceId
     ) public view virtual returns (bool) {
