@@ -20,6 +20,9 @@ struct FeeSchema {
 
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS_DIVIDER = 10_000;
+uint256 constant MAX_MANAGEMENT_FEES = 500; // 5%
+uint256 constant MAX_PERFORMANCE_FEES = 5000; // 50%
+uint256 constant MAX_PROTOCOL_FEES = 3000; // 30%
 
 contract FeeManager is Initializable {
     using Math for uint256;
@@ -45,9 +48,15 @@ contract FeeManager is Initializable {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         $.highWaterMark = 0;
-        $.managementFee = feeSchema.managementFee;
-        $.performanceFee = feeSchema.performanceFee;
-        $.protocolFee = feeSchema.protocolFee;
+        $.managementFee = feeSchema.managementFee > MAX_MANAGEMENT_FEES
+            ? MAX_MANAGEMENT_FEES
+            : feeSchema.managementFee;
+        $.performanceFee = feeSchema.performanceFee > MAX_PERFORMANCE_FEES
+            ? MAX_PERFORMANCE_FEES
+            : feeSchema.performanceFee;
+        $.protocolFee = feeSchema.protocolFee > MAX_PROTOCOL_FEES
+            ? MAX_PROTOCOL_FEES
+            : feeSchema.protocolFee;
         $.lastFeeTime = block.timestamp;
     }
 
@@ -131,17 +140,23 @@ contract FeeManager is Initializable {
 
     function setProtocolFee(uint256 _protocolFee) public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.protocolFee = _protocolFee;
+        $.protocolFee = _protocolFee > MAX_PROTOCOL_FEES
+            ? MAX_PROTOCOL_FEES
+            : _protocolFee;
     }
 
     function setManagementFee(uint256 _managementFee) public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.managementFee = _managementFee;
+        $.managementFee = _managementFee > MAX_MANAGEMENT_FEES
+            ? MAX_MANAGEMENT_FEES
+            : _managementFee;
     }
 
     function setPerformanceFee(uint256 _performanceFee) public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.performanceFee = _performanceFee;
+        $.performanceFee = _performanceFee > MAX_PERFORMANCE_FEES
+            ? MAX_PERFORMANCE_FEES
+            : _performanceFee;
     }
 
     function _setHighWaterMark(
