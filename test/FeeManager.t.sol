@@ -33,8 +33,8 @@ contract TestFeeManager is BaseTest {
 
     function test_100_bips() public {
         setProtocolFee(100, vault.vaultHopper());
-        setPerformanceFee(100, vault.vaultAM());
-        setManagementFee(100, vault.vaultAM());
+        setPerformanceFee(100, vault.vaultAdmin());
+        setManagementFee(100, vault.vaultAdmin());
 
         assertEq(vault.managementFee(), 100);
         assertEq(vault.performanceFee(), 100);
@@ -59,7 +59,7 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_performance_fees() public {
-        setPerformanceFee(100, vault.vaultAM()); // 1% fees on net AUM if above high water mark
+        setPerformanceFee(100, vault.vaultAdmin()); // 1% fees on net AUM if above high water mark
 
         assertEq(vault.calculatePerformanceFee(_100M), _1M);
         assertEq(vault.calculatePerformanceFee(_10M), _100K);
@@ -68,10 +68,11 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_management_fees() public {
-        setManagementFee(100, vault.vaultAM()); // 1% fees on average AUM since last NAV
+        // takes 1 day to settle new fee schema
+        setManagementFee(100, vault.vaultAdmin()); // 1% fees on average AUM since last NAV
 
-        // Fees over 1 year
-        vm.warp(vm.getBlockTimestamp() + 365 days);
+        // Fees over 1 year (364 days because there is 1 day of fee settlement in setManagementFees() above)
+        vm.warp(vm.getBlockTimestamp() + 364 days);
 
         assertEq(vault.calculateManagementFee(_100M), _1M);
         assertEq(vault.calculateManagementFee(_10M), _100K);
@@ -97,8 +98,8 @@ contract TestFeeManager is BaseTest {
 
         // 20% perf. fees / 2% management fees / 1% protocol fees
         setProtocolFee(100, vault.vaultHopper());
-        setPerformanceFee(2000, vault.vaultAM());
-        setManagementFee(200, vault.vaultAM());
+        setPerformanceFee(2000, vault.vaultAdmin());
+        setManagementFee(200, vault.vaultAdmin());
 
         address assetManager = vault.getRoleMember(ASSET_MANAGER_ROLE, 0);
         address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);

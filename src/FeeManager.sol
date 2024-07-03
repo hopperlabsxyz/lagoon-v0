@@ -4,10 +4,16 @@ pragma solidity "0.8.25";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+struct FeeDetails {
+    uint256 currentFee;
+    uint256 updatedFee;
+    uint256 lastUpdate;
+}
+
 struct FeeManagerStorage {
-    uint256 managementFee;
-    uint256 performanceFee;
-    uint256 protocolFee;
+    FeeDetails managementFee;
+    FeeDetails protocolFee;
+    FeeDetails performanceFee;
     uint256 lastFeeTime;
     uint256 highWaterMark;
 }
@@ -23,6 +29,7 @@ uint256 constant BPS_DIVIDER = 10_000;
 uint256 constant MAX_MANAGEMENT_FEES = 500; // 5%
 uint256 constant MAX_PERFORMANCE_FEES = 5000; // 50%
 uint256 constant MAX_PROTOCOL_FEES = 3000; // 30%
+uint256 constant COOLDOWN = 1 days;
 
 contract FeeManager is Initializable {
     using Math for uint256;
@@ -48,13 +55,15 @@ contract FeeManager is Initializable {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         $.highWaterMark = 0;
-        $.managementFee = feeSchema.managementFee > MAX_MANAGEMENT_FEES
+        $.managementFee.currentFee = feeSchema.managementFee >
+            MAX_MANAGEMENT_FEES
             ? MAX_MANAGEMENT_FEES
             : feeSchema.managementFee;
-        $.performanceFee = feeSchema.performanceFee > MAX_PERFORMANCE_FEES
+        $.performanceFee.currentFee = feeSchema.performanceFee >
+            MAX_PERFORMANCE_FEES
             ? MAX_PERFORMANCE_FEES
             : feeSchema.performanceFee;
-        $.protocolFee = feeSchema.protocolFee > MAX_PROTOCOL_FEES
+        $.protocolFee.currentFee = feeSchema.protocolFee > MAX_PROTOCOL_FEES
             ? MAX_PROTOCOL_FEES
             : feeSchema.protocolFee;
         $.lastFeeTime = block.timestamp;
@@ -62,17 +71,17 @@ contract FeeManager is Initializable {
 
     function managementFee() external view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        return $.managementFee;
+        return $.managementFee.currentFee;
     }
 
     function performanceFee() external view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        return $.performanceFee;
+        return $.performanceFee.currentFee;
     }
 
     function protocolFee() external view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        return $.protocolFee;
+        return $.protocolFee.currentFee;
     }
 
     function lastFeeTime() external view returns (uint256) {
@@ -94,7 +103,7 @@ contract FeeManager is Initializable {
             timeElapsed = block.timestamp - $.lastFeeTime;
         }
         uint256 annualFee = _AUM.mulDiv(
-            $.managementFee,
+            $.managementFee.currentFee,
             BPS_DIVIDER,
             Math.Rounding.Floor
         );
@@ -113,7 +122,7 @@ contract FeeManager is Initializable {
             }
             return
                 profit.mulDiv(
-                    $.performanceFee,
+                    $.performanceFee.currentFee,
                     BPS_DIVIDER,
                     Math.Rounding.Floor
                 );
@@ -125,9 +134,9 @@ contract FeeManager is Initializable {
         uint256 _totalFeeShares
     ) public view returns (uint256 managerFees, uint256 protocolFees) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if ($.protocolFee > 0) {
+        if ($.protocolFee.currentFee > 0) {
             protocolFees = _totalFeeShares.mulDiv(
-                $.protocolFee,
+                $.protocolFee.currentFee,
                 BPS_DIVIDER,
                 Math.Rounding.Floor
             );
@@ -138,25 +147,46 @@ contract FeeManager is Initializable {
         }
     }
 
-    function setProtocolFee(uint256 _protocolFee) public virtual {
+    function setProtocolFee() public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.protocolFee = _protocolFee > MAX_PROTOCOL_FEES
+        require(block.timestamp >= $.protocolFee.lastUpdate + COOLDOWN);
+        $.protocolFee.currentFee = $.protocolFee.updatedFee;
+    }
+
+    function setManagementFee() public virtual {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        require(block.timestamp >= $.managementFee.lastUpdate + COOLDOWN);
+        $.managementFee.currentFee = $.managementFee.updatedFee;
+    }
+
+    function setPerformanceFee() public virtual {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        require(block.timestamp >= $.performanceFee.lastUpdate + COOLDOWN);
+        $.performanceFee.currentFee = $.performanceFee.updatedFee;
+    }
+
+    function updateProtocolFee(uint256 _protocolFee) public virtual {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        $.protocolFee.updatedFee = _protocolFee > MAX_PROTOCOL_FEES
             ? MAX_PROTOCOL_FEES
             : _protocolFee;
+        $.protocolFee.lastUpdate = block.timestamp;
     }
 
-    function setManagementFee(uint256 _managementFee) public virtual {
+    function updateManagementFee(uint256 _managementFee) public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.managementFee = _managementFee > MAX_MANAGEMENT_FEES
+        $.managementFee.updatedFee = _managementFee > MAX_MANAGEMENT_FEES
             ? MAX_MANAGEMENT_FEES
             : _managementFee;
+        $.managementFee.lastUpdate = block.timestamp;
     }
 
-    function setPerformanceFee(uint256 _performanceFee) public virtual {
+    function updatePerformanceFee(uint256 _performanceFee) public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.performanceFee = _performanceFee > MAX_PERFORMANCE_FEES
+        $.performanceFee.updatedFee = _performanceFee > MAX_PERFORMANCE_FEES
             ? MAX_PERFORMANCE_FEES
             : _performanceFee;
+        $.performanceFee.lastUpdate = block.timestamp;
     }
 
     function _setHighWaterMark(
