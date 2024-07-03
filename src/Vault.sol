@@ -258,21 +258,33 @@ contract Vault is
         return true;
     }
 
-    function setProtocolFee(
+    function updateProtocolFee(
         uint256 _protocolFee
     ) public override onlyRole(HOPPER_ROLE) {
-        super.setProtocolFee(_protocolFee);
+        super.updateProtocolFee(_protocolFee);
     }
 
-    function setManagementFee(
+    function updateManagementFee(
         uint256 _managementFee
-    ) public override onlyRole(ASSET_MANAGER_ROLE) {
-        super.setManagementFee(_managementFee);
+    ) public override onlyRole(DEFAULT_ADMIN_ROLE) {
+        super.updateManagementFee(_managementFee);
     }
 
-    function setPerformanceFee(
+    function updatePerformanceFee(
         uint256 _performanceFee
-    ) public override onlyRole(ASSET_MANAGER_ROLE) {
-        super.setPerformanceFee(_performanceFee);
+    ) public override onlyRole(DEFAULT_ADMIN_ROLE) {
+        super.updatePerformanceFee(_performanceFee);
+    }
+
+    function setProtocolFee() public override onlyRole(HOPPER_ROLE) {
+        super.setProtocolFee();
+    }
+
+    function setManagementFee() public override onlyRole(DEFAULT_ADMIN_ROLE) {
+        super.setManagementFee();
+    }
+
+    function setPerformanceFee() public override onlyRole(DEFAULT_ADMIN_ROLE) {
+        super.setPerformanceFee();
     }
 }

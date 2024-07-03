@@ -154,18 +154,27 @@ contract BaseTest is Test, Constants {
     }
 
     function setManagementFee(uint256 _fee, address _caller) public {
-        vm.prank(_caller);
-        vault.setManagementFee(_fee);
+        vm.startPrank(_caller);
+        vault.updateManagementFee(_fee);
+        vm.warp(vm.getBlockTimestamp() + 1 days);
+        vault.setManagementFee();
+        vm.stopPrank();
     }
 
     function setPerformanceFee(uint256 _fee, address _caller) public {
-        vm.prank(_caller);
-        vault.setPerformanceFee(_fee);
+        vm.startPrank(_caller);
+        vault.updatePerformanceFee(_fee);
+        vm.warp(vm.getBlockTimestamp() + 1 days);
+        vault.setPerformanceFee();
+        vm.stopPrank();
     }
 
     function setProtocolFee(uint256 _fee, address _caller) public {
-        vm.prank(_caller);
-        vault.setProtocolFee(_fee);
+        vm.startPrank(_caller);
+        vault.updateProtocolFee(_fee);
+        vm.warp(vm.getBlockTimestamp() + 1 days);
+        vault.setProtocolFee();
+        vm.stopPrank();
     }
 
     function balance(address user) public view returns (uint256) {
