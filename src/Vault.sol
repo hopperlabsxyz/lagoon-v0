@@ -121,27 +121,39 @@ contract Vault is
         return ERC4626Upgradeable.decimals();
     }
 
-    function _requestDeposit(
+    function requestDeposit(
         uint256 assets,
         address controller,
         address owner
-    ) internal override onlyWhitelisted(controller) {
-        super._requestDeposit(assets, controller, owner);
+    ) public override onlyWhitelisted(controller) returns (uint256) {
+        return super.requestDeposit(assets, controller, owner);
     }
 
+    /**
+     * @param receiver who will receive the shares
+     * @param controller who the depositRequest belongs to
+     * @dev if whistelist is activated, receiver must be whitelisted because _update is called and
+     * onlyWhitelisted modifier is applied
+     */
     function _deposit(
         uint256 assets,
         address receiver,
         address controller
-    ) internal override onlyWhitelisted(receiver) returns (uint256 shares) {
+    ) internal override returns (uint256 shares) {
         return super._deposit(assets, receiver, controller);
     }
 
+    /**
+     * @param receiver who will receive the shares
+     * @param controller who the depositRequest belongs to
+     * @dev if whistelist is activated, receiver must be whitelisted, because _update is called and
+     * onlyWhitelisted modifier is applied
+     */
     function _mint(
         uint256 shares,
         address receiver,
         address controller
-    ) internal override onlyWhitelisted(receiver) returns (uint256 assets) {
+    ) internal override returns (uint256 assets) {
         return super._mint(shares, receiver, controller);
     }
 
