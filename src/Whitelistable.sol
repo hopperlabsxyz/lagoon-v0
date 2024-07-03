@@ -37,9 +37,9 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         return $.activated;
     }
 
-    function switchWhitelist() public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function deactivateWL() public onlyRole(DEFAULT_ADMIN_ROLE) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-        $.activated = !$.activated;
+        $.activated = false;
     }
 
     modifier onlyWhitelisted(address account) {
