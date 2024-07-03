@@ -2,14 +2,10 @@
 pragma solidity "0.8.25";
 
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
-import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 
 bytes32 constant WHITELISTED = keccak256("WHITELISTED");
 
-contract Whitelistable is
-    ContextUpgradeable,
-    AccessControlEnumerableUpgradeable
-{
+contract Whitelistable is AccessControlEnumerableUpgradeable {
     struct WhitelistableStorage {
         bool activated;
     }
