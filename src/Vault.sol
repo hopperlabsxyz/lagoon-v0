@@ -24,6 +24,9 @@ bytes32 constant ASSET_MANAGER_ROLE = keccak256("ASSET_MANAGER");
 bytes32 constant VALORIZATION_ROLE = keccak256("VALORIZATION_MANAGER");
 bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
 
+error CooldownNotOver();
+error AssetManagerNotSet();
+
 contract Vault is
     ERC7540Upgradeable,
     ERC20BurnableUpgradeable,
@@ -187,12 +190,11 @@ contract Vault is
         VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
-        // we allowe to settle only if the newTotalAssets:
-        // - is not to recent (must be > $.newTotalAssetsCooldown
-        require(
-            $vault.newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown <=
-                block.timestamp
-        );
+        // we allowe to settle only if a cooldown passed by
+        if (
+            $vault.newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown >
+            block.timestamp
+        ) revert CooldownNotOver();
 
         // avoid settle using same newTotalAssets input
         $vault.newTotalAssetsTimestamp = 0;
@@ -243,7 +245,8 @@ contract Vault is
         if (pendingAssets > 0) {
             address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
             // there must be an asset manager
-            require(assetManager != address(0));
+            if (assetManager == address(0)) revert AssetManagerNotSet();
+
             IERC20(asset()).safeTransferFrom(
                 pendingSilo(),
                 assetManager,
