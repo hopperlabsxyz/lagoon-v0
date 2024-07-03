@@ -51,6 +51,11 @@ abstract contract Constants is Test {
     VmSafe.Wallet user9 = vm.createWallet("user9");
     VmSafe.Wallet user10 = vm.createWallet("user10");
     VmSafe.Wallet owner = vm.createWallet("owner");
+    VmSafe.Wallet assetManager = vm.createWallet("assetManager");
+    VmSafe.Wallet valorizator = vm.createWallet("valorizator");
+    VmSafe.Wallet admin = vm.createWallet("admin");
+    VmSafe.Wallet dao = vm.createWallet("dao");
+
     VmSafe.Wallet[] users;
 
     // Wallet
@@ -99,9 +104,10 @@ abstract contract Constants is Test {
                 underlying,
                 vaultName,
                 vaultSymbol,
-                address(this),
-                address(this),
-                address(this),
+                dao.addr,
+                assetManager.addr,
+                valorizator.addr,
+                admin.addr,
                 0,
                 0,
                 0,
@@ -133,12 +139,13 @@ abstract contract Constants is Test {
     ) internal returns (VaultHelper) {
         bool enableWhitelist = false;
         Vault.InitStruct memory v = Vault.InitStruct(
-            _underlying,
-            _vaultName,
-            _vaultSymbol,
-            address(this),
-            address(this),
-            address(this),
+            underlying,
+            vaultName,
+            vaultSymbol,
+            dao.addr,
+            assetManager.addr,
+            valorizator.addr,
+            admin.addr,
             0,
             0,
             0,
