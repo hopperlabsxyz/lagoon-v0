@@ -4,20 +4,29 @@ pragma solidity "0.8.25";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-struct FeeManagerStorage {
-    uint256 managementFee;
-    uint256 performanceFee;
-    uint256 protocolFee;
-    uint256 lastFeeTime;
-    uint256 highWaterMark;
-    bool protocolFeeSwitch;
-}
-
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS_DIVIDER = 10_000;
+uint256 constant MAX_MANAGEMENT_FEES = 500; // 5%
+uint256 constant MAX_PERFORMANCE_FEES = 5000; // 50%
+uint256 constant MAX_PROTOCOL_FEES = 3000; // 30%
+uint256 constant COOLDOWN = 1 days;
 
-abstract contract FeeManager is Initializable {
+contract FeeManager is Initializable {
     using Math for uint256;
+
+    struct FeeDetails {
+        uint256 currentFee;
+        uint256 updatedFee;
+        uint256 lastUpdate;
+    }
+
+    struct FeeManagerStorage {
+        FeeDetails managementFee;
+        FeeDetails protocolFee;
+        FeeDetails performanceFee;
+        uint256 lastFeeTime;
+        uint256 highWaterMark;
+    }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
     // solhint-disable-next-line const-name-snakecase
@@ -40,22 +49,34 @@ abstract contract FeeManager is Initializable {
         uint256 _protocolFee
     ) internal onlyInitializing {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
+
         $.highWaterMark = 0;
-        $.managementFee = _managementFee;
-        $.performanceFee = _performanceFee;
-        $.protocolFee = _protocolFee;
+
+        require(_managementFee <= MAX_MANAGEMENT_FEES);
+        $.managementFee.currentFee = _managementFee;
+
+        require(_performanceFee <= MAX_PERFORMANCE_FEES);
+        $.performanceFee.currentFee = _performanceFee;
+
+        require(_protocolFee <= MAX_PROTOCOL_FEES);
+        $.protocolFee.currentFee = _protocolFee;
+
         $.lastFeeTime = block.timestamp;
-        $.protocolFeeSwitch = false;
     }
 
     function managementFee() external view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        return $.managementFee;
+        return $.managementFee.currentFee;
     }
 
     function performanceFee() external view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        return $.performanceFee;
+        return $.performanceFee.currentFee;
+    }
+
+    function protocolFee() external view returns (uint256) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        return $.protocolFee.currentFee;
     }
 
     function lastFeeTime() external view returns (uint256) {
@@ -69,15 +90,15 @@ abstract contract FeeManager is Initializable {
     }
 
     function calculateManagementFee(
-        uint256 totalAssets
-    ) internal view returns (uint256) {
+        uint256 _AUM
+    ) public view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         uint256 timeElapsed;
         unchecked {
             timeElapsed = block.timestamp - $.lastFeeTime;
         }
-        uint256 annualFee = totalAssets.mulDiv(
-            $.managementFee,
+        uint256 annualFee = _AUM.mulDiv(
+            $.managementFee.currentFee,
             BPS_DIVIDER,
             Math.Rounding.Floor
         );
@@ -85,18 +106,18 @@ abstract contract FeeManager is Initializable {
     }
 
     function calculatePerformanceFee(
-        uint256 totalAssets
-    ) internal view returns (uint256) {
+        uint256 _AUM
+    ) public view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         uint256 hwm = $.highWaterMark;
-        if (totalAssets > hwm) {
+        if (_AUM > hwm) {
             uint256 profit;
             unchecked {
-                profit = totalAssets - hwm;
+                profit = _AUM - hwm;
             }
             return
                 profit.mulDiv(
-                    $.performanceFee,
+                    $.performanceFee.currentFee,
                     BPS_DIVIDER,
                     Math.Rounding.Floor
                 );
@@ -105,21 +126,101 @@ abstract contract FeeManager is Initializable {
     }
 
     function calculateProtocolFee(
-        uint256 _managementFees
-    ) internal view returns (uint256 managementFees, uint256 protocolFees) {
+        uint256 _totalFeeShares
+    ) public view returns (uint256 managerFees, uint256 protocolFees) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if ($.protocolFeeSwitch) {
-            protocolFees = _managementFees.mulDiv(
-                $.protocolFee,
+        if ($.protocolFee.currentFee > 0) {
+            protocolFees = _totalFeeShares.mulDiv(
+                $.protocolFee.currentFee,
                 BPS_DIVIDER,
                 Math.Rounding.Floor
             );
-            managementFees = _managementFees - protocolFees;
+            managerFees = _totalFeeShares - protocolFees;
         } else {
             protocolFees = 0;
-            managementFees = _managementFees;
+            managerFees = _totalFeeShares;
         }
     }
 
-    function _collectFees(uint256 newTotalAssets) internal virtual;
+    function setProtocolFee() public virtual {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        require(block.timestamp >= $.protocolFee.lastUpdate + COOLDOWN);
+        $.protocolFee.currentFee = $.protocolFee.updatedFee;
+    }
+
+    function setManagementFee() public virtual {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        require(block.timestamp >= $.managementFee.lastUpdate + COOLDOWN);
+        $.managementFee.currentFee = $.managementFee.updatedFee;
+    }
+
+    function setPerformanceFee() public virtual {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        require(block.timestamp >= $.performanceFee.lastUpdate + COOLDOWN);
+        $.performanceFee.currentFee = $.performanceFee.updatedFee;
+    }
+
+    function updateProtocolFee(uint256 _protocolFee) public virtual {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        require(_protocolFee <= MAX_PROTOCOL_FEES);
+        $.protocolFee.updatedFee = _protocolFee;
+        $.protocolFee.lastUpdate = block.timestamp;
+    }
+
+    function updateManagementFee(uint256 _managementFee) public virtual {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        require(_managementFee <= MAX_MANAGEMENT_FEES);
+        $.managementFee.updatedFee = _managementFee;
+        $.managementFee.lastUpdate = block.timestamp;
+    }
+
+    function updatePerformanceFee(uint256 _performanceFee) public virtual {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        require(_performanceFee <= MAX_PERFORMANCE_FEES);
+        $.performanceFee.updatedFee = _performanceFee;
+        $.performanceFee.lastUpdate = block.timestamp;
+    }
+
+    function _setHighWaterMark(
+        uint256 _newHighWaterMark
+    ) internal returns (uint256) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+
+        uint256 _highWaterMark = $.highWaterMark;
+
+        if (_newHighWaterMark > _highWaterMark) {
+            $.highWaterMark = _newHighWaterMark;
+            return _newHighWaterMark;
+        }
+
+        return _highWaterMark;
+    }
+
+    function _calculateFees(
+        uint256 newTotalAssets,
+        uint256 totalSupply
+    ) internal returns (uint256 managerShares, uint256 protocolShares) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+
+        uint256 _managementFees = calculateManagementFee(newTotalAssets);
+        uint256 _performanceFees = calculatePerformanceFee(
+            newTotalAssets - _managementFees
+        );
+
+        uint256 _totalFees = _managementFees + _performanceFees;
+
+        uint256 _netAUM = newTotalAssets - _totalFees;
+        uint256 _totalFeeShares;
+        if (_netAUM != 0) {
+            _totalFeeShares = _totalFees.mulDiv(
+                totalSupply + 1,
+                _netAUM + 1,
+                Math.Rounding.Floor
+            );
+        }
+
+        (managerShares, protocolShares) = calculateProtocolFee(_totalFeeShares);
+
+        $.lastFeeTime = block.timestamp;
+    }
 }
