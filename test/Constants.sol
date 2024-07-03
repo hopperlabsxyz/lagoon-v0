@@ -92,8 +92,10 @@ abstract contract Constants is Test {
             vault = _proxyDeploy(beacon, underlying, vaultName, vaultSymbol);
         } else {
             vm.startPrank(owner.addr);
+            bool enableWhitelist = false;
+
             vault = new VaultHelper(false);
-            vault.initialize(
+            Vault.InitStruct memory v = Vault.InitStruct(
                 underlying,
                 vaultName,
                 vaultSymbol,
@@ -103,8 +105,10 @@ abstract contract Constants is Test {
                 0,
                 0,
                 0,
-                1 days
+                1 days,
+                enableWhitelist
             );
+            vault.initialize(v);
             vm.stopPrank();
         }
         vm.label(address(vault), vaultName);
@@ -127,25 +131,26 @@ abstract contract Constants is Test {
         string memory _vaultName,
         string memory _vaultSymbol
     ) internal returns (VaultHelper) {
+        bool enableWhitelist = false;
+        Vault.InitStruct memory v = Vault.InitStruct(
+            _underlying,
+            _vaultName,
+            _vaultSymbol,
+            address(this),
+            address(this),
+            address(this),
+            0,
+            0,
+            0,
+            1 days,
+            enableWhitelist
+        );
+
         BeaconProxy proxy = BeaconProxy(
             payable(
                 Upgrades.deployBeaconProxy(
                     address(beacon),
-                    abi.encodeCall(
-                        Vault.initialize,
-                        (
-                            _underlying,
-                            _vaultName,
-                            _vaultSymbol,
-                            address(this),
-                            address(this),
-                            address(this),
-                            0,
-                            0,
-                            0,
-                            1 days
-                        )
-                    )
+                    abi.encodeCall(Vault.initialize, v)
                 )
             )
         );
