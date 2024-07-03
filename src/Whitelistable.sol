@@ -2,14 +2,10 @@
 pragma solidity "0.8.25";
 
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
-import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 
 bytes32 constant WHITELISTED = keccak256("WHITELISTED");
 
-contract Whitelistable is
-    ContextUpgradeable,
-    AccessControlEnumerableUpgradeable
-{
+contract Whitelistable is AccessControlEnumerableUpgradeable {
     struct WhitelistableStorage {
         bool activated;
     }
@@ -30,15 +26,22 @@ contract Whitelistable is
         }
     }
 
-    function __Whitelistable_init(bool activate) internal onlyInitializing {
+    function __Whitelistable_init(
+        bool _activateWhitelist
+    ) internal onlyInitializing {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-        $.activated = activate;
+        $.activated = _activateWhitelist;
         __AccessControlEnumerable_init();
     }
 
     function getActivated() public view returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         return $.activated;
+    }
+
+    function deactivateWhitelist() public onlyRole(DEFAULT_ADMIN_ROLE) {
+        WhitelistableStorage storage $ = _getWhitelistableStorage();
+        $.activated = false;
     }
 
     modifier onlyWhitelisted(address account) {
