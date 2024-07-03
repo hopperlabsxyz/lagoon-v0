@@ -129,19 +129,29 @@ contract Vault is
         super._requestDeposit(assets, controller, owner);
     }
 
+    /**
+     * @param receiver who will receive the shares
+     * @param controller who the depositRequest belongs to
+     * @dev if whistelist is activated, receiver must be whitelisted
+     */
     function _deposit(
         uint256 assets,
         address receiver,
         address controller
-    ) internal override onlyWhitelisted(receiver) returns (uint256 shares) {
+    ) internal override returns (uint256 shares) {
         return super._deposit(assets, receiver, controller);
     }
 
+    /**
+     * @param receiver who will receive the shares
+     * @param controller who the depositRequest belongs to
+     * @dev if whistelist is activated, receiver must be whitelisted
+     */
     function _mint(
         uint256 shares,
         address receiver,
         address controller
-    ) internal override onlyWhitelisted(receiver) returns (uint256 assets) {
+    ) internal override returns (uint256 assets) {
         return super._mint(shares, receiver, controller);
     }
 
