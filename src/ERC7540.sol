@@ -34,6 +34,23 @@ struct ERC7540Storage {
 using SafeERC20 for IERC20;
 using Math for uint256;
 
+error ERC7540PreviewDepositDisabled();
+error ERC7540PreviewMintDisabled();
+error ERC7540PreviewRedeemDisabled();
+error ERC7540PreviewWithdrawDisabled();
+
+error RequestDepositZero();
+error DepositZero();
+error RequestRedeemZero();
+error RedeemZero();
+error WithdrawZero();
+
+error ERC7540InvalidOperator();
+error ZeroPendingDeposit();
+error ZeroPendingRedeem();
+
+error RequestIdNotClaimbale();
+
 abstract contract ERC7540Upgradeable is
     IERC7540Redeem,
     IERC7540Deposit,
@@ -61,6 +78,15 @@ abstract contract ERC7540Upgradeable is
         $.epochId = 1;
         $.claimableSilo = new Silo(underlying);
         $.pendingSilo = new Silo(underlying);
+    }
+
+    modifier onlyOperator(address controller) {
+        if (
+            controller != _msgSender() && !isOperator(controller, _msgSender())
+        ) {
+            revert ERC7540InvalidOperator();
+        }
+        _;
     }
 
     // ## Overrides ##
@@ -134,7 +160,7 @@ abstract contract ERC7540Upgradeable is
         returns (uint256 shares)
     {
         shares;
-        require(false);
+        revert ERC7540PreviewDepositDisabled();
     }
 
     function previewMint(
@@ -146,7 +172,7 @@ abstract contract ERC7540Upgradeable is
         returns (uint256 assets)
     {
         assets;
-        require(false);
+        revert ERC7540PreviewMintDisabled();
     }
 
     function previewRedeem(
@@ -158,7 +184,7 @@ abstract contract ERC7540Upgradeable is
         returns (uint256 assets)
     {
         assets;
-        require(false);
+        revert ERC7540PreviewRedeemDisabled();
     }
 
     function previewWithdraw(
@@ -170,7 +196,7 @@ abstract contract ERC7540Upgradeable is
         returns (uint256 shares)
     {
         shares;
-        require(false);
+        revert ERC7540PreviewWithdrawDisabled();
     }
 
     // ## EIP7540 Deposit Flow ##
@@ -178,10 +204,8 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address controller,
         address owner
-    ) public virtual returns (uint256) {
-        address msgSender = _msgSender();
-        require(assets != 0);
-        require(owner == msgSender || isOperator(owner, msgSender));
+    ) public virtual onlyOperator(owner) returns (uint256) {
+        if (assets == 0) revert RequestDepositZero();
 
         uint256 claimbaleDeposit = claimableDepositRequest(0, controller);
         if (claimbaleDeposit > 0)
@@ -253,10 +277,7 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address receiver,
         address controller
-    ) external returns (uint256) {
-        require(
-            controller == _msgSender() || isOperator(controller, _msgSender())
-        );
+    ) external onlyOperator(controller) returns (uint256) {
         return _deposit(assets, receiver, controller);
     }
 
@@ -265,12 +286,12 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) internal virtual returns (uint256 shares) {
-        require(assets > 0);
+        if (assets == 0) revert DepositZero();
 
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
-        require(requestId != $.epochId);
+        if (requestId == $.epochId) revert RequestIdNotClaimbale();
 
         $.epochs[requestId].depositRequest[controller] -= assets;
         shares = convertToShares(assets, requestId);
@@ -290,11 +311,7 @@ abstract contract ERC7540Upgradeable is
         uint256 shares,
         address receiver,
         address controller
-    ) external returns (uint256) {
-        require(
-            controller == _msgSender() || isOperator(controller, _msgSender())
-        );
-
+    ) external onlyOperator(controller) returns (uint256) {
         return _mint(shares, receiver, controller);
     }
 
@@ -303,11 +320,11 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) internal virtual returns (uint256 assets) {
-        require(shares > 0);
+        if (shares == 0) revert DepositZero();
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
-        require(requestId != $.epochId);
+        if (requestId == $.epochId) revert RequestIdNotClaimbale();
 
         assets = convertToAssets(shares, requestId);
 
@@ -321,7 +338,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
         uint256 request = $.epochs[$.epochId].depositRequest[msgSender];
-        require(request > 0);
+        if (request == 0) revert ZeroPendingDeposit();
         $.epochs[$.epochId].depositRequest[msgSender] = 0;
         IERC20(asset()).safeTransferFrom(pendingSilo(), msgSender, request);
     }
@@ -389,12 +406,9 @@ abstract contract ERC7540Upgradeable is
     )
         public
         override(ERC4626Upgradeable, IERC4626)
-        whenNotPaused
+        onlyOperator(controller)
         returns (uint256)
     {
-        require(
-            controller == _msgSender() || isOperator(controller, _msgSender())
-        );
         return _redeem(shares, receiver, controller);
     }
 
@@ -403,12 +417,12 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) private returns (uint256 assets) {
-        require(shares > 0);
+        if (shares == 0) revert RedeemZero();
 
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
-        require(requestId != $.epochId);
+        if (requestId == $.epochId) revert RequestIdNotClaimbale();
 
         $.epochs[requestId].redeemRequest[controller] -= shares;
         assets = convertToAssets(shares, requestId);
@@ -429,12 +443,9 @@ abstract contract ERC7540Upgradeable is
     )
         public
         override(ERC4626Upgradeable, IERC4626)
-        whenNotPaused
+        onlyOperator(controller)
         returns (uint256)
     {
-        require(
-            controller == _msgSender() || isOperator(controller, _msgSender())
-        );
         return _withdraw(assets, receiver, controller);
     }
 
@@ -443,12 +454,12 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) private returns (uint256 shares) {
-        require(assets > 0);
+        if (assets == 0) revert WithdrawZero();
 
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
-        require(requestId != $.epochId);
+        if (requestId == $.epochId) revert RequestIdNotClaimbale();
 
         shares = convertToShares(assets, requestId);
         $.epochs[requestId].redeemRequest[controller] -= shares;
@@ -465,7 +476,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
         uint256 request = $.epochs[$.epochId].redeemRequest[msgSender];
-        require(request > 0);
+        if (request == 0) revert ZeroPendingRedeem();
         $.epochs[$.epochId].redeemRequest[msgSender] = 0;
         _transfer(pendingSilo(), msgSender, request);
     }
