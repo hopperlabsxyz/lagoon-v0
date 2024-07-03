@@ -4,26 +4,6 @@ pragma solidity "0.8.25";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-struct FeeDetails {
-    uint256 currentFee;
-    uint256 updatedFee;
-    uint256 lastUpdate;
-}
-
-struct FeeManagerStorage {
-    FeeDetails managementFee;
-    FeeDetails protocolFee;
-    FeeDetails performanceFee;
-    uint256 lastFeeTime;
-    uint256 highWaterMark;
-}
-
-struct FeeSchema {
-    uint256 managementFee;
-    uint256 performanceFee;
-    uint256 protocolFee;
-}
-
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS_DIVIDER = 10_000;
 uint256 constant MAX_MANAGEMENT_FEES = 500; // 5%
@@ -33,6 +13,20 @@ uint256 constant COOLDOWN = 1 days;
 
 contract FeeManager is Initializable {
     using Math for uint256;
+
+    struct FeeDetails {
+        uint256 currentFee;
+        uint256 updatedFee;
+        uint256 lastUpdate;
+    }
+
+    struct FeeManagerStorage {
+        FeeDetails managementFee;
+        FeeDetails protocolFee;
+        FeeDetails performanceFee;
+        uint256 lastFeeTime;
+        uint256 highWaterMark;
+    }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
     // solhint-disable-next-line const-name-snakecase
@@ -50,20 +44,22 @@ contract FeeManager is Initializable {
     }
 
     function __FeeManager_init(
-        FeeSchema calldata feeSchema
+        uint256 _managementFee,
+        uint256 _performanceFee,
+        uint256 _protocolFee
     ) internal onlyInitializing {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         $.highWaterMark = 0;
 
-        require(feeSchema.managementFee <= MAX_MANAGEMENT_FEES);
-        $.managementFee.currentFee = feeSchema.managementFee;
+        require(_managementFee <= MAX_MANAGEMENT_FEES);
+        $.managementFee.currentFee = _managementFee;
 
-        require(feeSchema.performanceFee <= MAX_PERFORMANCE_FEES);
-        $.performanceFee.currentFee = feeSchema.performanceFee;
+        require(_performanceFee <= MAX_PERFORMANCE_FEES);
+        $.performanceFee.currentFee = _performanceFee;
 
-        require(feeSchema.protocolFee <= MAX_PROTOCOL_FEES);
-        $.protocolFee.currentFee = feeSchema.protocolFee;
+        require(_protocolFee <= MAX_PROTOCOL_FEES);
+        $.protocolFee.currentFee = _protocolFee;
 
         $.lastFeeTime = block.timestamp;
     }
