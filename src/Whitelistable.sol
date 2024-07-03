@@ -26,9 +26,11 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         }
     }
 
-    function __Whitelistable_init(bool _activateWL) internal onlyInitializing {
+    function __Whitelistable_init(
+        bool _activateWhitelist
+    ) internal onlyInitializing {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-        $.activated = _activateWL;
+        $.activated = _activateWhitelist;
         __AccessControlEnumerable_init();
     }
 
@@ -37,7 +39,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         return $.activated;
     }
 
-    function deactivateWL() public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function deactivateWhitelist() public onlyRole(DEFAULT_ADMIN_ROLE) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         $.activated = false;
     }
