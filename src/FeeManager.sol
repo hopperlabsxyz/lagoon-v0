@@ -216,9 +216,9 @@ contract FeeManager is Initializable {
         uint256 _netAUM = newTotalAssets - _totalFees;
         uint256 _totalFeeShares;
         if (_netAUM != 0) {
-            _totalFeeShares = totalSupply.mulDiv(
-                _totalFees,
-                _netAUM,
+            _totalFeeShares = _totalFees.mulDiv(
+                totalSupply + 1,
+                _netAUM + 1,
                 Math.Rounding.Floor
             );
         }
