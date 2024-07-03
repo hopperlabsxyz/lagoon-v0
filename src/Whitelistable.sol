@@ -5,6 +5,8 @@ import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgrad
 
 bytes32 constant WHITELISTED = keccak256("WHITELISTED");
 
+error NotWhitelisted(address account);
+
 contract Whitelistable is AccessControlEnumerableUpgradeable {
     struct WhitelistableStorage {
         bool activated;
@@ -45,10 +47,9 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
     }
 
     modifier onlyWhitelisted(address account) {
-        require(
-            getActivated() == false || _isWhitelisted(account),
-            "Whitelistable: caller is not whitelisted"
-        );
+        if (getActivated() == true && !_isWhitelisted(account)) {
+            revert NotWhitelisted(account);
+        }
         _;
     }
 
