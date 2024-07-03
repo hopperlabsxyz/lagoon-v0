@@ -128,6 +128,18 @@ contract BaseTest is Test, Constants {
         IERC4626(asset).approve(address(vault), UINT256_MAX);
     }
 
+    function dealAmountAndApprove(address user, uint256 amount) public {
+        address asset = vault.asset();
+        deal(user, type(uint256).max);
+        dealAsset(
+            vault.asset(),
+            user,
+            amount * 10 ** IERC20Metadata(asset).decimals()
+        );
+        vm.prank(user);
+        IERC4626(asset).approve(address(vault), UINT256_MAX);
+    }
+
     function dealAsset(address asset, address owner, uint256 amount) public {
         if (asset == address(USDC)) {
             vm.prank(USDC_WHALE);
@@ -139,6 +151,30 @@ contract BaseTest is Test, Constants {
 
     function assetBalance(address user) public view returns (uint256) {
         return IERC4626(vault.asset()).balanceOf(user);
+    }
+
+    function setManagementFee(uint256 _fee, address _caller) public {
+        vm.startPrank(_caller);
+        vault.updateManagementFee(_fee);
+        vm.warp(vm.getBlockTimestamp() + 1 days);
+        vault.setManagementFee();
+        vm.stopPrank();
+    }
+
+    function setPerformanceFee(uint256 _fee, address _caller) public {
+        vm.startPrank(_caller);
+        vault.updatePerformanceFee(_fee);
+        vm.warp(vm.getBlockTimestamp() + 1 days);
+        vault.setPerformanceFee();
+        vm.stopPrank();
+    }
+
+    function setProtocolFee(uint256 _fee, address _caller) public {
+        vm.startPrank(_caller);
+        vault.updateProtocolFee(_fee);
+        vm.warp(vm.getBlockTimestamp() + 1 days);
+        vault.setProtocolFee();
+        vm.stopPrank();
     }
 
     function balance(address user) public view returns (uint256) {

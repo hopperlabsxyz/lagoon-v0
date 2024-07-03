@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
+import "forge-std/Test.sol";
 import {ERC7540Upgradeable, ERC7540Storage, EpochData} from "./ERC7540.sol";
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -11,7 +12,7 @@ import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC2
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {Whitelistable} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {FeeManager, FeeManagerStorage} from "./FeeManager.sol";
+import {FeeManager} from "./FeeManager.sol";
 // import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
@@ -47,6 +48,7 @@ contract Vault is
         IERC20 underlying;
         string name;
         string symbol;
+        address dao;
         address assetManager;
         address valorization;
         address admin;
@@ -91,8 +93,9 @@ contract Vault is
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = init.cooldown;
 
-        _grantRole(HOPPER_ROLE, address(2)); // TODO PUT A REAL ADDRESS
+        _grantRole(HOPPER_ROLE, init.dao); // TODO PUT A REAL ADDRESS
         _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE); // only hopper manage itself
+
         _grantRole(ASSET_MANAGER_ROLE, init.assetManager);
         _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
 
@@ -190,27 +193,48 @@ contract Vault is
         VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
-        // we allowe to settle only if a cooldown passed by
+        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+        address hopperDao = getRoleMember(HOPPER_ROLE, 0);
+
+        // we allowe to settle only if the newTotalAssets:
+        // - is not to recent (must be > $.newTotalAssetsCooldown
         if (
             $vault.newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown >
             block.timestamp
         ) revert CooldownNotOver();
 
         // avoid settle using same newTotalAssets input
-        $vault.newTotalAssetsTimestamp = 0;
+        $vault.newTotalAssetsTimestamp = type(uint256).max;
 
         // caching the value
         uint256 epochId = $erc7540.epochId;
 
-        // First we update the vault value and collect fees.
-        _collectFees($vault.newTotalAssets);
         $erc7540.totalAssets = $vault.newTotalAssets;
 
         EpochData storage epoch = $erc7540.epochs[epochId];
         uint256 _totalAssets = totalAssets();
 
+        (uint256 managerShares, uint256 protocolShares) = _calculateFees(
+            _totalAssets,
+            totalSupply()
+        );
+
+        if (managerShares > 0) {
+            _mint(assetManager, managerShares);
+        }
+
+        if (protocolShares > 0) {
+            _mint(hopperDao, protocolShares);
+        }
+
+        uint256 newHighWaterMark = _totalAssets;
+
         // Then we proceed the deposit request and save the deposit parameters
         uint256 pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
+
+        // We must not take into account new assets into next fee calculation
+        newHighWaterMark += pendingAssets;
+
         if (pendingAssets > 0) {
             epoch.totalAssetsDeposit = _totalAssets;
             epoch.totalSupplyDeposit = totalSupply();
@@ -228,6 +252,10 @@ contract Vault is
             balanceOf(pendingSilo()),
             Math.Rounding.Floor
         );
+
+        // We must not take into account assets leaving the fund into next fee calculation
+        newHighWaterMark -= assets;
+
         if (assets > 0) {
             epoch.totalAssetsRedeem = _totalAssets;
             epoch.totalSupplyRedeem = totalSupply();
@@ -243,7 +271,6 @@ contract Vault is
         // If there is a surplus of assets, we send those to the asset manager
         pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
         if (pendingAssets > 0) {
-            address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
             // there must be an asset manager
             if (assetManager == address(0)) revert AssetManagerNotSet();
 
@@ -253,6 +280,8 @@ contract Vault is
                 pendingAssets
             );
         }
+
+        _setHighWaterMark(newHighWaterMark);
 
         $erc7540.epochId = epochId + 1;
     }
@@ -280,45 +309,33 @@ contract Vault is
         return true;
     }
 
-    function setProtocolFeeSwitch(
-        bool isActivated
-    ) external onlyRole(HOPPER_ROLE) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.protocolFeeSwitch = isActivated;
+    function updateProtocolFee(
+        uint256 _protocolFee
+    ) public override onlyRole(HOPPER_ROLE) {
+        super.updateProtocolFee(_protocolFee);
     }
 
-    function _collectFees(
-        uint256 newTotalAssets
-    ) internal override onlyRole(VALORIZATION_ROLE) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
+    function updateManagementFee(
+        uint256 _managementFee
+    ) public override onlyRole(DEFAULT_ADMIN_ROLE) {
+        super.updateManagementFee(_managementFee);
+    }
 
-        uint256 managementFee = calculateManagementFee(newTotalAssets);
-        uint256 performanceFee = calculatePerformanceFee(newTotalAssets);
-        (uint256 managementFees, uint256 protocolFee) = calculateProtocolFee(
-            managementFee + performanceFee
-        );
+    function updatePerformanceFee(
+        uint256 _performanceFee
+    ) public override onlyRole(DEFAULT_ADMIN_ROLE) {
+        super.updatePerformanceFee(_performanceFee);
+    }
 
-        $.lastFeeTime = block.timestamp;
+    function setProtocolFee() public override onlyRole(HOPPER_ROLE) {
+        super.setProtocolFee();
+    }
 
-        if (newTotalAssets > $.highWaterMark) {
-            $.highWaterMark = newTotalAssets;
-        }
+    function setManagementFee() public override onlyRole(DEFAULT_ADMIN_ROLE) {
+        super.setManagementFee();
+    }
 
-        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
-        address hopperDao = getRoleMember(HOPPER_ROLE, 0);
-        uint256 totalSupply = totalSupply();
-
-        if (managementFees > 0) {
-            uint256 newShares = managementFees.mulDiv(
-                totalSupply,
-                newTotalAssets
-            );
-            _mint(assetManager, newShares);
-        }
-
-        if (protocolFee > 0) {
-            uint256 newShares = protocolFee.mulDiv(totalSupply, newTotalAssets);
-            _mint(hopperDao, newShares);
-        }
+    function setPerformanceFee() public override onlyRole(DEFAULT_ADMIN_ROLE) {
+        super.setPerformanceFee();
     }
 }
