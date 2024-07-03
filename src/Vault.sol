@@ -298,11 +298,13 @@ contract Vault is
         bytes4 interfaceId
     )
         public
-        pure
+        view
         override(ERC7540Upgradeable, AccessControlEnumerableUpgradeable)
         returns (bool)
     {
-        return true;
+        return
+            AccessControlEnumerableUpgradeable.supportsInterface(interfaceId) ||
+            ERC7540Upgradeable.supportsInterface(interfaceId);
     }
 
     function updateProtocolFee(
