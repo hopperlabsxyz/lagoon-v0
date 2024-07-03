@@ -121,12 +121,12 @@ contract Vault is
         return ERC4626Upgradeable.decimals();
     }
 
-    function _requestDeposit(
+    function requestDeposit(
         uint256 assets,
         address controller,
         address owner
-    ) internal override onlyWhitelisted(controller) {
-        super._requestDeposit(assets, controller, owner);
+    ) public override onlyWhitelisted(controller) returns (uint256) {
+        return super.requestDeposit(assets, controller, owner);
     }
 
     /**

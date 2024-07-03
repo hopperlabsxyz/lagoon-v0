@@ -178,7 +178,7 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address controller,
         address owner
-    ) external returns (uint256) {
+    ) public virtual returns (uint256) {
         address msgSender = _msgSender();
         require(assets != 0);
         require(owner == msgSender || isOperator(owner, msgSender));
@@ -199,7 +199,7 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address controller,
         address owner
-    ) internal virtual {
+    ) internal {
         ERC7540Storage storage $ = _getERC7540Storage();
         $.epochs[$.epochId].depositRequest[controller] += assets;
         if ($.lastDepositRequestId[controller] != $.epochId) {
