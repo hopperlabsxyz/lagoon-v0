@@ -10,9 +10,9 @@ import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-
+import {Whitelistable} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {FeeManager, FeeManagerStorage, FeeSchema} from "./FeeManager.sol";
+import {FeeManager} from "./FeeManager.sol";
 // import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
@@ -20,13 +20,6 @@ using Math for uint256;
 using SafeERC20 for IERC20;
 
 uint256 constant BPS_DIVIDER = 10_000;
-
-struct RoleSchema {
-    address assetManager;
-    address valorization;
-    address admin;
-    address dao;
-}
 
 bytes32 constant ASSET_MANAGER_ROLE = keccak256("ASSET_MANAGER");
 bytes32 constant VALORIZATION_ROLE = keccak256("VALORIZATION_MANAGER");
@@ -36,7 +29,7 @@ contract Vault is
     ERC7540Upgradeable,
     ERC20BurnableUpgradeable,
     ERC20PermitUpgradeable,
-    AccessControlEnumerableUpgradeable,
+    Whitelistable,
     FeeManager
 {
     /// @custom:storage-location erc7201:hopper.storage.vault
@@ -46,6 +39,21 @@ contract Vault is
         uint256 newTotalAssets;
         uint256 newTotalAssetsTimestamp;
         uint256 newTotalAssetsCooldown;
+    }
+
+    struct InitStruct {
+        IERC20 underlying;
+        string name;
+        string symbol;
+        address dao;
+        address assetManager;
+        address valorization;
+        address admin;
+        uint256 managementFee;
+        uint256 performanceFee;
+        uint256 protocolFee;
+        uint256 cooldown;
+        bool enableWhitelist;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
@@ -66,40 +74,44 @@ contract Vault is
         if (disable) _disableInitializers();
     }
 
-    function initialize(
-        IERC20 underlying,
-        string memory name,
-        string memory symbol,
-        RoleSchema calldata roleSchema,
-        FeeSchema calldata feeSchema,
-        uint256 cooldown
-    ) public virtual initializer {
-        __ERC4626_init(underlying);
-        __ERC20_init(name, symbol);
-        __ERC20Permit_init(name);
+    function initialize(InitStruct memory init) public virtual initializer {
+        __ERC4626_init(init.underlying);
+        __ERC20_init(init.name, init.symbol);
+        __ERC20Permit_init(init.name);
         __ERC20Pausable_init();
-        __ERC7540_init(underlying);
-        __FeeManager_init(feeSchema);
-        VaultStorage storage $ = _getVaultStorage();
-        $.newTotalAssetsCooldown = cooldown;
+        __FeeManager_init(
+            init.managementFee,
+            init.performanceFee,
+            init.protocolFee
+        );
+        __ERC7540_init(init.underlying);
+        __Whitelistable_init(init.enableWhitelist);
 
-        _grantRole(HOPPER_ROLE, roleSchema.dao); // TODO PUT A REAL ADDRESS
+        VaultStorage storage $ = _getVaultStorage();
+        $.newTotalAssetsCooldown = init.cooldown;
+
+        _grantRole(HOPPER_ROLE, init.dao); // TODO PUT A REAL ADDRESS
         _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE); // only hopper manage itself
 
-        _grantRole(ASSET_MANAGER_ROLE, roleSchema.assetManager);
+        _grantRole(ASSET_MANAGER_ROLE, init.assetManager);
         _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
 
-        _grantRole(VALORIZATION_ROLE, roleSchema.valorization);
+        _grantRole(VALORIZATION_ROLE, init.valorization);
         _setRoleAdmin(VALORIZATION_ROLE, DEFAULT_ADMIN_ROLE);
 
-        _grantRole(DEFAULT_ADMIN_ROLE, roleSchema.admin);
+        _grantRole(DEFAULT_ADMIN_ROLE, init.admin);
     }
 
     function _update(
         address from,
         address to,
         uint256 value
-    ) internal virtual override(ERC7540Upgradeable, ERC20Upgradeable) {
+    )
+        internal
+        virtual
+        override(ERC7540Upgradeable, ERC20Upgradeable)
+        onlyWhitelisted(to)
+    {
         return ERC20PausableUpgradeable._update(from, to, value);
     }
 
@@ -110,6 +122,30 @@ contract Vault is
         returns (uint8)
     {
         return ERC4626Upgradeable.decimals();
+    }
+
+    function _requestDeposit(
+        uint256 assets,
+        address controller,
+        address owner
+    ) internal override onlyWhitelisted(controller) {
+        super._requestDeposit(assets, controller, owner);
+    }
+
+    function _deposit(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) internal override onlyWhitelisted(receiver) returns (uint256 shares) {
+        return super._deposit(assets, receiver, controller);
+    }
+
+    function _mint(
+        uint256 shares,
+        address receiver,
+        address controller
+    ) internal override onlyWhitelisted(receiver) returns (uint256 assets) {
+        return super._mint(shares, receiver, controller);
     }
 
     function _computeFees(

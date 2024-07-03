@@ -4,8 +4,7 @@ pragma solidity 0.8.25;
 import {Test} from "forge-std/Test.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {VaultHelper} from "./VaultHelper.sol";
-import {Vault, RoleSchema} from "@src/Vault.sol";
-import {FeeSchema} from "@src/FeeManager.sol";
+import {Vault} from "@src/Vault.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 import {Upgrades, Options} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -97,27 +96,25 @@ abstract contract Constants is Test {
             beacon = _beaconDeploy("Vault.sol", owner.addr);
             vault = _proxyDeploy(beacon, underlying, vaultName, vaultSymbol);
         } else {
-            FeeSchema memory _feeSchema = FeeSchema({
-                managementFee: 0,
-                performanceFee: 0,
-                protocolFee: 0
-            });
-            RoleSchema memory _roleSchema = RoleSchema({
-                assetManager: assetManager.addr,
-                valorization: valorizator.addr,
-                admin: admin.addr,
-                dao: dao.addr
-            });
             vm.startPrank(owner.addr);
+            bool enableWhitelist = false;
+
             vault = new VaultHelper(false);
-            vault.initialize(
+            Vault.InitStruct memory v = Vault.InitStruct(
                 underlying,
                 vaultName,
                 vaultSymbol,
-                _roleSchema,
-                _feeSchema,
-                1 days
+                dao.addr,
+                assetManager.addr,
+                valorizator.addr,
+                admin.addr,
+                0,
+                0,
+                0,
+                1 days,
+                enableWhitelist
             );
+            vault.initialize(v);
             vm.stopPrank();
         }
         vm.label(address(vault), vaultName);
@@ -140,32 +137,27 @@ abstract contract Constants is Test {
         string memory _vaultName,
         string memory _vaultSymbol
     ) internal returns (VaultHelper) {
-        FeeSchema memory _feeSchema = FeeSchema({
-            managementFee: 0,
-            performanceFee: 0,
-            protocolFee: 0
-        });
-        RoleSchema memory _roleSchema = RoleSchema({
-            assetManager: assetManager.addr,
-            valorization: valorizator.addr,
-            admin: admin.addr,
-            dao: dao.addr
-        });
+        bool enableWhitelist = false;
+        Vault.InitStruct memory v = Vault.InitStruct(
+            underlying,
+            vaultName,
+            vaultSymbol,
+            dao.addr,
+            assetManager.addr,
+            valorizator.addr,
+            admin.addr,
+            0,
+            0,
+            0,
+            1 days,
+            enableWhitelist
+        );
+
         BeaconProxy proxy = BeaconProxy(
             payable(
                 Upgrades.deployBeaconProxy(
                     address(beacon),
-                    abi.encodeCall(
-                        Vault.initialize,
-                        (
-                            _underlying,
-                            _vaultName,
-                            _vaultSymbol,
-                            _roleSchema,
-                            _feeSchema,
-                            1 days
-                        )
-                    )
+                    abi.encodeCall(Vault.initialize, v)
                 )
             )
         );
