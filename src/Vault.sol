@@ -198,11 +198,10 @@ contract Vault is
 
         EpochData storage epoch = $erc7540.epochs[epochId];
         uint256 _totalAssets = totalAssets();
-        uint256 _totalSupply = totalSupply();
 
         (uint256 managerShares, uint256 protocolShares) = _calculateFees(
             _totalAssets,
-            _totalSupply
+            totalSupply()
         );
 
         if (managerShares > 0) {
@@ -223,7 +222,7 @@ contract Vault is
 
         if (pendingAssets > 0) {
             epoch.totalAssetsDeposit = _totalAssets;
-            epoch.totalSupplyDeposit = _totalSupply;
+            epoch.totalSupplyDeposit = totalSupply();
             uint256 shares = _convertToShares(
                 pendingAssets,
                 Math.Rounding.Floor
