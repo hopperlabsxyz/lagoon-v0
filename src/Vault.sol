@@ -132,7 +132,8 @@ contract Vault is
     /**
      * @param receiver who will receive the shares
      * @param controller who the depositRequest belongs to
-     * @dev if whistelist is activated, receiver must be whitelisted
+     * @dev if whistelist is activated, receiver must be whitelisted because _update is called and
+     * onlyWhitelisted modifier is applied
      */
     function _deposit(
         uint256 assets,
@@ -145,7 +146,8 @@ contract Vault is
     /**
      * @param receiver who will receive the shares
      * @param controller who the depositRequest belongs to
-     * @dev if whistelist is activated, receiver must be whitelisted
+     * @dev if whistelist is activated, receiver must be whitelisted, because _update is called and
+     * onlyWhitelisted modifier is applied
      */
     function _mint(
         uint256 shares,
