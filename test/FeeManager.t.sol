@@ -442,4 +442,24 @@ contract TestFeeManager is BaseTest {
         vm.expectRevert(AboveMaxFee.selector);
         vault.updatePerformanceFee(MAX_PERFORMANCE_FEES + 1);
     }
+
+    function test_cooldown_errors() public {
+        vm.startPrank(vault.hopperRole());
+        vault.updateProtocolFee(1);
+        vm.expectRevert(CooldownNotOver.selector);
+        vault.setProtocolFee();
+        vm.stopPrank();
+
+        vm.startPrank(vault.adminRole());
+        vault.updateManagementFee(1);
+        vm.expectRevert(CooldownNotOver.selector);
+        vault.setManagementFee();
+        vm.stopPrank();
+
+        vm.startPrank(vault.adminRole());
+        vault.updatePerformanceFee(1);
+        vm.expectRevert(CooldownNotOver.selector);
+        vault.setPerformanceFee();
+        vm.stopPrank();
+    }
 }
