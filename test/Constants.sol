@@ -54,6 +54,7 @@ abstract contract Constants is Test {
     VmSafe.Wallet assetManager = vm.createWallet("assetManager");
     VmSafe.Wallet valorizator = vm.createWallet("valorizator");
     VmSafe.Wallet admin = vm.createWallet("admin");
+    VmSafe.Wallet feeReceiver = vm.createWallet("feeReceiver");
     VmSafe.Wallet dao = vm.createWallet("dao");
 
     VmSafe.Wallet[] users;
@@ -108,6 +109,7 @@ abstract contract Constants is Test {
                 assetManager.addr,
                 valorizator.addr,
                 admin.addr,
+                feeReceiver.addr,
                 0,
                 0,
                 0,
@@ -146,6 +148,7 @@ abstract contract Constants is Test {
             assetManager.addr,
             valorizator.addr,
             admin.addr,
+            feeReceiver.addr,
             0,
             0,
             0,

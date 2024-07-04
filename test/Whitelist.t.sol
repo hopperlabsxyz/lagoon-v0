@@ -77,4 +77,5 @@ contract TestWhitelist is BaseTest {
         vm.prank(user1.addr);
         vault.transfer(receiver, shares);
     }
+
 }

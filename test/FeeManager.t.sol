@@ -2,7 +2,7 @@
 pragma solidity 0.8.25;
 
 import "forge-std/Test.sol";
-import {Vault, ASSET_MANAGER_ROLE, VALORIZATION_ROLE, HOPPER_ROLE} from "@src/Vault.sol";
+import {Vault, ASSET_MANAGER_ROLE, FEE_RECEIVER, VALORIZATION_ROLE, HOPPER_ROLE} from "@src/Vault.sol";
 import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
@@ -103,8 +103,10 @@ contract TestFeeManager is BaseTest {
 
         address assetManager = vault.getRoleMember(ASSET_MANAGER_ROLE, 0);
         address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
+        address vaultFeeReceiver = vault.getRoleMember(FEE_RECEIVER, 0);
 
         assertEq(vault.balanceOf(assetManager), 0);
+        assertEq(vault.balanceOf(vaultFeeReceiver), 0);
         assertEq(vault.balanceOf(hopperDao), 0);
         assertEq(vault.highWaterMark(), 0);
         assertEq(vault.totalSupply(), 0);
@@ -116,6 +118,8 @@ contract TestFeeManager is BaseTest {
 
         assertEq(vault.balanceOf(assetManager), 0);
         assertEq(vault.balanceOf(hopperDao), 0);
+        assertEq(vault.balanceOf(vaultFeeReceiver), 0);
+
         assertEq(vault.highWaterMark(), _10M); // The high water mark is raised so that the deposit is not subject to performance fees
         assertEq(vault.totalSupply(), 10_000_000 * 10 ** vault.decimals()); // Now user1 got 10M shares for his deposit
 
@@ -133,13 +137,16 @@ contract TestFeeManager is BaseTest {
         );
 
         uint256 expectedProtocolNewShares = expectedTotalNewShares / 100;
-        uint256 expectedManagerNewShares = expectedTotalNewShares -
+        uint256 expectedFeeReceiverNewShares = expectedTotalNewShares -
             expectedProtocolNewShares;
 
         updateAndSettle(_100M);
 
         assertEq(vault.balanceOf(address(vault.claimableSilo())), userBalance);
-        assertEq(vault.balanceOf(assetManager), expectedManagerNewShares);
+        assertEq(
+            vault.balanceOf(vaultFeeReceiver),
+            expectedFeeReceiverNewShares
+        );
         assertEq(vault.balanceOf(hopperDao), expectedProtocolNewShares);
     }
 }
