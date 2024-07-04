@@ -21,17 +21,6 @@ struct EpochData {
     mapping(address => uint256) redeemRequest;
 }
 
-struct ERC7540Storage {
-    mapping(address controller => mapping(address operator => bool)) isOperator;
-    uint256 totalAssets;
-    uint256 epochId;
-    Silo pendingSilo;
-    Silo claimableSilo;
-    mapping(uint256 epochId => EpochData epoch) epochs;
-    mapping(address user => uint256 epochId) lastDepositRequestId;
-    mapping(address user => uint256 epochId) lastRedeemRequestId;
-}
-
 using SafeERC20 for IERC20;
 using Math for uint256;
 
@@ -41,8 +30,8 @@ error ERC7540PreviewRedeemDisabled();
 error ERC7540PreviewWithdrawDisabled();
 
 error RequestDepositZero();
-error DepositZero();
 error RequestRedeemZero();
+error DepositZero();
 error RedeemZero();
 error WithdrawZero();
 
@@ -58,6 +47,18 @@ abstract contract ERC7540Upgradeable is
     ERC20PausableUpgradeable,
     ERC4626Upgradeable
 {
+    /// @custom:storage-location erc7201:hopper.storage.ERC7540
+    struct ERC7540Storage {
+        mapping(address controller => mapping(address operator => bool)) isOperator;
+        uint256 totalAssets;
+        uint256 epochId;
+        Silo pendingSilo;
+        Silo claimableSilo;
+        mapping(uint256 epochId => EpochData epoch) epochs;
+        mapping(address user => uint256 epochId) lastDepositRequestId;
+        mapping(address user => uint256 epochId) lastRedeemRequestId;
+    }
+
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant erc7540Storage =
@@ -166,7 +167,7 @@ abstract contract ERC7540Upgradeable is
         returns (uint256 shares)
     {
         shares;
-        revert ERC7540PreviewDepositDisabled();
+        if (true) revert ERC7540PreviewDepositDisabled();
     }
 
     function previewMint(
@@ -178,7 +179,7 @@ abstract contract ERC7540Upgradeable is
         returns (uint256 assets)
     {
         assets;
-        revert ERC7540PreviewMintDisabled();
+        if (true) revert ERC7540PreviewMintDisabled();
     }
 
     function previewRedeem(
@@ -190,7 +191,7 @@ abstract contract ERC7540Upgradeable is
         returns (uint256 assets)
     {
         assets;
-        revert ERC7540PreviewRedeemDisabled();
+        if (true) revert ERC7540PreviewRedeemDisabled();
     }
 
     function previewWithdraw(
@@ -202,7 +203,7 @@ abstract contract ERC7540Upgradeable is
         returns (uint256 shares)
     {
         shares;
-        revert ERC7540PreviewWithdrawDisabled();
+        if (true) revert ERC7540PreviewWithdrawDisabled();
     }
 
     // ## EIP7540 Deposit Flow ##
@@ -547,48 +548,6 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
         return $.epochId;
     }
-
-    // function setTotalAssets(uint256 _totalAssets) internal {
-    //     ERC7540Storage storage $ = _getERC7540Storage();
-    //     $.totalAssets = _totalAssets;
-    // }
-
-    // function setTotalAssetsDeposit(
-    //     uint256 _totalAssets,
-    //     uint256 _epochId
-    // ) internal {
-    //     ERC7540Storage storage $ = _getERC7540Storage();
-    //     $.epochs[_epochId].totalAssetsDeposit = _totalAssets;
-    // }
-
-    // function setTotalSupplyDeposit(
-    //     uint256 _totalSupply,
-    //     uint256 _epochId
-    // ) internal {
-    //     ERC7540Storage storage $ = _getERC7540Storage();
-    //     $.epochs[_epochId].totalSupplyDeposit = _totalSupply;
-    // }
-
-    // function setTotalAssetsRedeem(
-    //     uint256 _totalAssets,
-    //     uint256 _epochId
-    // ) internal {
-    //     ERC7540Storage storage $ = _getERC7540Storage();
-    //     $.epochs[_epochId].totalAssetsRedeem = _totalAssets;
-    // }
-
-    // function setTotalSupplyRedeem(
-    //     uint256 _totalSupply,
-    //     uint256 _epochId
-    // ) internal {
-    //     ERC7540Storage storage $ = _getERC7540Storage();
-    //     $.epochs[_epochId].totalSupplyRedeem = _totalSupply;
-    // }
-
-    // function increaseEpochId() internal {
-    //     ERC7540Storage storage $ = _getERC7540Storage();
-    //     $.epochId++;
-    // }
 
     function settle() public virtual;
 }
