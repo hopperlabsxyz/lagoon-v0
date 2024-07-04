@@ -14,6 +14,7 @@ contract TestFeeManager is BaseTest {
     uint256 _100K;
     uint256 _1M;
     uint256 _10M;
+    uint256 _50M;
     uint256 _100M;
 
     function setUp() public {
@@ -22,6 +23,7 @@ contract TestFeeManager is BaseTest {
         _100K = 100_000 * 10 ** vault.underlyingDecimals();
         _1M = 1_000_000 * 10 ** vault.underlyingDecimals();
         _10M = 10_000_000 * 10 ** vault.underlyingDecimals();
+        _50M = 50_000_000 * 10 ** vault.underlyingDecimals();
         _100M = 100_000_000 * 10 ** vault.underlyingDecimals();
     }
 
@@ -175,6 +177,12 @@ contract TestFeeManager is BaseTest {
 
         // ------------ Year 0 ------------ //
         uint256 newTotalAssets = 0;
+        uint256 highWaterMark = _10M;
+        uint256 expectedTotalFees = 0;
+        uint256 expectedTotalNewShares = 0;
+        uint256 expectedProtocolNewShares = 0;
+        uint256 expectedManagerNewShares = 0;
+        uint256 expectedTotalSupply = 10_000_000 * 10 ** vault.decimals();
 
         // new airdrop !
         dealAmountAndApprove(user1.addr, 10_000_000);
@@ -183,13 +191,8 @@ contract TestFeeManager is BaseTest {
         // settlement
         updateAndSettle(newTotalAssets);
 
-        uint256 expectedTotalFees = 0;
-        uint256 expectedTotalNewShares = 0;
-        uint256 expectedProtocolNewShares = 0;
-        uint256 expectedManagerNewShares = 0;
-
-        assertEq(vault.highWaterMark(), _10M);
-        assertEq(vault.totalSupply(), 10_000_000 * 10 ** vault.decimals());
+        assertEq(vault.highWaterMark(), highWaterMark);
+        assertEq(vault.totalSupply(), expectedTotalSupply);
         assertEq(
             vault.balanceOf(assetManager) - managerShares,
             expectedManagerNewShares
@@ -205,26 +208,27 @@ contract TestFeeManager is BaseTest {
         // ------------ Year 1 ------------ //
         vm.warp(vm.getBlockTimestamp() + 364 days);
 
+        // expectations
         newTotalAssets = _10M;
-
+        highWaterMark = _10M;
         expectedTotalFees = 200_000 * 10 ** vault.underlyingDecimals();
-
         expectedTotalNewShares = expectedTotalFees.mulDiv(
             vault.totalSupply() + 1,
             (newTotalAssets - expectedTotalFees) + 1,
             Math.Rounding.Floor
         );
-
         expectedProtocolNewShares = expectedTotalNewShares / 100;
         expectedManagerNewShares =
             expectedTotalNewShares -
             expectedProtocolNewShares;
+        expectedTotalSupply += expectedTotalNewShares;
 
         // settlement
         updateAndSettle(newTotalAssets);
 
-        assertEq(vault.highWaterMark(), _10M);
-
+        // verification
+        assertEq(vault.highWaterMark(), highWaterMark);
+        assertEq(vault.totalSupply(), expectedTotalSupply);
         assertEq(
             vault.balanceOf(assetManager) - managerShares,
             expectedManagerNewShares
@@ -233,30 +237,35 @@ contract TestFeeManager is BaseTest {
             vault.balanceOf(hopperDao) - daoShares,
             expectedProtocolNewShares
         );
+
+        // save balances
+        managerShares = vault.balanceOf(assetManager);
+        daoShares = vault.balanceOf(hopperDao);
 
         // ------------ Year 2 ------------ //
         vm.warp(vm.getBlockTimestamp() + 364 days);
 
-        newTotalAssets = _10M;
-
+        // expectations
+        newTotalAssets = _50M;
+        highWaterMark = _50M;
         expectedTotalFees = 8_800_000 * 10 ** vault.underlyingDecimals();
-
         expectedTotalNewShares = expectedTotalFees.mulDiv(
             vault.totalSupply() + 1,
             (newTotalAssets - expectedTotalFees) + 1,
             Math.Rounding.Floor
         );
-
         expectedProtocolNewShares = expectedTotalNewShares / 100;
         expectedManagerNewShares =
             expectedTotalNewShares -
             expectedProtocolNewShares;
+        expectedTotalSupply += expectedTotalNewShares;
 
         // settlement
         updateAndSettle(newTotalAssets);
 
-        assertEq(vault.highWaterMark(), _10M);
-
+        // verification
+        assertEq(vault.highWaterMark(), highWaterMark);
+        assertEq(vault.totalSupply(), expectedTotalSupply);
         assertEq(
             vault.balanceOf(assetManager) - managerShares,
             expectedManagerNewShares
@@ -265,5 +274,9 @@ contract TestFeeManager is BaseTest {
             vault.balanceOf(hopperDao) - daoShares,
             expectedProtocolNewShares
         );
+
+        // save balances
+        managerShares = vault.balanceOf(assetManager);
+        daoShares = vault.balanceOf(hopperDao);
     }
 }
