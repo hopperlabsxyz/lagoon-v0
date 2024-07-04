@@ -56,13 +56,13 @@ contract FeeManager is Initializable {
 
         $.highWaterMark = 0;
 
-        require(_managementFee <= MAX_MANAGEMENT_FEES);
+        if (_managementFee > MAX_MANAGEMENT_FEES) revert AboveMaxFee();
         $.managementFee.currentFee = _managementFee;
 
-        require(_performanceFee <= MAX_PERFORMANCE_FEES);
+        if (_performanceFee > MAX_PERFORMANCE_FEES) revert AboveMaxFee();
         $.performanceFee.currentFee = _performanceFee;
 
-        require(_protocolFee <= MAX_PROTOCOL_FEES);
+        if (_protocolFee > MAX_PROTOCOL_FEES) revert AboveMaxFee();
         $.protocolFee.currentFee = _protocolFee;
 
         $.lastFeeTime = block.timestamp;
