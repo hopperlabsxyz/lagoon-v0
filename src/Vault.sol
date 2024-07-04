@@ -10,7 +10,7 @@ import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {Whitelistable} from "./Whitelistable.sol";
+import {Whitelistable, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
 // import {console} from "forge-std/console.sol";
@@ -93,8 +93,8 @@ contract Vault is
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = init.cooldown;
 
-        _grantRole(HOPPER_ROLE, init.dao); // TODO PUT A REAL ADDRESS
-        _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE); // only hopper manage itself
+        _grantRole(HOPPER_ROLE, init.dao);
+        _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE);
 
         _grantRole(ASSET_MANAGER_ROLE, init.assetManager);
         _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
@@ -103,6 +103,14 @@ contract Vault is
         _setRoleAdmin(VALORIZATION_ROLE, DEFAULT_ADMIN_ROLE);
 
         _grantRole(DEFAULT_ADMIN_ROLE, init.admin);
+
+        _grantRole(WHITELISTED, init.dao);
+        _grantRole(WHITELISTED, init.assetManager);
+        _grantRole(WHITELISTED, init.valorization);
+        _grantRole(WHITELISTED, init.admin);
+        _grantRole(WHITELISTED, pendingSilo());
+        _grantRole(WHITELISTED, claimableSilo());
+        _grantRole(WHITELISTED, address(0));
     }
 
     function _update(
@@ -339,5 +347,26 @@ contract Vault is
 
     function setPerformanceFee() public override onlyRole(DEFAULT_ADMIN_ROLE) {
         super.setPerformanceFee();
+    }
+
+    function hopperRole() public view returns (address) {
+        return getRoleMember(HOPPER_ROLE, 0);
+    }
+
+    function adminRole() public view returns (address) {
+        return getRoleMember(DEFAULT_ADMIN_ROLE, 0);
+    }
+
+    function assetManagerRole() public view returns (address) {
+        return getRoleMember(ASSET_MANAGER_ROLE, 0);
+    }
+
+    function valorizationRole() public view returns (address) {
+        return getRoleMember(VALORIZATION_ROLE, 0);
+    }
+
+    function toUnwind() public view returns (uint256) {
+        VaultStorage storage $ = _getVaultStorage();
+        return $.toUnwind;
     }
 }
