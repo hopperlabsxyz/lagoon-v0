@@ -6,6 +6,7 @@ import {Vault, ASSET_MANAGER_ROLE, FEE_RECEIVER, VALORIZATION_ROLE, HOPPER_ROLE}
 import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
+import {AboveMaxFee, CooldownNotOver, MAX_PROTOCOL_FEES, MAX_PERFORMANCE_FEES, MAX_MANAGEMENT_FEES} from "@src/FeeManager.sol";
 
 contract TestFeeManager is BaseTest {
     using Math for uint256;
@@ -426,5 +427,19 @@ contract TestFeeManager is BaseTest {
         // save balances
         managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
+    }
+
+    function test_max_fee_errors() public {
+        vm.prank(vault.hopperRole());
+        vm.expectRevert(AboveMaxFee.selector);
+        vault.updateProtocolFee(MAX_PROTOCOL_FEES + 1);
+
+        vm.prank(vault.adminRole());
+        vm.expectRevert(AboveMaxFee.selector);
+        vault.updateManagementFee(MAX_MANAGEMENT_FEES + 1);
+
+        vm.prank(vault.adminRole());
+        vm.expectRevert(AboveMaxFee.selector);
+        vault.updatePerformanceFee(MAX_PERFORMANCE_FEES + 1);
     }
 }
