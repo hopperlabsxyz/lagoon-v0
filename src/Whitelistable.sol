@@ -8,14 +8,15 @@ bytes32 constant WHITELISTED = keccak256("WHITELISTED");
 error NotWhitelisted(address account);
 
 contract Whitelistable is AccessControlEnumerableUpgradeable {
+    /// @custom:storage-location erc7201:hopper.storage.Whitelistable
     struct WhitelistableStorage {
         bool activated;
     }
 
-    // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
+    // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant whitelistableStorage =
-        0x9e6b3200a20a991c129f47dddaca04a18eb4bcf2b53906fb44751d827f001400; //todo compute proper storage slot
+        0x083cc98ab296d1a1f01854b5f7a2f47df4425a56ba7b35f7faa3a336067e4800; //todo compute proper storage slot
 
     function _getWhitelistableStorage()
         internal
@@ -36,7 +37,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         __AccessControlEnumerable_init();
     }
 
-    function getActivated() public view returns (bool) {
+    function getWhitelistActivated() public view returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         return $.activated;
     }
@@ -47,7 +48,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
     }
 
     modifier onlyWhitelisted(address account) {
-        if (getActivated() == true && !_isWhitelisted(account)) {
+        if (getWhitelistActivated() == true && !isWhitelisted(account)) {
             revert NotWhitelisted(account);
         }
         _;
@@ -58,7 +59,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
      * @dev acces is restricted to the admin role via modifier onlyRole(getRoleAdmin(role))
      * in the grantRole function
      **/
-    function addWhitelist(address account) public {
+    function whitelist(address account) public {
         grantRole(WHITELISTED, account);
     }
 
@@ -67,7 +68,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
      * @dev acces is restricted to the admin role via modifier onlyRole(getRoleAdmin(role))
      * in the grantRole function
      **/
-    function addWhitelistBatch(address[] memory accounts) public {
+    function whitelist(address[] memory accounts) public {
         for (uint256 i = 0; i < accounts.length; i++) {
             grantRole(WHITELISTED, accounts[i]);
         }
@@ -78,11 +79,11 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
      * @dev acces is restricted to the admin role via modifier onlyRole(getRoleAdmin(role))
      * in the revokeRole function
      **/
-    function removeWhitelist(address account) public {
+    function revokeWhitelist(address account) public {
         revokeRole(WHITELISTED, account);
     }
 
-    function _isWhitelisted(address account) internal view returns (bool) {
+    function isWhitelisted(address account) public view returns (bool) {
         return hasRole(WHITELISTED, account);
     }
 }
