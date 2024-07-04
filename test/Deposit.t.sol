@@ -7,7 +7,7 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 
 import {BaseTest} from "./Base.sol";
 
-contract TestRequestDeposit is BaseTest {
+contract TestDeposit is BaseTest {
     function setUp() public {
         dealAndApproveAndWhitelist(user1.addr);
     }
