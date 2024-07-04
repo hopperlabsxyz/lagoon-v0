@@ -54,6 +54,7 @@ abstract contract Constants is Test {
     VmSafe.Wallet assetManager = vm.createWallet("assetManager");
     VmSafe.Wallet valorizator = vm.createWallet("valorizator");
     VmSafe.Wallet admin = vm.createWallet("admin");
+    VmSafe.Wallet feeReceiver = vm.createWallet("feeReceiver");
     VmSafe.Wallet dao = vm.createWallet("dao");
 
     VmSafe.Wallet[] users;
@@ -97,7 +98,7 @@ abstract contract Constants is Test {
             vault = _proxyDeploy(beacon, underlying, vaultName, vaultSymbol);
         } else {
             vm.startPrank(owner.addr);
-            bool enableWhitelist = false;
+            bool enableWhitelist = true;
 
             vault = new VaultHelper(false);
             Vault.InitStruct memory v = Vault.InitStruct(
@@ -108,6 +109,7 @@ abstract contract Constants is Test {
                 assetManager.addr,
                 valorizator.addr,
                 admin.addr,
+                feeReceiver.addr,
                 0,
                 0,
                 0,
@@ -137,15 +139,16 @@ abstract contract Constants is Test {
         string memory _vaultName,
         string memory _vaultSymbol
     ) internal returns (VaultHelper) {
-        bool enableWhitelist = false;
+        bool enableWhitelist = true;
         Vault.InitStruct memory v = Vault.InitStruct(
-            underlying,
-            vaultName,
-            vaultSymbol,
+            _underlying,
+            _vaultName,
+            _vaultSymbol,
             dao.addr,
             assetManager.addr,
             valorizator.addr,
             admin.addr,
+            feeReceiver.addr,
             0,
             0,
             0,

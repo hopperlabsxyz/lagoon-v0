@@ -23,6 +23,7 @@ contract FeeManager is Initializable {
         uint256 lastUpdate;
     }
 
+    /// @custom:storage-location erc7201:hopper.storage.FeeManager
     struct FeeManagerStorage {
         FeeDetails managementFee;
         FeeDetails protocolFee;
