@@ -4,13 +4,14 @@ pragma solidity "0.8.25";
 import "forge-std/Test.sol";
 import {ERC7540Upgradeable, ERC7540Storage, EpochData} from "./ERC7540.sol";
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import {AccessControlUpgradeable, IAccessControl} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {Whitelistable} from "./Whitelistable.sol";
+import {Whitelistable, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
 // import {console} from "forge-std/console.sol";
@@ -24,6 +25,7 @@ uint256 constant BPS_DIVIDER = 10_000;
 bytes32 constant ASSET_MANAGER_ROLE = keccak256("ASSET_MANAGER");
 bytes32 constant VALORIZATION_ROLE = keccak256("VALORIZATION_MANAGER");
 bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
+bytes32 constant FEE_RECEIVER = keccak256("FEE_RECEIVER");
 
 error CooldownNotOver();
 error AssetManagerNotSet();
@@ -52,6 +54,7 @@ contract Vault is
         address assetManager;
         address valorization;
         address admin;
+        address feeReceiver;
         uint256 managementFee;
         uint256 performanceFee;
         uint256 protocolFee;
@@ -103,6 +106,9 @@ contract Vault is
         _setRoleAdmin(VALORIZATION_ROLE, DEFAULT_ADMIN_ROLE);
 
         _grantRole(DEFAULT_ADMIN_ROLE, init.admin);
+
+        _grantRole(FEE_RECEIVER, init.feeReceiver);
+        if (init.enableWhitelist) _grantRole(WHITELISTED, init.feeReceiver);
     }
 
     function _update(
@@ -194,6 +200,7 @@ contract Vault is
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+        address feeReceiver = getRoleMember(FEE_RECEIVER, 0);
         address hopperDao = getRoleMember(HOPPER_ROLE, 0);
 
         // we allowe to settle only if the newTotalAssets:
@@ -220,7 +227,7 @@ contract Vault is
         );
 
         if (managerShares > 0) {
-            _mint(assetManager, managerShares);
+            _mint(feeReceiver, managerShares);
         }
 
         if (protocolShares > 0) {
@@ -282,7 +289,6 @@ contract Vault is
         }
 
         _setHighWaterMark(newHighWaterMark);
-
         $erc7540.epochId = epochId + 1;
     }
 
@@ -339,5 +345,19 @@ contract Vault is
 
     function setPerformanceFee() public override onlyRole(DEFAULT_ADMIN_ROLE) {
         super.setPerformanceFee();
+    }
+
+    function grantRole(
+        bytes32 role,
+        address account
+    )
+        public
+        virtual
+        override(AccessControlUpgradeable, IAccessControl)
+        onlyRole(getRoleAdmin(role))
+    {
+        // we accept only one role holder for the hopper/asset manager/valorization/fee receiver/admin role
+        if (role != WHITELISTED) _revokeRole(role, getRoleMember(role, 0));
+        super.grantRole(role, account);
     }
 }
