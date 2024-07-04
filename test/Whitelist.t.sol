@@ -52,4 +52,29 @@ contract TestWhitelist is BaseTest {
         vm.expectRevert();
         deposit(userBalance, controller, operator, receiver);
     }
+
+    function test_transfer_ShouldFailWhenReceiverNotWhitelisted() public {
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        requestDeposit(userBalance, user1.addr);
+        settle();
+        deposit(userBalance, user1.addr);
+        address receiver = user2.addr;
+        vm.expectRevert();
+        vm.prank(user1.addr);
+        underlying.transfer(receiver, userBalance / 2);
+    }
+
+    function test_transfer_ShouldWorkWhenReceiverWhitelisted() public {
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        requestDeposit(userBalance, user1.addr);
+        settle();
+        deposit(userBalance, user1.addr);
+        uint256 shares = vault.balanceOf(user1.addr);
+        address receiver = user2.addr;
+        whitelist(user2.addr);
+        vm.prank(user1.addr);
+        vault.transfer(receiver, shares);
+    }
 }
