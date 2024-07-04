@@ -6,6 +6,7 @@ import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC2
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC20, ERC20Upgradeable, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {Silo} from "./Silo.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -120,9 +121,14 @@ abstract contract ERC7540Upgradeable is
     // ## EIP165 ##
     function supportsInterface(
         bytes4 interfaceId
-    ) public pure virtual returns (bool) {
-        interfaceId;
-        return true;
+    ) public view virtual returns (bool) {
+        return
+            interfaceId == 0x2f0a18c5 || // IERC7575
+            interfaceId == 0x01ffc9a7 || // IERC7575 shares
+            interfaceId == 0xce3bbe50 || // IERC7540Deposit
+            interfaceId == 0x620ee8e4 || // IERC7540Redeem
+            interfaceId == 0xe3bc4e65 || // IERC7540
+            interfaceId == type(IERC165).interfaceId;
     }
 
     function previewDeposit(
