@@ -10,7 +10,7 @@ import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC20, ERC20Upgradeable, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {Silo} from "./Silo.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-// import {console} from "forge-std/console.sol";
+import {console} from "forge-std/console.sol";
 
 struct EpochData {
     uint256 totalSupplyDeposit;
@@ -465,9 +465,9 @@ abstract contract ERC7540Upgradeable is
 
         uint256 requestId = $.lastRedeemRequestId[controller];
         if (requestId == $.epochId) revert RequestIdNotClaimable();
-
         shares = convertToShares(assets, requestId);
         $.epochs[requestId].redeemRequest[controller] -= shares;
+
         IERC20(asset()).safeTransferFrom(
             address($.claimableSilo),
             receiver,
@@ -506,7 +506,6 @@ abstract contract ERC7540Upgradeable is
         uint256 _totalAssets = $.epochs[requestId].totalAssetsDeposit + 1;
         uint256 _totalSupply = $.epochs[requestId].totalSupplyDeposit +
             10 ** _decimalsOffset();
-
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
     }
 
@@ -523,6 +522,7 @@ abstract contract ERC7540Upgradeable is
         Math.Rounding rounding
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
+
         if (requestId == $.epochId || requestId == 0) return 0;
 
         uint256 _totalAssets = $.epochs[requestId].totalAssetsRedeem + 1;
