@@ -6,7 +6,17 @@ import {Vault, ASSET_MANAGER_ROLE, FEE_RECEIVER, VALORIZATION_ROLE, HOPPER_ROLE}
 import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
-import {AboveMaxFee, CooldownNotOver, MAX_PROTOCOL_FEES, MAX_PERFORMANCE_FEES, MAX_MANAGEMENT_FEES} from "@src/FeeManager.sol";
+import {FeeManager, AboveMaxFee, CooldownNotOver, MAX_PROTOCOL_FEES, MAX_PERFORMANCE_FEES, MAX_MANAGEMENT_FEES} from "@src/FeeManager.sol";
+
+contract MockVault is FeeManager {
+    function initialize(
+        uint256 managementFee,
+        uint256 performanceFee,
+        uint256 protocolFee
+    ) public initializer {
+        __FeeManager_init(managementFee, performanceFee, protocolFee);
+    }
+}
 
 contract TestFeeManager is BaseTest {
     using Math for uint256;
@@ -467,5 +477,21 @@ contract TestFeeManager is BaseTest {
         vm.expectRevert(CooldownNotOver.selector);
         vault.setPerformanceFee();
         vm.stopPrank();
+    }
+
+    function test_initializer_errors() public {
+        MockVault v;
+
+        v = new MockVault();
+        vm.expectRevert(AboveMaxFee.selector);
+        v.initialize(MAX_MANAGEMENT_FEES + 1, 1, 1);
+
+        v = new MockVault();
+        vm.expectRevert(AboveMaxFee.selector);
+        v.initialize(1, MAX_PERFORMANCE_FEES + 1, 1);
+
+        v = new MockVault();
+        vm.expectRevert(AboveMaxFee.selector);
+        v.initialize(1, 1, MAX_PROTOCOL_FEES + 1);
     }
 }
