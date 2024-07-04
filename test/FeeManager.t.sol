@@ -142,4 +142,128 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.balanceOf(assetManager), expectedManagerNewShares);
         assertEq(vault.balanceOf(hopperDao), expectedProtocolNewShares);
     }
+
+    // +======+=========+==========+======+=======+=========+=======+======+===========+=========+
+    // | year | deposit | withdraw | aum  | mfees | profits | pfees | hwm  | totalFees |   net   |
+    // +======+=========+==========+======+=======+=========+=======+======+===========+=========+
+    // |    0 | 10M     | 0        | 0    | 0     | 0       | 0     | 10M  | 0         | 0       |
+    // +------+---------+----------+------+-------+---------+-------+------+-----------+---------+
+    // |    1 | 0       | 0        | 10M  | 0.2M  | 0       | 0     | 10M  | 0.2M      | 9.8M    |
+    // +------+---------+----------+------+-------+---------+-------+------+-----------+---------+
+    // |    2 | 0       | 0        | 50M  | 1M    | 39M     | 7.8M  | 50M  | 8.8M      | 41.2M   |
+    // +------+---------+----------+------+-------+---------+-------+------+-----------+---------+
+    // |    3 | 0       | 0        | 19M  | 0.38M | 0       | 0     | 50M  | 0.38M     | 18.62M  |
+    // +------+---------+----------+------+-------+---------+-------+------+-----------+---------+
+    // |    4 | 0       | 0        | 30M  | 0.6M  | 0       | 0     | 50M  | 0.6M      | 29.4M   |
+    // +------+---------+----------+------+-------+---------+-------+------+-----------+---------+
+    // |    5 | 100M    | 0        | 100M | 2M    | 48M     | 9.6M  | 200M | 11.6M     | 88.4M   |
+    // +------+---------+----------+------+-------+---------+-------+------+-----------+---------+
+    // |    6 | 10M     | 20M      | 240M | 2.4M  | 0       | 3.52  | 210M | 5.92M     | 114.08M |
+    // +------+---------+----------+------+-------+---------+-------+------+-----------+---------+
+
+    function test_multiple_year() public {
+        address assetManager = vault.getRoleMember(ASSET_MANAGER_ROLE, 0);
+        address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
+
+        uint256 managerShares = vault.balanceOf(assetManager);
+        uint256 daoShares = vault.balanceOf(hopperDao);
+
+        // 20% perf. fees / 2% management fees / 1% protocol fees
+        setProtocolFee(100, vault.vaultHopper());
+        setPerformanceFee(2000, vault.vaultAdmin());
+        setManagementFee(200, vault.vaultAdmin());
+
+        // ------------ Year 0 ------------ //
+        uint256 newTotalAssets = 0;
+
+        // new airdrop !
+        dealAmountAndApprove(user1.addr, 10_000_000);
+        requestDeposit(_10M, user1.addr);
+
+        // settlement
+        updateAndSettle(newTotalAssets);
+
+        uint256 expectedTotalFees = 0;
+        uint256 expectedTotalNewShares = 0;
+        uint256 expectedProtocolNewShares = 0;
+        uint256 expectedManagerNewShares = 0;
+
+        assertEq(vault.highWaterMark(), _10M);
+        assertEq(vault.totalSupply(), 10_000_000 * 10 ** vault.decimals());
+        assertEq(
+            vault.balanceOf(assetManager) - managerShares,
+            expectedManagerNewShares
+        );
+        assertEq(
+            vault.balanceOf(hopperDao) - daoShares,
+            expectedProtocolNewShares
+        );
+
+        managerShares = vault.balanceOf(assetManager);
+        daoShares = vault.balanceOf(hopperDao);
+
+        // ------------ Year 1 ------------ //
+        vm.warp(vm.getBlockTimestamp() + 364 days);
+
+        newTotalAssets = _10M;
+
+        expectedTotalFees = 200_000 * 10 ** vault.underlyingDecimals();
+
+        expectedTotalNewShares = expectedTotalFees.mulDiv(
+            vault.totalSupply() + 1,
+            (newTotalAssets - expectedTotalFees) + 1,
+            Math.Rounding.Floor
+        );
+
+        expectedProtocolNewShares = expectedTotalNewShares / 100;
+        expectedManagerNewShares =
+            expectedTotalNewShares -
+            expectedProtocolNewShares;
+
+        // settlement
+        updateAndSettle(newTotalAssets);
+
+        assertEq(vault.highWaterMark(), _10M);
+
+        assertEq(
+            vault.balanceOf(assetManager) - managerShares,
+            expectedManagerNewShares
+        );
+        assertEq(
+            vault.balanceOf(hopperDao) - daoShares,
+            expectedProtocolNewShares
+        );
+
+        // ------------ Year 2 ------------ //
+        vm.warp(vm.getBlockTimestamp() + 364 days);
+
+        newTotalAssets = _10M;
+
+        expectedTotalFees = 8_800_000 * 10 ** vault.underlyingDecimals();
+
+        expectedTotalNewShares = expectedTotalFees.mulDiv(
+            vault.totalSupply() + 1,
+            (newTotalAssets - expectedTotalFees) + 1,
+            Math.Rounding.Floor
+        );
+
+        expectedProtocolNewShares = expectedTotalNewShares / 100;
+        expectedManagerNewShares =
+            expectedTotalNewShares -
+            expectedProtocolNewShares;
+
+        // settlement
+        updateAndSettle(newTotalAssets);
+
+        assertEq(vault.highWaterMark(), _10M);
+
+        assertEq(
+            vault.balanceOf(assetManager) - managerShares,
+            expectedManagerNewShares
+        );
+        assertEq(
+            vault.balanceOf(hopperDao) - daoShares,
+            expectedProtocolNewShares
+        );
+    }
 }
