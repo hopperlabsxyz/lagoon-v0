@@ -97,7 +97,7 @@ abstract contract Constants is Test {
             vault = _proxyDeploy(beacon, underlying, vaultName, vaultSymbol);
         } else {
             vm.startPrank(owner.addr);
-            bool enableWhitelist = false;
+            bool enableWhitelist = true;
 
             vault = new VaultHelper(false);
             Vault.InitStruct memory v = Vault.InitStruct(
@@ -137,11 +137,11 @@ abstract contract Constants is Test {
         string memory _vaultName,
         string memory _vaultSymbol
     ) internal returns (VaultHelper) {
-        bool enableWhitelist = false;
+        bool enableWhitelist = true;
         Vault.InitStruct memory v = Vault.InitStruct(
-            underlying,
-            vaultName,
-            vaultSymbol,
+            _underlying,
+            _vaultName,
+            _vaultSymbol,
             dao.addr,
             assetManager.addr,
             valorizator.addr,

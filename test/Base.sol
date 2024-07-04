@@ -94,12 +94,12 @@ contract BaseTest is Test, Constants {
     }
 
     function updateTotalAssets(uint256 newTotalAssets) internal {
-        vm.prank(vault.vaultValorizationRole());
+        vm.prank(vault.valorizationRole());
         vault.updateTotalAssets(newTotalAssets);
     }
 
     function settle() internal {
-        vm.prank(vault.vaultValorizationRole());
+        vm.prank(vault.valorizationRole());
         vault.settle();
     }
 
@@ -110,22 +110,34 @@ contract BaseTest is Test, Constants {
     }
 
     function unwind() internal {
-        dealAndApprove(vault.vaultAM());
+        dealAndApproveAndWhitelist(vault.assetManagerRole());
         uint256 toUnwind = vault.toUnwind();
-        vm.prank(vault.vaultAM());
+        vm.prank(vault.assetManagerRole());
         vault.unwind(toUnwind);
     }
 
-    function dealAndApprove(address user) public {
+    function dealAndApproveAndWhitelist(address user) public {
+        dealAmountAndApproveAndWhitelist(user, 100000);
+    }
+
+    function dealAmountAndApproveAndWhitelist(
+        address user,
+        uint256 amount
+    ) public {
         address asset = vault.asset();
         deal(user, type(uint256).max);
         dealAsset(
             vault.asset(),
             user,
-            100000 * 10 ** IERC20Metadata(asset).decimals()
+            amount * 10 ** IERC20Metadata(asset).decimals()
         );
         vm.prank(user);
         IERC4626(asset).approve(address(vault), UINT256_MAX);
+        whitelist(user);
+    }
+
+    function dealAndApprove(address user) public {
+        dealAmountAndApprove(user, 100000);
     }
 
     function dealAmountAndApprove(address user, uint256 amount) public {
@@ -175,6 +187,12 @@ contract BaseTest is Test, Constants {
         vm.warp(vm.getBlockTimestamp() + 1 days);
         vault.setProtocolFee();
         vm.stopPrank();
+    }
+
+    function whitelist(address user) public {
+        vm.prank(vault.adminRole());
+        vault.whitelist(user);
+        console.log(vault.isWhitelisted(user));
     }
 
     function balance(address user) public view returns (uint256) {
