@@ -11,6 +11,9 @@ uint256 constant MAX_PERFORMANCE_FEES = 5000; // 50%
 uint256 constant MAX_PROTOCOL_FEES = 3000; // 30%
 uint256 constant COOLDOWN = 1 days;
 
+error CooldownNotOver();
+error AboveMaxFee();
+
 contract FeeManager is Initializable {
     using Math for uint256;
 
@@ -144,39 +147,42 @@ contract FeeManager is Initializable {
 
     function setProtocolFee() public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        require(block.timestamp >= $.protocolFee.lastUpdate + COOLDOWN);
+        if (block.timestamp < $.protocolFee.lastUpdate + COOLDOWN)
+            revert CooldownNotOver();
         $.protocolFee.currentFee = $.protocolFee.updatedFee;
     }
 
     function setManagementFee() public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        require(block.timestamp >= $.managementFee.lastUpdate + COOLDOWN);
+        if (block.timestamp < $.managementFee.lastUpdate + COOLDOWN)
+            revert CooldownNotOver();
         $.managementFee.currentFee = $.managementFee.updatedFee;
     }
 
     function setPerformanceFee() public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        require(block.timestamp >= $.performanceFee.lastUpdate + COOLDOWN);
+        if (block.timestamp < $.performanceFee.lastUpdate + COOLDOWN)
+            revert CooldownNotOver();
         $.performanceFee.currentFee = $.performanceFee.updatedFee;
     }
 
     function updateProtocolFee(uint256 _protocolFee) public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        require(_protocolFee <= MAX_PROTOCOL_FEES);
+        if (_protocolFee > MAX_PROTOCOL_FEES) revert AboveMaxFee();
         $.protocolFee.updatedFee = _protocolFee;
         $.protocolFee.lastUpdate = block.timestamp;
     }
 
     function updateManagementFee(uint256 _managementFee) public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        require(_managementFee <= MAX_MANAGEMENT_FEES);
+        if (_managementFee > MAX_MANAGEMENT_FEES) revert AboveMaxFee();
         $.managementFee.updatedFee = _managementFee;
         $.managementFee.lastUpdate = block.timestamp;
     }
 
     function updatePerformanceFee(uint256 _performanceFee) public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        require(_performanceFee <= MAX_PERFORMANCE_FEES);
+        if (_performanceFee > MAX_PERFORMANCE_FEES) revert AboveMaxFee();
         $.performanceFee.updatedFee = _performanceFee;
         $.performanceFee.lastUpdate = block.timestamp;
     }
