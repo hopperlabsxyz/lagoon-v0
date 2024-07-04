@@ -166,7 +166,7 @@ abstract contract ERC7540Upgradeable is
         returns (uint256 shares)
     {
         shares;
-        revert ERC7540PreviewDepositDisabled();
+        if (true) revert ERC7540PreviewDepositDisabled();
     }
 
     function previewMint(
@@ -178,7 +178,7 @@ abstract contract ERC7540Upgradeable is
         returns (uint256 assets)
     {
         assets;
-        revert ERC7540PreviewMintDisabled();
+        if (true) revert ERC7540PreviewMintDisabled();
     }
 
     function previewRedeem(
@@ -190,7 +190,7 @@ abstract contract ERC7540Upgradeable is
         returns (uint256 assets)
     {
         assets;
-        revert ERC7540PreviewRedeemDisabled();
+        if (true) revert ERC7540PreviewRedeemDisabled();
     }
 
     function previewWithdraw(
@@ -202,7 +202,7 @@ abstract contract ERC7540Upgradeable is
         returns (uint256 shares)
     {
         shares;
-        revert ERC7540PreviewWithdrawDisabled();
+        if (true) revert ERC7540PreviewWithdrawDisabled();
     }
 
     // ## EIP7540 Deposit Flow ##
