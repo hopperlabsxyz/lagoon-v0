@@ -494,4 +494,16 @@ contract TestFeeManager is BaseTest {
         vm.expectRevert(AboveMaxFee.selector);
         v.initialize(1, 1, MAX_PROTOCOL_FEES + 1);
     }
+
+    function test_initializer() public {
+        MockVault v;
+
+        v = new MockVault();
+        v.initialize(1, 2, 3);
+        assertEq(v.managementFee(), 1);
+        assertEq(v.performanceFee(), 2);
+        assertEq(v.protocolFee(), 3);
+        assertEq(v.lastFeeTime(), block.timestamp);
+        assertEq(v.highWaterMark(), 0);
+    }
 }
