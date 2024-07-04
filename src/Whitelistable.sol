@@ -37,7 +37,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         __AccessControlEnumerable_init();
     }
 
-    function getActivated() public view returns (bool) {
+    function getWhitelistActivated() public view returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         return $.activated;
     }
@@ -48,7 +48,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
     }
 
     modifier onlyWhitelisted(address account) {
-        if (getActivated() == true && !_isWhitelisted(account)) {
+        if (getWhitelistActivated() == true && !isWhitelisted(account)) {
             revert NotWhitelisted(account);
         }
         _;
@@ -59,7 +59,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
      * @dev acces is restricted to the admin role via modifier onlyRole(getRoleAdmin(role))
      * in the grantRole function
      **/
-    function addWhitelist(address account) public {
+    function whitelist(address account) public {
         grantRole(WHITELISTED, account);
     }
 
@@ -68,7 +68,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
      * @dev acces is restricted to the admin role via modifier onlyRole(getRoleAdmin(role))
      * in the grantRole function
      **/
-    function addWhitelistBatch(address[] memory accounts) public {
+    function whitelist(address[] memory accounts) public {
         for (uint256 i = 0; i < accounts.length; i++) {
             grantRole(WHITELISTED, accounts[i]);
         }
@@ -79,11 +79,11 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
      * @dev acces is restricted to the admin role via modifier onlyRole(getRoleAdmin(role))
      * in the revokeRole function
      **/
-    function removeWhitelist(address account) public {
+    function revokeWhitelist(address account) public {
         revokeRole(WHITELISTED, account);
     }
 
-    function _isWhitelisted(address account) internal view returns (bool) {
+    function isWhitelisted(address account) public view returns (bool) {
         return hasRole(WHITELISTED, account);
     }
 }
