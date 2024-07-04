@@ -62,7 +62,7 @@ contract TestWhitelist is BaseTest {
         address receiver = user2.addr;
         vm.expectRevert();
         vm.prank(user1.addr);
-        underlying.transfer(receiver, userBalance / 2);
+        vault.transfer(receiver, userBalance / 2);
     }
 
     function test_transfer_WhenReceiverNotWhitelistedAfterDeactivateOfWhitelisting()
@@ -72,6 +72,7 @@ contract TestWhitelist is BaseTest {
         whitelist(user1.addr);
         requestDeposit(userBalance, user1.addr);
         settle();
+
         deposit(userBalance, user1.addr);
         address receiver = user2.addr;
         vm.prank(vault.adminRole());
@@ -79,7 +80,7 @@ contract TestWhitelist is BaseTest {
         vm.assertEq(vault.getWhitelistActivated(), false);
         uint256 shares = vault.balanceOf(user1.addr);
         vm.prank(user1.addr);
-        underlying.transfer(receiver, shares);
+        vault.transfer(receiver, shares);
     }
 
     function test_transfer_ShouldWorkWhenReceiverWhitelisted() public {
