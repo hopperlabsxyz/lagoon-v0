@@ -21,17 +21,6 @@ struct EpochData {
     mapping(address => uint256) redeemRequest;
 }
 
-struct ERC7540Storage {
-    mapping(address controller => mapping(address operator => bool)) isOperator;
-    uint256 totalAssets;
-    uint256 epochId;
-    Silo pendingSilo;
-    Silo claimableSilo;
-    mapping(uint256 epochId => EpochData epoch) epochs;
-    mapping(address user => uint256 epochId) lastDepositRequestId;
-    mapping(address user => uint256 epochId) lastRedeemRequestId;
-}
-
 using SafeERC20 for IERC20;
 using Math for uint256;
 
@@ -41,8 +30,8 @@ error ERC7540PreviewRedeemDisabled();
 error ERC7540PreviewWithdrawDisabled();
 
 error RequestDepositZero();
-error DepositZero();
 error RequestRedeemZero();
+error DepositZero();
 error RedeemZero();
 error WithdrawZero();
 
@@ -58,6 +47,18 @@ abstract contract ERC7540Upgradeable is
     ERC20PausableUpgradeable,
     ERC4626Upgradeable
 {
+    /// @custom:storage-location erc7201:hopper.storage.ERC7540
+    struct ERC7540Storage {
+        mapping(address controller => mapping(address operator => bool)) isOperator;
+        uint256 totalAssets;
+        uint256 epochId;
+        Silo pendingSilo;
+        Silo claimableSilo;
+        mapping(uint256 epochId => EpochData epoch) epochs;
+        mapping(address user => uint256 epochId) lastDepositRequestId;
+        mapping(address user => uint256 epochId) lastRedeemRequestId;
+    }
+
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant erc7540Storage =

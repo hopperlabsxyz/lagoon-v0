@@ -2,7 +2,7 @@
 pragma solidity "0.8.25";
 
 import "forge-std/Test.sol";
-import {ERC7540Upgradeable, ERC7540Storage, EpochData} from "./ERC7540.sol";
+import {ERC7540Upgradeable, EpochData} from "./ERC7540.sol";
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {AccessControlUpgradeable, IAccessControl} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -37,15 +37,6 @@ contract Vault is
     Whitelistable,
     FeeManager
 {
-    /// @custom:storage-location erc7201:hopper.storage.vault
-    struct VaultStorage {
-        uint256 toUnwind;
-        // totalAssets maj
-        uint256 newTotalAssets;
-        uint256 newTotalAssetsTimestamp;
-        uint256 newTotalAssetsCooldown;
-    }
-
     struct InitStruct {
         IERC20 underlying;
         string name;
@@ -62,15 +53,23 @@ contract Vault is
         bool enableWhitelist;
     }
 
+    /// @custom:storage-location erc7201:hopper.storage.vault
+    struct VaultStorage {
+        uint256 toUnwind;
+        // totalAssets maj
+        uint256 newTotalAssets;
+        uint256 newTotalAssetsTimestamp;
+        uint256 newTotalAssetsCooldown;
+    }
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant HopperVaultStorage =
+    bytes32 private constant vaultStorage =
         0x0e6b3200a60a991c539f47dddaca04a18eb4bcf2b53906fb44751d827f001400;
 
     function _getVaultStorage() internal pure returns (VaultStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
-            $.slot := HopperVaultStorage
+            $.slot := vaultStorage
         }
     }
 
