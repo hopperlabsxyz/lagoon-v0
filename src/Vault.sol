@@ -106,19 +106,16 @@ contract Vault is
 
         _grantRole(DEFAULT_ADMIN_ROLE, init.admin);
 
-
-
-
         _grantRole(FEE_RECEIVER, init.feeReceiver);
         if (init.enableWhitelist) {
-        _grantRole(WHITELISTED, init.feeReceiver);
-          _grantRole(WHITELISTED, init.dao);
-          _grantRole(WHITELISTED, init.assetManager);
-          _grantRole(WHITELISTED, init.valorization);
-          _grantRole(WHITELISTED, init.admin);
-          _grantRole(WHITELISTED, pendingSilo());
-          _grantRole(WHITELISTED, claimableSilo());
-          _grantRole(WHITELISTED, address(0));
+            _grantRole(WHITELISTED, init.feeReceiver);
+            _grantRole(WHITELISTED, init.dao);
+            _grantRole(WHITELISTED, init.assetManager);
+            _grantRole(WHITELISTED, init.valorization);
+            _grantRole(WHITELISTED, init.admin);
+            _grantRole(WHITELISTED, pendingSilo());
+            _grantRole(WHITELISTED, claimableSilo());
+            _grantRole(WHITELISTED, address(0));
         }
     }
 
@@ -215,7 +212,7 @@ contract Vault is
         address hopperDao = getRoleMember(HOPPER_ROLE, 0);
 
         // we allowe to settle only if the newTotalAssets:
-        // - is not to recent (must be > $.newTotalAssetsCooldown
+        // is not to recent must be > $.newTotalAssetsCooldown
         if (
             $vault.newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown >
             block.timestamp
@@ -253,9 +250,9 @@ contract Vault is
         // We must not take into account new assets into next fee calculation
         newHighWaterMark += pendingAssets;
 
+        epoch.totalAssetsDeposit = _totalAssets;
+        epoch.totalSupplyDeposit = totalSupply();
         if (pendingAssets > 0) {
-            epoch.totalAssetsDeposit = _totalAssets;
-            epoch.totalSupplyDeposit = totalSupply();
             uint256 shares = _convertToShares(
                 pendingAssets,
                 Math.Rounding.Floor
@@ -274,9 +271,9 @@ contract Vault is
         // We must not take into account assets leaving the fund into next fee calculation
         newHighWaterMark -= assets;
 
+        epoch.totalAssetsRedeem = _totalAssets;
+        epoch.totalSupplyRedeem = totalSupply();
         if (assets > 0) {
-            epoch.totalAssetsRedeem = _totalAssets;
-            epoch.totalSupplyRedeem = totalSupply();
             _burn(pendingSilo(), balanceOf(pendingSilo()));
             $erc7540.totalAssets = _totalAssets - assets;
             $vault.toUnwind += assets;
@@ -377,6 +374,7 @@ contract Vault is
     function toUnwind() public view returns (uint256) {
         VaultStorage storage $ = _getVaultStorage();
         return $.toUnwind;
+    }
 
     function grantRole(
         bytes32 role,
@@ -390,6 +388,5 @@ contract Vault is
         // we accept only one role holder for the hopper/asset manager/valorization/fee receiver/admin role
         if (role != WHITELISTED) _revokeRole(role, getRoleMember(role, 0));
         super.grantRole(role, account);
-
     }
 }
