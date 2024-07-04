@@ -92,59 +92,6 @@ contract FeeManager is Initializable {
         return $.highWaterMark;
     }
 
-    function calculateManagementFee(
-        uint256 _AUM
-    ) public view returns (uint256) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        uint256 timeElapsed;
-        unchecked {
-            timeElapsed = block.timestamp - $.lastFeeTime;
-        }
-        uint256 annualFee = _AUM.mulDiv(
-            $.managementFee.currentFee,
-            BPS_DIVIDER,
-            Math.Rounding.Floor
-        );
-        return annualFee.mulDiv(timeElapsed, ONE_YEAR);
-    }
-
-    function calculatePerformanceFee(
-        uint256 _AUM
-    ) public view returns (uint256) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        uint256 hwm = $.highWaterMark;
-        if (_AUM > hwm) {
-            uint256 profit;
-            unchecked {
-                profit = _AUM - hwm;
-            }
-            return
-                profit.mulDiv(
-                    $.performanceFee.currentFee,
-                    BPS_DIVIDER,
-                    Math.Rounding.Floor
-                );
-        }
-        return 0;
-    }
-
-    function calculateProtocolFee(
-        uint256 _totalFeeShares
-    ) public view returns (uint256 managerFees, uint256 protocolFees) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if ($.protocolFee.currentFee > 0) {
-            protocolFees = _totalFeeShares.mulDiv(
-                $.protocolFee.currentFee,
-                BPS_DIVIDER,
-                Math.Rounding.Floor
-            );
-            managerFees = _totalFeeShares - protocolFees;
-        } else {
-            protocolFees = 0;
-            managerFees = _totalFeeShares;
-        }
-    }
-
     function setProtocolFee() public virtual {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         if (block.timestamp < $.protocolFee.lastUpdate + COOLDOWN)
@@ -200,6 +147,59 @@ contract FeeManager is Initializable {
         }
 
         return _highWaterMark;
+    }
+
+    function calculateManagementFee(
+        uint256 _AUM
+    ) public view returns (uint256) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        uint256 timeElapsed;
+        unchecked {
+            timeElapsed = block.timestamp - $.lastFeeTime;
+        }
+        uint256 annualFee = _AUM.mulDiv(
+            $.managementFee.currentFee,
+            BPS_DIVIDER,
+            Math.Rounding.Floor
+        );
+        return annualFee.mulDiv(timeElapsed, ONE_YEAR);
+    }
+
+    function calculatePerformanceFee(
+        uint256 _AUM
+    ) public view returns (uint256) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        uint256 hwm = $.highWaterMark;
+        if (_AUM > hwm) {
+            uint256 profit;
+            unchecked {
+                profit = _AUM - hwm;
+            }
+            return
+                profit.mulDiv(
+                    $.performanceFee.currentFee,
+                    BPS_DIVIDER,
+                    Math.Rounding.Floor
+                );
+        }
+        return 0;
+    }
+
+    function calculateProtocolFee(
+        uint256 _totalFeeShares
+    ) public view returns (uint256 managerFees, uint256 protocolFees) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        if ($.protocolFee.currentFee > 0) {
+            protocolFees = _totalFeeShares.mulDiv(
+                $.protocolFee.currentFee,
+                BPS_DIVIDER,
+                Math.Rounding.Floor
+            );
+            managerFees = _totalFeeShares - protocolFees;
+        } else {
+            protocolFees = 0;
+            managerFees = _totalFeeShares;
+        }
     }
 
     function _calculateFees(
