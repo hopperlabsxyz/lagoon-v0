@@ -2,15 +2,16 @@
 pragma solidity "0.8.25";
 
 import "forge-std/Test.sol";
-import {ERC7540Upgradeable, ERC7540Storage, EpochData} from "./ERC7540.sol";
+import {ERC7540Upgradeable, EpochData} from "./ERC7540.sol";
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import {AccessControlUpgradeable, IAccessControl} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {Whitelistable} from "./Whitelistable.sol";
+import {Whitelistable, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
 // import {console} from "forge-std/console.sol";
@@ -24,6 +25,7 @@ uint256 constant BPS_DIVIDER = 10_000;
 bytes32 constant ASSET_MANAGER_ROLE = keccak256("ASSET_MANAGER");
 bytes32 constant VALORIZATION_ROLE = keccak256("VALORIZATION_MANAGER");
 bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
+bytes32 constant FEE_RECEIVER = keccak256("FEE_RECEIVER");
 
 error CooldownNotOver();
 error AssetManagerNotSet();
@@ -35,15 +37,6 @@ contract Vault is
     Whitelistable,
     FeeManager
 {
-    /// @custom:storage-location erc7201:hopper.storage.vault
-    struct VaultStorage {
-        uint256 toUnwind;
-        // totalAssets maj
-        uint256 newTotalAssets;
-        uint256 newTotalAssetsTimestamp;
-        uint256 newTotalAssetsCooldown;
-    }
-
     struct InitStruct {
         IERC20 underlying;
         string name;
@@ -52,6 +45,7 @@ contract Vault is
         address assetManager;
         address valorization;
         address admin;
+        address feeReceiver;
         uint256 managementFee;
         uint256 performanceFee;
         uint256 protocolFee;
@@ -59,15 +53,23 @@ contract Vault is
         bool enableWhitelist;
     }
 
+    /// @custom:storage-location erc7201:hopper.storage.vault
+    struct VaultStorage {
+        uint256 toUnwind;
+        // totalAssets maj
+        uint256 newTotalAssets;
+        uint256 newTotalAssetsTimestamp;
+        uint256 newTotalAssetsCooldown;
+    }
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant HopperVaultStorage =
+    bytes32 private constant vaultStorage =
         0x0e6b3200a60a991c539f47dddaca04a18eb4bcf2b53906fb44751d827f001400;
 
     function _getVaultStorage() internal pure returns (VaultStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
-            $.slot := HopperVaultStorage
+            $.slot := vaultStorage
         }
     }
 
@@ -93,8 +95,8 @@ contract Vault is
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = init.cooldown;
 
-        _grantRole(HOPPER_ROLE, init.dao); // TODO PUT A REAL ADDRESS
-        _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE); // only hopper manage itself
+        _grantRole(HOPPER_ROLE, init.dao);
+        _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE);
 
         _grantRole(ASSET_MANAGER_ROLE, init.assetManager);
         _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
@@ -103,6 +105,18 @@ contract Vault is
         _setRoleAdmin(VALORIZATION_ROLE, DEFAULT_ADMIN_ROLE);
 
         _grantRole(DEFAULT_ADMIN_ROLE, init.admin);
+
+        _grantRole(FEE_RECEIVER, init.feeReceiver);
+        if (init.enableWhitelist) {
+            _grantRole(WHITELISTED, init.feeReceiver);
+            _grantRole(WHITELISTED, init.dao);
+            _grantRole(WHITELISTED, init.assetManager);
+            _grantRole(WHITELISTED, init.valorization);
+            _grantRole(WHITELISTED, init.admin);
+            _grantRole(WHITELISTED, pendingSilo());
+            _grantRole(WHITELISTED, claimableSilo());
+            _grantRole(WHITELISTED, address(0));
+        }
     }
 
     function _update(
@@ -194,10 +208,11 @@ contract Vault is
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+        address feeReceiver = getRoleMember(FEE_RECEIVER, 0);
         address hopperDao = getRoleMember(HOPPER_ROLE, 0);
 
         // we allowe to settle only if the newTotalAssets:
-        // - is not to recent (must be > $.newTotalAssetsCooldown
+        // is not to recent must be > $.newTotalAssetsCooldown
         if (
             $vault.newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown >
             block.timestamp
@@ -220,7 +235,7 @@ contract Vault is
         );
 
         if (managerShares > 0) {
-            _mint(assetManager, managerShares);
+            _mint(feeReceiver, managerShares);
         }
 
         if (protocolShares > 0) {
@@ -235,9 +250,9 @@ contract Vault is
         // We must not take into account new assets into next fee calculation
         newHighWaterMark += pendingAssets;
 
+        epoch.totalAssetsDeposit = _totalAssets;
+        epoch.totalSupplyDeposit = totalSupply();
         if (pendingAssets > 0) {
-            epoch.totalAssetsDeposit = _totalAssets;
-            epoch.totalSupplyDeposit = totalSupply();
             uint256 shares = _convertToShares(
                 pendingAssets,
                 Math.Rounding.Floor
@@ -256,9 +271,9 @@ contract Vault is
         // We must not take into account assets leaving the fund into next fee calculation
         newHighWaterMark -= assets;
 
+        epoch.totalAssetsRedeem = _totalAssets;
+        epoch.totalSupplyRedeem = totalSupply();
         if (assets > 0) {
-            epoch.totalAssetsRedeem = _totalAssets;
-            epoch.totalSupplyRedeem = totalSupply();
             _burn(pendingSilo(), balanceOf(pendingSilo()));
             $erc7540.totalAssets = _totalAssets - assets;
             $vault.toUnwind += assets;
@@ -282,7 +297,6 @@ contract Vault is
         }
 
         _setHighWaterMark(newHighWaterMark);
-
         $erc7540.epochId = epochId + 1;
     }
 
@@ -339,5 +353,40 @@ contract Vault is
 
     function setPerformanceFee() public override onlyRole(DEFAULT_ADMIN_ROLE) {
         super.setPerformanceFee();
+    }
+
+    function hopperRole() public view returns (address) {
+        return getRoleMember(HOPPER_ROLE, 0);
+    }
+
+    function adminRole() public view returns (address) {
+        return getRoleMember(DEFAULT_ADMIN_ROLE, 0);
+    }
+
+    function assetManagerRole() public view returns (address) {
+        return getRoleMember(ASSET_MANAGER_ROLE, 0);
+    }
+
+    function valorizationRole() public view returns (address) {
+        return getRoleMember(VALORIZATION_ROLE, 0);
+    }
+
+    function toUnwind() public view returns (uint256) {
+        VaultStorage storage $ = _getVaultStorage();
+        return $.toUnwind;
+    }
+
+    function grantRole(
+        bytes32 role,
+        address account
+    )
+        public
+        virtual
+        override(AccessControlUpgradeable, IAccessControl)
+        onlyRole(getRoleAdmin(role))
+    {
+        // we accept only one role holder for the hopper/asset manager/valorization/fee receiver/admin role
+        if (role != WHITELISTED) _revokeRole(role, getRoleMember(role, 0));
+        super.grantRole(role, account);
     }
 }

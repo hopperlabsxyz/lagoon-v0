@@ -8,7 +8,7 @@ import {BaseTest} from "./Base.sol";
 
 contract TestOperator is BaseTest {
     function setUp() public {
-        dealAndApprove(user1.addr);
+        dealAndApproveAndWhitelist(user1.addr);
         uint256 user1Assets = assetBalance(user1.addr);
         requestDeposit(user1Assets / 2, user1.addr);
 

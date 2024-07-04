@@ -8,7 +8,7 @@ import {BaseTest} from "./Base.sol";
 
 contract TestRequestRedeem is BaseTest {
     function setUp() public {
-        dealAndApprove(user1.addr);
+        dealAndApproveAndWhitelist(user1.addr);
         uint256 balance = assetBalance(user1.addr);
         requestDeposit(balance, user1.addr);
         updateAndSettle(0);
@@ -26,7 +26,10 @@ contract TestRequestRedeem is BaseTest {
         uint256 userBalance = balance(user1.addr);
         requestRedeem(userBalance / 2, user1.addr);
         requestRedeem(userBalance / 2, user1.addr);
-        assertEq(vault.pendingRedeemRequest(0, user1.addr), userBalance);
+        assertEq(
+            vault.pendingRedeemRequest(vault.epochId(), user1.addr),
+            userBalance
+        );
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
     }
 
