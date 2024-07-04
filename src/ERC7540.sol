@@ -39,7 +39,7 @@ error ERC7540InvalidOperator();
 error ZeroPendingDeposit();
 error ZeroPendingRedeem();
 
-error RequestIdNotClaimbale();
+error RequestIdNotClaimable();
 
 abstract contract ERC7540Upgradeable is
     IERC7540Redeem,
@@ -83,11 +83,9 @@ abstract contract ERC7540Upgradeable is
     }
 
     modifier onlyOperator(address controller) {
-        if (
-            controller != _msgSender() && !isOperator(controller, _msgSender())
-        ) {
+        if (controller != _msgSender() && !isOperator(controller, _msgSender()))
             revert ERC7540InvalidOperator();
-        }
+
         _;
     }
 
@@ -247,7 +245,7 @@ abstract contract ERC7540Upgradeable is
 
         if (requestId == 0)
             return $.epochs[$.epochId].depositRequest[controller];
-        else if (requestId == $.epochId) return 0;
+        else if (requestId != $.epochId) return 0;
         else return $.epochs[requestId].depositRequest[controller];
     }
 
@@ -298,7 +296,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
-        if (requestId == $.epochId) revert RequestIdNotClaimbale();
+        if (requestId == $.epochId) revert RequestIdNotClaimable();
 
         $.epochs[requestId].depositRequest[controller] -= assets;
         shares = convertToShares(assets, requestId);
@@ -308,10 +306,10 @@ abstract contract ERC7540Upgradeable is
     }
 
     function mint(
-        uint256 assets,
+        uint256 shares,
         address receiver
     ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        return _deposit(assets, receiver, _msgSender());
+        return _mint(shares, receiver, _msgSender());
     }
 
     function mint(
@@ -331,7 +329,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
-        if (requestId == $.epochId) revert RequestIdNotClaimbale();
+        if (requestId == $.epochId) revert RequestIdNotClaimable();
 
         assets = convertToAssets(shares, requestId);
 
@@ -382,7 +380,7 @@ abstract contract ERC7540Upgradeable is
 
         if (requestId == 0)
             return $.epochs[$.epochId].redeemRequest[controller];
-        else if (requestId == $.epochId) return 0;
+        else if (requestId != $.epochId) return 0;
         else return $.epochs[requestId].redeemRequest[controller];
     }
 
@@ -397,7 +395,7 @@ abstract contract ERC7540Upgradeable is
             if (lastRedeemRequestId == _epochId) return 0;
             else return $.epochs[lastRedeemRequestId].redeemRequest[controller];
         } else if (requestId == _epochId) return 0;
-        else return $.epochs[requestId].redeemRequest[controller];
+        return $.epochs[requestId].redeemRequest[controller];
     }
 
     function maxRedeem(
@@ -429,7 +427,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
-        if (requestId == $.epochId) revert RequestIdNotClaimbale();
+        if (requestId == $.epochId) revert RequestIdNotClaimable();
 
         $.epochs[requestId].redeemRequest[controller] -= shares;
         assets = convertToAssets(shares, requestId);
@@ -466,7 +464,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
-        if (requestId == $.epochId) revert RequestIdNotClaimbale();
+        if (requestId == $.epochId) revert RequestIdNotClaimable();
 
         shares = convertToShares(assets, requestId);
         $.epochs[requestId].redeemRequest[controller] -= shares;
@@ -503,7 +501,7 @@ abstract contract ERC7540Upgradeable is
         Math.Rounding rounding
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        if (requestId == $.epochId) return 0;
+        if (requestId == $.epochId || requestId == 0) return 0;
 
         uint256 _totalAssets = $.epochs[requestId].totalAssetsDeposit + 1;
         uint256 _totalSupply = $.epochs[requestId].totalSupplyDeposit +
@@ -525,7 +523,7 @@ abstract contract ERC7540Upgradeable is
         Math.Rounding rounding
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        if (requestId == $.epochId) return 0;
+        if (requestId == $.epochId || requestId == 0) return 0;
 
         uint256 _totalAssets = $.epochs[requestId].totalAssetsRedeem + 1;
         uint256 _totalSupply = $.epochs[requestId].totalSupplyRedeem +
