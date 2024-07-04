@@ -2,7 +2,7 @@
 pragma solidity 0.8.25;
 
 import "forge-std/Test.sol";
-import {Vault, ASSET_MANAGER_ROLE, VALORIZATION_ROLE, HOPPER_ROLE} from "@src/Vault.sol";
+import {Vault, ASSET_MANAGER_ROLE, FEE_RECEIVER, VALORIZATION_ROLE, HOPPER_ROLE} from "@src/Vault.sol";
 import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
@@ -36,9 +36,9 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_100_bips() public {
-        setProtocolFee(100, vault.vaultHopper());
-        setPerformanceFee(100, vault.vaultAdmin());
-        setManagementFee(100, vault.vaultAdmin());
+        setProtocolFee(100, vault.hopperRole());
+        setPerformanceFee(100, vault.adminRole());
+        setManagementFee(100, vault.adminRole());
 
         assertEq(vault.managementFee(), 100);
         assertEq(vault.performanceFee(), 100);
@@ -63,7 +63,7 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_performance_fees() public {
-        setPerformanceFee(100, vault.vaultAdmin()); // 1% fees on net AUM if above high water mark
+        setPerformanceFee(100, vault.adminRole()); // 1% fees on net AUM if above high water mark
 
         assertEq(vault.calculatePerformanceFee(_100M), _1M);
         assertEq(vault.calculatePerformanceFee(_10M), _100K);
@@ -73,7 +73,7 @@ contract TestFeeManager is BaseTest {
 
     function test_management_fees() public {
         // takes 1 day to settle new fee schema
-        setManagementFee(100, vault.vaultAdmin()); // 1% fees on average AUM since last NAV
+        setManagementFee(100, vault.adminRole()); // 1% fees on average AUM since last NAV
 
         // Fees over 1 year (364 days because there is 1 day of fee settlement in setManagementFees() above)
         vm.warp(vm.getBlockTimestamp() + 364 days);
@@ -85,7 +85,7 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_protocol_fees() public {
-        setProtocolFee(100, vault.vaultHopper()); // 1% fees on total fees collected
+        setProtocolFee(100, vault.hopperRole()); // 1% fees on total fees collected
 
         (uint256 managerFees, uint256 protocolFees) = vault
             .calculateProtocolFee(_100M);
@@ -98,17 +98,19 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_collect_fees() public {
-        dealAmountAndApprove(user1.addr, 10_000_000);
+        dealAmountAndApproveAndWhitelist(user1.addr, 10_000_000);
 
         // 20% perf. fees / 2% management fees / 1% protocol fees
-        setProtocolFee(100, vault.vaultHopper());
-        setPerformanceFee(2000, vault.vaultAdmin());
-        setManagementFee(200, vault.vaultAdmin());
+        setProtocolFee(100, vault.hopperRole());
+        setPerformanceFee(2000, vault.adminRole());
+        setManagementFee(200, vault.adminRole());
 
         address assetManager = vault.getRoleMember(ASSET_MANAGER_ROLE, 0);
         address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
+        address vaultFeeReceiver = vault.getRoleMember(FEE_RECEIVER, 0);
 
         assertEq(vault.balanceOf(assetManager), 0);
+        assertEq(vault.balanceOf(vaultFeeReceiver), 0);
         assertEq(vault.balanceOf(hopperDao), 0);
         assertEq(vault.highWaterMark(), 0);
         assertEq(vault.totalSupply(), 0);
@@ -120,6 +122,8 @@ contract TestFeeManager is BaseTest {
 
         assertEq(vault.balanceOf(assetManager), 0);
         assertEq(vault.balanceOf(hopperDao), 0);
+        assertEq(vault.balanceOf(vaultFeeReceiver), 0);
+
         assertEq(vault.highWaterMark(), _10M); // The high water mark is raised so that the deposit is not subject to performance fees
         assertEq(vault.totalSupply(), 10_000_000 * 10 ** vault.decimals()); // Now user1 got 10M shares for his deposit
 
@@ -137,13 +141,16 @@ contract TestFeeManager is BaseTest {
         );
 
         uint256 expectedProtocolNewShares = expectedTotalNewShares / 100;
-        uint256 expectedManagerNewShares = expectedTotalNewShares -
+        uint256 expectedFeeReceiverNewShares = expectedTotalNewShares -
             expectedProtocolNewShares;
 
         updateAndSettle(_100M);
 
         assertEq(vault.balanceOf(address(vault.claimableSilo())), userBalance);
-        assertEq(vault.balanceOf(assetManager), expectedManagerNewShares);
+        assertEq(
+            vault.balanceOf(vaultFeeReceiver),
+            expectedFeeReceiverNewShares
+        );
         assertEq(vault.balanceOf(hopperDao), expectedProtocolNewShares);
     }
 
@@ -164,16 +171,16 @@ contract TestFeeManager is BaseTest {
     // +------+---------+----------+------+-------+---------+--------+------+-----------+---------+
 
     function test_multiple_year() public {
-        address assetManager = vault.getRoleMember(ASSET_MANAGER_ROLE, 0);
+        address feeReceiver = vault.getRoleMember(FEE_RECEIVER, 0);
         address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
 
-        uint256 managerShares = vault.balanceOf(assetManager);
+        uint256 managerShares = vault.balanceOf(feeReceiver);
         uint256 daoShares = vault.balanceOf(hopperDao);
 
         // 20% perf. fees / 2% management fees / 1% protocol fees
-        setProtocolFee(100, vault.vaultHopper());
-        setPerformanceFee(2000, vault.vaultAdmin());
-        setManagementFee(200, vault.vaultAdmin());
+        setProtocolFee(100, vault.hopperRole());
+        setPerformanceFee(2000, vault.adminRole());
+        setManagementFee(200, vault.adminRole());
 
         // ------------ Year 0 ------------ //
         uint256 newTotalAssets = 0;
@@ -184,7 +191,7 @@ contract TestFeeManager is BaseTest {
         uint256 expectedManagerNewShares = 0;
 
         // new airdrop !
-        dealAmountAndApprove(user1.addr, 10_000_000);
+        dealAmountAndApproveAndWhitelist(user1.addr, 10_000_000);
         requestDeposit(_10M, user1.addr);
 
         // settlement
@@ -193,7 +200,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), expectedHighWaterMark);
         assertEq(vault.totalSupply(), 10_000_000 * 10 ** vault.decimals());
         assertEq(
-            vault.balanceOf(assetManager) - managerShares,
+            vault.balanceOf(feeReceiver) - managerShares,
             expectedManagerNewShares
         );
         assertEq(
@@ -201,7 +208,7 @@ contract TestFeeManager is BaseTest {
             expectedProtocolNewShares
         );
 
-        managerShares = vault.balanceOf(assetManager);
+        managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
 
         // ------------ Year 1 ------------ //
@@ -234,7 +241,7 @@ contract TestFeeManager is BaseTest {
             expectedTotalNewShares
         );
         assertEq(
-            vault.balanceOf(assetManager) - managerShares,
+            vault.balanceOf(feeReceiver) - managerShares,
             expectedManagerNewShares
         );
         assertEq(
@@ -243,7 +250,7 @@ contract TestFeeManager is BaseTest {
         );
 
         // save balances
-        managerShares = vault.balanceOf(assetManager);
+        managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
 
         // ------------ Year 2 ------------ //
@@ -276,7 +283,7 @@ contract TestFeeManager is BaseTest {
             expectedTotalNewShares
         );
         assertEq(
-            vault.balanceOf(assetManager) - managerShares,
+            vault.balanceOf(feeReceiver) - managerShares,
             expectedManagerNewShares
         );
         assertEq(
@@ -285,7 +292,7 @@ contract TestFeeManager is BaseTest {
         );
 
         // save balances
-        managerShares = vault.balanceOf(assetManager);
+        managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
 
         // ------------ Year 3 ------------ //
@@ -318,7 +325,7 @@ contract TestFeeManager is BaseTest {
             expectedTotalNewShares
         );
         assertEq(
-            vault.balanceOf(assetManager) - managerShares,
+            vault.balanceOf(feeReceiver) - managerShares,
             expectedManagerNewShares
         );
         assertEq(
@@ -327,7 +334,7 @@ contract TestFeeManager is BaseTest {
         );
 
         // save balances
-        managerShares = vault.balanceOf(assetManager);
+        managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
 
         // ------------ Year 4 ------------ //
@@ -360,7 +367,7 @@ contract TestFeeManager is BaseTest {
             expectedTotalNewShares
         );
         assertEq(
-            vault.balanceOf(assetManager) - managerShares,
+            vault.balanceOf(feeReceiver) - managerShares,
             expectedManagerNewShares
         );
         assertEq(
@@ -369,14 +376,14 @@ contract TestFeeManager is BaseTest {
         );
 
         // save balances
-        managerShares = vault.balanceOf(assetManager);
+        managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
 
         // ------------ Year 5 ------------ //
         vm.warp(vm.getBlockTimestamp() + 364 days);
 
         // new airdrop !
-        dealAmountAndApprove(user1.addr, 100_000_000);
+        dealAmountAndApproveAndWhitelist(user1.addr, 100_000_000);
         requestDeposit(_100M, user1.addr); // this will auto claim unclaimed shares
 
         // expectations
@@ -408,7 +415,7 @@ contract TestFeeManager is BaseTest {
         );
 
         assertEq(
-            vault.balanceOf(assetManager) - managerShares,
+            vault.balanceOf(feeReceiver) - managerShares,
             expectedManagerNewShares
         );
         assertEq(
@@ -417,7 +424,7 @@ contract TestFeeManager is BaseTest {
         );
 
         // save balances
-        managerShares = vault.balanceOf(assetManager);
+        managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
     }
 }

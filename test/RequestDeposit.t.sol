@@ -8,7 +8,10 @@ import {BaseTest} from "./Base.sol";
 
 contract TestRequestDeposit is BaseTest {
     function setUp() public {
-        dealAndApprove(user1.addr);
+        dealAndApproveAndWhitelist(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        whitelist(user3.addr);
     }
 
     function test_requestDeposit() public {
@@ -22,7 +25,10 @@ contract TestRequestDeposit is BaseTest {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance / 2, user1.addr);
         requestDeposit(userBalance / 2, user1.addr);
-        assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance);
+        assertEq(
+            vault.pendingDepositRequest(vault.epochId(), user1.addr),
+            userBalance
+        );
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
     }
 
@@ -63,6 +69,7 @@ contract TestRequestDeposit is BaseTest {
         address owner = user1.addr;
         address operator = user2.addr;
         address controller = user3.addr;
+
         uint256 ownerBalance = assetBalance(owner);
         uint256 operatorBalance = assetBalance(operator);
         uint256 controllerBalance = assetBalance(controller);
