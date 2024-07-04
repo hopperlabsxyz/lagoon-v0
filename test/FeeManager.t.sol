@@ -32,9 +32,9 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_100_bips() public {
-        setProtocolFee(100, vault.vaultHopper());
-        setPerformanceFee(100, vault.vaultAdmin());
-        setManagementFee(100, vault.vaultAdmin());
+        setProtocolFee(100, vault.hopperRole());
+        setPerformanceFee(100, vault.adminRole());
+        setManagementFee(100, vault.adminRole());
 
         assertEq(vault.managementFee(), 100);
         assertEq(vault.performanceFee(), 100);
@@ -59,7 +59,7 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_performance_fees() public {
-        setPerformanceFee(100, vault.vaultAdmin()); // 1% fees on net AUM if above high water mark
+        setPerformanceFee(100, vault.adminRole()); // 1% fees on net AUM if above high water mark
 
         assertEq(vault.calculatePerformanceFee(_100M), _1M);
         assertEq(vault.calculatePerformanceFee(_10M), _100K);
@@ -69,7 +69,7 @@ contract TestFeeManager is BaseTest {
 
     function test_management_fees() public {
         // takes 1 day to settle new fee schema
-        setManagementFee(100, vault.vaultAdmin()); // 1% fees on average AUM since last NAV
+        setManagementFee(100, vault.adminRole()); // 1% fees on average AUM since last NAV
 
         // Fees over 1 year (364 days because there is 1 day of fee settlement in setManagementFees() above)
         vm.warp(vm.getBlockTimestamp() + 364 days);
@@ -81,7 +81,7 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_protocol_fees() public {
-        setProtocolFee(100, vault.vaultHopper()); // 1% fees on total fees collected
+        setProtocolFee(100, vault.hopperRole()); // 1% fees on total fees collected
 
         (uint256 managerFees, uint256 protocolFees) = vault
             .calculateProtocolFee(_100M);
@@ -94,12 +94,12 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_collect_fees() public {
-        dealAmountAndApprove(user1.addr, 10_000_000);
+        dealAmountAndApproveAndWhitelist(user1.addr, 10_000_000);
 
         // 20% perf. fees / 2% management fees / 1% protocol fees
-        setProtocolFee(100, vault.vaultHopper());
-        setPerformanceFee(2000, vault.vaultAdmin());
-        setManagementFee(200, vault.vaultAdmin());
+        setProtocolFee(100, vault.hopperRole());
+        setPerformanceFee(2000, vault.adminRole());
+        setManagementFee(200, vault.adminRole());
 
         address assetManager = vault.getRoleMember(ASSET_MANAGER_ROLE, 0);
         address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
