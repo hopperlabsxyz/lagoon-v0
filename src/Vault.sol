@@ -95,8 +95,8 @@ contract Vault is
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = init.cooldown;
 
-        _grantRole(HOPPER_ROLE, init.dao); // TODO PUT A REAL ADDRESS
-        _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE); // only hopper manage itself
+        _grantRole(HOPPER_ROLE, init.dao);
+        _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE);
 
         _grantRole(ASSET_MANAGER_ROLE, init.assetManager);
         _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
@@ -106,8 +106,20 @@ contract Vault is
 
         _grantRole(DEFAULT_ADMIN_ROLE, init.admin);
 
+
+
+
         _grantRole(FEE_RECEIVER, init.feeReceiver);
-        if (init.enableWhitelist) _grantRole(WHITELISTED, init.feeReceiver);
+        if (init.enableWhitelist) {
+        _grantRole(WHITELISTED, init.feeReceiver);
+          _grantRole(WHITELISTED, init.dao);
+          _grantRole(WHITELISTED, init.assetManager);
+          _grantRole(WHITELISTED, init.valorization);
+          _grantRole(WHITELISTED, init.admin);
+          _grantRole(WHITELISTED, pendingSilo());
+          _grantRole(WHITELISTED, claimableSilo());
+          _grantRole(WHITELISTED, address(0));
+        }
     }
 
     function _update(
@@ -346,6 +358,26 @@ contract Vault is
         super.setPerformanceFee();
     }
 
+    function hopperRole() public view returns (address) {
+        return getRoleMember(HOPPER_ROLE, 0);
+    }
+
+    function adminRole() public view returns (address) {
+        return getRoleMember(DEFAULT_ADMIN_ROLE, 0);
+    }
+
+    function assetManagerRole() public view returns (address) {
+        return getRoleMember(ASSET_MANAGER_ROLE, 0);
+    }
+
+    function valorizationRole() public view returns (address) {
+        return getRoleMember(VALORIZATION_ROLE, 0);
+    }
+
+    function toUnwind() public view returns (uint256) {
+        VaultStorage storage $ = _getVaultStorage();
+        return $.toUnwind;
+
     function grantRole(
         bytes32 role,
         address account
@@ -358,5 +390,6 @@ contract Vault is
         // we accept only one role holder for the hopper/asset manager/valorization/fee receiver/admin role
         if (role != WHITELISTED) _revokeRole(role, getRoleMember(role, 0));
         super.grantRole(role, account);
+
     }
 }

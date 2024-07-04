@@ -9,7 +9,7 @@ import {BaseTest} from "./Base.sol";
 
 contract TestRequestDeposit is BaseTest {
     function setUp() public {
-        dealAndApprove(user1.addr);
+        dealAndApproveAndWhitelist(user1.addr);
     }
 
     function test_deposit() public {

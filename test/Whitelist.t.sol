@@ -10,97 +10,72 @@ import {BaseTest} from "./Base.sol";
 contract TestWhitelist is BaseTest {
     function setUp() public {
         dealAndApprove(user1.addr);
-        console.log("hopper.storage.ERC7540");
-        console.logBytes32(
-            keccak256(
-                abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)
-            ) & ~bytes32(uint256(0xff))
-        );
-        console.log("hopper.storage.Whitelistable");
-        console.logBytes32(
-            keccak256(
-                abi.encode(
-                    uint256(keccak256("hopper.storage.Whitelistable")) - 1
-                )
-            ) & ~bytes32(uint256(0xff))
-        );
-        console.log("hopper.storage.vault");
-        console.logBytes32(
-            keccak256(
-                abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)
-            ) & ~bytes32(uint256(0xff))
-        );
-        console.log("hopper.storage.FeeManager");
-        console.logBytes32(
-            keccak256(
-                abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)
-            ) & ~bytes32(uint256(0xff))
-        );
     }
 
     function test_requestDeposit_ShouldFailWhenControllerNotWhitelisted()
         public
     {
         uint256 userBalance = assetBalance(user1.addr);
-        // vm.expectRevert();
+        vm.expectRevert();
         requestDeposit(userBalance, user1.addr);
     }
 
-    // function test_requestDeposit_ShouldFailWhenControllerNotWhitelistedandOperatorAndOwnerAre()
-    //     public
-    // {
-    //     uint256 userBalance = assetBalance(user1.addr);
-    //     whitelist(user1.addr);
-    //     address controller = user2.addr;
-    //     address operator = user1.addr;
-    //     address owner = user1.addr;
-    //     vm.expectRevert();
-    //     requestDeposit(userBalance, controller, operator, owner);
-    // }
+    function test_requestDeposit_ShouldFailWhenControllerNotWhitelistedandOperatorAndOwnerAre()
+        public
+    {
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        address controller = user2.addr;
+        address operator = user1.addr;
+        address owner = user1.addr;
+        vm.expectRevert();
+        requestDeposit(userBalance, controller, operator, owner);
+    }
 
-    // function test_requestDeposit_WhenControllerWhitelisted() public {
-    //     uint256 userBalance = assetBalance(user1.addr);
-    //     whitelist(user2.addr);
-    //     address controller = user2.addr;
-    //     address operator = user1.addr;
-    //     address owner = user1.addr;
-    //     requestDeposit(userBalance, controller, operator, owner);
-    // }
+    function test_requestDeposit_WhenControllerWhitelisted() public {
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user2.addr);
+        address controller = user2.addr;
+        address operator = user1.addr;
+        address owner = user1.addr;
+        requestDeposit(userBalance, controller, operator, owner);
+    }
 
-    // function test_deposit_ShouldFailWhenReceiverNotWhitelisted() public {
-    //     uint256 userBalance = assetBalance(user1.addr);
-    //     whitelist(user1.addr);
-    //     requestDeposit(userBalance, user1.addr);
-    //     settle();
-    //     address controller = user1.addr;
-    //     address operator = user1.addr;
-    //     address receiver = user2.addr;
-    //     vm.expectRevert();
-    //     deposit(userBalance, controller, operator, receiver);
-    // }
+    function test_deposit_ShouldFailWhenReceiverNotWhitelisted() public {
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        requestDeposit(userBalance, user1.addr);
+        settle();
+        address controller = user1.addr;
+        address operator = user1.addr;
+        address receiver = user2.addr;
+        vm.expectRevert();
+        deposit(userBalance, controller, operator, receiver);
+    }
 
-    // function test_transfer_ShouldFailWhenReceiverNotWhitelisted() public {
-    //     uint256 userBalance = assetBalance(user1.addr);
-    //     whitelist(user1.addr);
-    //     requestDeposit(userBalance, user1.addr);
-    //     settle();
-    //     deposit(userBalance, user1.addr);
-    //     address receiver = user2.addr;
-    //     vm.expectRevert();
-    //     vm.prank(user1.addr);
-    //     underlying.transfer(receiver, userBalance / 2);
-    // }
+    function test_transfer_ShouldFailWhenReceiverNotWhitelisted() public {
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        requestDeposit(userBalance, user1.addr);
+        settle();
+        deposit(userBalance, user1.addr);
+        address receiver = user2.addr;
+        vm.expectRevert();
+        vm.prank(user1.addr);
+        underlying.transfer(receiver, userBalance / 2);
+    }
 
-    // function test_transfer_ShouldWorkWhenReceiverWhitelisted() public {
-    //     uint256 userBalance = assetBalance(user1.addr);
-    //     whitelist(user1.addr);
-    //     requestDeposit(userBalance, user1.addr);
-    //     settle();
-    //     deposit(userBalance, user1.addr);
-    //     uint256 shares = vault.balanceOf(user1.addr);
-    //     address receiver = user2.addr;
-    //     whitelist(user2.addr);
-    //     vm.prank(user1.addr);
-    //     vault.transfer(receiver, shares);
-    // }
+    function test_transfer_ShouldWorkWhenReceiverWhitelisted() public {
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        requestDeposit(userBalance, user1.addr);
+        settle();
+        deposit(userBalance, user1.addr);
+        uint256 shares = vault.balanceOf(user1.addr);
+        address receiver = user2.addr;
+        whitelist(user2.addr);
+        vm.prank(user1.addr);
+        vault.transfer(receiver, shares);
+    }
+
 }

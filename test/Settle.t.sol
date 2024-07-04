@@ -11,10 +11,10 @@ using Math for uint256;
 
 contract TestSettle is BaseTest {
     function setUp() public {
-        dealAndApprove(user1.addr);
+        dealAndApproveAndWhitelist(user1.addr);
         uint256 user1Assets = assetBalance(user1.addr);
         requestDeposit(user1Assets / 2, user1.addr);
-        dealAndApprove(user2.addr);
+        dealAndApproveAndWhitelist(user2.addr);
 
         updateAndSettle(0);
         deposit(user1Assets / 2, user1.addr);
@@ -63,7 +63,7 @@ contract TestSettle is BaseTest {
     function test_settleAfterUpdate_TooSoon() public {
         updateTotalAssets(1);
 
-        vm.startPrank(vault.vaultValorizationRole());
+        vm.startPrank(vault.valorizationRole());
         vm.expectRevert();
         vault.settle();
         vm.stopPrank();
@@ -72,7 +72,7 @@ contract TestSettle is BaseTest {
     // function test_settleAfterUpdate_TooLate() public {
     //     updateTotalAssets(1);
     //     vm.warp(block.timestamp + 3 days);
-    //     vm.startPrank(vault.vaultValorizationRole());
+    //     vm.startPrank(vault.valorizationRole());
     //     vm.expectRevert();
     //     vault.settle();
     //     vm.stopPrank();
