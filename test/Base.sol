@@ -51,6 +51,21 @@ contract BaseTest is Test, Constants {
         return vault.deposit(amount, user);
     }
 
+    function mint(
+        uint256 amount,
+        address controller,
+        address operator,
+        address receiver
+    ) internal returns (uint256) {
+        vm.prank(operator);
+        return vault.mint(amount, receiver, controller);
+    }
+
+    function mint(uint256 amount, address user) internal returns (uint256) {
+        vm.prank(user);
+        return vault.mint(amount, user);
+    }
+
     function requestRedeem(
         uint256 amount,
         address controller,
@@ -91,6 +106,21 @@ contract BaseTest is Test, Constants {
     ) internal returns (uint256) {
         vm.prank(operator);
         return vault.redeem(amount, receiver, controller);
+    }
+
+    function withdraw(uint256 amount, address user) internal returns (uint256) {
+        vm.prank(user);
+        return vault.withdraw(amount, user, user);
+    }
+
+    function withdraw(
+        uint256 amount,
+        address controller,
+        address operator,
+        address receiver
+    ) internal returns (uint256) {
+        vm.prank(operator);
+        return vault.withdraw(amount, receiver, controller);
     }
 
     function updateTotalAssets(uint256 newTotalAssets) internal {
@@ -192,7 +222,16 @@ contract BaseTest is Test, Constants {
     function whitelist(address user) public {
         vm.prank(vault.adminRole());
         vault.whitelist(user);
-        console.log(vault.isWhitelisted(user));
+    }
+
+    function whitelist(address[] memory users) public {
+        vm.prank(vault.adminRole());
+        vault.whitelist(users);
+    }
+
+    function unwhitelist(address user) public {
+        vm.prank(vault.adminRole());
+        vault.revokeWhitelist(user);
     }
 
     function balance(address user) public view returns (uint256) {

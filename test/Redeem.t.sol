@@ -7,12 +7,12 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 
 import {BaseTest} from "./Base.sol";
 
-contract TestDeposit is BaseTest {
+contract TestRedeem is BaseTest {
     function setUp() public {
         dealAndApproveAndWhitelist(user1.addr);
     }
 
-    function test_deposit() public {
+    function test_redeem() public {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance, user1.addr);
         updateAndSettle(0);
@@ -20,5 +20,16 @@ contract TestDeposit is BaseTest {
         uint256 shares = deposit(userBalance, user1.addr);
         assertEq(shares, vault.balanceOf(user1.addr));
         assertEq(shares, userBalance);
+        requestRedeem(shares, user1.addr);
+        assertEq(vault.claimableRedeemRequest(vault.epochId(), user1.addr), 0);
+
+        updateAndSettle(userBalance + 100);
+        unwind();
+        assertEq(vault.maxRedeem(user1.addr), shares);
+        uint256 assets = redeem(shares, user1.addr);
+        assertEq(assets, assetBalance(user1.addr));
+        assertEq(vault.maxRedeem(user1.addr), 0);
+        assertEq(vault.epochId(), 3);
+        assertEq(vault.claimableRedeemRequest(vault.epochId(), user1.addr), 0);
     }
 }
