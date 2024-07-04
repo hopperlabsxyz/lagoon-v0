@@ -208,6 +208,7 @@ contract TestFeeManager is BaseTest {
             vault.balanceOf(hopperDao) - daoShares,
             expectedProtocolNewShares
         );
+        assertEq(vault.lastFeeTime(), block.timestamp);
 
         managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
@@ -249,6 +250,7 @@ contract TestFeeManager is BaseTest {
             vault.balanceOf(hopperDao) - daoShares,
             expectedProtocolNewShares
         );
+        assertEq(vault.lastFeeTime(), block.timestamp);
 
         // save balances
         managerShares = vault.balanceOf(feeReceiver);
@@ -291,6 +293,7 @@ contract TestFeeManager is BaseTest {
             vault.balanceOf(hopperDao) - daoShares,
             expectedProtocolNewShares
         );
+        assertEq(vault.lastFeeTime(), block.timestamp);
 
         // save balances
         managerShares = vault.balanceOf(feeReceiver);
@@ -333,6 +336,7 @@ contract TestFeeManager is BaseTest {
             vault.balanceOf(hopperDao) - daoShares,
             expectedProtocolNewShares
         );
+        assertEq(vault.lastFeeTime(), block.timestamp);
 
         // save balances
         managerShares = vault.balanceOf(feeReceiver);
@@ -375,6 +379,7 @@ contract TestFeeManager is BaseTest {
             vault.balanceOf(hopperDao) - daoShares,
             expectedProtocolNewShares
         );
+        assertEq(vault.lastFeeTime(), block.timestamp);
 
         // save balances
         managerShares = vault.balanceOf(feeReceiver);
@@ -423,6 +428,7 @@ contract TestFeeManager is BaseTest {
             vault.balanceOf(hopperDao) - daoShares,
             expectedProtocolNewShares
         );
+        assertEq(vault.lastFeeTime(), block.timestamp);
 
         // save balances
         managerShares = vault.balanceOf(feeReceiver);
