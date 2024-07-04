@@ -65,6 +65,23 @@ contract TestWhitelist is BaseTest {
         underlying.transfer(receiver, userBalance / 2);
     }
 
+    function test_transfer_WhenReceiverNotWhitelistedAfterDeactivateOfWhitelisting()
+        public
+    {
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        requestDeposit(userBalance, user1.addr);
+        settle();
+        deposit(userBalance, user1.addr);
+        address receiver = user2.addr;
+        vm.prank(vault.adminRole());
+        vault.deactivateWhitelist();
+        vm.assertEq(vault.getWhitelistActivated(), false);
+        uint256 shares = vault.balanceOf(user1.addr);
+        vm.prank(user1.addr);
+        underlying.transfer(receiver, shares);
+    }
+
     function test_transfer_ShouldWorkWhenReceiverWhitelisted() public {
         uint256 userBalance = assetBalance(user1.addr);
         whitelist(user1.addr);
@@ -78,4 +95,28 @@ contract TestWhitelist is BaseTest {
         vault.transfer(receiver, shares);
     }
 
+    function test_whitelist() public {
+        whitelist(user1.addr);
+        assertEq(vault.isWhitelisted(user1.addr), true);
+    }
+
+    function test_whitelistList() public {
+        address[] memory users = new address[](2);
+        users[0] = user1.addr;
+        users[1] = user2.addr;
+        whitelist(users);
+        assertEq(vault.isWhitelisted(user1.addr), true);
+    }
+
+    function test_unwhitelistList() public {
+        address[] memory users = new address[](2);
+        users[0] = user1.addr;
+        users[1] = user2.addr;
+        whitelist(users);
+        assertEq(vault.isWhitelisted(user1.addr), true);
+        unwhitelist(users[0]);
+        assertEq(vault.isWhitelisted(user1.addr), false);
+        unwhitelist(users[1]);
+        assertEq(vault.isWhitelisted(user2.addr), false);
+    }
 }
