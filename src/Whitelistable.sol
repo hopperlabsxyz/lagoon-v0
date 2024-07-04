@@ -8,14 +8,15 @@ bytes32 constant WHITELISTED = keccak256("WHITELISTED");
 error NotWhitelisted(address account);
 
 contract Whitelistable is AccessControlEnumerableUpgradeable {
+    /// @custom:storage-location erc7201:hopper.storage.Whitelistable
     struct WhitelistableStorage {
         bool activated;
     }
 
-    // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
+    // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant whitelistableStorage =
-        0x9e6b3200a20a991c129f47dddaca04a18eb4bcf2b53906fb44751d827f001400; //todo compute proper storage slot
+        0x083cc98ab296d1a1f01854b5f7a2f47df4425a56ba7b35f7faa3a336067e4800; //todo compute proper storage slot
 
     function _getWhitelistableStorage()
         internal
