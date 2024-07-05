@@ -101,6 +101,7 @@ abstract contract Constants is Test {
             bool enableWhitelist = true;
 
             vault = new VaultHelper(false);
+            address[] memory whitelist = new address[](0);
             Vault.InitStruct memory v = Vault.InitStruct(
                 underlying,
                 vaultName,
@@ -114,7 +115,8 @@ abstract contract Constants is Test {
                 0,
                 0,
                 1 days,
-                enableWhitelist
+                enableWhitelist,
+                whitelist
             );
             vault.initialize(v);
             vm.stopPrank();
@@ -140,6 +142,8 @@ abstract contract Constants is Test {
         string memory _vaultSymbol
     ) internal returns (VaultHelper) {
         bool enableWhitelist = true;
+        address[] memory whitelist = new address[](0);
+
         Vault.InitStruct memory v = Vault.InitStruct(
             _underlying,
             _vaultName,
@@ -153,7 +157,8 @@ abstract contract Constants is Test {
             0,
             0,
             1 days,
-            enableWhitelist
+            enableWhitelist,
+            whitelist
         );
 
         BeaconProxy proxy = BeaconProxy(

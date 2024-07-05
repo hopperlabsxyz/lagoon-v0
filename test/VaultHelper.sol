@@ -6,7 +6,7 @@ import "../src/ERC7540.sol";
 contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
-    constructor(bool disable) Vault(disable) {
+    constructor(bool disable) Vault() {
         if (disable) _disableInitializers();
     }
 
