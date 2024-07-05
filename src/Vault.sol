@@ -51,6 +51,7 @@ contract Vault is
         uint256 protocolFee;
         uint256 cooldown;
         bool enableWhitelist;
+        address[] whitelist;
     }
 
     /// @custom:storage-location erc7201:hopper.storage.vault
@@ -75,8 +76,8 @@ contract Vault is
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
-    constructor(bool disable) {
-        if (disable) _disableInitializers();
+    constructor() {
+        // if (disable) _disableInitializers();
     }
 
     function initialize(InitStruct memory init) public virtual initializer {
@@ -116,6 +117,9 @@ contract Vault is
             _grantRole(WHITELISTED, pendingSilo());
             _grantRole(WHITELISTED, claimableSilo());
             _grantRole(WHITELISTED, address(0));
+            for (uint256 i = 0; i < init.whitelist.length; i++) {
+                _grantRole(WHITELISTED, init.whitelist[i]);
+            }
         }
     }
 
