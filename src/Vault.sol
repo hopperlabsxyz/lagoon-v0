@@ -74,21 +74,6 @@ contract Vault is
         }
     }
 
-    function getNewTotalAssetsTimestamp() view public returns (uint256) {
-        VaultStorage storage $ = _getVaultStorage();
-        return $.newTotalAssetsTimestamp;
-    }
-
-    function getNewTotalAssets() view public returns (uint256) {
-        VaultStorage storage $ = _getVaultStorage();
-        return $.newTotalAssets;
-    }
-
-    function getNewTotalAssetsCooldown() view public returns (uint256) {
-        VaultStorage storage $ = _getVaultStorage();
-        return $.newTotalAssetsCooldown;
-    }
-
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
     constructor() {
