@@ -458,4 +458,9 @@ contract Vault is
         }
         return 0;
     }
+
+    function updateNewTotalAssetsCountdown(uint256 _newTotalAssetsCooldown) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        VaultStorage storage $ = _getVaultStorage();
+        $.newTotalAssetsCooldown = _newTotalAssetsCooldown;
+    }
 }
