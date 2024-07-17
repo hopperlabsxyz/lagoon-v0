@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
-// import "forge-std/Test.sol";
+import "forge-std/Test.sol";
 import {ERC7540Upgradeable, EpochData} from "./ERC7540.sol";
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {AccessControlUpgradeable, IAccessControl} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -13,7 +13,7 @@ import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC2
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {Whitelistable, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {FeeManager, COOLDOWN} from "./FeeManager.sol";
+import {FeeManager} from "./FeeManager.sol";
 // import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
@@ -30,8 +30,7 @@ bytes32 constant FEE_RECEIVER = keccak256("FEE_RECEIVER");
 error CooldownNotOver();
 error AssetManagerNotSet();
 
-/// @custom:oz-upgrades-from VaultV1
-contract Vault is
+contract VaultV1 is
     ERC7540Upgradeable,
     ERC20BurnableUpgradeable,
     ERC20PermitUpgradeable,
@@ -124,8 +123,6 @@ contract Vault is
         }
     }
 
-  
-
     function _update(
         address from,
         address to,
@@ -147,7 +144,6 @@ contract Vault is
     {
         return ERC4626Upgradeable.decimals();
     }
-
 
     function requestDeposit(
         uint256 assets,
@@ -396,66 +392,5 @@ contract Vault is
         // we accept only one role holder for the hopper/asset manager/valorization/fee receiver/admin role
         if (role != WHITELISTED) _revokeRole(role, getRoleMember(role, 0));
         super.grantRole(role, account);
-    }
-
-    /////////////////
-    // MVP UPGRADE //
-    /////////////////
-    
-    // Pending states
-    function pendingDeposit()
-        public
-        view
-        returns (uint256)
-    {
-        return IERC20(asset()).balanceOf(pendingSilo());
-    }
-
-    function pendingRedeem()
-        public
-        view
-        returns (uint256)
-    {
-        return balanceOf(pendingSilo());
-    }
-
-    // Sensible variables countdown update
-    function newTotalAssetsCountdown()
-        public
-        view
-        returns (uint256)
-    {
-        VaultStorage storage $ = _getVaultStorage();
-        if ($.newTotalAssetsTimestamp == type(uint256).max) {
-            return 0;
-        }
-        if ($.newTotalAssetsTimestamp + $.newTotalAssetsCooldown > block.timestamp) {
-            return $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown - block.timestamp;
-        }
-        return 0;
-    }
-
-    function newManagementFeeCountdown() public view returns (uint256) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if ($.managementFee.lastUpdate + COOLDOWN > block.timestamp) {
-            return $.managementFee.lastUpdate + COOLDOWN - block.timestamp;
-        }
-        return 0;
-    }
-
-    function newPerformanceFeeCountdown() public view returns (uint256) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if ($.performanceFee.lastUpdate + COOLDOWN > block.timestamp) {
-            return $.performanceFee.lastUpdate + COOLDOWN - block.timestamp;
-        }
-        return 0;
-    }
-
-    function newProtocolFeeCountdown() public view returns (uint256) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if ($.protocolFee.lastUpdate + COOLDOWN > block.timestamp) {
-            return $.protocolFee.lastUpdate + COOLDOWN - block.timestamp;
-        }
-        return 0;
     }
 }
