@@ -438,6 +438,9 @@ contract Vault is
         returns (uint256)
     {
         VaultStorage storage $ = _getVaultStorage();
+        if ($.newTotalAssetsTimestamp == type(uint256).max) {
+            return 0;
+        }
         if ($.newTotalAssetsTimestamp + $.newTotalAssetsCooldown > block.timestamp) {
             return $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown - block.timestamp;
         }
