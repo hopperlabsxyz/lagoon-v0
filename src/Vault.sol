@@ -417,7 +417,7 @@ contract Vault is
     }
 
     // Sensible variables countdown update
-    function newTotalAssetsCoutdown()
+    function newTotalAssetsCountdown()
         public
         view
         returns (uint256)
