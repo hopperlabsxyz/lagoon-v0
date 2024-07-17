@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
-import "forge-std/Test.sol";
+// import "forge-std/Test.sol";
 import {ERC7540Upgradeable, EpochData} from "./ERC7540.sol";
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {AccessControlUpgradeable, IAccessControl} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -13,7 +13,7 @@ import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC2
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {Whitelistable, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {FeeManager} from "./FeeManager.sol";
+import {FeeManager, COOLDOWN} from "./FeeManager.sol";
 // import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
@@ -72,6 +72,21 @@ contract Vault is
         assembly {
             $.slot := vaultStorage
         }
+    }
+
+    function getNewTotalAssetsTimestamp() view public returns (uint256) {
+        VaultStorage storage $ = _getVaultStorage();
+        return $.newTotalAssetsTimestamp;
+    }
+
+    function getNewTotalAssets() view public returns (uint256) {
+        VaultStorage storage $ = _getVaultStorage();
+        return $.newTotalAssets;
+    }
+
+    function getNewTotalAssetsCooldown() view public returns (uint256) {
+        VaultStorage storage $ = _getVaultStorage();
+        return $.newTotalAssetsCooldown;
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -395,7 +410,11 @@ contract Vault is
         super.grantRole(role, account);
     }
 
-    // MVP UPGRADE 
+    /////////////////
+    // MVP UPGRADE //
+    /////////////////
+    
+    // Pending states
     function pendingDeposit()
         public
         view
@@ -412,5 +431,40 @@ contract Vault is
         return balanceOf(pendingSilo());
     }
 
-    
+    // Sensible variables countdown update
+    function newTotalAssetsCoutdown()
+        public
+        view
+        returns (uint256)
+    {
+        VaultStorage storage $ = _getVaultStorage();
+        if ($.newTotalAssetsTimestamp + $.newTotalAssetsCooldown > block.timestamp) {
+            return $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown - block.timestamp;
+        }
+        return 0;
+    }
+
+    function newManagementFeeCountdown() public view returns (uint256) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        if ($.managementFee.lastUpdate + COOLDOWN > block.timestamp) {
+            return $.managementFee.lastUpdate + COOLDOWN - block.timestamp;
+        }
+        return 0;
+    }
+
+    function newPerformanceFeeCountdown() public view returns (uint256) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        if ($.performanceFee.lastUpdate + COOLDOWN > block.timestamp) {
+            return $.performanceFee.lastUpdate + COOLDOWN - block.timestamp;
+        }
+        return 0;
+    }
+
+    function newProtocolFeeCountdown() public view returns (uint256) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        if ($.protocolFee.lastUpdate + COOLDOWN > block.timestamp) {
+            return $.protocolFee.lastUpdate + COOLDOWN - block.timestamp;
+        }
+        return 0;
+    }
 }
