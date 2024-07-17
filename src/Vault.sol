@@ -145,6 +145,7 @@ contract Vault is
         return ERC4626Upgradeable.decimals();
     }
 
+
     function requestDeposit(
         uint256 assets,
         address controller,
@@ -393,4 +394,23 @@ contract Vault is
         if (role != WHITELISTED) _revokeRole(role, getRoleMember(role, 0));
         super.grantRole(role, account);
     }
+
+    // MVP UPGRADE 
+    function pendingDeposit()
+        public
+        view
+        returns (uint256)
+    {
+        return IERC20(asset()).balanceOf(pendingSilo());
+    }
+
+    function pendingRedeem()
+        public
+        view
+        returns (uint256)
+    {
+        return balanceOf(pendingSilo());
+    }
+
+    
 }
