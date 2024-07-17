@@ -458,4 +458,10 @@ contract Vault is
         }
         return 0;
     }
+
+    // TODO DELETE FOR PRODUCTION
+    function updateTotalAssetsCooldown(uint256 cooldown) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        VaultStorage storage $ = _getVaultStorage();
+        $.newTotalAssetsCooldown = cooldown;
+    }
 }
