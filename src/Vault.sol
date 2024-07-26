@@ -30,7 +30,7 @@ bytes32 constant FEE_RECEIVER = keccak256("FEE_RECEIVER");
 error CooldownNotOver();
 error AssetManagerNotSet();
 
-/// @custom:oz-upgrades-from VaultV1
+/// @custom:oz-upgrades-from VaultV2
 contract Vault is
     ERC7540Upgradeable,
     ERC20BurnableUpgradeable,
@@ -124,8 +124,6 @@ contract Vault is
         }
     }
 
-  
-
     function _update(
         address from,
         address to,
@@ -147,7 +145,6 @@ contract Vault is
     {
         return ERC4626Upgradeable.decimals();
     }
-
 
     function requestDeposit(
         uint256 assets,
@@ -401,36 +398,30 @@ contract Vault is
     /////////////////
     // MVP UPGRADE //
     /////////////////
-    
+
     // Pending states
-    function pendingDeposit()
-        public
-        view
-        returns (uint256)
-    {
+    function pendingDeposit() public view returns (uint256) {
         return IERC20(asset()).balanceOf(pendingSilo());
     }
 
-    function pendingRedeem()
-        public
-        view
-        returns (uint256)
-    {
+    function pendingRedeem() public view returns (uint256) {
         return balanceOf(pendingSilo());
     }
 
     // Sensible variables countdown update
-    function newTotalAssetsCountdown()
-        public
-        view
-        returns (uint256)
-    {
+    function newTotalAssetsCountdown() public view returns (uint256) {
         VaultStorage storage $ = _getVaultStorage();
         if ($.newTotalAssetsTimestamp == type(uint256).max) {
             return 0;
         }
-        if ($.newTotalAssetsTimestamp + $.newTotalAssetsCooldown > block.timestamp) {
-            return $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown - block.timestamp;
+        if (
+            $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown >
+            block.timestamp
+        ) {
+            return
+                $.newTotalAssetsTimestamp +
+                $.newTotalAssetsCooldown -
+                block.timestamp;
         }
         return 0;
     }
@@ -459,7 +450,9 @@ contract Vault is
         return 0;
     }
 
-    function updateNewTotalAssetsCountdown(uint256 _newTotalAssetsCooldown) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function updateNewTotalAssetsCountdown(
+        uint256 _newTotalAssetsCooldown
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = _newTotalAssetsCooldown;
     }
