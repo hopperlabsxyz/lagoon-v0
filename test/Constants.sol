@@ -11,6 +11,7 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import "forge-std/console.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {FeeModule} from "@src/FeeModule.sol";
 
 abstract contract Constants is Test {
     // ERC20 tokens
@@ -102,22 +103,22 @@ abstract contract Constants is Test {
 
             vault = new VaultHelper(false);
             address[] memory whitelist = new address[](0);
-            Vault.InitStruct memory v = Vault.InitStruct(
-                underlying,
-                vaultName,
-                vaultSymbol,
-                dao.addr,
-                assetManager.addr,
-                valorizator.addr,
-                admin.addr,
-                feeReceiver.addr,
-                0,
-                0,
-                0,
-                1 days,
-                enableWhitelist,
-                whitelist
-            );
+            FeeModule feeModule = new FeeModule(10_000, 0, 0, 0, 0);
+            Vault.InitStruct memory v = Vault.InitStruct({
+                underlying: underlying,
+                name: vaultName,
+                symbol: vaultSymbol,
+                dao: dao.addr,
+                assetManager: assetManager.addr,
+                valorization: valorizator.addr,
+                admin: admin.addr,
+                feeReceiver: feeReceiver.addr,
+                fee: address(feeModule),
+                protocolFee: 0,
+                cooldown: 1 days,
+                enableWhitelist: enableWhitelist,
+                whitelist: whitelist
+            });
             vault.initialize(v);
             vm.stopPrank();
         }
@@ -144,22 +145,21 @@ abstract contract Constants is Test {
         bool enableWhitelist = true;
         address[] memory whitelist = new address[](0);
 
-        Vault.InitStruct memory v = Vault.InitStruct(
-            _underlying,
-            _vaultName,
-            _vaultSymbol,
-            dao.addr,
-            assetManager.addr,
-            valorizator.addr,
-            admin.addr,
-            feeReceiver.addr,
-            0,
-            0,
-            0,
-            1 days,
-            enableWhitelist,
-            whitelist
-        );
+        Vault.InitStruct memory v = Vault.InitStruct({
+            underlying: _underlying,
+            name: _vaultName,
+            symbol: _vaultSymbol,
+            dao: dao.addr,
+            assetManager: assetManager.addr,
+            valorization: valorizator.addr,
+            admin: admin.addr,
+            feeReceiver: feeReceiver.addr,
+            fee: address(0),
+            protocolFee: 0,
+            cooldown: 1 days,
+            enableWhitelist: enableWhitelist,
+            whitelist: whitelist
+        });
 
         BeaconProxy proxy = BeaconProxy(
             payable(

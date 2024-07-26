@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
-interface IFee {
+interface IFeeModule {
     function bps() external view returns (uint256 bps);
 
     function exitRate() external view returns (uint256 exitRate);
