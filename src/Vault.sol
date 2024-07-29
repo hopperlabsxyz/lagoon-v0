@@ -255,8 +255,8 @@ contract Vault is
         // We must not take into account new assets into next fee calculation
         newHighWaterMark += pendingAssets;
 
-        epoch.totalAssetsDeposit = _totalAssets;
-        epoch.totalSupplyDeposit = totalSupply();
+        epoch.totalAssets = _totalAssets;
+        epoch.totalSupply = totalSupply();
         if (pendingAssets > 0) {
             uint256 shares = _convertToShares(
                 pendingAssets,
@@ -276,8 +276,8 @@ contract Vault is
         // We must not take into account assets leaving the fund into next fee calculation
         newHighWaterMark -= assets;
 
-        epoch.totalAssetsRedeem = _totalAssets;
-        epoch.totalSupplyRedeem = totalSupply();
+        epoch.totalAssets = _totalAssets;
+        epoch.totalSupply = totalSupply();
         if (assets > 0) {
             _burn(pendingSilo(), balanceOf(pendingSilo()));
             $erc7540.totalAssets = _totalAssets - assets;
