@@ -288,6 +288,9 @@ contract Vault is
         // Then we put a maximum of assets in the claimable silo so that user can claim
         if (pendingAssets > 0 && $vault.toUnwind > 0)
             _unwind(pendingAssets, pendingSilo());
+        else if ($vault.toUnwind == 0)
+            // if no unwind happened because there is nothing to unwind then we update the counter.
+            $erc7540.oldestEpochIdUnwinded = $erc7540.epochId;
 
         // If there is a surplus of assets, we send those to the asset manager
         pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
@@ -313,14 +316,14 @@ contract Vault is
     function _unwind(uint256 amount, address from) internal {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
-        uint256 tempLastEpochIdUnwinded;
+        uint256 tempOldestEpochIdUnwinded = $erc7540.oldestEpochIdUnwinded;
 
         if (amount > $.toUnwind) amount = $.toUnwind;
 
         $.toUnwind -= amount;
         IERC20(asset()).safeTransferFrom(from, claimableSilo(), amount);
         for (
-            uint256 i = $erc7540.lastEpochIdUnwinded;
+            uint256 i = tempOldestEpochIdUnwinded;
             i <= $erc7540.epochId;
             i++
         ) {
@@ -337,9 +340,9 @@ contract Vault is
                     break;
                 }
             }
-            tempLastEpochIdUnwinded = i;
+            tempOldestEpochIdUnwinded = i;
         }
-        $erc7540.lastEpochIdUnwinded = tempLastEpochIdUnwinded;
+        $erc7540.oldestEpochIdUnwinded = tempOldestEpochIdUnwinded;
     }
 
     function supportsInterface(
