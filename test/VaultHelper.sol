@@ -10,44 +10,24 @@ contract VaultHelper is Vault {
         if (disable) _disableInitializers();
     }
 
-    function totalSupplyDeposit(uint256 epochId) public view returns (uint256) {
+    function totalSupply(uint256 epochId) public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        return $.epochs[epochId].totalSupplyDeposit;
+        return $.epochs[epochId].totalSupply;
     }
 
-    function previousEpochTotalSupplyDeposit() public view returns (uint256) {
+    function previousEpochTotalSupply() public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        return $.epochs[$.epochId - 1].totalSupplyDeposit;
+        return $.epochs[$.epochId - 1].totalSupply;
     }
 
-    function totalSupplyRedeem(uint256 epochId) public view returns (uint256) {
+    function totalAssets(uint256 epochId) public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        return $.epochs[epochId].totalSupplyRedeem;
+        return $.epochs[epochId].totalAssets;
     }
 
-    function previousEpochTotalSupplyRedeem() public view returns (uint256) {
+    function previousEpochTotalAssets() public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        return $.epochs[$.epochId - 1].totalSupplyRedeem;
-    }
-
-    function totalAssetsDeposit(uint256 epochId) public view returns (uint256) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        return $.epochs[epochId].totalAssetsDeposit;
-    }
-
-    function previousEpochTotalAssetsDeposit() public view returns (uint256) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        return $.epochs[$.epochId - 1].totalAssetsDeposit;
-    }
-
-    function totalAssetsRedeem(uint256 epochId) public view returns (uint256) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        return $.epochs[epochId].totalAssetsRedeem;
-    }
-
-    function previousEpochTotalAssetsRedeem() public view returns (uint256) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        return $.epochs[$.epochId - 1].totalAssetsRedeem;
+        return $.epochs[$.epochId - 1].totalAssets;
     }
 
     function underlyingDecimals() public view returns (uint256) {
