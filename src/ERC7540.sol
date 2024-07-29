@@ -59,7 +59,7 @@ abstract contract ERC7540Upgradeable is
         mapping(uint256 epochId => EpochData epoch) epochs;
         mapping(address user => uint256 epochId) lastDepositRequestId;
         mapping(address user => uint256 epochId) lastRedeemRequestId;
-        uint256 lastEpochIdUnwinded;
+        uint256 oldestEpochIdUnwinded;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
