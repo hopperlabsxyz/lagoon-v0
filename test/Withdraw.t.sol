@@ -18,14 +18,27 @@ contract TestWithdraw is BaseTest {
         updateAndSettle(0);
         assertEq(vault.maxDeposit(user1.addr), userBalance);
         uint256 sharesObtained = deposit(userBalance, user1.addr);
-        assertEq(sharesObtained, vault.balanceOf(user1.addr));
+        assertEq(
+            sharesObtained,
+            vault.balanceOf(user1.addr),
+            "sharesObtained should be equal to balanceOf"
+        );
         assertEq(sharesObtained, userBalance);
         requestRedeem(sharesObtained, user1.addr);
-        assertEq(vault.claimableRedeemRequest(vault.epochId(), user1.addr), 0);
+        assertEq(
+            vault.claimableRedeemRequest(vault.epochId(), user1.addr),
+            0,
+            "claimableRedeemRequest should be 0"
+        );
 
         updateAndSettle(userBalance + 100);
         unwind();
-        assertEq(vault.maxRedeem(user1.addr), sharesObtained);
+        assertApproxEqAbs(
+            vault.maxRedeem(user1.addr),
+            sharesObtained,
+            1,
+            "maxRedeem should be equal to sharesObtained"
+        );
         uint256 assetsToWithdraw = vault.convertToAssets(
             sharesObtained,
             vault.epochId() - 1

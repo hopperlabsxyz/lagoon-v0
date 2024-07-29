@@ -17,6 +17,8 @@ struct EpochData {
     uint256 totalAssetsDeposit;
     uint256 totalAssetsRedeem;
     uint256 totalSupplyRedeem;
+    uint256 toUnwind;
+    uint256 availableToWithdraw;
     mapping(address => uint256) depositRequest;
     mapping(address => uint256) redeemRequest;
 }
@@ -28,7 +30,7 @@ error ERC7540PreviewDepositDisabled();
 error ERC7540PreviewMintDisabled();
 error ERC7540PreviewRedeemDisabled();
 error ERC7540PreviewWithdrawDisabled();
-
+error ERC7540InsufficientAssets();
 error RequestDepositZero();
 error RequestRedeemZero();
 error DepositZero();
@@ -57,6 +59,7 @@ abstract contract ERC7540Upgradeable is
         mapping(uint256 epochId => EpochData epoch) epochs;
         mapping(address user => uint256 epochId) lastDepositRequestId;
         mapping(address user => uint256 epochId) lastRedeemRequestId;
+        uint256 lastEpochIdUnwinded;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
@@ -259,10 +262,9 @@ abstract contract ERC7540Upgradeable is
         else if (requestId == 0) {
             uint256 lastDepositRequestId = $.lastDepositRequestId[controller];
             if (lastDepositRequestId == $.epochId) return 0;
-            else
-                return
-                    $.epochs[lastDepositRequestId].depositRequest[controller];
-        } else return $.epochs[requestId].depositRequest[controller];
+            requestId = lastDepositRequestId;
+        }
+        return $.epochs[requestId].depositRequest[controller];
     }
 
     function maxDeposit(
@@ -393,9 +395,16 @@ abstract contract ERC7540Upgradeable is
         if (requestId == 0) {
             uint256 lastRedeemRequestId = $.lastRedeemRequestId[controller];
             if (lastRedeemRequestId == _epochId) return 0;
-            else return $.epochs[lastRedeemRequestId].redeemRequest[controller];
-        } else if (requestId == _epochId) return 0;
-        return $.epochs[requestId].redeemRequest[controller];
+            requestId = lastRedeemRequestId;
+        }
+        return
+            Math.min(
+                $.epochs[requestId].redeemRequest[controller],
+                convertToShares(
+                    $.epochs[requestId].availableToWithdraw,
+                    requestId
+                )
+            );
     }
 
     function maxRedeem(
@@ -429,8 +438,11 @@ abstract contract ERC7540Upgradeable is
         uint256 requestId = $.lastRedeemRequestId[controller];
         if (requestId == $.epochId) revert RequestIdNotClaimable();
 
-        $.epochs[requestId].redeemRequest[controller] -= shares;
         assets = convertToAssets(shares, requestId);
+        $.epochs[requestId].redeemRequest[controller] -= shares;
+        if ($.epochs[requestId].availableToWithdraw < assets)
+            revert ERC7540InsufficientAssets();
+        $.epochs[requestId].availableToWithdraw -= assets;
         IERC20(asset()).safeTransferFrom(
             address($.claimableSilo),
             receiver,

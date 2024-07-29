@@ -223,7 +223,7 @@ contract Vault is
             block.timestamp
         ) revert CooldownNotOver();
 
-        // avoid settle using same newTotalAssets input
+        // prevents settle from using same newTotalAssets input
         $vault.newTotalAssetsTimestamp = type(uint256).max;
 
         // caching the value
@@ -282,6 +282,7 @@ contract Vault is
             _burn(pendingSilo(), balanceOf(pendingSilo()));
             $erc7540.totalAssets = _totalAssets - assets;
             $vault.toUnwind += assets;
+            $erc7540.epochs[epochId].toUnwind = assets;
         }
 
         // Then we put a maximum of assets in the claimable silo so that user can claim
@@ -311,10 +312,34 @@ contract Vault is
 
     function _unwind(uint256 amount, address from) internal {
         VaultStorage storage $ = _getVaultStorage();
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+        uint256 tempLastEpochIdUnwinded;
 
         if (amount > $.toUnwind) amount = $.toUnwind;
+
         $.toUnwind -= amount;
         IERC20(asset()).safeTransferFrom(from, claimableSilo(), amount);
+        for (
+            uint256 i = $erc7540.lastEpochIdUnwinded;
+            i <= $erc7540.epochId;
+            i++
+        ) {
+            uint256 _toUnwind = $erc7540.epochs[i].toUnwind;
+            if (_toUnwind > 0) {
+                if (amount >= _toUnwind) {
+                    amount -= _toUnwind;
+                    $erc7540.epochs[i].toUnwind = 0;
+                    $erc7540.epochs[i].availableToWithdraw += _toUnwind;
+                } else {
+                    $erc7540.epochs[i].toUnwind -= amount;
+                    $erc7540.epochs[i].availableToWithdraw += amount;
+                    amount = 0;
+                    break;
+                }
+            }
+            tempLastEpochIdUnwinded = i;
+        }
+        $erc7540.lastEpochIdUnwinded = tempLastEpochIdUnwinded;
     }
 
     function supportsInterface(

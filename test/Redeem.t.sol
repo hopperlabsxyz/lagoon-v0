@@ -25,7 +25,7 @@ contract TestRedeem is BaseTest {
 
         updateAndSettle(userBalance + 100);
         unwind();
-        assertEq(vault.maxRedeem(user1.addr), shares);
+        assertApproxEqAbs(vault.maxRedeem(user1.addr), shares, 1);
         uint256 assets = redeem(shares, user1.addr);
         assertEq(assets, assetBalance(user1.addr));
         assertEq(vault.maxRedeem(user1.addr), 0);

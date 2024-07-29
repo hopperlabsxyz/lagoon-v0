@@ -43,17 +43,17 @@ contract TestRequestRedeem is BaseTest {
         uint256 userBalance = balance(user1.addr);
         requestRedeem(userBalance / 2, user1.addr);
         updateAndSettle(vault.totalAssets());
+        unwind();
         assertEq(
             vault.claimableRedeemRequest(0, user1.addr),
             userBalance / 2,
-            "wrong claimable redeem value"
+            "wrong claimable redeem value before request"
         );
-        unwind();
         requestRedeem(balance(user1.addr), user1.addr);
         assertEq(
             vault.claimableRedeemRequest(0, user1.addr),
             0,
-            "wrong claimable redeem value"
+            "wrong claimable redeem value after request"
         );
         assertEq(
             vault.pendingRedeemRequest(0, user1.addr),
