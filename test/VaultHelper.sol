@@ -54,4 +54,21 @@ contract VaultHelper is Vault {
         IERC20Metadata asset = IERC20Metadata(asset());
         return asset.decimals();
     }
+
+    function toUnwind(uint256 epochId) public view returns (uint256) {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        return $.epochs[epochId].toUnwind;
+    }
+
+    function oldestEpochIdUnwinded() public view returns (uint256) {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        return $.oldestEpochIdUnwinded;
+    }
+
+    function availableToWithdraw(
+        uint256 epochId
+    ) public view returns (uint256) {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        return $.epochs[epochId].availableToWithdraw;
+    }
 }

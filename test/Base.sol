@@ -146,6 +146,12 @@ contract BaseTest is Test, Constants {
         vault.unwind(toUnwind);
     }
 
+    function unwind(uint256 assets) internal {
+        dealAndApproveAndWhitelist(vault.assetManagerRole());
+        vm.prank(vault.assetManagerRole());
+        vault.unwind(assets);
+    }
+
     function dealAndApproveAndWhitelist(address user) public {
         dealAmountAndApproveAndWhitelist(user, 100000);
     }
@@ -217,6 +223,11 @@ contract BaseTest is Test, Constants {
         vm.warp(vm.getBlockTimestamp() + 1 days);
         vault.setProtocolFee();
         vm.stopPrank();
+    }
+
+    function deactivateWhitelist() internal {
+        vm.prank(vault.adminRole());
+        vault.deactivateWhitelist();
     }
 
     function whitelist(address user) public {
