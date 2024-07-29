@@ -30,8 +30,7 @@ bytes32 constant FEE_RECEIVER = keccak256("FEE_RECEIVER");
 error CooldownNotOver();
 error AssetManagerNotSet();
 
-/// @custom:oz-upgrades-from VaultV2
-contract Vault is
+contract VaultV2 is
     ERC7540Upgradeable,
     ERC20BurnableUpgradeable,
     ERC20PermitUpgradeable,
