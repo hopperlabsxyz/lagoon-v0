@@ -8,7 +8,7 @@ import {BaseTest} from "./Base.sol";
 
 contract TestRequestDeposit is BaseTest {
     function setUp() public {
-        setUpVault(0, 0);
+        setUpVault(0, 0, 0);
         dealAndApproveAndWhitelist(user1.addr);
         whitelist(user1.addr);
         whitelist(user2.addr);
