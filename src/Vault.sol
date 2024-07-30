@@ -47,7 +47,7 @@ contract Vault is
         address valorization;
         address admin;
         address feeReceiver;
-        address feeModule;
+        address registry;
         uint256 managementRate;
         uint256 performanceRate;
         uint256 cooldown;
@@ -87,7 +87,7 @@ contract Vault is
         __ERC20Permit_init(init.name);
         __ERC20Pausable_init();
         __FeeManager_init(
-            init.feeModule,
+            init.registry,
             init.managementRate,
             init.performanceRate
         );
