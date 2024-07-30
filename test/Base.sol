@@ -195,11 +195,6 @@ contract BaseTest is Test, Constants {
         return IERC4626(vault.asset()).balanceOf(user);
     }
 
-    function setProtocolFee(uint256 _fee, address _caller) public {
-        vm.prank(_caller);
-        vault.setProtocolFee();
-    }
-
     function whitelist(address user) public {
         vm.prank(vault.adminRole());
         vault.whitelist(user);
