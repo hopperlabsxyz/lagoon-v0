@@ -106,7 +106,9 @@ abstract contract Constants is Test {
         UpgradeableBeacon beacon,
         ERC20 _underlying,
         string memory _vaultName,
-        string memory _vaultSymbol
+        string memory _vaultSymbol,
+        uint256 _managementRate,
+        uint256 _performanceRate
     ) internal returns (VaultHelper) {
         bool enableWhitelist = true;
         address[] memory whitelist = new address[](0);
@@ -120,9 +122,9 @@ abstract contract Constants is Test {
             valorization: valorizator.addr,
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
-            feeModule: address(0),
-            managementRate: 0,
-            performanceRate: 0,
+            feeModule: address(feeModule),
+            managementRate: _managementRate,
+            performanceRate: _performanceRate,
             cooldown: 1 days,
             enableWhitelist: enableWhitelist,
             whitelist: whitelist
@@ -147,17 +149,25 @@ abstract contract Constants is Test {
     ) internal {
         bool proxy = vm.envBool("PROXY");
 
+        feeModule = new FeeModule(dao.addr);
+        feeModule.setProtocolRate(_protocolRate);
+
         UpgradeableBeacon beacon;
         if (proxy) {
             beacon = _beaconDeploy("Vault.sol", owner.addr);
-            vault = _proxyDeploy(beacon, underlying, vaultName, vaultSymbol);
+            vault = _proxyDeploy(
+                beacon,
+                underlying,
+                vaultName,
+                vaultSymbol,
+                _managementRate,
+                _performanceRate
+            );
         } else {
             vm.startPrank(owner.addr);
             bool enableWhitelist = true;
 
             vault = new VaultHelper(false);
-            feeModule = new FeeModule(dao.addr);
-            feeModule.setProtocolRate(_protocolRate);
 
             address[] memory whitelist = new address[](0);
             Vault.InitStruct memory v = Vault.InitStruct({
