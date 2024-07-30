@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {VaultHelper} from "./VaultHelper.sol";
 import {Vault} from "@src/Vault.sol";
-import {FeeModule} from "@src/FeeModule.sol";
+import {Registry} from "@src/Registry.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 import {Upgrades, Options} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -32,7 +32,7 @@ abstract contract Constants is Test {
 
     string underlyingName = vm.envString("UNDERLYING_NAME");
     VaultHelper vault;
-    FeeModule feeModule;
+    Registry registry;
     string vaultName = "vault_";
     string vaultSymbol = "hop_vault_";
 
@@ -122,7 +122,7 @@ abstract contract Constants is Test {
             valorization: valorizator.addr,
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
-            feeModule: address(feeModule),
+            registry: address(registry),
             managementRate: _managementRate,
             performanceRate: _performanceRate,
             cooldown: 1 days,
@@ -149,8 +149,9 @@ abstract contract Constants is Test {
     ) internal {
         bool proxy = vm.envBool("PROXY");
 
-        feeModule = new FeeModule(dao.addr);
-        feeModule.setProtocolRate(_protocolRate);
+        registry = new Registry(dao.addr);
+        vm.prank(dao.addr);
+        registry.setProtocolRate(_protocolRate);
 
         UpgradeableBeacon beacon;
         if (proxy) {
@@ -179,7 +180,7 @@ abstract contract Constants is Test {
                 valorization: valorizator.addr,
                 admin: admin.addr,
                 feeReceiver: feeReceiver.addr,
-                feeModule: address(feeModule),
+                registry: address(registry),
                 managementRate: _managementRate,
                 performanceRate: _performanceRate,
                 cooldown: 1 days,

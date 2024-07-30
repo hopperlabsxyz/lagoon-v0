@@ -25,7 +25,7 @@ contract FeeManager is Initializable {
         uint256 performanceRate;
         uint256 lastFeeTime;
         uint256 highWaterMark;
-        IFeeModule feeModule;
+        IFeeModule registry;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
@@ -44,7 +44,7 @@ contract FeeManager is Initializable {
     }
 
     function __FeeManager_init(
-        address _feeModule,
+        address _registry,
         uint256 _managementRate,
         uint256 _performanceRate
     ) internal onlyInitializing {
@@ -55,7 +55,7 @@ contract FeeManager is Initializable {
 
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        $.feeModule = IFeeModule(_feeModule);
+        $.registry = IFeeModule(_registry);
         $.highWaterMark = 0;
 
         $.managementRate = _managementRate;
@@ -76,7 +76,7 @@ contract FeeManager is Initializable {
 
     function protocolFee() external returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        return $.feeModule.protocolRate();
+        return $.registry.protocolRate();
     }
 
     function lastFeeTime() external view returns (uint256) {
@@ -127,7 +127,7 @@ contract FeeManager is Initializable {
         );
 
         (managerShares, protocolShares) = _totalFeeShares.calculateProtocolFee(
-            $.feeModule.protocolRate()
+            $.registry.protocolRate()
         );
 
         $.lastFeeTime = block.timestamp;
