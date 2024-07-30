@@ -64,6 +64,21 @@ contract FeeManager is Initializable {
         $.lastFeeTime = block.timestamp;
     }
 
+    function managementFee() external view returns (uint256) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        return $.managementRate;
+    }
+
+    function performanceFee() external view returns (uint256) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        return $.performanceRate;
+    }
+
+    function protocolFee() external returns (uint256) {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        return $.feeModule.protocolRate();
+    }
+
     function lastFeeTime() external view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         return $.lastFeeTime;
