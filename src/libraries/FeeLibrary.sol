@@ -11,6 +11,16 @@ library FeeLibrary {
     uint256 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
     uint256 public constant MAX_PERFORMANCE_RATE = 5_000; // 50 %
 
+    function isAboveMaxManagementRate(uint256 rate) public pure returns (bool) {
+        return rate > MAX_MANAGEMENT_RATE;
+    }
+
+    function isAboveMaxPerformanceRate(
+        uint256 rate
+    ) public pure returns (bool) {
+        return rate > MAX_PERFORMANCE_RATE;
+    }
+
     function calculateManagementFee(
         uint256 assets,
         uint256 timeElapsed,
@@ -36,13 +46,18 @@ library FeeLibrary {
         }
     }
 
-    function calculateEntryFee(
-        uint256
-    ) external pure returns (uint256 entryFee) {
-        entryFee = 0;
+    function calculateProtocolFee(
+        uint256 assets,
+        uint256 rate
+    ) public pure returns (uint256 managerFees, uint256 protocolFees) {
+        protocolFees = assets.mulDiv(rate, BPS, Math.Rounding.Floor);
+        managerFees = assets - protocolFees;
     }
 
-    function calculateExitFee(uint256) external pure returns (uint256 exitFee) {
-        exitFee = 0;
+    function calculateFee(
+        uint256 assets,
+        uint256 rate
+    ) external pure returns (uint256 fee) {
+        fee = assets.mulDiv(rate, BPS, Math.Rounding.Floor);
     }
 }

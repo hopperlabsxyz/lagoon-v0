@@ -119,8 +119,8 @@ abstract contract Constants is Test {
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
             feeModule: address(0),
-            managementFee: 0,
-            performanceFee: 0,
+            managementRate: 0,
+            performanceRate: 0,
             cooldown: 1 days,
             enableWhitelist: enableWhitelist,
             whitelist: whitelist
@@ -164,8 +164,8 @@ abstract contract Constants is Test {
                 admin: admin.addr,
                 feeReceiver: feeReceiver.addr,
                 feeModule: address(0),
-                managementFee: _managementFee,
-                performanceFee: _performanceFee,
+                managementRate: _managementFee,
+                performanceRate: _performanceFee,
                 cooldown: 1 days,
                 enableWhitelist: enableWhitelist,
                 whitelist: whitelist
