@@ -112,7 +112,7 @@ contract FeeManager is Initializable {
         );
 
         (managerShares, protocolShares) = _totalFeeShares.calculateProtocolFee(
-            100 // HARDCODED PROTOCOL FEE FOR NOW
+            $.feeModule.protocolRate()
         );
 
         $.lastFeeTime = block.timestamp;

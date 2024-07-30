@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {VaultHelper} from "./VaultHelper.sol";
 import {Vault} from "@src/Vault.sol";
+import {FeeModule} from "@src/FeeModule.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 import {Upgrades, Options} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -31,6 +32,7 @@ abstract contract Constants is Test {
 
     string underlyingName = vm.envString("UNDERLYING_NAME");
     VaultHelper vault;
+    FeeModule feeModule;
     string vaultName = "vault_";
     string vaultSymbol = "hop_vault_";
 
@@ -139,8 +141,9 @@ abstract contract Constants is Test {
     }
 
     function setUpVault(
-        uint256 _managementFee,
-        uint256 _performanceFee
+        uint256 _protocolRate,
+        uint256 _managementRate,
+        uint256 _performanceRate
     ) internal {
         bool proxy = vm.envBool("PROXY");
 
@@ -153,6 +156,9 @@ abstract contract Constants is Test {
             bool enableWhitelist = true;
 
             vault = new VaultHelper(false);
+            feeModule = new FeeModule(dao.addr);
+            feeModule.setProtocolRate(_protocolRate);
+
             address[] memory whitelist = new address[](0);
             Vault.InitStruct memory v = Vault.InitStruct({
                 underlying: underlying,
@@ -163,9 +169,9 @@ abstract contract Constants is Test {
                 valorization: valorizator.addr,
                 admin: admin.addr,
                 feeReceiver: feeReceiver.addr,
-                feeModule: address(0),
-                managementRate: _managementFee,
-                performanceRate: _performanceFee,
+                feeModule: address(feeModule),
+                managementRate: _managementRate,
+                performanceRate: _performanceRate,
                 cooldown: 1 days,
                 enableWhitelist: enableWhitelist,
                 whitelist: whitelist

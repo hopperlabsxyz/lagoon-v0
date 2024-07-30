@@ -29,7 +29,7 @@ contract TestFeeManager is BaseTest {
     uint256 _100M;
 
     function setUp() public {
-        setUpVault(200, 2_000);
+        setUpVault(100, 200, 2_000);
         _1K = 1_000 * 10 ** vault.underlyingDecimals();
         _10K = 10_000 * 10 ** vault.underlyingDecimals();
         _100K = 100_000 * 10 ** vault.underlyingDecimals();
