@@ -13,7 +13,7 @@ import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC2
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {Whitelistable, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {FeeManager, COOLDOWN} from "./FeeManager.sol";
+import {FeeManager} from "./FeeManager.sol";
 // import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
@@ -47,8 +47,9 @@ contract Vault is
         address valorization;
         address admin;
         address feeReceiver;
-        address fee;
-        uint256 protocolFee;
+        address feeModule;
+        uint256 managementRate;
+        uint256 performanceRate;
         uint256 cooldown;
         bool enableWhitelist;
         address[] whitelist;
@@ -85,7 +86,11 @@ contract Vault is
         __ERC20_init(init.name, init.symbol);
         __ERC20Permit_init(init.name);
         __ERC20Pausable_init();
-        __FeeManager_init(init.fee, init.protocolFee);
+        __FeeManager_init(
+            init.feeModule,
+            init.managementRate,
+            init.performanceRate
+        );
         __ERC7540_init(init.underlying);
         __Whitelistable_init(init.enableWhitelist);
 
@@ -323,10 +328,6 @@ contract Vault is
         return
             AccessControlEnumerableUpgradeable.supportsInterface(interfaceId) ||
             ERC7540Upgradeable.supportsInterface(interfaceId);
-    }
-
-    function setProtocolFee() public override onlyRole(HOPPER_ROLE) {
-        super.setProtocolFee();
     }
 
     function hopperRole() public view returns (address) {
