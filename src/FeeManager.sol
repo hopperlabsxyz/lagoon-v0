@@ -115,28 +115,67 @@ contract FeeManager is Initializable {
         $.lastFeeTime = _newLastFeeTime;
     }
 
+    function maxManagementFee(
+        uint256 _assets,
+        uint256 _timeElapsed
+    ) public pure returns (uint256 maxManagementFees) {
+        uint256 annualFee = _assets.mulDiv(MAX_MANAGEMENT_RATE, BPS);
+        maxManagementFees = annualFee.mulDiv(_timeElapsed, ONE_YEAR);
+    }
+
+    function maxPerformanceFee(
+        uint256 _assets,
+        uint256 _highWaterMark
+    ) public pure returns (uint256 maxPerformanceFees) {
+        if (_assets > _highWaterMark) {
+            uint256 profit;
+            unchecked {
+                profit = _assets - _highWaterMark;
+            }
+            maxPerformanceFees = profit.mulDiv(MAX_PERFORMANCE_RATE, BPS);
+        }
+    }
+
     function _calculateFees(
         uint256 newTotalAssets,
         uint256 totalSupply
     ) internal view returns (uint256 managerShares, uint256 protocolShares) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        (uint256 managementFees, uint256 performanceFees) = $
-            .feeModule
-            .calculateFee(
-                newTotalAssets,
-                $.managementRate,
-                $.performanceRate,
-                $.highWaterMark,
-                block.timestamp - $.lastFeeTime,
-                BPS
-            );
+        /// Management fee calculation ///
 
-        require(
-            managementFees <= newTotalAssets.mulDiv(MAX_MANAGEMENT_RATE, BPS) &&
-                performanceFees <=
-                newTotalAssets.mulDiv(MAX_PERFORMANCE_RATE, BPS)
+        uint256 timeElapsed = block.timestamp - $.lastFeeTime;
+        uint256 maxManagementFees = maxManagementFee(
+            newTotalAssets,
+            timeElapsed
         );
+        uint256 managementFees = $.feeModule.calculateManagementFee(
+            newTotalAssets,
+            $.managementRate,
+            BPS,
+            timeElapsed,
+            maxManagementFees
+        );
+        require(managementFees <= maxManagementFees);
+
+        /// Performance fee calculation ///
+
+        uint256 maxPerformanceFees = maxPerformanceFee(
+            newTotalAssets,
+            $.highWaterMark
+        );
+
+        uint256 performanceFees = $.feeModule.calculatePerformanceFee(
+            newTotalAssets - managementFees,
+            $.performanceRate,
+            BPS,
+            $.highWaterMark,
+            maxPerformanceFees
+        );
+
+        require(performanceFees <= maxPerformanceFees);
+
+        /// Protocol fee calculation ///
 
         uint256 managerFees = managementFees + performanceFees;
 
@@ -144,19 +183,22 @@ contract FeeManager is Initializable {
             $.registry.protocolRate(),
             BPS
         );
+
+        /// Fee to shares convertion ///
+
         managerFees = managerFees - protocolFees;
 
-        uint256 totalFees = managerFees + protocolFees;
+        newTotalAssets = newTotalAssets - (managerFees + protocolFees);
 
         managerShares = managerFees.mulDiv(
             totalSupply + 1,
-            newTotalAssets - totalFees + 1,
+            newTotalAssets + 1,
             Math.Rounding.Floor
         );
 
         protocolShares = protocolFees.mulDiv(
             totalSupply + 1,
-            newTotalAssets - totalFees + 1,
+            newTotalAssets + 1,
             Math.Rounding.Floor
         );
     }

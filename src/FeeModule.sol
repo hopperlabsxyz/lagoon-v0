@@ -8,23 +8,30 @@ contract FeeModule {
 
     uint256 public constant ONE_YEAR = 365 days;
 
-    function calculateFee(
+    function calculateManagementFee(
         uint256 assets,
-        uint256 managementRate,
-        uint256 performanceRate,
-        uint256 highWaterMark,
+        uint256 rate,
+        uint256 bps,
         uint256 timeElapsed,
-        uint256 bps
-    ) public pure returns (uint256 managementFees, uint256 performanceFees) {
-        uint256 annualFee = assets.mulDiv(managementRate, bps);
-        managementFees = annualFee.mulDiv(timeElapsed, ONE_YEAR);
-        assets -= managementFees;
+        uint256 // maxFee
+    ) public pure returns (uint256 managementFee) {
+        uint256 annualFee = assets.mulDiv(rate, bps);
+        managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
+    }
+
+    function calculatePerformanceFee(
+        uint256 assets,
+        uint256 rate,
+        uint256 bps,
+        uint256 highWaterMark,
+        uint256 // maxFee
+    ) public pure returns (uint256 performanceFee) {
         if (assets > highWaterMark) {
             uint256 profit;
             unchecked {
                 profit = assets - highWaterMark;
             }
-            performanceFees = profit.mulDiv(performanceRate, bps);
+            performanceFee = profit.mulDiv(rate, bps);
         }
     }
 }
