@@ -108,8 +108,7 @@ contract FeeManager is Initializable {
 
     function _setLastFeeTime(uint256 _newLastFeeTime) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        uint256 _lastFeeTime = $.lastFeeTime;
-        require(_newLastFeeTime >= _lastFeeTime);
+        require(_newLastFeeTime >= $.lastFeeTime);
 
         $.lastFeeTime = _newLastFeeTime;
     }
