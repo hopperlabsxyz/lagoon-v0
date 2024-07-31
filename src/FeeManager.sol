@@ -11,12 +11,16 @@ uint256 constant BPS_DIVIDER = 10_000;
 uint256 constant MAX_MANAGEMENT_FEES = 500; // 5%
 uint256 constant MAX_PERFORMANCE_FEES = 5000; // 50%
 uint256 constant MAX_PROTOCOL_FEES = 3000; // 30%
+uint256 constant BPS = 10_000; // 100 %
 uint256 constant COOLDOWN = 1 days;
 
 error AboveMaxFee();
 
 contract FeeManager is Initializable {
     using Math for uint256;
+
+    uint256 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
+    uint256 public constant MAX_PERFORMANCE_RATE = 5_000; // 50 %
 
     /// @custom:storage-location erc7201:hopper.storage.FeeManager
     struct FeeManagerStorage {
@@ -49,10 +53,8 @@ contract FeeManager is Initializable {
         uint256 _managementRate,
         uint256 _performanceRate
     ) internal onlyInitializing {
-        if (
-            FeeModule(_feeModule).isAboveMaxManagementRate(_managementRate) ||
-            FeeModule(_feeModule).isAboveMaxPerformanceRate(_performanceRate)
-        ) revert AboveMaxFee();
+        require(_managementRate < MAX_MANAGEMENT_RATE /*, AboveMaxFee()*/);
+        require(_performanceRate < MAX_PERFORMANCE_RATE /*, AboveMaxFee()*/);
 
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
@@ -119,14 +121,30 @@ contract FeeManager is Initializable {
     ) internal view returns (uint256 managerShares, uint256 protocolShares) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        (uint256 managerFees, uint256 protocolFees) = $.feeModule.calculateFee(
-            newTotalAssets,
-            $.managementRate,
-            $.performanceRate,
-            $.registry.protocolRate(),
-            $.highWaterMark,
-            block.timestamp - $.lastFeeTime
+        (uint256 managementFees, uint256 performanceFees) = $
+            .feeModule
+            .calculateFee(
+                newTotalAssets,
+                $.managementRate,
+                $.performanceRate,
+                $.highWaterMark,
+                block.timestamp - $.lastFeeTime,
+                BPS
+            );
+
+        require(
+            managementFees <= newTotalAssets.mulDiv(MAX_MANAGEMENT_RATE, BPS) &&
+                performanceFees <=
+                newTotalAssets.mulDiv(MAX_PERFORMANCE_RATE, BPS)
         );
+
+        uint256 managerFees = managementFees + performanceFees;
+
+        uint256 protocolFees = managerFees.mulDiv(
+            $.registry.protocolRate(),
+            BPS
+        );
+        managerFees = managerFees - protocolFees;
 
         uint256 totalFees = managerFees + protocolFees;
 
