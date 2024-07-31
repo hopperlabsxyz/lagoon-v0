@@ -3,7 +3,7 @@ pragma solidity "0.8.25";
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {FeeModule} from "./FeeModule.sol";
+import {IFeeModule} from "./interfaces/IFeeModule.sol";
 import {Registry} from "./Registry.sol";
 
 uint256 constant ONE_YEAR = 365 days;
@@ -29,7 +29,7 @@ contract FeeManager is Initializable {
         uint256 lastFeeTime;
         uint256 highWaterMark;
         Registry registry;
-        FeeModule feeModule;
+        IFeeModule feeModule;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
@@ -59,7 +59,7 @@ contract FeeManager is Initializable {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         $.registry = Registry(_registry);
-        $.feeModule = FeeModule(_feeModule);
+        $.feeModule = IFeeModule(_feeModule);
         $.highWaterMark = 0;
 
         $.managementRate = _managementRate;
