@@ -3,7 +3,7 @@ pragma solidity "0.8.25";
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-library FeeLibrary {
+contract FeeModule {
     using Math for uint256;
 
     uint256 public constant BPS = 10_000; // 100 %
@@ -27,7 +27,7 @@ library FeeLibrary {
         uint256 rate
     ) public pure returns (uint256 managementFee) {
         require(rate <= MAX_MANAGEMENT_RATE);
-        uint256 annualFee = assets.mulDiv(rate, BPS, Math.Rounding.Floor);
+        uint256 annualFee = assets.mulDiv(rate, BPS);
         managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
     }
 
@@ -42,7 +42,7 @@ library FeeLibrary {
             unchecked {
                 profit = assets - highWaterMark;
             }
-            performanceFee = profit.mulDiv(rate, BPS, Math.Rounding.Floor);
+            performanceFee = profit.mulDiv(rate, BPS);
         }
     }
 
@@ -50,14 +50,34 @@ library FeeLibrary {
         uint256 assets,
         uint256 rate
     ) public pure returns (uint256 managerFees, uint256 protocolFees) {
-        protocolFees = assets.mulDiv(rate, BPS, Math.Rounding.Floor);
+        protocolFees = assets.mulDiv(rate, BPS);
         managerFees = assets - protocolFees;
     }
 
     function calculateFee(
         uint256 assets,
-        uint256 rate
-    ) external pure returns (uint256 fee) {
-        fee = assets.mulDiv(rate, BPS, Math.Rounding.Floor);
+        uint256 managementRate,
+        uint256 performanceRate,
+        uint256 protocolRate,
+        uint256 highWaterMark,
+        uint256 timeElapsed
+    ) public pure returns (uint256 managerFees, uint256 protocolFees) {
+        uint256 managementFees = calculateManagementFee(
+            assets,
+            timeElapsed,
+            managementRate
+        );
+
+        uint256 performanceFees = calculatePerformanceFee(
+            assets - managementFees,
+            highWaterMark,
+            performanceRate
+        );
+
+        return
+            calculateProtocolFee(
+                managementFees + performanceFees,
+                protocolRate
+            );
     }
 }

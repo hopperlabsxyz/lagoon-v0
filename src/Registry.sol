@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
-import {IFeeModule} from "./interfaces/IFeeModule.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Registry is IFeeModule, Ownable {
+contract Registry is Ownable {
     uint256 public constant MAX_PROTOCOL_RATE = 100; // 1 %
 
     uint256 internal _protocolRate;

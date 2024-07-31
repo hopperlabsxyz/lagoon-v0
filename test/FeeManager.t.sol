@@ -119,6 +119,8 @@ contract TestFeeManager is BaseTest {
         uint256 newTotalAssets = 0;
         uint256 expectedHighWaterMark = _10M;
         uint256 expectedTotalFees = 0;
+        uint256 expectedProtocolFees = 0;
+        uint256 expectedManagerFees = 0;
         uint256 expectedTotalNewShares = 0;
         uint256 expectedProtocolNewShares = 0;
         uint256 expectedManagerNewShares = 0;
@@ -152,15 +154,27 @@ contract TestFeeManager is BaseTest {
         newTotalAssets = _10M;
         expectedHighWaterMark = _10M;
         expectedTotalFees = 200_000 * 10 ** vault.underlyingDecimals();
-        expectedTotalNewShares = expectedTotalFees.mulDiv(
+        expectedProtocolFees = expectedTotalFees.mulDiv(
+            vault.protocolFee(),
+            10_000
+        );
+        expectedManagerFees = expectedTotalFees - expectedProtocolFees;
+
+        expectedManagerNewShares = expectedManagerFees.mulDiv(
             vault.totalSupply() + 1,
-            (newTotalAssets - expectedTotalFees) + 1,
+            newTotalAssets - expectedTotalFees + 1,
             Math.Rounding.Floor
         );
-        expectedProtocolNewShares = expectedTotalNewShares / 100;
-        expectedManagerNewShares =
-            expectedTotalNewShares -
-            expectedProtocolNewShares;
+
+        expectedProtocolNewShares = expectedProtocolFees.mulDiv(
+            vault.totalSupply() + 1,
+            newTotalAssets - expectedTotalFees + 1,
+            Math.Rounding.Floor
+        );
+
+        expectedTotalNewShares =
+            expectedProtocolNewShares +
+            expectedManagerNewShares;
 
         // settlement
         updateAndSettle(newTotalAssets);
@@ -188,22 +202,34 @@ contract TestFeeManager is BaseTest {
         managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
 
-        // ------------ Year 2 ------------ //
+        // // ------------ Year 2 ------------ //
         vm.warp(vm.getBlockTimestamp() + 364 days);
 
         // expectations
         newTotalAssets = _50M;
         expectedHighWaterMark = _50M;
         expectedTotalFees = 8_800_000 * 10 ** vault.underlyingDecimals();
-        expectedTotalNewShares = expectedTotalFees.mulDiv(
+        expectedProtocolFees = expectedTotalFees.mulDiv(
+            vault.protocolFee(),
+            10_000
+        );
+        expectedManagerFees = expectedTotalFees - expectedProtocolFees;
+
+        expectedManagerNewShares = expectedManagerFees.mulDiv(
             vault.totalSupply() + 1,
-            (newTotalAssets - expectedTotalFees) + 1,
+            newTotalAssets - expectedTotalFees + 1,
             Math.Rounding.Floor
         );
-        expectedProtocolNewShares = expectedTotalNewShares / 100;
-        expectedManagerNewShares =
-            expectedTotalNewShares -
-            expectedProtocolNewShares;
+
+        expectedProtocolNewShares = expectedProtocolFees.mulDiv(
+            vault.totalSupply() + 1,
+            newTotalAssets - expectedTotalFees + 1,
+            Math.Rounding.Floor
+        );
+
+        expectedTotalNewShares =
+            expectedProtocolNewShares +
+            expectedManagerNewShares;
 
         // settlement
         updateAndSettle(newTotalAssets);
@@ -231,22 +257,34 @@ contract TestFeeManager is BaseTest {
         managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
 
-        // ------------ Year 3 ------------ //
+        // // ------------ Year 3 ------------ //
         vm.warp(vm.getBlockTimestamp() + 364 days);
 
         // expectations
         newTotalAssets = _20M - _1M;
         expectedHighWaterMark = _50M;
         expectedTotalFees = 380_000 * 10 ** vault.underlyingDecimals();
-        expectedTotalNewShares = expectedTotalFees.mulDiv(
+        expectedProtocolFees = expectedTotalFees.mulDiv(
+            vault.protocolFee(),
+            10_000
+        );
+        expectedManagerFees = expectedTotalFees - expectedProtocolFees;
+
+        expectedManagerNewShares = expectedManagerFees.mulDiv(
             vault.totalSupply() + 1,
-            (newTotalAssets - expectedTotalFees) + 1,
+            newTotalAssets - expectedTotalFees + 1,
             Math.Rounding.Floor
         );
-        expectedProtocolNewShares = expectedTotalNewShares / 100;
-        expectedManagerNewShares =
-            expectedTotalNewShares -
-            expectedProtocolNewShares;
+
+        expectedProtocolNewShares = expectedProtocolFees.mulDiv(
+            vault.totalSupply() + 1,
+            newTotalAssets - expectedTotalFees + 1,
+            Math.Rounding.Floor
+        );
+
+        expectedTotalNewShares =
+            expectedProtocolNewShares +
+            expectedManagerNewShares;
 
         // settlement
         updateAndSettle(newTotalAssets);
@@ -274,22 +312,34 @@ contract TestFeeManager is BaseTest {
         managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
 
-        // ------------ Year 4 ------------ //
+        // // ------------ Year 4 ------------ //
         vm.warp(vm.getBlockTimestamp() + 364 days);
 
         // expectations
         newTotalAssets = 3 * _10M;
         expectedHighWaterMark = _50M;
         expectedTotalFees = 600_000 * 10 ** vault.underlyingDecimals();
-        expectedTotalNewShares = expectedTotalFees.mulDiv(
+        expectedProtocolFees = expectedTotalFees.mulDiv(
+            vault.protocolFee(),
+            10_000
+        );
+        expectedManagerFees = expectedTotalFees - expectedProtocolFees;
+
+        expectedManagerNewShares = expectedManagerFees.mulDiv(
             vault.totalSupply() + 1,
-            (newTotalAssets - expectedTotalFees) + 1,
+            newTotalAssets - expectedTotalFees + 1,
             Math.Rounding.Floor
         );
-        expectedProtocolNewShares = expectedTotalNewShares / 100;
-        expectedManagerNewShares =
-            expectedTotalNewShares -
-            expectedProtocolNewShares;
+
+        expectedProtocolNewShares = expectedProtocolFees.mulDiv(
+            vault.totalSupply() + 1,
+            newTotalAssets - expectedTotalFees + 1,
+            Math.Rounding.Floor
+        );
+
+        expectedTotalNewShares =
+            expectedProtocolNewShares +
+            expectedManagerNewShares;
 
         // settlement
         updateAndSettle(newTotalAssets);
@@ -317,7 +367,7 @@ contract TestFeeManager is BaseTest {
         managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
 
-        // ------------ Year 5 ------------ //
+        // // ------------ Year 5 ------------ //
         vm.warp(vm.getBlockTimestamp() + 364 days);
 
         // new airdrop !
@@ -328,15 +378,27 @@ contract TestFeeManager is BaseTest {
         newTotalAssets = _50M + _1M + _10M; // _61M
         expectedHighWaterMark = _100M + newTotalAssets; // _161M
         expectedTotalFees = 3_176_000 * 10 ** vault.underlyingDecimals();
-        expectedTotalNewShares = expectedTotalFees.mulDiv(
+        expectedProtocolFees = expectedTotalFees.mulDiv(
+            vault.protocolFee(),
+            10_000
+        );
+        expectedManagerFees = expectedTotalFees - expectedProtocolFees;
+
+        expectedManagerNewShares = expectedManagerFees.mulDiv(
             vault.totalSupply() + 1,
-            (newTotalAssets - expectedTotalFees) + 1,
+            newTotalAssets - expectedTotalFees + 1,
             Math.Rounding.Floor
         );
-        expectedProtocolNewShares = expectedTotalNewShares / 100;
-        expectedManagerNewShares =
-            expectedTotalNewShares -
-            expectedProtocolNewShares;
+
+        expectedProtocolNewShares = expectedProtocolFees.mulDiv(
+            vault.totalSupply() + 1,
+            newTotalAssets - expectedTotalFees + 1,
+            Math.Rounding.Floor
+        );
+
+        expectedTotalNewShares =
+            expectedProtocolNewShares +
+            expectedManagerNewShares;
 
         // settlement
         updateAndSettle(newTotalAssets);
