@@ -137,6 +137,7 @@ contract BaseTest is Test, Constants {
         updateTotalAssets(newTotalAssets);
         vm.warp(block.timestamp + 1 days);
         settle();
+        assertEpochsToUnwindEqGeneralToUnwind();
     }
 
     function unwind() internal {
@@ -144,12 +145,14 @@ contract BaseTest is Test, Constants {
         uint256 toUnwind = vault.toUnwind();
         vm.prank(vault.assetManagerRole());
         vault.unwind(toUnwind);
+        assertEpochsToUnwindEqGeneralToUnwind();
     }
 
     function unwind(uint256 assets) internal {
         dealAndApproveAndWhitelist(vault.assetManagerRole());
         vm.prank(vault.assetManagerRole());
         vault.unwind(assets);
+        assertEpochsToUnwindEqGeneralToUnwind();
     }
 
     function dealAndApproveAndWhitelist(address user) public {
@@ -175,6 +178,10 @@ contract BaseTest is Test, Constants {
     function dealAndApprove(address user) public {
         dealAmountAndApprove(user, 100000);
     }
+
+    // function dealAndApprove(address[] memory user) public {
+    //     for (i)
+    // }
 
     function dealAmountAndApprove(address user, uint256 amount) public {
         address asset = vault.asset();
@@ -247,5 +254,18 @@ contract BaseTest is Test, Constants {
 
     function balance(address user) public view returns (uint256) {
         return vault.balanceOf(user);
+    }
+
+    // Invariants checking
+    function assertEpochsToUnwindEqGeneralToUnwind() public view {
+        uint256 addToUnwind;
+        for (uint256 i = 1; i < vault.epochId(); i++) {
+            addToUnwind += vault.toUnwind(i);
+        }
+        assertEq(
+            addToUnwind,
+            vault.toUnwind(),
+            "sum of all epoch.toUnwind should equal toUnwind"
+        );
     }
 }

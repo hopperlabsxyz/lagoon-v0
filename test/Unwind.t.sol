@@ -7,7 +7,7 @@ import {ERC7540InsufficientAssets} from "@src/ERC7540.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseTest} from "./Base.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-
+import {VmSafe} from "forge-std/Vm.sol";
 using Math for uint256;
 
 contract TestUnwind is BaseTest {
@@ -137,5 +137,172 @@ contract TestUnwind is BaseTest {
         );
     }
 
-    function test_assetManagerUnwindMultipleEpoch() public view {}
+    function test_assetManagerCompletelyUnwindMultipleEpoch() public {
+        //set up, 4 users have funds in the vault
+        VmSafe.Wallet[4] memory users = [user1, user2, user3, user4];
+        for (uint256 i; i < users.length; i++) {
+            dealAndApprove(users[i].addr);
+            uint256 userAssets = assetBalance(users[i].addr);
+            requestDeposit(userAssets, users[i].addr);
+        }
+        updateAndSettle(0);
+
+        assertEq(vault.oldestEpochIdUnwinded(), 1); // since to unwind is zero,
+        assertEq(vault.epochId(), 2);
+
+        // they get their shares
+        for (uint256 i; i < users.length; i++) {
+            uint256 maxDep = vault.maxDeposit(users[i].addr);
+            deposit(maxDep, users[i].addr);
+        }
+
+        // they asked to redeem
+        uint256[4] memory userShares;
+        for (uint256 i; i < users.length; i++) {
+            userShares[i] = vault.balanceOf(users[i].addr);
+            requestRedeem(userShares[i], users[i].addr);
+            uint256 totalAssets = vault.totalAssets();
+            updateAndSettle(totalAssets.mulDiv(101, 100)); // + 1%
+            assertEq(vault.epochId(), 2 + i + 1);
+
+            assertEq(vault.oldestEpochIdUnwinded(), 1); // nothing has been unwind yet
+            assertEq(
+                vault.maxRedeem(users[i].addr),
+                0,
+                "user should not be able to redeem"
+            );
+        }
+
+        assertApproxEqAbs(vault.totalAssets(), 0, 1);
+
+        unwind();
+        assertEq(vault.oldestEpochIdUnwinded(), 6);
+        for (uint256 i; i < users.length; i++) {
+            uint256 maxRedeem = vault.maxRedeem(users[i].addr);
+            assertApproxEqAbs(
+                maxRedeem,
+                userShares[i],
+                1,
+                "users should be able to redeem minimum at all their shares - 1"
+            );
+            redeem(userShares[i], users[i].addr);
+        }
+    }
+
+    function test_assetManagerUnwindMultipleEpochExpectLastPartially() public {
+        //set up, 4 users have funds in the vault
+        VmSafe.Wallet[4] memory users = [user1, user2, user3, user4];
+        for (uint256 i; i < users.length; i++) {
+            dealAndApprove(users[i].addr);
+            uint256 userAssets = assetBalance(users[i].addr);
+            requestDeposit(userAssets, users[i].addr);
+        }
+        updateAndSettle(0);
+
+        assertEq(vault.oldestEpochIdUnwinded(), 1); // since to unwind is zero,
+
+        // they get their shares
+        for (uint256 i; i < users.length; i++) {
+            uint256 maxDep = vault.maxDeposit(users[i].addr);
+            deposit(maxDep, users[i].addr);
+        }
+
+        // they asked to redeem
+        uint256[4] memory userShares;
+        for (uint256 i; i < users.length; i++) {
+            userShares[i] = vault.balanceOf(users[i].addr);
+            requestRedeem(userShares[i], users[i].addr);
+            uint256 totalAssets = vault.totalAssets();
+            updateAndSettle(totalAssets.mulDiv(101, 100)); // + 1%
+
+            assertEq(vault.oldestEpochIdUnwinded(), 1); // nothing has been unwind yet
+            assertEq(
+                vault.maxRedeem(users[i].addr),
+                0,
+                "user should not be able to redeem"
+            );
+        }
+
+        assertApproxEqAbs(vault.totalAssets(), 0, 1);
+        uint256 toUnwind = vault.toUnwind();
+        assertEq(vault.epochId(), 6);
+
+        // assetManager will unwind 90% of toUnwind.
+        unwind(toUnwind.mulDiv(90, 100));
+        for (uint256 i; i < users.length - 1; i++) {
+            uint256 maxRedeem = vault.maxRedeem(users[i].addr);
+            assertApproxEqAbs(
+                maxRedeem,
+                userShares[i],
+                1,
+                "users should be able to redeem minimum at all their shares - 1"
+            );
+            redeem(userShares[i], users[i].addr);
+        }
+
+        assertEq(
+            vault.oldestEpochIdUnwinded(),
+            4,
+            "epoch 4 should be the last epoch fully unwinded"
+        );
+    }
+
+    function test_assetManagerUnwindMultipleEpochExpectLast() public {
+        //set up, 4 users have funds in the vault
+        VmSafe.Wallet[4] memory users = [user1, user2, user3, user4];
+        for (uint256 i; i < users.length; i++) {
+            dealAndApprove(users[i].addr);
+            uint256 userAssets = assetBalance(users[i].addr);
+            requestDeposit(userAssets, users[i].addr);
+        }
+        updateAndSettle(0);
+
+        assertEq(vault.oldestEpochIdUnwinded(), 1); // since to unwind is zero,
+
+        // they get their shares
+        for (uint256 i; i < users.length; i++) {
+            uint256 maxDep = vault.maxDeposit(users[i].addr);
+            deposit(maxDep, users[i].addr);
+        }
+
+        // they asked to redeem
+        uint256[4] memory userShares;
+        for (uint256 i; i < users.length; i++) {
+            userShares[i] = vault.balanceOf(users[i].addr);
+            requestRedeem(userShares[i], users[i].addr);
+            uint256 totalAssets = vault.totalAssets();
+            updateAndSettle(totalAssets.mulDiv(101, 100)); // + 1%
+
+            assertEq(vault.oldestEpochIdUnwinded(), 1); // nothing has been unwind yet
+            assertEq(
+                vault.maxRedeem(users[i].addr),
+                0,
+                "user should not be able to redeem"
+            );
+        }
+
+        assertApproxEqAbs(vault.totalAssets(), 0, 1);
+        assertEq(vault.epochId(), 6);
+        uint256 toUnwind = vault.toUnwind() - vault.toUnwind(5);
+
+        // assetManager will not unwind last epoch.
+        unwind(toUnwind);
+        for (uint256 i; i < users.length - 1; i++) {
+            uint256 maxRedeem = vault.maxRedeem(users[i].addr);
+            assertApproxEqAbs(
+                maxRedeem,
+                userShares[i],
+                1,
+                "users should be able to redeem minimum at all their shares - 1"
+            );
+            redeem(userShares[i], users[i].addr);
+        }
+
+        assertEq(
+            vault.oldestEpochIdUnwinded(),
+            4,
+            "epoch 4 should be the last epoch fully unwinded"
+        );
+        assertEq(vault.maxRedeem(users[3].addr), 0);
+    }
 }

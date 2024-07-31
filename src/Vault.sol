@@ -316,17 +316,14 @@ contract Vault is
     function _unwind(uint256 amount, address from) internal {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
-        uint256 tempOldestEpochIdUnwinded = $erc7540.oldestEpochIdUnwinded;
-
+        uint256 i = $erc7540.oldestEpochIdUnwinded;
+        uint256 tempOldestEpochIdUnwinded = i;
+        uint256 currentEpoch = $erc7540.epochId;
         if (amount > $.toUnwind) amount = $.toUnwind;
 
-        $.toUnwind -= amount;
         IERC20(asset()).safeTransferFrom(from, claimableSilo(), amount);
-        for (
-            uint256 i = tempOldestEpochIdUnwinded;
-            i <= $erc7540.epochId;
-            i++
-        ) {
+        $.toUnwind -= amount;
+        for (; i <= currentEpoch; i++) {
             uint256 _toUnwind = $erc7540.epochs[i].toUnwind;
             if (_toUnwind > 0) {
                 if (amount >= _toUnwind) {
@@ -336,13 +333,32 @@ contract Vault is
                 } else {
                     $erc7540.epochs[i].toUnwind -= amount;
                     $erc7540.epochs[i].availableToWithdraw += amount;
-                    amount = 0;
                     break;
                 }
             }
             tempOldestEpochIdUnwinded = i;
         }
         $erc7540.oldestEpochIdUnwinded = tempOldestEpochIdUnwinded;
+    }
+
+    /**
+     * Since the _unwind system uses a for loop, there is a risk of DOS in the situation where
+     * there is a numerous amount of epochs in a row with 0 toUnwind.
+     * In this case the for loop could run out of gas. We supply an emergency function that
+     * can clear a defined number of epochs.
+     */
+    function clearNextUnwindEpochs(
+        uint256 nbOfEpochs
+    ) external onlyRole(ASSET_MANAGER_ROLE) {
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+        uint256 tempOldestEpochIdUnwinded = $erc7540.oldestEpochIdUnwinded;
+
+        for (uint256 i = 1; i <= nbOfEpochs; i++) {
+            require(
+                $erc7540.epochs[i + tempOldestEpochIdUnwinded].toUnwind == 0
+            );
+        }
+        $erc7540.oldestEpochIdUnwinded = tempOldestEpochIdUnwinded + nbOfEpochs;
     }
 
     function supportsInterface(
