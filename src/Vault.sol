@@ -213,6 +213,7 @@ contract Vault is
     function settle() public override onlyRole(VALORIZATION_ROLE) {
         VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
+        FeeManagerStorage storage $feeManager = _getFeeManagerStorage();
 
         address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
         address feeReceiver = getRoleMember(FEE_RECEIVER, 0);
@@ -304,7 +305,7 @@ contract Vault is
         }
 
         _setHighWaterMark(newHighWaterMark);
-        _setLastFeeTime(block.timestamp);
+        $feeManager.lastFeeTime = block.timestamp;
         $erc7540.epochId = epochId + 1;
     }
 
