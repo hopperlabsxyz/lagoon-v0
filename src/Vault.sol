@@ -13,7 +13,7 @@ import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC2
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {Whitelistable, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {FeeManager, COOLDOWN} from "./FeeManager.sol";
+import {FeeManager} from "./FeeManager.sol";
 // import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
@@ -47,9 +47,10 @@ contract Vault is
         address valorization;
         address admin;
         address feeReceiver;
-        uint256 managementFee;
-        uint256 performanceFee;
-        uint256 protocolFee;
+        address feeModule;
+        address feeRegistry;
+        uint256 managementRate;
+        uint256 performanceRate;
         uint256 cooldown;
         bool enableWhitelist;
         address[] whitelist;
@@ -87,9 +88,10 @@ contract Vault is
         __ERC20Permit_init(init.name);
         __ERC20Pausable_init();
         __FeeManager_init(
-            init.managementFee,
-            init.performanceFee,
-            init.protocolFee
+            init.feeModule,
+            init.feeRegistry,
+            init.managementRate,
+            init.performanceRate
         );
         __ERC7540_init(init.underlying);
         __Whitelistable_init(init.enableWhitelist);
@@ -211,6 +213,7 @@ contract Vault is
     function settle() public override onlyRole(VALORIZATION_ROLE) {
         VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
+        FeeManagerStorage storage $feeManager = _getFeeManagerStorage();
 
         address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
         address feeReceiver = getRoleMember(FEE_RECEIVER, 0);
@@ -302,6 +305,7 @@ contract Vault is
         }
 
         _setHighWaterMark(newHighWaterMark);
+        $feeManager.lastFeeTime = block.timestamp;
         $erc7540.epochId = epochId + 1;
     }
 
@@ -328,36 +332,6 @@ contract Vault is
         return
             AccessControlEnumerableUpgradeable.supportsInterface(interfaceId) ||
             ERC7540Upgradeable.supportsInterface(interfaceId);
-    }
-
-    function updateProtocolFee(
-        uint256 _protocolFee
-    ) public override onlyRole(HOPPER_ROLE) {
-        super.updateProtocolFee(_protocolFee);
-    }
-
-    function updateManagementFee(
-        uint256 _managementFee
-    ) public override onlyRole(DEFAULT_ADMIN_ROLE) {
-        super.updateManagementFee(_managementFee);
-    }
-
-    function updatePerformanceFee(
-        uint256 _performanceFee
-    ) public override onlyRole(DEFAULT_ADMIN_ROLE) {
-        super.updatePerformanceFee(_performanceFee);
-    }
-
-    function setProtocolFee() public override onlyRole(HOPPER_ROLE) {
-        super.setProtocolFee();
-    }
-
-    function setManagementFee() public override onlyRole(DEFAULT_ADMIN_ROLE) {
-        super.setManagementFee();
-    }
-
-    function setPerformanceFee() public override onlyRole(DEFAULT_ADMIN_ROLE) {
-        super.setPerformanceFee();
     }
 
     function hopperRole() public view returns (address) {
@@ -422,30 +396,6 @@ contract Vault is
                 $.newTotalAssetsTimestamp +
                 $.newTotalAssetsCooldown -
                 block.timestamp;
-        }
-        return 0;
-    }
-
-    function newManagementFeeCountdown() public view returns (uint256) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if ($.managementFee.lastUpdate + COOLDOWN > block.timestamp) {
-            return $.managementFee.lastUpdate + COOLDOWN - block.timestamp;
-        }
-        return 0;
-    }
-
-    function newPerformanceFeeCountdown() public view returns (uint256) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if ($.performanceFee.lastUpdate + COOLDOWN > block.timestamp) {
-            return $.performanceFee.lastUpdate + COOLDOWN - block.timestamp;
-        }
-        return 0;
-    }
-
-    function newProtocolFeeCountdown() public view returns (uint256) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if ($.protocolFee.lastUpdate + COOLDOWN > block.timestamp) {
-            return $.protocolFee.lastUpdate + COOLDOWN - block.timestamp;
         }
         return 0;
     }

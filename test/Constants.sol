@@ -5,6 +5,8 @@ import {Test} from "forge-std/Test.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {VaultHelper} from "./VaultHelper.sol";
 import {Vault} from "@src/Vault.sol";
+import {FeeRegistry} from "@src/FeeRegistry.sol";
+import {FeeModule} from "@src/FeeModule.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 import {Upgrades, Options} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -31,6 +33,8 @@ abstract contract Constants is Test {
 
     string underlyingName = vm.envString("UNDERLYING_NAME");
     VaultHelper vault;
+    FeeRegistry feeRegistry;
+    FeeModule feeModule;
     string vaultName = "vault_";
     string vaultSymbol = "hop_vault_";
 
@@ -89,41 +93,6 @@ abstract contract Constants is Test {
         users.push(user8);
         users.push(user9);
         users.push(user10);
-
-        bool proxy = vm.envBool("PROXY");
-
-        UpgradeableBeacon beacon;
-        if (proxy) {
-            beacon = _beaconDeploy("Vault.sol", owner.addr);
-            vault = _proxyDeploy(beacon, underlying, vaultName, vaultSymbol);
-        } else {
-            vm.startPrank(owner.addr);
-            bool enableWhitelist = true;
-
-            vault = new VaultHelper(false);
-            address[] memory whitelist = new address[](0);
-            Vault.InitStruct memory v = Vault.InitStruct(
-                underlying,
-                vaultName,
-                vaultSymbol,
-                dao.addr,
-                assetManager.addr,
-                valorizator.addr,
-                admin.addr,
-                feeReceiver.addr,
-                0,
-                0,
-                0,
-                1 days,
-                enableWhitelist,
-                whitelist
-            );
-            vault.initialize(v);
-            vm.stopPrank();
-        }
-        vm.label(address(vault), vaultName);
-        vm.label(vault.pendingSilo(), "vault.pendingSilo");
-        vm.label(vault.claimableSilo(), "vault.claimableSilo");
     }
 
     function _beaconDeploy(
@@ -139,27 +108,30 @@ abstract contract Constants is Test {
         UpgradeableBeacon beacon,
         ERC20 _underlying,
         string memory _vaultName,
-        string memory _vaultSymbol
+        string memory _vaultSymbol,
+        uint256 _managementRate,
+        uint256 _performanceRate
     ) internal returns (VaultHelper) {
         bool enableWhitelist = true;
         address[] memory whitelist = new address[](0);
 
-        Vault.InitStruct memory v = Vault.InitStruct(
-            _underlying,
-            _vaultName,
-            _vaultSymbol,
-            dao.addr,
-            assetManager.addr,
-            valorizator.addr,
-            admin.addr,
-            feeReceiver.addr,
-            0,
-            0,
-            0,
-            1 days,
-            enableWhitelist,
-            whitelist
-        );
+        Vault.InitStruct memory v = Vault.InitStruct({
+            underlying: _underlying,
+            name: _vaultName,
+            symbol: _vaultSymbol,
+            dao: dao.addr,
+            assetManager: assetManager.addr,
+            valorization: valorizator.addr,
+            admin: admin.addr,
+            feeReceiver: feeReceiver.addr,
+            feeModule: address(feeModule),
+            feeRegistry: address(feeRegistry),
+            managementRate: _managementRate,
+            performanceRate: _performanceRate,
+            cooldown: 1 days,
+            enableWhitelist: enableWhitelist,
+            whitelist: whitelist
+        });
 
         BeaconProxy proxy = BeaconProxy(
             payable(
@@ -171,5 +143,60 @@ abstract contract Constants is Test {
         );
 
         return VaultHelper(address(proxy));
+    }
+
+    function setUpVault(
+        uint256 _protocolRate,
+        uint256 _managementRate,
+        uint256 _performanceRate
+    ) internal {
+        bool proxy = vm.envBool("PROXY");
+
+        feeRegistry = new FeeRegistry(dao.addr);
+        feeModule = new FeeModule();
+        vm.prank(dao.addr);
+        feeRegistry.setProtocolRate(_protocolRate);
+
+        UpgradeableBeacon beacon;
+        if (proxy) {
+            beacon = _beaconDeploy("Vault.sol", owner.addr);
+            vault = _proxyDeploy(
+                beacon,
+                underlying,
+                vaultName,
+                vaultSymbol,
+                _managementRate,
+                _performanceRate
+            );
+        } else {
+            vm.startPrank(owner.addr);
+            bool enableWhitelist = true;
+
+            vault = new VaultHelper(false);
+
+            address[] memory whitelist = new address[](0);
+            Vault.InitStruct memory v = Vault.InitStruct({
+                underlying: underlying,
+                name: vaultName,
+                symbol: vaultSymbol,
+                dao: dao.addr,
+                assetManager: assetManager.addr,
+                valorization: valorizator.addr,
+                admin: admin.addr,
+                feeReceiver: feeReceiver.addr,
+                feeModule: address(feeModule),
+                feeRegistry: address(feeRegistry),
+                managementRate: _managementRate,
+                performanceRate: _performanceRate,
+                cooldown: 1 days,
+                enableWhitelist: enableWhitelist,
+                whitelist: whitelist
+            });
+            vault.initialize(v);
+            vm.stopPrank();
+        }
+        vm.label(address(vault), vaultName);
+        vm.label(vault.pendingSilo(), "vault.pendingSilo");
+        vm.label(vault.claimableSilo(), "vault.claimableSilo");
     }
 }
