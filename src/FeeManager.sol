@@ -4,7 +4,7 @@ pragma solidity "0.8.25";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IFeeModule} from "./interfaces/IFeeModule.sol";
-import {Registry} from "./Registry.sol";
+import {FeeRegistry} from "./FeeRegistry.sol";
 
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS_DIVIDER = 10_000;
@@ -28,7 +28,7 @@ contract FeeManager is Initializable {
         uint256 performanceRate;
         uint256 lastFeeTime;
         uint256 highWaterMark;
-        Registry registry;
+        FeeRegistry feeRegistry;
         IFeeModule feeModule;
     }
 
@@ -58,7 +58,7 @@ contract FeeManager is Initializable {
 
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        $.registry = Registry(_registry);
+        $.feeRegistry = FeeRegistry(_registry);
         $.feeModule = IFeeModule(_feeModule);
         $.highWaterMark = 0;
 
@@ -80,7 +80,7 @@ contract FeeManager is Initializable {
 
     function protocolFee() external view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        return $.registry.protocolRate();
+        return $.feeRegistry.protocolRate();
     }
 
     function lastFeeTime() external view returns (uint256) {
@@ -180,7 +180,7 @@ contract FeeManager is Initializable {
         uint256 managerFees = managementFees + performanceFees;
 
         uint256 protocolFees = managerFees.mulDiv(
-            $.registry.protocolRate(),
+            $.feeRegistry.protocolRate(),
             BPS
         );
 
