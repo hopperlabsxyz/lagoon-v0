@@ -108,13 +108,6 @@ contract FeeManager is Initializable {
         return _highWaterMark;
     }
 
-    function _setLastFeeTime(uint256 _newLastFeeTime) internal {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        require(_newLastFeeTime >= $.lastFeeTime);
-
-        $.lastFeeTime = _newLastFeeTime;
-    }
-
     function maxManagementFee(
         uint256 _assets,
         uint256 _timeElapsed
