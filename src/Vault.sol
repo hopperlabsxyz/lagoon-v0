@@ -57,8 +57,6 @@ contract Vault is
 
     /// @custom:storage-location erc7201:hopper.storage.vault
     struct VaultStorage {
-        uint256 toUnwind;
-        // totalAssets maj
         uint256 newTotalAssets;
         uint256 newTotalAssetsTimestamp;
         uint256 newTotalAssetsCooldown;
@@ -281,16 +279,18 @@ contract Vault is
         if (assets > 0) {
             _burn(pendingSilo(), balanceOf(pendingSilo()));
             $erc7540.totalAssets = _totalAssets - assets;
-            $vault.toUnwind += assets;
+            $erc7540.toUnwind += assets;
             $erc7540.epochs[epochId].toUnwind = assets;
         }
 
-        // Then we put a maximum of assets in the claimable silo so that user can claim
-        if (pendingAssets > 0 && $vault.toUnwind > 0)
+        $erc7540.epochId = epochId + 1;
+
+        if ($erc7540.toUnwind == 0)
+            // if there is nothing to unwind we can safely increase the oldestEpochIdUnwinded
+            $erc7540.oldestEpochIdUnwinded = $erc7540.epochId - 1;
+        else if (pendingAssets > 0)
+            // otherwise we unwind a maximun of assets from deposit requests
             _unwind(pendingAssets, pendingSilo());
-        else if ($vault.toUnwind == 0)
-            // if no unwind happened because there is nothing to unwind then we update the counter.
-            $erc7540.oldestEpochIdUnwinded = $erc7540.epochId;
 
         // If there is a surplus of assets, we send those to the asset manager
         pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
@@ -306,59 +306,6 @@ contract Vault is
         }
 
         _setHighWaterMark(newHighWaterMark);
-        $erc7540.epochId = epochId + 1;
-    }
-
-    function unwind(uint256 amount) external onlyRole(ASSET_MANAGER_ROLE) {
-        _unwind(amount, _msgSender());
-    }
-
-    function _unwind(uint256 amount, address from) internal {
-        VaultStorage storage $ = _getVaultStorage();
-        ERC7540Storage storage $erc7540 = _getERC7540Storage();
-        uint256 i = $erc7540.oldestEpochIdUnwinded;
-        uint256 tempOldestEpochIdUnwinded = i;
-        uint256 currentEpoch = $erc7540.epochId;
-        if (amount > $.toUnwind) amount = $.toUnwind;
-
-        IERC20(asset()).safeTransferFrom(from, claimableSilo(), amount);
-        $.toUnwind -= amount;
-        for (; i <= currentEpoch; i++) {
-            uint256 _toUnwind = $erc7540.epochs[i].toUnwind;
-            if (_toUnwind > 0) {
-                if (amount >= _toUnwind) {
-                    amount -= _toUnwind;
-                    $erc7540.epochs[i].toUnwind = 0;
-                    $erc7540.epochs[i].availableToWithdraw += _toUnwind;
-                } else {
-                    $erc7540.epochs[i].toUnwind -= amount;
-                    $erc7540.epochs[i].availableToWithdraw += amount;
-                    break;
-                }
-            }
-            tempOldestEpochIdUnwinded = i;
-        }
-        $erc7540.oldestEpochIdUnwinded = tempOldestEpochIdUnwinded;
-    }
-
-    /**
-     * Since the _unwind system uses a for loop, there is a risk of DOS in the situation where
-     * there is a numerous amount of epochs in a row with 0 toUnwind.
-     * In this case the for loop could run out of gas. We supply an emergency function that
-     * can clear a defined number of epochs.
-     */
-    function clearNextUnwindEpochs(
-        uint256 nbOfEpochs
-    ) external onlyRole(ASSET_MANAGER_ROLE) {
-        ERC7540Storage storage $erc7540 = _getERC7540Storage();
-        uint256 tempOldestEpochIdUnwinded = $erc7540.oldestEpochIdUnwinded;
-
-        for (uint256 i = 1; i <= nbOfEpochs; i++) {
-            require(
-                $erc7540.epochs[i + tempOldestEpochIdUnwinded].toUnwind == 0
-            );
-        }
-        $erc7540.oldestEpochIdUnwinded = tempOldestEpochIdUnwinded + nbOfEpochs;
     }
 
     function supportsInterface(
@@ -418,11 +365,6 @@ contract Vault is
 
     function valorizationRole() public view returns (address) {
         return getRoleMember(VALORIZATION_ROLE, 0);
-    }
-
-    function toUnwind() public view returns (uint256) {
-        VaultStorage storage $ = _getVaultStorage();
-        return $.toUnwind;
     }
 
     function grantRole(
@@ -499,5 +441,15 @@ contract Vault is
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = _newTotalAssetsCooldown;
+    }
+
+    // /**
+    //  * @notice unwind is the action of putting back assets into the vault so that users can withdraw.
+    //  * @param amount amount of assets to unwind
+    //  */
+    function unwind(
+        uint256 amount
+    ) public override onlyRole(ASSET_MANAGER_ROLE) {
+        _unwind(amount, _msgSender());
     }
 }

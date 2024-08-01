@@ -15,10 +15,6 @@ contract TestUnwind is BaseTest {
         deactivateWhitelist();
     }
 
-    /**
-     * Here the idea is to make sure that at every new epoch, the toUnwind value is increased
-     *
-     */
     function test_toUnwindVariables() public {
         dealAndApprove(user1.addr);
         uint256 user1Assets = assetBalance(user1.addr);
@@ -66,7 +62,7 @@ contract TestUnwind is BaseTest {
     function test_userTryToRedeem_WithAssetsInVault_ButNotForHisEpochId()
         public
     {
-        //set up, 2 users have fund in the vault
+        //set up: 2 users have fund in the vault
         dealAndApprove(user1.addr);
         dealAndApprove(user2.addr);
         uint256 user1Assets = assetBalance(user1.addr);
@@ -74,7 +70,7 @@ contract TestUnwind is BaseTest {
         requestDeposit(user1Assets, user1.addr);
         requestDeposit(user2Assets, user2.addr);
         updateAndSettle(0);
-        assertEq(vault.oldestEpochIdUnwinded(), 1); // since to unwind is zero,
+        assertEq(vault.oldestEpochIdUnwinded(), 1); // since toUnwind was 0
 
         // they get their shares
         deposit(user1Assets, user1.addr);
@@ -92,7 +88,7 @@ contract TestUnwind is BaseTest {
 
         // we make the assetManager really unwind
         unwind();
-        assertEq(vault.oldestEpochIdUnwinded(), 3); // we unwind everything so we reach
+        assertEq(vault.oldestEpochIdUnwinded(), 2); // we unwind everything so we reach
         // assertEq(vault.)
         assertEq(vault.toUnwind(), 0, "unwind should be at zero");
         assertEq(vault.toUnwind(1), 0, "unwind should be at zero");
@@ -127,9 +123,10 @@ contract TestUnwind is BaseTest {
         unwind(vault.toUnwind() / 2);
         assertEq(
             vault.oldestEpochIdUnwinded(),
-            3,
-            "after partial unwind oldestEpochIdUnwinded should be 3"
-        ); // we unwind everything so we reach
+            2,
+            "after partial unwind oldestEpochIdUnwinded should be 2"
+        ); // we unwind partially the epoch 3
+        assertEq(vault.epochId(), 4);
         assertEq(
             vault.toUnwind(),
             restToUnwind / 2,
@@ -138,7 +135,7 @@ contract TestUnwind is BaseTest {
     }
 
     function test_assetManagerCompletelyUnwindMultipleEpoch() public {
-        //set up, 4 users have funds in the vault
+        //set up: 4 users have funds in the vault
         VmSafe.Wallet[4] memory users = [user1, user2, user3, user4];
         for (uint256 i; i < users.length; i++) {
             dealAndApprove(users[i].addr);
@@ -147,7 +144,7 @@ contract TestUnwind is BaseTest {
         }
         updateAndSettle(0);
 
-        assertEq(vault.oldestEpochIdUnwinded(), 1); // since to unwind is zero,
+        assertEq(vault.oldestEpochIdUnwinded(), 1); // since toUnwind was 0
         assertEq(vault.epochId(), 2);
 
         // they get their shares
@@ -176,7 +173,7 @@ contract TestUnwind is BaseTest {
         assertApproxEqAbs(vault.totalAssets(), 0, 1);
 
         unwind();
-        assertEq(vault.oldestEpochIdUnwinded(), 6);
+        assertEq(vault.oldestEpochIdUnwinded(), 5);
         for (uint256 i; i < users.length; i++) {
             uint256 maxRedeem = vault.maxRedeem(users[i].addr);
             assertApproxEqAbs(
@@ -190,7 +187,7 @@ contract TestUnwind is BaseTest {
     }
 
     function test_assetManagerUnwindMultipleEpochExpectLastPartially() public {
-        //set up, 4 users have funds in the vault
+        //set up: 4 users have funds in the vault
         VmSafe.Wallet[4] memory users = [user1, user2, user3, user4];
         for (uint256 i; i < users.length; i++) {
             dealAndApprove(users[i].addr);
@@ -199,7 +196,7 @@ contract TestUnwind is BaseTest {
         }
         updateAndSettle(0);
 
-        assertEq(vault.oldestEpochIdUnwinded(), 1); // since to unwind is zero,
+        assertEq(vault.oldestEpochIdUnwinded(), 1); // since toUnwind was 0
 
         // they get their shares
         for (uint256 i; i < users.length; i++) {
@@ -235,7 +232,7 @@ contract TestUnwind is BaseTest {
                 maxRedeem,
                 userShares[i],
                 1,
-                "users should be able to redeem minimum at all their shares - 1"
+                "users should be able to redeem at minimum all their shares - 1"
             );
             redeem(userShares[i], users[i].addr);
         }
@@ -248,7 +245,7 @@ contract TestUnwind is BaseTest {
     }
 
     function test_assetManagerUnwindMultipleEpochExpectLast() public {
-        //set up, 4 users have funds in the vault
+        //set up: 4 users have funds in the vault
         VmSafe.Wallet[4] memory users = [user1, user2, user3, user4];
         for (uint256 i; i < users.length; i++) {
             dealAndApprove(users[i].addr);
@@ -257,7 +254,7 @@ contract TestUnwind is BaseTest {
         }
         updateAndSettle(0);
 
-        assertEq(vault.oldestEpochIdUnwinded(), 1); // since to unwind is zero,
+        assertEq(vault.oldestEpochIdUnwinded(), 1); // since toUnwind was 0
 
         // they get their shares
         for (uint256 i; i < users.length; i++) {

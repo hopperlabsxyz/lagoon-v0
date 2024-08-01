@@ -60,6 +60,7 @@ abstract contract ERC7540Upgradeable is
         mapping(address user => uint256 epochId) lastDepositRequestId;
         mapping(address user => uint256 epochId) lastRedeemRequestId;
         uint256 oldestEpochIdUnwinded;
+        uint256 toUnwind;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
@@ -397,6 +398,8 @@ abstract contract ERC7540Upgradeable is
             if (lastRedeemRequestId == _epochId) return 0;
             requestId = lastRedeemRequestId;
         }
+        if (requestId <= $.oldestEpochIdUnwinded)
+            return $.epochs[requestId].redeemRequest[controller];
         return
             Math.min(
                 $.epochs[requestId].redeemRequest[controller],
@@ -440,15 +443,22 @@ abstract contract ERC7540Upgradeable is
 
         assets = convertToAssets(shares, requestId);
         $.epochs[requestId].redeemRequest[controller] -= shares;
-        if ($.epochs[requestId].availableToWithdraw < assets)
+
+        // there is maybe a cleaner way to write this
+        if (requestId <= $.oldestEpochIdUnwinded) {}
+        // here we know all the assets have been unwinded
+        else if (
+            $.epochs[requestId].availableToWithdraw >= assets // we make sure we have enough assets to withdraw
+        ) {
+            $.epochs[requestId].availableToWithdraw -= assets;
+        } else {
             revert ERC7540InsufficientAssets();
-        $.epochs[requestId].availableToWithdraw -= assets;
+        }
         IERC20(asset()).safeTransferFrom(
             address($.claimableSilo),
             receiver,
             assets
         );
-
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
         return assets;
     }
@@ -559,5 +569,65 @@ abstract contract ERC7540Upgradeable is
         return $.epochId;
     }
 
+    /**
+     * @dev this function will loop over the various epoch, starting from oldestEpochIdUnwinded + 1
+     * up to currentEpoch - 1 or exhaustion of the assets and will "fill" the epochs with assets.
+     * Those assets are then ready to withdraw
+     * @param amount quantity of assets to unwind
+     * @param from where the funds come from. Most likely the safe (asset manager address) or the pendingSilo.
+     *
+     */
+    function _unwind(uint256 amount, address from) internal {
+        // VaultStorage storage $ = _getVaultStorage();
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+        uint256 tempOldestEpochIdUnwinded = $erc7540.oldestEpochIdUnwinded;
+        uint256 i = tempOldestEpochIdUnwinded + 1;
+        uint256 currentEpoch = $erc7540.epochId;
+
+        if (amount > $erc7540.toUnwind) amount = $erc7540.toUnwind;
+        IERC20(asset()).safeTransferFrom(from, claimableSilo(), amount);
+        $erc7540.toUnwind -= amount;
+        for (; i < currentEpoch; i++) {
+            uint256 _toUnwind = $erc7540.epochs[i].toUnwind;
+            if (_toUnwind > 0) {
+                if (amount >= _toUnwind) {
+                    amount -= _toUnwind;
+                    $erc7540.epochs[i].toUnwind = 0;
+                } else {
+                    $erc7540.epochs[i].toUnwind -= amount;
+                    $erc7540.epochs[i].availableToWithdraw += amount;
+                    break;
+                }
+            }
+            tempOldestEpochIdUnwinded = i;
+        }
+        $erc7540.oldestEpochIdUnwinded = tempOldestEpochIdUnwinded;
+    }
+
+    /**
+     * Since the _unwind system uses a for loop, there is a risk of DOS in the situation where
+     * there is a numerous amount of epochs in a row with 0 toUnwind.
+     * In this case the for loop could run out of gas. We supply an emergency function that
+     * can clear a defined number of epochs. This functions is harmless, so we let it open to everybody.
+     */
+    function clearNextUnwindEpochs(uint256 nbOfEpochs) public {
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+        uint256 tempOldestEpochIdUnwinded = $erc7540.oldestEpochIdUnwinded;
+
+        for (uint256 i = 1; i <= nbOfEpochs; i++) {
+            require(
+                $erc7540.epochs[i + tempOldestEpochIdUnwinded].toUnwind == 0
+            );
+        }
+        $erc7540.oldestEpochIdUnwinded = tempOldestEpochIdUnwinded + nbOfEpochs;
+    }
+
+    function toUnwind() public view returns (uint256) {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        return $.toUnwind;
+    }
+
     function settle() public virtual;
+
+    function unwind(uint256 amount) public virtual;
 }
