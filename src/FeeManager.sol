@@ -145,7 +145,6 @@ contract FeeManager is Initializable {
         uint256 managementFees = $.feeModule.calculateManagementFee(
             newTotalAssets,
             $.managementRate,
-            BPS,
             timeElapsed,
             maxManagementFees
         );
@@ -161,7 +160,6 @@ contract FeeManager is Initializable {
         uint256 performanceFees = $.feeModule.calculatePerformanceFee(
             newTotalAssets - managementFees,
             $.performanceRate,
-            BPS,
             $.highWaterMark,
             maxPerformanceFees
         );
