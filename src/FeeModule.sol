@@ -7,23 +7,22 @@ import {IFeeModule} from "./interfaces/IFeeModule.sol";
 contract FeeModule is IFeeModule {
     using Math for uint256;
 
+    uint256 constant BPS_DIVIDER = 10_000;
     uint256 public constant ONE_YEAR = 365 days;
 
     function calculateManagementFee(
         uint256 assets,
         uint256 rate,
-        uint256 bps,
         uint256 timeElapsed,
         uint256 // maxFee
     ) external pure returns (uint256 managementFee) {
-        uint256 annualFee = assets.mulDiv(rate, bps);
+        uint256 annualFee = assets.mulDiv(rate, BPS_DIVIDER);
         managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
     }
 
     function calculatePerformanceFee(
         uint256 assets,
         uint256 rate,
-        uint256 bps,
         uint256 highWaterMark,
         uint256 // maxFee
     ) external pure returns (uint256 performanceFee) {
@@ -32,7 +31,7 @@ contract FeeModule is IFeeModule {
             unchecked {
                 profit = assets - highWaterMark;
             }
-            performanceFee = profit.mulDiv(rate, bps);
+            performanceFee = profit.mulDiv(rate, BPS_DIVIDER);
         }
     }
 }
