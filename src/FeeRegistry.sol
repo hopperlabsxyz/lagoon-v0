@@ -3,7 +3,7 @@ pragma solidity "0.8.25";
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Registry is Ownable {
+contract FeeRegistry is Ownable {
     uint256 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
 
     uint256 internal _protocolRate;
