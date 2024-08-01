@@ -155,7 +155,7 @@ contract TestFeeManager is BaseTest {
         expectedHighWaterMark = _10M;
         expectedTotalFees = 200_000 * 10 ** vault.underlyingDecimals();
         expectedProtocolFees = expectedTotalFees.mulDiv(
-            vault.protocolFee(),
+            vault.protocolRate(),
             10_000
         );
         expectedManagerFees = expectedTotalFees - expectedProtocolFees;
@@ -210,7 +210,7 @@ contract TestFeeManager is BaseTest {
         expectedHighWaterMark = _50M;
         expectedTotalFees = 8_800_000 * 10 ** vault.underlyingDecimals();
         expectedProtocolFees = expectedTotalFees.mulDiv(
-            vault.protocolFee(),
+            vault.protocolRate(),
             10_000
         );
         expectedManagerFees = expectedTotalFees - expectedProtocolFees;
@@ -265,7 +265,7 @@ contract TestFeeManager is BaseTest {
         expectedHighWaterMark = _50M;
         expectedTotalFees = 380_000 * 10 ** vault.underlyingDecimals();
         expectedProtocolFees = expectedTotalFees.mulDiv(
-            vault.protocolFee(),
+            vault.protocolRate(),
             10_000
         );
         expectedManagerFees = expectedTotalFees - expectedProtocolFees;
@@ -320,7 +320,7 @@ contract TestFeeManager is BaseTest {
         expectedHighWaterMark = _50M;
         expectedTotalFees = 600_000 * 10 ** vault.underlyingDecimals();
         expectedProtocolFees = expectedTotalFees.mulDiv(
-            vault.protocolFee(),
+            vault.protocolRate(),
             10_000
         );
         expectedManagerFees = expectedTotalFees - expectedProtocolFees;
@@ -379,7 +379,7 @@ contract TestFeeManager is BaseTest {
         expectedHighWaterMark = _100M + newTotalAssets; // _161M
         expectedTotalFees = 3_176_000 * 10 ** vault.underlyingDecimals();
         expectedProtocolFees = expectedTotalFees.mulDiv(
-            vault.protocolFee(),
+            vault.protocolRate(),
             10_000
         );
         expectedManagerFees = expectedTotalFees - expectedProtocolFees;
