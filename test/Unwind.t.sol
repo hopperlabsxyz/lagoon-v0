@@ -12,6 +12,7 @@ using Math for uint256;
 
 contract TestUnwind is BaseTest {
     function setUp() public {
+        setUpVault(0, 0, 0);
         deactivateWhitelist();
     }
 

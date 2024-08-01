@@ -211,29 +211,29 @@ contract BaseTest is Test, Constants {
         return IERC4626(vault.asset()).balanceOf(user);
     }
 
-    function setManagementFee(uint256 _fee, address _caller) public {
-        vm.startPrank(_caller);
-        vault.updateManagementFee(_fee);
-        vm.warp(vm.getBlockTimestamp() + 1 days);
-        vault.setManagementFee();
-        vm.stopPrank();
-    }
+    // function setManagementFee(uint256 _fee, address _caller) public {
+    //     vm.startPrank(_caller);
+    //     vault.updateManagementFee(_fee);
+    //     vm.warp(vm.getBlockTimestamp() + 1 days);
+    //     vault.setManagementFee();
+    //     vm.stopPrank();
+    // }
 
-    function setPerformanceFee(uint256 _fee, address _caller) public {
-        vm.startPrank(_caller);
-        vault.updatePerformanceFee(_fee);
-        vm.warp(vm.getBlockTimestamp() + 1 days);
-        vault.setPerformanceFee();
-        vm.stopPrank();
-    }
+    // function setPerformanceFee(uint256 _fee, address _caller) public {
+    //     vm.startPrank(_caller);
+    //     vault.updatePerformanceFee(_fee);
+    //     vm.warp(vm.getBlockTimestamp() + 1 days);
+    //     vault.setPerformanceFee();
+    //     vm.stopPrank();
+    // }
 
-    function setProtocolFee(uint256 _fee, address _caller) public {
-        vm.startPrank(_caller);
-        vault.updateProtocolFee(_fee);
-        vm.warp(vm.getBlockTimestamp() + 1 days);
-        vault.setProtocolFee();
-        vm.stopPrank();
-    }
+    // function setProtocolFee(uint256 _fee, address _caller) public {
+    //     vm.startPrank(_caller);
+    //     vault.updateProtocolFee(_fee);
+    //     vm.warp(vm.getBlockTimestamp() + 1 days);
+    //     vault.setProtocolFee();
+    //     vm.stopPrank();
+    // }
 
     function deactivateWhitelist() internal {
         vm.prank(vault.adminRole());
@@ -262,9 +262,7 @@ contract BaseTest is Test, Constants {
     // Invariants checking
     function assertEpochsToUnwindEqGeneralToUnwind() public view {
         uint256 addToUnwind;
-        console.log("currentEpoch", vault.epochId());
         for (uint256 i = 1; i < vault.epochId(); i++) {
-            console.log("epoch", i, "toUnwind", vault.toUnwind(i));
             addToUnwind += vault.toUnwind(i);
         }
         assertEq(

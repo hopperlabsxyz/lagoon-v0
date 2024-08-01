@@ -13,12 +13,10 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // import {console} from "forge-std/console.sol";
 
 struct EpochData {
-    uint256 totalSupplyDeposit;
-    uint256 totalAssetsDeposit;
-    uint256 totalAssetsRedeem;
-    uint256 totalSupplyRedeem;
     uint256 toUnwind;
     uint256 availableToWithdraw;
+    uint256 totalSupply;
+    uint256 totalAssets;
     mapping(address => uint256) depositRequest;
     mapping(address => uint256) redeemRequest;
 }
@@ -525,8 +523,8 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
         if (requestId == $.epochId || requestId == 0) return 0;
 
-        uint256 _totalAssets = $.epochs[requestId].totalAssetsDeposit + 1;
-        uint256 _totalSupply = $.epochs[requestId].totalSupplyDeposit +
+        uint256 _totalAssets = $.epochs[requestId].totalAssets + 1;
+        uint256 _totalSupply = $.epochs[requestId].totalSupply +
             10 ** _decimalsOffset();
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
     }
@@ -547,8 +545,8 @@ abstract contract ERC7540Upgradeable is
 
         if (requestId == $.epochId || requestId == 0) return 0;
 
-        uint256 _totalAssets = $.epochs[requestId].totalAssetsRedeem + 1;
-        uint256 _totalSupply = $.epochs[requestId].totalSupplyRedeem +
+        uint256 _totalAssets = $.epochs[requestId].totalAssets + 1;
+        uint256 _totalSupply = $.epochs[requestId].totalSupply +
             10 ** _decimalsOffset();
 
         return shares.mulDiv(_totalAssets, _totalSupply, rounding);

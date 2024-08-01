@@ -8,6 +8,7 @@ import {BaseTest} from "./Base.sol";
 
 contract TestRequestRedeem is BaseTest {
     function setUp() public {
+        setUpVault(0, 0, 0);
         dealAndApproveAndWhitelist(user1.addr);
         uint256 balance = assetBalance(user1.addr);
         requestDeposit(balance, user1.addr);
