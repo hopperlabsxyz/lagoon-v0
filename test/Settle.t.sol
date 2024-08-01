@@ -11,6 +11,7 @@ using Math for uint256;
 
 contract TestSettle is BaseTest {
     function setUp() public {
+        setUpVault(0, 0, 0);
         dealAndApproveAndWhitelist(user1.addr);
         uint256 user1Assets = assetBalance(user1.addr);
         requestDeposit(user1Assets / 2, user1.addr);

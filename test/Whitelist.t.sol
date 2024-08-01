@@ -9,6 +9,7 @@ import {BaseTest} from "./Base.sol";
 
 contract TestWhitelist is BaseTest {
     function setUp() public {
+        setUpVault(0, 0, 0);
         dealAndApprove(user1.addr);
     }
 

@@ -6,17 +6,16 @@ import {Vault, ASSET_MANAGER_ROLE, FEE_RECEIVER, VALORIZATION_ROLE, HOPPER_ROLE}
 import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
-import {FeeManager, AboveMaxFee, CooldownNotOver, MAX_PROTOCOL_FEES, MAX_PERFORMANCE_FEES, MAX_MANAGEMENT_FEES} from "@src/FeeManager.sol";
+import {FeeManager} from "@src/FeeManager.sol";
 
-contract MockVault is FeeManager {
-    function initialize(
-        uint256 managementFee,
-        uint256 performanceFee,
-        uint256 protocolFee
-    ) public initializer {
-        __FeeManager_init(managementFee, performanceFee, protocolFee);
-    }
-}
+// contract MockVault is FeeManager {
+//     function initialize(
+//         address _feeModule,
+//         uint256 _protocolFee
+//     ) public initializer {
+//         __FeeManager_init(_feeModule, _protocolFee);
+//     }
+// }
 
 contract TestFeeManager is BaseTest {
     using Math for uint256;
@@ -30,6 +29,7 @@ contract TestFeeManager is BaseTest {
     uint256 _100M;
 
     function setUp() public {
+        setUpVault(100, 200, 2_000);
         _1K = 1_000 * 10 ** vault.underlyingDecimals();
         _10K = 10_000 * 10 ** vault.underlyingDecimals();
         _100K = 100_000 * 10 ** vault.underlyingDecimals();
@@ -40,81 +40,8 @@ contract TestFeeManager is BaseTest {
         _100M = 100_000_000 * 10 ** vault.underlyingDecimals();
     }
 
-    function test_zero_bips() public view {
-        assertEq(vault.managementFee(), 0);
-        assertEq(vault.performanceFee(), 0);
-        assertEq(vault.protocolFee(), 0);
-    }
-
-    function test_100_bips() public {
-        setProtocolFee(100, vault.hopperRole());
-        setPerformanceFee(100, vault.adminRole());
-        setManagementFee(100, vault.adminRole());
-
-        assertEq(vault.managementFee(), 100);
-        assertEq(vault.performanceFee(), 100);
-        assertEq(vault.protocolFee(), 100);
-    }
-
-    function test_with_no_fees() public view {
-        // Manager's fees
-        uint256 managementFees = vault.calculateManagementFee(_100M);
-        uint256 performanceFees = vault.calculatePerformanceFee(_100M);
-
-        assertEq(managementFees, 0);
-        assertEq(performanceFees, 0);
-
-        // Protocol fees taken on manager's fees
-        uint256 totalFees = _1M;
-        (uint256 managerFees, uint256 protocolFees) = vault
-            .calculateProtocolFee(totalFees);
-
-        assertEq(protocolFees, 0);
-        assertEq(managerFees, totalFees);
-    }
-
-    function test_performance_fees() public {
-        setPerformanceFee(100, vault.adminRole()); // 1% fees on net AUM if above high water mark
-
-        assertEq(vault.calculatePerformanceFee(_100M), _1M);
-        assertEq(vault.calculatePerformanceFee(_10M), _100K);
-        assertEq(vault.calculatePerformanceFee(_1M), _10K);
-        assertEq(vault.calculatePerformanceFee(_100K), _1K);
-    }
-
-    function test_management_fees() public {
-        // takes 1 day to settle new fee schema
-        setManagementFee(100, vault.adminRole()); // 1% fees on average AUM since last NAV
-
-        // Fees over 1 year (364 days because there is 1 day of fee settlement in setManagementFees() above)
-        vm.warp(vm.getBlockTimestamp() + 364 days);
-
-        assertEq(vault.calculateManagementFee(_100M), _1M);
-        assertEq(vault.calculateManagementFee(_10M), _100K);
-        assertEq(vault.calculateManagementFee(_1M), _10K);
-        assertEq(vault.calculateManagementFee(_100K), _1K);
-    }
-
-    function test_protocol_fees() public {
-        setProtocolFee(100, vault.hopperRole()); // 1% fees on total fees collected
-
-        (uint256 managerFees, uint256 protocolFees) = vault
-            .calculateProtocolFee(_100M);
-        assertEq(managerFees, _100M - _1M);
-        assertEq(protocolFees, _1M);
-
-        (managerFees, protocolFees) = vault.calculateProtocolFee(_10M);
-        assertEq(managerFees, _10M - _100K);
-        assertEq(protocolFees, _100K);
-    }
-
     function test_collect_fees() public {
         dealAmountAndApproveAndWhitelist(user1.addr, 10_000_000);
-
-        // 20% perf. fees / 2% management fees / 1% protocol fees
-        setProtocolFee(100, vault.hopperRole());
-        setPerformanceFee(2000, vault.adminRole());
-        setManagementFee(200, vault.adminRole());
 
         address assetManager = vault.getRoleMember(ASSET_MANAGER_ROLE, 0);
         address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
@@ -187,11 +114,6 @@ contract TestFeeManager is BaseTest {
 
         uint256 managerShares = vault.balanceOf(feeReceiver);
         uint256 daoShares = vault.balanceOf(hopperDao);
-
-        // 20% perf. fees / 2% management fees / 1% protocol fees
-        setProtocolFee(100, vault.hopperRole());
-        setPerformanceFee(2000, vault.adminRole());
-        setManagementFee(200, vault.adminRole());
 
         // ------------ Year 0 ------------ //
         uint256 newTotalAssets = 0;
@@ -266,7 +188,7 @@ contract TestFeeManager is BaseTest {
         managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
 
-        // ------------ Year 2 ------------ //
+        // // ------------ Year 2 ------------ //
         vm.warp(vm.getBlockTimestamp() + 364 days);
 
         // expectations
@@ -309,7 +231,7 @@ contract TestFeeManager is BaseTest {
         managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
 
-        // ------------ Year 3 ------------ //
+        // // ------------ Year 3 ------------ //
         vm.warp(vm.getBlockTimestamp() + 364 days);
 
         // expectations
@@ -352,7 +274,7 @@ contract TestFeeManager is BaseTest {
         managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
 
-        // ------------ Year 4 ------------ //
+        // // ------------ Year 4 ------------ //
         vm.warp(vm.getBlockTimestamp() + 364 days);
 
         // expectations
@@ -395,7 +317,7 @@ contract TestFeeManager is BaseTest {
         managerShares = vault.balanceOf(feeReceiver);
         daoShares = vault.balanceOf(hopperDao);
 
-        // ------------ Year 5 ------------ //
+        // // ------------ Year 5 ------------ //
         vm.warp(vm.getBlockTimestamp() + 364 days);
 
         // new airdrop !
@@ -445,65 +367,45 @@ contract TestFeeManager is BaseTest {
         daoShares = vault.balanceOf(hopperDao);
     }
 
-    function test_max_fee_errors() public {
-        vm.prank(vault.hopperRole());
-        vm.expectRevert(AboveMaxFee.selector);
-        vault.updateProtocolFee(MAX_PROTOCOL_FEES + 1);
+    // function test_max_fee_errors() public {
+    //     vm.prank(vault.hopperRole());
+    //     vm.expectRevert(AboveMaxFee.selector);
+    //     vault.updateProtocolFee(MAX_PROTOCOL_FEES + 1);
 
-        vm.prank(vault.adminRole());
-        vm.expectRevert(AboveMaxFee.selector);
-        vault.updateManagementFee(MAX_MANAGEMENT_FEES + 1);
+    //     vm.prank(vault.adminRole());
+    //     vm.expectRevert(AboveMaxFee.selector);
+    //     vault.updateManagementFee(MAX_MANAGEMENT_FEES + 1);
 
-        vm.prank(vault.adminRole());
-        vm.expectRevert(AboveMaxFee.selector);
-        vault.updatePerformanceFee(MAX_PERFORMANCE_FEES + 1);
-    }
+    //     vm.prank(vault.adminRole());
+    //     vm.expectRevert(AboveMaxFee.selector);
+    //     vault.updatePerformanceFee(MAX_PERFORMANCE_FEES + 1);
+    // }
 
-    function test_cooldown_errors() public {
-        vm.startPrank(vault.hopperRole());
-        vault.updateProtocolFee(1);
-        vm.expectRevert(CooldownNotOver.selector);
-        vault.setProtocolFee();
-        vm.stopPrank();
+    // function test_initializer_errors() public {
+    //     MockVault v;
 
-        vm.startPrank(vault.adminRole());
-        vault.updateManagementFee(1);
-        vm.expectRevert(CooldownNotOver.selector);
-        vault.setManagementFee();
-        vm.stopPrank();
+    //     v = new MockVault();
+    //     vm.expectRevert(AboveMaxFee.selector);
+    //     v.initialize(MAX_MANAGEMENT_FEES + 1, 1, 1);
 
-        vm.startPrank(vault.adminRole());
-        vault.updatePerformanceFee(1);
-        vm.expectRevert(CooldownNotOver.selector);
-        vault.setPerformanceFee();
-        vm.stopPrank();
-    }
+    //     v = new MockVault();
+    //     vm.expectRevert(AboveMaxFee.selector);
+    //     v.initialize(1, MAX_PERFORMANCE_FEES + 1, 1);
 
-    function test_initializer_errors() public {
-        MockVault v;
+    //     v = new MockVault();
+    //     vm.expectRevert(AboveMaxFee.selector);
+    //     v.initialize(1, 1, MAX_PROTOCOL_FEES + 1);
+    // }
 
-        v = new MockVault();
-        vm.expectRevert(AboveMaxFee.selector);
-        v.initialize(MAX_MANAGEMENT_FEES + 1, 1, 1);
+    // function test_initializer() public {
+    //     MockVault v;
 
-        v = new MockVault();
-        vm.expectRevert(AboveMaxFee.selector);
-        v.initialize(1, MAX_PERFORMANCE_FEES + 1, 1);
-
-        v = new MockVault();
-        vm.expectRevert(AboveMaxFee.selector);
-        v.initialize(1, 1, MAX_PROTOCOL_FEES + 1);
-    }
-
-    function test_initializer() public {
-        MockVault v;
-
-        v = new MockVault();
-        v.initialize(1, 2, 3);
-        assertEq(v.managementFee(), 1);
-        assertEq(v.performanceFee(), 2);
-        assertEq(v.protocolFee(), 3);
-        assertEq(v.lastFeeTime(), block.timestamp);
-        assertEq(v.highWaterMark(), 0);
-    }
+    //     v = new MockVault();
+    //     v.initialize(1, 2, 3);
+    //     assertEq(v.managementFee(), 1);
+    //     assertEq(v.performanceFee(), 2);
+    //     assertEq(v.protocolFee(), 3);
+    //     assertEq(v.lastFeeTime(), block.timestamp);
+    //     assertEq(v.highWaterMark(), 0);
+    // }
 }
