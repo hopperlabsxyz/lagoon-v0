@@ -168,31 +168,17 @@ contract FeeManager is Initializable {
 
         require(performanceFees <= maxPerformanceFees);
 
-        /// Protocol fee calculation ///
+        /// Protocol fee calculation & convertion to shares ///
 
-        uint256 managerFees = managementFees + performanceFees;
+        uint256 totalFees = managementFees + performanceFees;
 
-        uint256 protocolFees = managerFees.mulDiv(
-            $.feeRegistry.protocolRate(),
-            BPS
-        );
-
-        /// Fee to shares convertion ///
-
-        managerFees = managerFees - protocolFees;
-
-        newTotalAssets = newTotalAssets - (managerFees + protocolFees);
-
-        managerShares = managerFees.mulDiv(
+        uint256 totalShares = totalFees.mulDiv(
             totalSupply + 1,
-            newTotalAssets + 1,
+            (newTotalAssets - totalFees) + 1,
             Math.Rounding.Floor
         );
 
-        protocolShares = protocolFees.mulDiv(
-            totalSupply + 1,
-            newTotalAssets + 1,
-            Math.Rounding.Floor
-        );
+        protocolShares = totalShares.mulDiv($.feeRegistry.protocolRate(), BPS);
+        managerShares = totalShares - protocolShares;
     }
 }
