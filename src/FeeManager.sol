@@ -83,12 +83,12 @@ contract FeeManager is Initializable {
         return $.feeRegistry.protocolRate();
     }
 
-    function lastFeeTime() external view returns (uint256) {
+    function lastFeeTime() public view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         return $.lastFeeTime;
     }
 
-    function highWaterMark() external view returns (uint256) {
+    function highWaterMark() public view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         return $.highWaterMark;
     }
@@ -106,6 +106,16 @@ contract FeeManager is Initializable {
         }
 
         return _highWaterMark;
+    }
+
+    function _decreaseHighWaterMark(uint256 amount) internal {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        $.highWaterMark -= amount; // todo: what to do in case of underflow ?
+    }
+
+    function _increaseHighWaterMark(uint256 amount) internal {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        $.highWaterMark += amount; // todo: what to do in case of underflow ?
     }
 
     function maxManagementFee(
