@@ -4,6 +4,8 @@ pragma solidity "0.8.25";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IFeeModule} from "./interfaces/IFeeModule.sol";
 
+// import {console} from "forge-std/console.sol";
+
 contract FeeModule is IFeeModule {
     using Math for uint256;
 

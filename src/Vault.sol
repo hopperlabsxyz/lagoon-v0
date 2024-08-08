@@ -14,7 +14,7 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {Whitelistable, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
-import {console} from "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
 using Math for uint256;
@@ -226,11 +226,11 @@ contract Vault is
 
         $erc7540.totalAssets = $vault.newTotalAssets;
         $vault.newTotalAssetsTimestamp = type(uint256).max; // we do not allow to use 2 time the same newTotalAssets in a row
-        _setHighWaterMark($erc7540.totalAssets);
     }
 
     function _takeFees() internal {
         if (lastFeeTime() == block.timestamp) return;
+
         address feeReceiver = getRoleMember(FEE_RECEIVER, 0);
         address hopperDao = getRoleMember(HOPPER_ROLE, 0);
 
@@ -249,6 +249,7 @@ contract Vault is
         }
         FeeManagerStorage storage $feeManagerStorage = _getFeeManagerStorage();
         $feeManagerStorage.lastFeeTime = block.timestamp;
+        _setHighWaterMark(_totalAssets); // when fees are taken done being taken, we update highWaterMark
     }
 
     function _settleDeposit() public {
@@ -268,7 +269,7 @@ contract Vault is
         _totalAssets += pendingAssets;
         $erc7540.totalAssets = _totalAssets;
         // We must not take into account new assets into next fee calculation
-        _increaseHighWaterMark(pendingAssets);
+        _increaseHighWaterMarkOf(pendingAssets);
 
         address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
         IERC20(asset()).safeTransferFrom(
@@ -288,17 +289,21 @@ contract Vault is
 
     function _settleRedeem() internal {
         uint256 pendingShares = balanceOf(pendingSilo());
-        if (pendingShares == 0) return;
-        uint256 assets = _convertToAssets(
-            balanceOf(pendingSilo()),
+        uint256 assetsToWithdraw = _convertToAssets(
+            pendingShares,
             Math.Rounding.Floor
         );
         address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
-
         uint256 assetsInTheSafe = IERC20(asset()).balanceOf(assetManager);
-
-        if (assets == 0 || assets > assetsInTheSafe) return;
-        // We must not take into account assets leaving the fund into next fee calculation
+        uint256 approvedBySafe = IERC20(asset()).allowance(
+            assetManager,
+            address(this)
+        );
+        if (
+            assetsToWithdraw == 0 ||
+            assetsToWithdraw > assetsInTheSafe ||
+            assetsToWithdraw > approvedBySafe
+        ) return;
 
         // first we save epochs data
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
@@ -309,119 +314,19 @@ contract Vault is
         epoch.totalSupply = totalSupply();
 
         // then we proceed to redeem the shares
-        _burn(pendingSilo(), balanceOf(pendingSilo()));
-        $erc7540.totalAssets = _totalAssets - assets;
+        _burn(pendingSilo(), pendingShares);
+        $erc7540.totalAssets = _totalAssets - assetsToWithdraw;
 
         // high water mark must now be decreased of withdrawn assets
-        uint256 newHighWaterMark = highWaterMark();
-        newHighWaterMark -= assets;
-        _decreaseHighWaterMark(newHighWaterMark);
+        _decreaseHighWaterMarkOf(assetsToWithdraw);
 
         IERC20(asset()).safeTransferFrom(
-            getRoleMember(ASSET_MANAGER_ROLE, 0),
+            assetManager,
             claimableSilo(),
-            assets
+            assetsToWithdraw
         );
         $erc7540.redeemId += 2;
     }
-
-    // function settle() public onlyRole(VALORIZATION_ROLE) {
-    //     VaultStorage storage $vault = _getVaultStorage();
-    //     ERC7540Storage storage $erc7540 = _getERC7540Storage();
-    //     FeeManagerStorage storage $feeManager = _getFeeManagerStorage();
-
-    //     address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
-    //     address feeReceiver = getRoleMember(FEE_RECEIVER, 0);
-    //     address hopperDao = getRoleMember(HOPPER_ROLE, 0);
-
-    //     // we allowe to settle only if the newTotalAssets:
-    //     // is not to recent must be > $.newTotalAssetsCooldown
-    //     if (
-    //         $vault.newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown >
-    //         block.timestamp
-    //     ) revert CooldownNotOver();
-
-    //     // avoid settle using same newTotalAssets input
-    //     $vault.newTotalAssetsTimestamp = type(uint256).max;
-
-    //     // caching the value
-    //     // uint256 epochId = $erc7540.;
-
-    //     $erc7540.totalAssets = $vault.newTotalAssets;
-
-    //     EpochData storage epoch = $erc7540.epochs[epochId];
-    //     uint256 _totalAssets = totalAssets();
-
-    //     (uint256 managerShares, uint256 protocolShares) = _calculateFees(
-    //         _totalAssets,
-    //         totalSupply()
-    //     );
-
-    //     if (managerShares > 0) {
-    //         _mint(feeReceiver, managerShares);
-    //     }
-
-    //     if (protocolShares > 0) {
-    //         _mint(hopperDao, protocolShares);
-    //     }
-
-    //     uint256 newHighWaterMark = _totalAssets;
-
-    //     // Then we proceed the deposit request and save the deposit parameters
-    //     uint256 pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
-
-    //     // We must not take into account new assets into next fee calculation
-    //     newHighWaterMark += pendingAssets;
-
-    //     epoch.totalAssets = _totalAssets;
-    //     epoch.totalSupply = totalSupply();
-    //     if (pendingAssets > 0) {
-    //         uint256 shares = _convertToShares(
-    //             pendingAssets,
-    //             Math.Rounding.Floor
-    //         );
-    //         _mint(claimableSilo(), shares);
-    //         _totalAssets += pendingAssets;
-    //         $erc7540.totalAssets = _totalAssets;
-    //     }
-
-    //     // Then we proceed the redeem request and save the redeem parameters
-    //     uint256 assets = _convertToAssets(
-    //         balanceOf(pendingSilo()),
-    //         Math.Rounding.Floor
-    //     );
-
-    //     // We must not take into account assets leaving the fund into next fee calculation
-    //     newHighWaterMark -= assets;
-
-    //     epoch.totalAssets = _totalAssets;
-    //     epoch.totalSupply = totalSupply();
-    //     if (assets > 0) {
-    //         _burn(pendingSilo(), balanceOf(pendingSilo()));
-    //         $erc7540.totalAssets = _totalAssets - assets;
-    //         $vault.toUnwind += assets;
-    //     }
-
-    //     // Then we put a maximum of assets in the claimable silo so that user can claim
-    //     // if (pendingAssets > 0 && $vault.toUnwind > 0)
-    //     // _unwind(pendingAssets, pendingSilo());
-    //     // If there is a surplus of assets, we send those to the asset manager
-    //     pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
-    //     if (pendingAssets > 0) {
-    //         // there must be an asset manager
-    //         if (assetManager == address(0)) revert AssetManagerNotSet();
-
-    //         IERC20(asset()).safeTransferFrom(
-    //             pendingSilo(),
-    //             assetManager,
-    //             pendingAssets
-    //         );
-    //     }
-
-    //     _setHighWaterMark(newHighWaterMark);
-    //     $feeManager.lastFeeTime = block.timestamp;
-    //     $erc7540.epochId = epochId + 1;
-    // }
 
     function supportsInterface(
         bytes4 interfaceId

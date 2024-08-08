@@ -69,27 +69,45 @@ contract TestFeeManager is BaseTest {
         // /!\ 364 days because there is 1 days timelock period before settle is called
         vm.warp(vm.getBlockTimestamp() + 364 days);
 
+        // Management Fees: 100 m * 2% = 2m
+        // Perf       Fees: (90m - 2m) * 20% = 17,6m
+        // Total      Fees: 19,6m
         uint256 expectedTotalFees = 19_600_000 *
-            10 ** vault.underlyingDecimals();
+            10 ** vault.underlyingDecimals(); // assets
 
-        uint256 expectedTotalNewShares = vault.totalSupply().mulDiv(
-            expectedTotalFees,
-            _100M - expectedTotalFees,
+        uint256 expectedTotalNewShares = expectedTotalFees.mulDiv(
+            vault.totalSupply() + 1,
+            _100M - expectedTotalFees + 1, // total assets
             Math.Rounding.Floor
         );
 
         uint256 expectedProtocolNewShares = expectedTotalNewShares / 100;
         uint256 expectedFeeReceiverNewShares = expectedTotalNewShares -
             expectedProtocolNewShares;
-
+        uint256 totalSupplyBefore = vault.totalSupply();
         updateAndSettle(_100M);
+        uint256 totalSupplyAfter = vault.totalSupply();
 
-        assertEq(vault.balanceOf(address(vault.claimableSilo())), userBalance);
+        assertEq(
+            expectedTotalNewShares,
+            totalSupplyAfter - totalSupplyBefore,
+            "Amount of shares did not increase properly"
+        );
+        assertEq(
+            vault.balanceOf(vault.claimableSilo()),
+            userBalance,
+            "Wrong amount of shares available in claimable silo"
+        );
         assertEq(
             vault.balanceOf(vaultFeeReceiver),
-            expectedFeeReceiverNewShares
+            expectedFeeReceiverNewShares,
+            "Vault Fee Receiver did not receive right amount"
         );
-        assertEq(vault.balanceOf(hopperDao), expectedProtocolNewShares);
+        assertEq(
+            vault.balanceOf(hopperDao),
+            expectedProtocolNewShares,
+            "Hopper Dao did not receive expectedProtocolShares"
+        );
     }
 
     // +======+=========+==========+======+=======+=========+========+======+===========+=========+

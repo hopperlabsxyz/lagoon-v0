@@ -5,6 +5,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IFeeModule} from "./interfaces/IFeeModule.sol";
 import {FeeRegistry} from "./FeeRegistry.sol";
+// import {console} from "forge-std/console.sol";
 
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS_DIVIDER = 10_000;
@@ -108,12 +109,12 @@ contract FeeManager is Initializable {
         return _highWaterMark;
     }
 
-    function _decreaseHighWaterMark(uint256 amount) internal {
+    function _decreaseHighWaterMarkOf(uint256 amount) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         $.highWaterMark -= amount; // todo: what to do in case of underflow ?
     }
 
-    function _increaseHighWaterMark(uint256 amount) internal {
+    function _increaseHighWaterMarkOf(uint256 amount) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         $.highWaterMark += amount; // todo: what to do in case of underflow ?
     }
