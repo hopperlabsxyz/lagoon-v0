@@ -61,12 +61,31 @@ contract TestSettle is BaseTest {
         );
     }
 
-    function test_settleAfterUpdate_TooSoon() public {
+    function test_settleDepositAfterUpdate_TooSoon() public {
         updateTotalAssets(1);
 
-        vm.startPrank(vault.valorizationRole());
+        vm.startPrank(vault.assetManagerRole());
         vm.expectRevert();
-        vault.settle();
+        vault.settleDeposit();
+        vm.stopPrank();
+    }
+
+    function test_settleRedeemAfterUpdate_TooSoon() public {
+        updateTotalAssets(1);
+
+        vm.startPrank(vault.assetManagerRole());
+        vm.expectRevert();
+        vault.settleRedeem();
+        vm.stopPrank();
+    }
+
+    function test_settleDepositThenRedeemAfterUpdate_TooSoon() public {
+        updateTotalAssets(1);
+        vm.warp(block.timestamp + 1 days);
+        vm.startPrank(vault.assetManagerRole());
+        vault.settleDeposit();
+        vm.expectRevert();
+        vault.settleRedeem();
         vm.stopPrank();
     }
 

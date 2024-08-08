@@ -15,20 +15,25 @@ contract VaultHelper is Vault {
         return $.epochs[epochId].totalSupply;
     }
 
-    function previousEpochTotalSupply() public view returns (uint256) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        return $.epochs[$.epochId - 1].totalSupply;
-    }
+    // function previousEpochTotalSupply() public view returns (uint256) {
+    //     ERC7540Storage storage $ = _getERC7540Storage();
+    //     return $.epochs[$.epochId - 1].totalSupply;
+    // }
 
     function totalAssets(uint256 epochId) public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
         return $.epochs[epochId].totalAssets;
     }
 
-    function previousEpochTotalAssets() public view returns (uint256) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        return $.epochs[$.epochId - 1].totalAssets;
+    function newTotalAssets() public view returns (uint256) {
+        VaultStorage storage $ = _getVaultStorage();
+        return $.newTotalAssets;
     }
+
+    // function previousEpochTotalAssets() public view returns (uint256) {
+    //     ERC7540Storage storage $ = _getERC7540Storage();
+    //     return $.epochs[$.epochId - 1].totalAssets;
+    // }
 
     function underlyingDecimals() public view returns (uint256) {
         IERC20Metadata asset = IERC20Metadata(asset());
