@@ -1,37 +1,78 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract FeeRegistry is Ownable {
+contract FeeRegistry is OwnableUpgradeable {
     uint256 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
 
-    uint256 internal _protocolRate;
+    /// @custom:storage-location erc7201:hopper.storage.FeeRegistry
+    struct FeeRegistryStorage {
+        uint256 protocolRate;
+        mapping(address => bool) isCustomRate;
+        mapping(address => uint256) customRate;
+    }
 
-    mapping(address => bool) internal isCustomRate;
-    mapping(address => uint256) internal customRate;
+    // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeRegistry")) - 1)) & ~bytes32(uint256(0xff));
+    // solhint-disable-next-line const-name-snakecase
+    bytes32 private constant feeRegistryStorage =
+        0xfae567c932a2d69f96a50330b7967af6689561bf72e1f4ad815fc97800b3f300;
 
-    constructor(address _owner) Ownable(_owner) {}
+    function initialize(address initialOwner) public initializer {
+        __Ownable_init(initialOwner);
+    }
+
+    function _getFeeRegistryStorage()
+        internal
+        pure
+        returns (FeeRegistryStorage storage $)
+    {
+        assembly {
+            $.slot := feeRegistryStorage
+        }
+    }
+
+    function protocolRate(address vault) external view returns (uint256 rate) {
+        return _protocolRate(vault);
+    }
 
     function protocolRate() external view returns (uint256 rate) {
-        if (isCustomRate[msg.sender]) {
-            return customRate[msg.sender];
+        return _protocolRate(msg.sender);
+    }
+
+    function _protocolRate(address vault) internal view returns (uint256 rate) {
+        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
+        if ($.isCustomRate[vault]) {
+            return $.customRate[vault];
         }
-        return _protocolRate;
+        return $.protocolRate;
     }
 
     function setProtocolRate(uint256 rate) external onlyOwner {
         require(rate <= MAX_PROTOCOL_RATE);
-        _protocolRate = rate;
+        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
+        $.protocolRate = rate;
     }
 
     function setCustomRate(address vault, uint256 rate) external onlyOwner {
         require(rate <= MAX_PROTOCOL_RATE);
-        customRate[vault] = rate;
-        isCustomRate[vault] = true;
+        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
+        $.customRate[vault] = rate;
+        $.isCustomRate[vault] = true;
     }
 
     function cancelCustomRate(address vault) external onlyOwner {
-        isCustomRate[vault] = false;
+        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
+        $.isCustomRate[vault] = false;
+    }
+
+    function isCustomRate(address vault) external view returns (bool) {
+        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
+        return $.isCustomRate[vault];
+    }
+
+    function customRate(address vault) external view returns (uint256) {
+        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
+        return $.customRate[vault];
     }
 }

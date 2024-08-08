@@ -152,7 +152,8 @@ abstract contract Constants is Test {
     ) internal {
         bool proxy = vm.envBool("PROXY");
 
-        feeRegistry = new FeeRegistry(dao.addr);
+        feeRegistry = new FeeRegistry();
+        feeRegistry.initialize(dao.addr);
         feeModule = new FeeModule();
         vm.prank(dao.addr);
         feeRegistry.setProtocolRate(_protocolRate);
