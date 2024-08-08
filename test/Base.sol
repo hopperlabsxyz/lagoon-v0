@@ -129,21 +129,19 @@ contract BaseTest is Test, Constants {
     }
 
     function settle() internal {
-        vm.prank(vault.valorizationRole());
-        vault.settle();
+        dealAmountAndApproveAndWhitelist(
+            vault.assetManagerRole(),
+            vault.newTotalAssets()
+        );
+        vm.startPrank(vault.assetManagerRole());
+        vault.settleDeposit();
+        vm.stopPrank();
     }
 
     function updateAndSettle(uint256 newTotalAssets) internal {
         updateTotalAssets(newTotalAssets);
         vm.warp(block.timestamp + 1 days);
         settle();
-    }
-
-    function unwind() internal {
-        dealAndApproveAndWhitelist(vault.assetManagerRole());
-        uint256 toUnwind = vault.toUnwind();
-        vm.prank(vault.assetManagerRole());
-        vault.unwind(toUnwind);
     }
 
     function dealAndApproveAndWhitelist(address user) public {
@@ -156,7 +154,7 @@ contract BaseTest is Test, Constants {
     ) public {
         address asset = vault.asset();
         deal(user, type(uint256).max);
-        dealAsset(
+        deal(
             vault.asset(),
             user,
             amount * 10 ** IERC20Metadata(asset).decimals()
@@ -173,22 +171,13 @@ contract BaseTest is Test, Constants {
     function dealAmountAndApprove(address user, uint256 amount) public {
         address asset = vault.asset();
         deal(user, type(uint256).max);
-        dealAsset(
+        deal(
             vault.asset(),
             user,
             amount * 10 ** IERC20Metadata(asset).decimals()
         );
         vm.prank(user);
         IERC4626(asset).approve(address(vault), UINT256_MAX);
-    }
-
-    function dealAsset(address asset, address owner, uint256 amount) public {
-        if (asset == address(USDC)) {
-            vm.prank(USDC_WHALE);
-            USDC.transfer(owner, amount);
-        } else {
-            deal(asset, owner, amount);
-        }
     }
 
     function assetBalance(address user) public view returns (uint256) {

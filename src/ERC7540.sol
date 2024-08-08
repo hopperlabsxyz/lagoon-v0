@@ -10,7 +10,7 @@ import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC20, ERC20Upgradeable, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {Silo} from "./Silo.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-// import {console} from "forge-std/console.sol";
+import {console} from "forge-std/console.sol";
 
 struct EpochData {
     uint256 totalSupply;
@@ -76,7 +76,6 @@ abstract contract ERC7540Upgradeable is
 
     function __ERC7540_init(IERC20 underlying) internal onlyInitializing {
         ERC7540Storage storage $ = _getERC7540Storage();
-        // $.epochId = 1;
         $.depositId = 1;
         $.redeemId = 2;
         $.claimableSilo = new Silo(underlying);
@@ -565,7 +564,7 @@ abstract contract ERC7540Upgradeable is
 
     function depositId() public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        return $.redeemId;
+        return $.depositId;
     }
 
     function settleDeposit() public virtual;

@@ -14,7 +14,7 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {Whitelistable, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
-// import {console} from "forge-std/console.sol";
+import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
 using Math for uint256;
@@ -58,8 +58,6 @@ contract Vault is
 
     /// @custom:storage-location erc7201:hopper.storage.vault
     struct VaultStorage {
-        uint256 toUnwind;
-        // totalAssets maj
         uint256 newTotalAssets;
         uint256 newTotalAssetsTimestamp;
         uint256 newTotalAssetsCooldown;
@@ -210,6 +208,27 @@ contract Vault is
         $.newTotalAssetsTimestamp = block.timestamp;
     }
 
+    function settleDeposit() public override onlyRole(ASSET_MANAGER_ROLE) {
+        _updateTotalAssets();
+        _takeFees();
+        _settleDeposit();
+        _settleRedeem(); // if it is possible to settleRedeem, we should do so
+    }
+
+    function _updateTotalAssets() internal {
+        VaultStorage storage $vault = _getVaultStorage();
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+
+        if (
+            $vault.newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown >
+            block.timestamp
+        ) revert CooldownNotOver();
+
+        $erc7540.totalAssets = $vault.newTotalAssets;
+        $vault.newTotalAssetsTimestamp = type(uint256).max; // we do not allow to use 2 time the same newTotalAssets in a row
+        _setHighWaterMark($erc7540.totalAssets);
+    }
+
     function _takeFees() internal {
         if (lastFeeTime() == block.timestamp) return;
         address feeReceiver = getRoleMember(FEE_RECEIVER, 0);
@@ -230,22 +249,6 @@ contract Vault is
         }
         FeeManagerStorage storage $feeManagerStorage = _getFeeManagerStorage();
         $feeManagerStorage.lastFeeTime = block.timestamp;
-    }
-
-    function settleDeposit() public override onlyRole(VALORIZATION_ROLE) {
-        VaultStorage storage $vault = _getVaultStorage();
-        ERC7540Storage storage $erc7540 = _getERC7540Storage();
-
-        if (
-            $vault.newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown >
-            block.timestamp
-        ) revert CooldownNotOver();
-
-        $erc7540.totalAssets = $vault.newTotalAssets;
-        $vault.newTotalAssetsTimestamp = type(uint256).max; // we do not allow to use 2 time the same newTotalAssets in a row
-        _setHighWaterMark($erc7540.totalAssets);
-        _takeFees();
-        _settleDeposit();
     }
 
     function _settleDeposit() public {
@@ -273,32 +276,12 @@ contract Vault is
             assetManager,
             pendingAssets
         );
-        // let's assess if we can do a settle redeem
-        // assets in the safe ready to be taken
-        uint256 assetsInTheSafe = IERC20(asset()).balanceOf(assetManager);
-        uint256 assetsToWithdraw = _convertToAssets(
-            balanceOf(pendingSilo()),
-            Math.Rounding.Floor
-        );
-        if (assetsToWithdraw > 0 && assetsToWithdraw <= assetsInTheSafe)
-            _settleRedeem();
-
         $erc7540.depositId += 2;
         // todo emit event
     }
 
-    function settleRedeem() public override onlyRole(VALORIZATION_ROLE) {
-        VaultStorage storage $vault = _getVaultStorage();
-        ERC7540Storage storage $erc7540 = _getERC7540Storage();
-
-        if (
-            $vault.newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown >
-            block.timestamp
-        ) revert CooldownNotOver();
-
-        $erc7540.totalAssets = $vault.newTotalAssets;
-        $vault.newTotalAssetsTimestamp = type(uint256).max; // we do not allow to use 2 times the same newTotalAssets
-        _setHighWaterMark($erc7540.totalAssets);
+    function settleRedeem() public override onlyRole(ASSET_MANAGER_ROLE) {
+        _updateTotalAssets();
         _takeFees();
         _settleRedeem();
     }
@@ -306,12 +289,15 @@ contract Vault is
     function _settleRedeem() internal {
         uint256 pendingShares = balanceOf(pendingSilo());
         if (pendingShares == 0) return;
-
         uint256 assets = _convertToAssets(
             balanceOf(pendingSilo()),
             Math.Rounding.Floor
         );
-        if (assets == 0) return;
+        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+
+        uint256 assetsInTheSafe = IERC20(asset()).balanceOf(assetManager);
+
+        if (assets == 0 || assets > assetsInTheSafe) return;
         // We must not take into account assets leaving the fund into next fee calculation
 
         // first we save epochs data

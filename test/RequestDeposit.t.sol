@@ -27,7 +27,7 @@ contract TestRequestDeposit is BaseTest {
         requestDeposit(userBalance / 2, user1.addr);
         requestDeposit(userBalance / 2, user1.addr);
         assertEq(
-            vault.pendingDepositRequest(vault.epochId(), user1.addr),
+            vault.pendingDepositRequest(vault.depositId(), user1.addr),
             userBalance
         );
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
