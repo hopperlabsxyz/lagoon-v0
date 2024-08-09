@@ -248,11 +248,10 @@ abstract contract ERC7540Upgradeable is
         address controller
     ) external view returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
+        uint256 _depositId = $.depositId;
 
-        if (requestId == 0)
-            return $.epochs[$.depositId].depositRequest[controller];
-        else if (requestId != $.depositId) return 0;
-        else return $.epochs[requestId].depositRequest[controller];
+        if (requestId == 0 || requestId == _depositId)
+            return $.epochs[_depositId].depositRequest[controller];
     }
 
     function claimableDepositRequest(
@@ -381,10 +380,9 @@ abstract contract ERC7540Upgradeable is
     ) external view returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
         uint256 _redeemId = $.redeemId;
-        if (requestId == 0)
+
+        if (requestId == 0 || requestId == _redeemId)
             return $.epochs[_redeemId].redeemRequest[controller];
-        else if (requestId != _redeemId) return 0;
-        else return $.epochs[requestId].redeemRequest[controller];
     }
 
     function claimableRedeemRequest(
