@@ -163,6 +163,7 @@ contract FeeManager is Initializable {
             BPS_DIVIDER,
             Math.Rounding.Floor
         );
+
         return annualFee.mulDiv(timeElapsed, ONE_YEAR);
     }
 

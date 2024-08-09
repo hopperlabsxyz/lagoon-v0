@@ -28,7 +28,7 @@ contract TestRequestRedeem is BaseTest {
         requestRedeem(userBalance / 2, user1.addr);
         requestRedeem(userBalance / 2, user1.addr);
         assertEq(
-            vault.pendingRedeemRequest(vault.epochId(), user1.addr),
+            vault.pendingRedeemRequest(vault.redeemId(), user1.addr),
             userBalance
         );
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
@@ -49,7 +49,6 @@ contract TestRequestRedeem is BaseTest {
             userBalance / 2,
             "wrong claimable redeem value"
         );
-        unwind();
         requestRedeem(balance(user1.addr), user1.addr);
         assertEq(
             vault.claimableRedeemRequest(0, user1.addr),
