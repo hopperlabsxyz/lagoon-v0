@@ -8,15 +8,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
 import {FeeManager} from "@src/FeeManager.sol";
 
-// contract MockVault is FeeManager {
-//     function initialize(
-//         address _feeModule,
-//         uint256 _protocolFee
-//     ) public initializer {
-//         __FeeManager_init(_feeModule, _protocolFee);
-//     }
-// }
-
 contract TestFeeManager is BaseTest {
     using Math for uint256;
     uint256 _1K;

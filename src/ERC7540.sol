@@ -261,14 +261,10 @@ abstract contract ERC7540Upgradeable is
     ) public view returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        if (requestId == $.depositId) return 0;
-        else if (requestId == 0) {
-            uint256 lastDepositRequestId = $.lastDepositRequestId[controller];
-            if (lastDepositRequestId == $.depositId) return 0;
-            else
-                return
-                    $.epochs[lastDepositRequestId].depositRequest[controller];
-        } else return $.epochs[requestId].depositRequest[controller];
+        if (requestId == 0) requestId = $.lastDepositRequestId[controller];
+
+        if (requestId != $.depositId)
+            return $.epochs[requestId].depositRequest[controller];
     }
 
     function maxDeposit(
@@ -396,13 +392,11 @@ abstract contract ERC7540Upgradeable is
         address controller
     ) public view returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        uint256 _redeemId = $.redeemId;
-        if (requestId == 0) {
-            uint256 lastRedeemRequestId = $.lastRedeemRequestId[controller];
-            if (lastRedeemRequestId == _redeemId) return 0;
-            else return $.epochs[lastRedeemRequestId].redeemRequest[controller];
-        } else if (requestId == _redeemId) return 0;
-        return $.epochs[requestId].redeemRequest[controller];
+
+        if (requestId == 0) requestId = $.lastRedeemRequestId[controller];
+
+        if (requestId != $.redeemId)
+            return $.epochs[requestId].redeemRequest[controller];
     }
 
     function maxRedeem(
