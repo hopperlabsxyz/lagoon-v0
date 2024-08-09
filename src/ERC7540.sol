@@ -209,7 +209,7 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address controller,
         address owner
-    ) public virtual onlyOperator(owner) returns (uint256) {
+    ) public virtual onlyOperator(owner) returns (uint256 _depositId) {
         if (assets == 0) revert RequestDepositZero();
 
         uint256 claimbaleDeposit = claimableDepositRequest(0, controller);
@@ -220,24 +220,15 @@ abstract contract ERC7540Upgradeable is
 
         IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
 
-        _requestDeposit(assets, controller, owner);
-        return $.depositId;
-    }
-
-    function _requestDeposit(
-        uint256 assets,
-        address controller,
-        address owner
-    ) internal {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        $.epochs[$.depositId].depositRequest[controller] += assets;
-        if ($.lastDepositRequestId[controller] != $.depositId) {
-            $.lastDepositRequestId[controller] = $.depositId;
+        _depositId = $.depositId;
+        $.epochs[_depositId].depositRequest[controller] += assets;
+        if ($.lastDepositRequestId[controller] != _depositId) {
+            $.lastDepositRequestId[controller] = _depositId;
         }
         emit DepositRequest(
             controller,
             owner,
-            $.depositId,
+            _depositId,
             _msgSender(),
             assets
         );
@@ -486,7 +477,6 @@ abstract contract ERC7540Upgradeable is
     }
 
     // ## Conversion functions ##
-
     function convertToShares(
         uint256 assets,
         uint256 requestId
