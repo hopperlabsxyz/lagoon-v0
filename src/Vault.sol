@@ -154,52 +154,6 @@ contract Vault is
         return super.requestDeposit(assets, controller, owner);
     }
 
-    /**
-     * @param receiver who will receive the shares
-     * @param controller who the depositRequest belongs to
-     * @dev if whistelist is activated, receiver must be whitelisted because _update is called and
-     * onlyWhitelisted modifier is applied
-     */
-    function _deposit(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) internal override returns (uint256 shares) {
-        return super._deposit(assets, receiver, controller);
-    }
-
-    /**
-     * @param receiver who will receive the shares
-     * @param controller who the depositRequest belongs to
-     * @dev if whistelist is activated, receiver must be whitelisted, because _update is called and
-     * onlyWhitelisted modifier is applied
-     */
-    function _mint(
-        uint256 shares,
-        address receiver,
-        address controller
-    ) internal override returns (uint256 assets) {
-        return super._mint(shares, receiver, controller);
-    }
-
-    function _computeFees(
-        uint256 previousBalance,
-        uint256 newBalance,
-        uint256 feesInBps
-    ) internal pure returns (uint256 fees) {
-        if (newBalance > previousBalance && feesInBps > 0) {
-            uint256 profits;
-            unchecked {
-                profits = newBalance - previousBalance;
-            }
-            fees = (profits).mulDiv(
-                feesInBps,
-                BPS_DIVIDER,
-                Math.Rounding.Floor
-            );
-        }
-    }
-
     function updateTotalAssets(
         uint256 _newTotalAssets
     ) public onlyRole(VALORIZATION_ROLE) {
