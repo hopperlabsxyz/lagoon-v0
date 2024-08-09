@@ -22,14 +22,17 @@ contract TestWithdraw is BaseTest {
         assertEq(sharesObtained, vault.balanceOf(user1.addr));
         assertEq(sharesObtained, userBalance);
         requestRedeem(sharesObtained, user1.addr);
-        assertEq(vault.claimableRedeemRequest(vault.epochId(), user1.addr), 0);
 
+        assertEq(vault.claimableRedeemRequest(vault.redeemId(), user1.addr), 0);
         updateAndSettle(userBalance + 100);
-        unwind();
-        assertEq(vault.maxRedeem(user1.addr), sharesObtained);
+        assertEq(
+            vault.maxRedeem(user1.addr),
+            sharesObtained,
+            "user1 should be able to redeem all his shares"
+        );
         uint256 assetsToWithdraw = vault.convertToAssets(
             sharesObtained,
-            vault.epochId() - 1
+            vault.redeemId() - 2
         );
 
         uint256 sharesTaken = withdraw(assetsToWithdraw, user1.addr);
@@ -45,9 +48,9 @@ contract TestWithdraw is BaseTest {
             "sharesObtained - sharesTaken should be equal to balanceOf"
         );
         assertEq(vault.maxWithdraw(user1.addr), 0, "maxWithdraw should be 0");
-        assertEq(vault.epochId(), 3, "epochId should be 3");
+        assertEq(vault.redeemId(), 4, "redeemId should be 4");
         assertEq(
-            vault.claimableRedeemRequest(vault.epochId(), user1.addr),
+            vault.claimableRedeemRequest(vault.redeemId(), user1.addr),
             0,
             "claimableRedeemRequest should be 0"
         );

@@ -49,7 +49,8 @@ abstract contract ERC7540Upgradeable is
     struct ERC7540Storage {
         mapping(address controller => mapping(address operator => bool)) isOperator;
         uint256 totalAssets;
-        uint256 epochId;
+        uint256 depositId;
+        uint256 redeemId;
         Silo pendingSilo;
         Silo claimableSilo;
         mapping(uint256 epochId => EpochData epoch) epochs;
@@ -75,7 +76,8 @@ abstract contract ERC7540Upgradeable is
 
     function __ERC7540_init(IERC20 underlying) internal onlyInitializing {
         ERC7540Storage storage $ = _getERC7540Storage();
-        $.epochId = 1;
+        $.depositId = 1;
+        $.redeemId = 2;
         $.claimableSilo = new Silo(underlying);
         $.pendingSilo = new Silo(underlying);
     }
@@ -207,7 +209,7 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address controller,
         address owner
-    ) public virtual onlyOperator(owner) returns (uint256) {
+    ) public virtual onlyOperator(owner) returns (uint256 _depositId) {
         if (assets == 0) revert RequestDepositZero();
 
         uint256 claimbaleDeposit = claimableDepositRequest(0, controller);
@@ -218,21 +220,18 @@ abstract contract ERC7540Upgradeable is
 
         IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
 
-        _requestDeposit(assets, controller, owner);
-        return $.epochId;
-    }
-
-    function _requestDeposit(
-        uint256 assets,
-        address controller,
-        address owner
-    ) internal {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        $.epochs[$.epochId].depositRequest[controller] += assets;
-        if ($.lastDepositRequestId[controller] != $.epochId) {
-            $.lastDepositRequestId[controller] = $.epochId;
+        _depositId = $.depositId;
+        $.epochs[_depositId].depositRequest[controller] += assets;
+        if ($.lastDepositRequestId[controller] != _depositId) {
+            $.lastDepositRequestId[controller] = _depositId;
         }
-        emit DepositRequest(controller, owner, $.epochId, _msgSender(), assets);
+        emit DepositRequest(
+            controller,
+            owner,
+            _depositId,
+            _msgSender(),
+            assets
+        );
     }
 
     function pendingDepositRequest(
@@ -240,11 +239,10 @@ abstract contract ERC7540Upgradeable is
         address controller
     ) external view returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
+        uint256 _depositId = $.depositId;
 
-        if (requestId == 0)
-            return $.epochs[$.epochId].depositRequest[controller];
-        else if (requestId != $.epochId) return 0;
-        else return $.epochs[requestId].depositRequest[controller];
+        if (requestId == 0 || requestId == _depositId)
+            return $.epochs[_depositId].depositRequest[controller];
     }
 
     function claimableDepositRequest(
@@ -253,14 +251,10 @@ abstract contract ERC7540Upgradeable is
     ) public view returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        if (requestId == $.epochId) return 0;
-        else if (requestId == 0) {
-            uint256 lastDepositRequestId = $.lastDepositRequestId[controller];
-            if (lastDepositRequestId == $.epochId) return 0;
-            else
-                return
-                    $.epochs[lastDepositRequestId].depositRequest[controller];
-        } else return $.epochs[requestId].depositRequest[controller];
+        if (requestId == 0) requestId = $.lastDepositRequestId[controller];
+
+        if (requestId != $.depositId)
+            return $.epochs[requestId].depositRequest[controller];
     }
 
     function maxDeposit(
@@ -294,7 +288,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
-        if (requestId == $.epochId) revert RequestIdNotClaimable();
+        if (requestId == $.depositId) revert RequestIdNotClaimable();
 
         $.epochs[requestId].depositRequest[controller] -= assets;
         shares = convertToShares(assets, requestId);
@@ -327,7 +321,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
-        if (requestId == $.epochId) revert RequestIdNotClaimable();
+        if (requestId == $.depositId) revert RequestIdNotClaimable();
 
         assets = convertToAssets(shares, requestId);
 
@@ -340,9 +334,9 @@ abstract contract ERC7540Upgradeable is
     function cancelRequestDeposit() external {
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
-        uint256 request = $.epochs[$.epochId].depositRequest[msgSender];
+        uint256 request = $.epochs[$.depositId].depositRequest[msgSender];
         if (request == 0) revert ZeroPendingDeposit();
-        $.epochs[$.epochId].depositRequest[msgSender] = 0;
+        $.epochs[$.depositId].depositRequest[msgSender] = 0;
         IERC20(asset()).safeTransferFrom(pendingSilo(), msgSender, request);
     }
 
@@ -360,14 +354,15 @@ abstract contract ERC7540Upgradeable is
         if (claimable > 0) _redeem(claimable, controller, controller);
 
         ERC7540Storage storage $ = _getERC7540Storage();
+        uint256 _redeemId = $.redeemId;
         _update(owner, address($.pendingSilo), shares);
-        $.epochs[$.epochId].redeemRequest[controller] += shares;
-        if ($.lastRedeemRequestId[controller] != $.epochId) {
-            $.lastRedeemRequestId[controller] = $.epochId;
+        $.epochs[_redeemId].redeemRequest[controller] += shares;
+        if ($.lastRedeemRequestId[controller] != _redeemId) {
+            $.lastRedeemRequestId[controller] = _redeemId;
         }
 
-        emit RedeemRequest(controller, owner, $.epochId, _msgSender(), shares);
-        return $.epochId;
+        emit RedeemRequest(controller, owner, _redeemId, _msgSender(), shares);
+        return _redeemId;
     }
 
     function pendingRedeemRequest(
@@ -375,11 +370,10 @@ abstract contract ERC7540Upgradeable is
         address controller
     ) external view returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
+        uint256 _redeemId = $.redeemId;
 
-        if (requestId == 0)
-            return $.epochs[$.epochId].redeemRequest[controller];
-        else if (requestId != $.epochId) return 0;
-        else return $.epochs[requestId].redeemRequest[controller];
+        if (requestId == 0 || requestId == _redeemId)
+            return $.epochs[_redeemId].redeemRequest[controller];
     }
 
     function claimableRedeemRequest(
@@ -387,13 +381,11 @@ abstract contract ERC7540Upgradeable is
         address controller
     ) public view returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        uint256 _epochId = $.epochId;
-        if (requestId == 0) {
-            uint256 lastRedeemRequestId = $.lastRedeemRequestId[controller];
-            if (lastRedeemRequestId == _epochId) return 0;
-            else return $.epochs[lastRedeemRequestId].redeemRequest[controller];
-        } else if (requestId == _epochId) return 0;
-        return $.epochs[requestId].redeemRequest[controller];
+
+        if (requestId == 0) requestId = $.lastRedeemRequestId[controller];
+
+        if (requestId != $.redeemId)
+            return $.epochs[requestId].redeemRequest[controller];
     }
 
     function maxRedeem(
@@ -425,7 +417,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
-        if (requestId == $.epochId) revert RequestIdNotClaimable();
+        if (requestId == $.redeemId) revert RequestIdNotClaimable();
 
         $.epochs[requestId].redeemRequest[controller] -= shares;
         assets = convertToAssets(shares, requestId);
@@ -462,7 +454,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
-        if (requestId == $.epochId) revert RequestIdNotClaimable();
+        if (requestId == $.redeemId) revert RequestIdNotClaimable();
         shares = convertToShares(assets, requestId);
         $.epochs[requestId].redeemRequest[controller] -= shares;
 
@@ -478,14 +470,13 @@ abstract contract ERC7540Upgradeable is
     function cancelRequestRedeem() external {
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
-        uint256 request = $.epochs[$.epochId].redeemRequest[msgSender];
+        uint256 request = $.epochs[$.redeemId].redeemRequest[msgSender];
         if (request == 0) revert ZeroPendingRedeem();
-        $.epochs[$.epochId].redeemRequest[msgSender] = 0;
+        $.epochs[$.redeemId].redeemRequest[msgSender] = 0;
         _transfer(pendingSilo(), msgSender, request);
     }
 
     // ## Conversion functions ##
-
     function convertToShares(
         uint256 assets,
         uint256 requestId
@@ -499,7 +490,11 @@ abstract contract ERC7540Upgradeable is
         Math.Rounding rounding
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        if (requestId == $.epochId || requestId == 0) return 0;
+        if (
+            requestId == $.redeemId ||
+            requestId == $.depositId ||
+            requestId == 0
+        ) return 0;
 
         uint256 _totalAssets = $.epochs[requestId].totalAssets + 1;
         uint256 _totalSupply = $.epochs[requestId].totalSupply +
@@ -521,7 +516,11 @@ abstract contract ERC7540Upgradeable is
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        if (requestId == $.epochId || requestId == 0) return 0;
+        if (
+            requestId == $.depositId ||
+            requestId == $.redeemId ||
+            requestId == 0
+        ) return 0;
 
         uint256 _totalAssets = $.epochs[requestId].totalAssets + 1;
         uint256 _totalSupply = $.epochs[requestId].totalSupply +
@@ -540,10 +539,17 @@ abstract contract ERC7540Upgradeable is
         return address($.claimableSilo);
     }
 
-    function epochId() public view returns (uint256) {
+    function redeemId() public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        return $.epochId;
+        return $.redeemId;
     }
 
-    function settle() public virtual;
+    function depositId() public view returns (uint256) {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        return $.depositId;
+    }
+
+    function settleDeposit() public virtual;
+
+    function settleRedeem() public virtual;
 }
