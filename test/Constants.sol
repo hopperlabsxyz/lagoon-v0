@@ -207,7 +207,7 @@ abstract contract Constants is Test {
         whitelist[7] = address(0);
 
         vm.prank(admin.addr);
-        whitelistMapModule.addToWhitelist(whitelist);
+        whitelistMapModule.add(whitelist);
 
         vm.label(address(vault), vaultName);
         vm.label(vault.pendingSilo(), "vault.pendingSilo");

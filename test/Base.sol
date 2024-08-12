@@ -186,17 +186,17 @@ contract BaseTest is Test, Constants {
 
     function whitelist(address user) public {
         vm.prank(vault.adminRole());
-        whitelistMapModule.addToWhitelist(user);
+        whitelistMapModule.add(user);
     }
 
     function whitelist(address[] memory users) public {
         vm.prank(vault.adminRole());
-        whitelistMapModule.addToWhitelist(users);
+        whitelistMapModule.add(users);
     }
 
     function unwhitelist(address user) public {
         vm.prank(vault.adminRole());
-        whitelistMapModule.revokeFromWhitelist(user);
+        whitelistMapModule.revoke(user);
     }
 
     function balance(address user) public view returns (uint256) {
