@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import {Vault} from "@src/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseTest} from "./Base.sol";
+import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 contract TestRequestRedeem is BaseTest {
     function setUp() public {
@@ -36,8 +37,9 @@ contract TestRequestRedeem is BaseTest {
 
     function test_requestRedeem_notEnoughBalance() public {
         uint256 userBalance = balance(user1.addr);
+        vm.startPrank(user1.addr);
         vm.expectRevert();
-        requestRedeem(userBalance + 1, user1.addr);
+        vault.requestRedeem(userBalance + 1, user1.addr, user1.addr);
     }
 
     function test_requestRedeem_withClaimableBalance() public {
@@ -100,7 +102,15 @@ contract TestRequestRedeem is BaseTest {
         address operator = user2.addr;
         address controller = user3.addr;
         uint256 ownerBalance = balance(owner);
-        vm.expectRevert();
-        requestRedeem(ownerBalance, controller, owner, operator);
+        vm.startPrank(operator);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientAllowance.selector,
+                operator,
+                0,
+                ownerBalance
+            )
+        );
+        vault.requestRedeem(ownerBalance, controller, owner);
     }
 }

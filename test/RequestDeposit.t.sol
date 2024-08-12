@@ -35,8 +35,9 @@ contract TestRequestDeposit is BaseTest {
 
     function test_requestDeposit_notEnoughBalance() public {
         uint256 userBalance = assetBalance(user1.addr);
+        vm.startPrank(user1.addr);
         vm.expectRevert();
-        requestDeposit(userBalance + 1, user1.addr);
+        vault.requestDeposit(userBalance + 1, user1.addr, user1.addr);
     }
 
     function test_requestDeposit_withClaimableBalance() public {
@@ -100,8 +101,9 @@ contract TestRequestDeposit is BaseTest {
         address operator = user2.addr;
         address controller = user3.addr;
         uint256 ownerBalance = assetBalance(owner);
+        vm.startPrank(operator);
         vm.expectRevert();
-        requestDeposit(ownerBalance, controller, owner, operator);
+        vault.requestDeposit(ownerBalance, controller, owner);
     }
 
     function test_requestDeposit_asAnOperatorButOwnerNotEnoughApprove() public {
@@ -111,7 +113,8 @@ contract TestRequestDeposit is BaseTest {
         uint256 ownerBalance = assetBalance(owner);
         vm.prank(owner);
         vault.setOperator(operator, true);
+        vm.startPrank(operator);
         vm.expectRevert();
-        requestDeposit(ownerBalance, controller, owner, operator);
+        vault.requestDeposit(ownerBalance, controller, owner);
     }
 }
