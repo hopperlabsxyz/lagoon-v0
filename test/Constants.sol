@@ -63,6 +63,8 @@ abstract contract Constants is Test {
 
     VmSafe.Wallet[] users;
 
+    address[] whitelistInit = new address[](0);
+
     // Wallet
     VmSafe.Wallet address0 =
         VmSafe.Wallet({
@@ -175,7 +177,6 @@ abstract contract Constants is Test {
 
             vault = new VaultHelper(false);
 
-            address[] memory whitelist = new address[](0);
             Vault.InitStruct memory v = Vault.InitStruct({
                 underlying: underlying,
                 name: vaultName,
@@ -191,7 +192,7 @@ abstract contract Constants is Test {
                 performanceRate: _performanceRate,
                 cooldown: 1 days,
                 enableWhitelist: enableWhitelist,
-                whitelist: whitelist
+                whitelist: whitelistInit
             });
             vault.initialize(v);
             vm.stopPrank();
