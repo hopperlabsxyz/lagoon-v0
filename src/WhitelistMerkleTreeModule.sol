@@ -5,18 +5,19 @@ import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProo
 import {IWhitelistModule} from "./interfaces/IWhitelistModule.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract WhitelistMapModule is IWhitelistModule, Ownable {
-    event AddedToWhitelist(address indexed account);
-    event RevokedFromWhitelist(address indexed account);
+contract WhitelistMerkleTreeModule is IWhitelistModule, Ownable {
+    event RootUpdated(bytes32 indexed root);
 
     bytes32 internal root;
 
     constructor(address owner, bytes32 _root) Ownable(owner) {
         root = _root;
+        emit RootUpdated(_root);
     }
 
     function updateRoot(bytes32 _root) external onlyOwner {
         root = _root;
+        emit RootUpdated(_root);
     }
 
     function isWhitelisted(
