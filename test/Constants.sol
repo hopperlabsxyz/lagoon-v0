@@ -13,6 +13,8 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import "forge-std/console.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {WhitelistMapModule} from "@src/WhitelistMapModule.sol";
+import {IWhitelistModule} from "@src/interfaces/IWhitelistModule.sol";
 
 abstract contract Constants is Test {
     // ERC20 tokens
@@ -35,6 +37,7 @@ abstract contract Constants is Test {
     VaultHelper vault;
     FeeRegistry feeRegistry;
     FeeModule feeModule;
+    WhitelistMapModule whitelistMapModule;
     string vaultName = "vault_";
     string vaultSymbol = "hop_vault_";
 
@@ -112,9 +115,6 @@ abstract contract Constants is Test {
         uint256 _managementRate,
         uint256 _performanceRate
     ) internal returns (VaultHelper) {
-        bool enableWhitelist = true;
-        address[] memory whitelist = new address[](0);
-
         Vault.InitStruct memory v = Vault.InitStruct({
             underlying: _underlying,
             name: _vaultName,
@@ -129,8 +129,7 @@ abstract contract Constants is Test {
             managementRate: _managementRate,
             performanceRate: _performanceRate,
             cooldown: 1 days,
-            enableWhitelist: enableWhitelist,
-            whitelist: whitelist
+            whitelistModule: address(whitelistMapModule)
         });
 
         BeaconProxy proxy = BeaconProxy(
@@ -154,7 +153,10 @@ abstract contract Constants is Test {
 
         feeRegistry = new FeeRegistry();
         feeRegistry.initialize(dao.addr);
+
         feeModule = new FeeModule();
+        whitelistMapModule = new WhitelistMapModule(admin.addr);
+
         vm.prank(dao.addr);
         feeRegistry.setProtocolRate(_protocolRate);
 
@@ -171,11 +173,9 @@ abstract contract Constants is Test {
             );
         } else {
             vm.startPrank(owner.addr);
-            bool enableWhitelist = true;
 
             vault = new VaultHelper(false);
 
-            address[] memory whitelist = new address[](0);
             Vault.InitStruct memory v = Vault.InitStruct({
                 underlying: underlying,
                 name: vaultName,
@@ -190,12 +190,25 @@ abstract contract Constants is Test {
                 managementRate: _managementRate,
                 performanceRate: _performanceRate,
                 cooldown: 1 days,
-                enableWhitelist: enableWhitelist,
-                whitelist: whitelist
+                whitelistModule: address(whitelistMapModule)
             });
             vault.initialize(v);
             vm.stopPrank();
         }
+
+        address[] memory whitelist = new address[](8);
+        whitelist[0] = feeReceiver.addr;
+        whitelist[1] = dao.addr;
+        whitelist[2] = assetManager.addr;
+        whitelist[3] = valorizator.addr;
+        whitelist[4] = admin.addr;
+        whitelist[5] = vault.pendingSilo();
+        whitelist[6] = vault.claimableSilo();
+        whitelist[7] = address(0);
+
+        vm.prank(admin.addr);
+        whitelistMapModule.addToWhitelist(whitelist);
+
         vm.label(address(vault), vaultName);
         vm.label(vault.pendingSilo(), "vault.pendingSilo");
         vm.label(vault.claimableSilo(), "vault.claimableSilo");

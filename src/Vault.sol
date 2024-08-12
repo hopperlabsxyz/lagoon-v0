@@ -52,8 +52,7 @@ contract Vault is
         uint256 managementRate;
         uint256 performanceRate;
         uint256 cooldown;
-        bool enableWhitelist;
-        address[] whitelist;
+        address whitelistModule;
     }
 
     /// @custom:storage-location erc7201:hopper.storage.vault
@@ -92,7 +91,7 @@ contract Vault is
             init.performanceRate
         );
         __ERC7540_init(init.underlying);
-        __Whitelistable_init(init.enableWhitelist);
+        __Whitelistable_init(init.whitelistModule);
 
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = init.cooldown;
@@ -109,19 +108,19 @@ contract Vault is
         _grantRole(DEFAULT_ADMIN_ROLE, init.admin);
 
         _grantRole(FEE_RECEIVER, init.feeReceiver);
-        if (init.enableWhitelist) {
-            _grantRole(WHITELISTED, init.feeReceiver);
-            _grantRole(WHITELISTED, init.dao);
-            _grantRole(WHITELISTED, init.assetManager);
-            _grantRole(WHITELISTED, init.valorization);
-            _grantRole(WHITELISTED, init.admin);
-            _grantRole(WHITELISTED, pendingSilo());
-            _grantRole(WHITELISTED, claimableSilo());
-            _grantRole(WHITELISTED, address(0));
-            for (uint256 i = 0; i < init.whitelist.length; i++) {
-                _grantRole(WHITELISTED, init.whitelist[i]);
-            }
-        }
+        // if (init.whitelistModule != address(0)) {
+        //     _grantRole(WHITELISTED, init.feeReceiver);
+        //     _grantRole(WHITELISTED, init.dao);
+        //     _grantRole(WHITELISTED, init.assetManager);
+        //     _grantRole(WHITELISTED, init.valorization);
+        //     _grantRole(WHITELISTED, init.admin);
+        //     _grantRole(WHITELISTED, pendingSilo());
+        //     _grantRole(WHITELISTED, claimableSilo());
+        //     _grantRole(WHITELISTED, address(0));
+        //     for (uint256 i = 0; i < init.whitelist.length; i++) {
+        //         _grantRole(WHITELISTED, init.whitelist[i]);
+        //     }
+        // }
     }
 
     function _update(
