@@ -99,7 +99,7 @@ contract TestWhitelist is BaseTest {
 
     function test_whitelist() public {
         whitelist(user1.addr);
-        assertEq(vault.isWhitelisted(user1.addr), true);
+        assertEq(vault.isWhitelisted(user1.addr, ""), true);
     }
 
     function test_whitelistList() public {
@@ -107,7 +107,7 @@ contract TestWhitelist is BaseTest {
         users[0] = user1.addr;
         users[1] = user2.addr;
         whitelist(users);
-        assertEq(vault.isWhitelisted(user1.addr), true);
+        assertEq(vault.isWhitelisted(user1.addr, ""), true);
     }
 
     function test_unwhitelistList() public {
@@ -115,10 +115,10 @@ contract TestWhitelist is BaseTest {
         users[0] = user1.addr;
         users[1] = user2.addr;
         whitelist(users);
-        assertEq(vault.isWhitelisted(user1.addr), true);
+        assertEq(vault.isWhitelisted(user1.addr, ""), true);
         unwhitelist(users[0]);
-        assertEq(vault.isWhitelisted(user1.addr), false);
+        assertEq(vault.isWhitelisted(user1.addr, ""), false);
         unwhitelist(users[1]);
-        assertEq(vault.isWhitelisted(user2.addr), false);
+        assertEq(vault.isWhitelisted(user2.addr, ""), false);
     }
 }

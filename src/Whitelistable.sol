@@ -48,15 +48,18 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         $.whitelistModule = address(0);
     }
 
-    modifier onlyWhitelisted(address account) {
-        if (isWhitelistActivated() == true && !isWhitelisted(account)) {
+    modifier onlyWhitelisted(address account, bytes memory data) {
+        if (isWhitelistActivated() == true && !isWhitelisted(account, data)) {
             revert NotWhitelisted(account);
         }
         _;
     }
 
-    function isWhitelisted(address account) public view returns (bool) {
+    function isWhitelisted(
+        address account,
+        bytes memory data
+    ) public view returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-        return IWhitelistModule($.whitelistModule).isWhitelisted(account);
+        return IWhitelistModule($.whitelistModule).isWhitelisted(account, data);
     }
 }

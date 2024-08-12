@@ -8,7 +8,7 @@ contract WhitelistMapModule is IWhitelistModule, Ownable {
     event AddedToWhitelist(address indexed account);
     event RevokedFromWhitelist(address indexed account);
 
-    mapping(address => bool) public isWhitelisted;
+    mapping(address => bool) internal _isWhitelisted;
 
     constructor(address owner) Ownable(owner) {}
 
@@ -16,7 +16,7 @@ contract WhitelistMapModule is IWhitelistModule, Ownable {
      * @notice Add or remove an account from the whitelist
      **/
     function add(address account) external onlyOwner {
-        isWhitelisted[account] = true;
+        _isWhitelisted[account] = true;
         emit AddedToWhitelist(account);
     }
 
@@ -25,7 +25,7 @@ contract WhitelistMapModule is IWhitelistModule, Ownable {
      **/
     function add(address[] memory accounts) external onlyOwner {
         for (uint256 i = 0; i < accounts.length; i++) {
-            isWhitelisted[accounts[i]] = true;
+            _isWhitelisted[accounts[i]] = true;
             emit AddedToWhitelist(accounts[i]);
         }
     }
@@ -34,7 +34,7 @@ contract WhitelistMapModule is IWhitelistModule, Ownable {
      * @notice Remove an account from the whitelist
      **/
     function revoke(address account) external onlyOwner {
-        isWhitelisted[account] = false;
+        _isWhitelisted[account] = false;
         emit RevokedFromWhitelist(account);
     }
 
@@ -43,8 +43,15 @@ contract WhitelistMapModule is IWhitelistModule, Ownable {
      **/
     function revoke(address[] memory accounts) external onlyOwner {
         for (uint256 i = 0; i < accounts.length; i++) {
-            isWhitelisted[accounts[i]] = false;
+            _isWhitelisted[accounts[i]] = false;
             emit RevokedFromWhitelist(accounts[i]);
         }
+    }
+
+    function isWhitelisted(
+        address account,
+        bytes calldata
+    ) external view returns (bool) {
+        return _isWhitelisted[account];
     }
 }
