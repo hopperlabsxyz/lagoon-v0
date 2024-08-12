@@ -5,6 +5,9 @@ import {IWhitelistModule} from "./interfaces/IWhitelistModule.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract WhitelistMapModule is IWhitelistModule, Ownable {
+    event AddedToWhitelist(address indexed account);
+    event RevokedFromWhitelist(address indexed account);
+
     mapping(address => bool) public isWhitelisted;
 
     constructor(address owner) Ownable(owner) {}
@@ -12,32 +15,36 @@ contract WhitelistMapModule is IWhitelistModule, Ownable {
     /*
      * @notice Add or remove an account from the whitelist
      **/
-    function addToWhitelist(address account) external onlyOwner {
+    function add(address account) external onlyOwner {
         isWhitelisted[account] = true;
+        emit AddedToWhitelist(account);
     }
 
     /*
      * @notice Add multiple accounts to the whitelist
      **/
-    function addToWhitelist(address[] memory accounts) external onlyOwner {
+    function add(address[] memory accounts) external onlyOwner {
         for (uint256 i = 0; i < accounts.length; i++) {
             isWhitelisted[accounts[i]] = true;
+            emit AddedToWhitelist(accounts[i]);
         }
     }
 
     /*
      * @notice Remove an account from the whitelist
      **/
-    function revokeFromWhitelist(address account) external onlyOwner {
+    function revoke(address account) external onlyOwner {
         isWhitelisted[account] = false;
+        emit RevokedFromWhitelist(account);
     }
 
     /*
      * @notice Revoke multiple accounts from the whitelist
      **/
-    function revokeFromWhitelist(address[] memory accounts) external onlyOwner {
+    function revoke(address[] memory accounts) external onlyOwner {
         for (uint256 i = 0; i < accounts.length; i++) {
             isWhitelisted[accounts[i]] = false;
+            emit RevokedFromWhitelist(accounts[i]);
         }
     }
 }
