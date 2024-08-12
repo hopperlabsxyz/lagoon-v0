@@ -116,7 +116,7 @@ contract Vault is
             _grantRole(WHITELISTED, init.valorization);
             _grantRole(WHITELISTED, init.admin);
             _grantRole(WHITELISTED, pendingSilo());
-            _grantRole(WHITELISTED, claimableSilo());
+            _grantRole(WHITELISTED, address(this));
             _grantRole(WHITELISTED, address(0));
             for (uint256 i = 0; i < init.whitelist.length; i++) {
                 _grantRole(WHITELISTED, init.whitelist[i]);
@@ -219,7 +219,7 @@ contract Vault is
         epoch.totalSupply = totalSupply();
 
         uint256 shares = _convertToShares(pendingAssets, Math.Rounding.Floor);
-        _mint(claimableSilo(), shares);
+        _mint(address(this), shares);
         _totalAssets += pendingAssets;
         $erc7540.totalAssets = _totalAssets;
         // We must not take into account new assets into next fee calculation
@@ -276,7 +276,7 @@ contract Vault is
 
         IERC20(asset()).safeTransferFrom(
             assetManager,
-            claimableSilo(),
+            address(this),
             assetsToWithdraw
         );
         $erc7540.redeemId += 2;
