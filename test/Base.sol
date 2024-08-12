@@ -83,8 +83,8 @@ contract BaseTest is Test, Constants {
         address controller,
         address owner
     ) internal returns (uint256) {
-        vm.prank(owner);
-        return vault.requestRedeem(amount, controller, owner);
+        address operator = owner;
+        return requestRedeem(amount, controller, owner, operator);
     }
 
     function requestRedeem(
@@ -93,16 +93,28 @@ contract BaseTest is Test, Constants {
         address owner,
         address operator
     ) internal returns (uint256) {
+        uint256 requestRedeemBefore = vault.pendingRedeem();
+        uint256 redeemId = vault.redeemId();
         vm.prank(operator);
-        return vault.requestRedeem(amount, controller, owner);
+        uint256 requestId = vault.requestRedeem(amount, controller, owner);
+        assertEq(
+            vault.pendingRedeem(),
+            requestRedeemBefore + amount,
+            "pendingRedeem value did not increase properly"
+        );
+        assertEq(
+            redeemId,
+            requestId,
+            "requestId should be equal to current redeemId"
+        );
+        return redeemId;
     }
 
     function requestRedeem(
         uint256 amount,
         address user
     ) internal returns (uint256) {
-        vm.prank(user);
-        return vault.requestRedeem(amount, user, user);
+        return requestRedeem(amount, user, user, user);
     }
 
     function redeem(uint256 amount, address user) internal returns (uint256) {
