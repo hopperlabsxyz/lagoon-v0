@@ -108,31 +108,22 @@ contract Vault is
         _grantRole(DEFAULT_ADMIN_ROLE, init.admin);
 
         _grantRole(FEE_RECEIVER, init.feeReceiver);
-        // if (init.whitelistModule != address(0)) {
-        //     _grantRole(WHITELISTED, init.feeReceiver);
-        //     _grantRole(WHITELISTED, init.dao);
-        //     _grantRole(WHITELISTED, init.assetManager);
-        //     _grantRole(WHITELISTED, init.valorization);
-        //     _grantRole(WHITELISTED, init.admin);
-        //     _grantRole(WHITELISTED, pendingSilo());
-        //     _grantRole(WHITELISTED, claimableSilo());
-        //     _grantRole(WHITELISTED, address(0));
-        //     for (uint256 i = 0; i < init.whitelist.length; i++) {
-        //         _grantRole(WHITELISTED, init.whitelist[i]);
-        //     }
-        // }
     }
 
     function _update(
         address from,
         address to,
         uint256 value
-    )
-        internal
-        virtual
-        override(ERC7540Upgradeable, ERC20Upgradeable)
-        onlyWhitelisted(to)
-    {
+    ) internal virtual override(ERC7540Upgradeable, ERC20Upgradeable) {
+        return _update(from, to, value, "");
+    }
+
+    function _update(
+        address from,
+        address to,
+        uint256 value,
+        bytes memory data // abi encoded merkle proof expected (bytes32[])
+    ) internal virtual onlyWhitelisted(to, data) {
         return ERC20PausableUpgradeable._update(from, to, value);
     }
 
@@ -149,7 +140,25 @@ contract Vault is
         uint256 assets,
         address controller,
         address owner
-    ) public override onlyWhitelisted(controller) returns (uint256) {
+    ) public override returns (uint256) {
+        return _requestDeposit(assets, controller, owner, "");
+    }
+
+    function requestDeposit(
+        uint256 assets,
+        address controller,
+        address owner,
+        bytes calldata data // abi encoded merkle proof expected (bytes32[])
+    ) public returns (uint256) {
+        return _requestDeposit(assets, controller, owner, data);
+    }
+
+    function _requestDeposit(
+        uint256 assets,
+        address controller,
+        address owner,
+        bytes memory data
+    ) internal onlyWhitelisted(controller, data) returns (uint256) {
         return super.requestDeposit(assets, controller, owner);
     }
 
