@@ -198,6 +198,6 @@ abstract contract Constants is Test {
         }
         vm.label(address(vault), vaultName);
         vm.label(vault.pendingSilo(), "vault.pendingSilo");
-        vm.label(vault.claimableSilo(), "vault.claimableSilo");
+        // vm.label(vault.claimableSilo(), "vault.claimableSilo");
     }
 }
