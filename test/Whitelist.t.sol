@@ -9,8 +9,15 @@ import {BaseTest} from "./Base.sol";
 
 contract TestWhitelist is BaseTest {
     function setUp() public {
+        whitelistInit.push(user5.addr);
         setUpVault(0, 0, 0);
         dealAndApprove(user1.addr);
+    }
+
+    function test_whitelistInitListMembersShouldBeWhitelisted() public view {
+        for (uint256 i; i < whitelistInit.length; i++) {
+            assertTrue(vault.isWhitelisted(whitelistInit[i]));
+        }
     }
 
     function test_requestDeposit_ShouldFailWhenControllerNotWhitelisted()
