@@ -64,6 +64,7 @@ abstract contract Constants is Test {
     VmSafe.Wallet[] users;
 
     address[] whitelistInit = new address[](0);
+    bool enableWhitelist = true;
 
     // Wallet
     VmSafe.Wallet address0 =
@@ -114,7 +115,6 @@ abstract contract Constants is Test {
         uint256 _managementRate,
         uint256 _performanceRate
     ) internal returns (VaultHelper) {
-        bool enableWhitelist = true;
         address[] memory whitelist = new address[](0);
 
         Vault.InitStruct memory v = Vault.InitStruct({
@@ -173,7 +173,6 @@ abstract contract Constants is Test {
             );
         } else {
             vm.startPrank(owner.addr);
-            bool enableWhitelist = true;
 
             vault = new VaultHelper(false);
 

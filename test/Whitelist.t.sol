@@ -8,21 +8,33 @@ import {NotWhitelisted} from "@src/Whitelistable.sol";
 import {BaseTest} from "./Base.sol";
 
 contract TestWhitelist is BaseTest {
-    function setUp() public {
+    function withWhitelistSetUp() public {
         whitelistInit.push(user5.addr);
         setUpVault(0, 0, 0);
-        dealAndApprove(user1.addr);
-    }
-
-    function test_whitelistInitListMembersShouldBeWhitelisted() public view {
         for (uint256 i; i < whitelistInit.length; i++) {
             assertTrue(vault.isWhitelisted(whitelistInit[i]));
         }
+        dealAndApprove(user1.addr);
+    }
+
+    function withoutWhitelistSetUp() public {
+        whitelistInit.push(user5.addr);
+        enableWhitelist = false;
+        setUpVault(0, 0, 0);
+        for (uint256 i; i < whitelistInit.length; i++) {
+            assertFalse(vault.isWhitelisted(whitelistInit[i]));
+        }
+        dealAndApprove(user1.addr);
+    }
+
+    function test_whitelistInitListMembersShouldBeWhitelisted() public {
+        withWhitelistSetUp();
     }
 
     function test_requestDeposit_ShouldFailWhenControllerNotWhitelisted()
         public
     {
+        withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
         vm.startPrank(user1.addr);
         vm.expectRevert(
@@ -34,6 +46,7 @@ contract TestWhitelist is BaseTest {
     function test_requestDeposit_ShouldFailWhenControllerNotWhitelistedandOperatorAndOwnerAre()
         public
     {
+        withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
         whitelist(user1.addr);
         address controller = user2.addr;
@@ -47,6 +60,7 @@ contract TestWhitelist is BaseTest {
     }
 
     function test_requestDeposit_WhenControllerWhitelisted() public {
+        withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
         whitelist(user2.addr);
         address controller = user2.addr;
@@ -56,6 +70,7 @@ contract TestWhitelist is BaseTest {
     }
 
     function test_deposit_ShouldFailWhenReceiverNotWhitelisted() public {
+        withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
         whitelist(user1.addr);
         requestDeposit(userBalance, user1.addr);
@@ -70,6 +85,7 @@ contract TestWhitelist is BaseTest {
     }
 
     function test_transfer_ShouldFailWhenReceiverNotWhitelisted() public {
+        withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
         whitelist(user1.addr);
         requestDeposit(userBalance, user1.addr);
@@ -87,6 +103,7 @@ contract TestWhitelist is BaseTest {
     function test_transfer_WhenReceiverNotWhitelistedAfterDeactivateOfWhitelisting()
         public
     {
+        withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
         whitelist(user1.addr);
         requestDeposit(userBalance, user1.addr);
@@ -103,6 +120,7 @@ contract TestWhitelist is BaseTest {
     }
 
     function test_transfer_ShouldWorkWhenReceiverWhitelisted() public {
+        withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
         whitelist(user1.addr);
         requestDeposit(userBalance, user1.addr);
@@ -116,11 +134,13 @@ contract TestWhitelist is BaseTest {
     }
 
     function test_whitelist() public {
+        withWhitelistSetUp();
         whitelist(user1.addr);
         assertEq(vault.isWhitelisted(user1.addr), true);
     }
 
     function test_whitelistList() public {
+        withWhitelistSetUp();
         address[] memory users = new address[](2);
         users[0] = user1.addr;
         users[1] = user2.addr;
@@ -129,6 +149,7 @@ contract TestWhitelist is BaseTest {
     }
 
     function test_unwhitelistList() public {
+        withWhitelistSetUp();
         address[] memory users = new address[](2);
         users[0] = user1.addr;
         users[1] = user2.addr;
@@ -138,5 +159,10 @@ contract TestWhitelist is BaseTest {
         assertEq(vault.isWhitelisted(user1.addr), false);
         unwhitelist(users[1]);
         assertEq(vault.isWhitelisted(user2.addr), false);
+    }
+
+    function test_noWhitelist() public {
+        withoutWhitelistSetUp();
+        requestDeposit(1, user1.addr);
     }
 }
