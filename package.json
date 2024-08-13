@@ -6,6 +6,7 @@
 		"prepare": "husky"
 	},
 	"dependencies": {
+		"@openzeppelin/merkle-tree": "^1.0.7",
 		"solhint": "^5.0.1"
 	}
 }

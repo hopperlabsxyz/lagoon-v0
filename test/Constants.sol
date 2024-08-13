@@ -203,6 +203,15 @@ abstract contract Constants is Test {
             vm.stopPrank();
         }
 
+        // console.log(feeReceiver.addr);
+        // console.log(dao.addr);
+        // console.log(assetManager.addr);
+        // console.log(whitelistManager.addr);
+        // console.log(valorizator.addr);
+        // console.log(admin.addr);
+        // console.log(vault.pendingSilo());
+        // console.log(address(0));
+
         vm.label(address(vault), vaultName);
         vm.label(vault.pendingSilo(), "vault.pendingSilo");
         // vm.label(vault.claimableSilo(), "vault.claimableSilo");
