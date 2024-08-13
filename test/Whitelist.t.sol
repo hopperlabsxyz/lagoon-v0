@@ -27,7 +27,9 @@ contract TestWhitelist is BaseTest {
         dealAndApprove(user1.addr);
     }
 
-    function test_whitelistInitListMembersShouldBeWhitelisted() public {
+    function test_whitelistInitListMembersShouldBeWhitelisted_MerkleTree()
+        public
+    {
         withWhitelistSetUp();
     }
 
