@@ -52,7 +52,7 @@ abstract contract ERC7540Upgradeable is
         uint256 depositId;
         uint256 redeemId;
         Silo pendingSilo;
-        Silo claimableSilo;
+        // Silo claimableSilo;
         mapping(uint256 epochId => EpochData epoch) epochs;
         mapping(address user => uint256 epochId) lastDepositRequestId;
         mapping(address user => uint256 epochId) lastRedeemRequestId;
@@ -78,7 +78,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
         $.depositId = 1;
         $.redeemId = 2;
-        $.claimableSilo = new Silo(underlying);
+        // $.claimableSilo = new Silo(underlying);
         $.pendingSilo = new Silo(underlying);
     }
 
@@ -292,7 +292,7 @@ abstract contract ERC7540Upgradeable is
 
         $.epochs[requestId].depositRequest[controller] -= assets;
         shares = convertToShares(assets, requestId);
-        _update(address($.claimableSilo), receiver, shares);
+        _update(address(this), receiver, shares);
         emit Deposit(controller, receiver, assets, shares);
         return shares;
     }
@@ -326,7 +326,7 @@ abstract contract ERC7540Upgradeable is
         assets = convertToAssets(shares, requestId);
 
         $.epochs[requestId].depositRequest[controller] -= assets;
-        _update(address($.claimableSilo), receiver, shares);
+        _update(address(this), receiver, shares);
         emit Deposit(controller, receiver, assets, shares);
         return assets;
     }
@@ -421,11 +421,7 @@ abstract contract ERC7540Upgradeable is
 
         $.epochs[requestId].redeemRequest[controller] -= shares;
         assets = convertToAssets(shares, requestId);
-        IERC20(asset()).safeTransferFrom(
-            address($.claimableSilo),
-            receiver,
-            assets
-        );
+        IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
         return assets;
@@ -458,11 +454,7 @@ abstract contract ERC7540Upgradeable is
         shares = convertToShares(assets, requestId);
         $.epochs[requestId].redeemRequest[controller] -= shares;
 
-        IERC20(asset()).safeTransferFrom(
-            address($.claimableSilo),
-            receiver,
-            assets
-        );
+        IERC20(asset()).safeTransfer(receiver, assets);
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
         return shares;
     }
@@ -534,10 +526,10 @@ abstract contract ERC7540Upgradeable is
         return address($.pendingSilo);
     }
 
-    function claimableSilo() public view returns (address) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        return address($.claimableSilo);
-    }
+    // function claimableSilo() public view returns (address) {
+    //     ERC7540Storage storage $ = _getERC7540Storage();
+    //     return address($.claimableSilo);
+    // }
 
     function redeemId() public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();

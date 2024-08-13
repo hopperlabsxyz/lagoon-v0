@@ -118,8 +118,7 @@ contract BaseTest is Test, Constants {
     }
 
     function redeem(uint256 amount, address user) internal returns (uint256) {
-        vm.prank(user);
-        return vault.redeem(amount, user, user);
+        return redeem(amount, user, user, user);
     }
 
     function redeem(
@@ -128,13 +127,33 @@ contract BaseTest is Test, Constants {
         address operator,
         address receiver
     ) internal returns (uint256) {
+        uint256 assetsBeforeReceiver = assetBalance(receiver);
+        uint256 assetsBeforeController = assetBalance(controller);
+        uint256 assetsBeforeOperator = assetBalance(operator);
         vm.prank(operator);
-        return vault.redeem(amount, receiver, controller);
+        uint256 assets = vault.redeem(amount, receiver, controller);
+        assertEq(
+            assetsBeforeReceiver + assets,
+            assetBalance(receiver),
+            "Receiver assets balance did not increase properly"
+        );
+        if (controller != receiver)
+            assertEq(
+                assetsBeforeController,
+                assetBalance(controller),
+                "Controller assets balance should remain the same after redeem"
+            );
+        if (operator != receiver)
+            assertEq(
+                assetsBeforeOperator,
+                assetBalance(operator),
+                "Operator assets balance should remain the same after redeem"
+            );
+        return assets;
     }
 
     function withdraw(uint256 amount, address user) internal returns (uint256) {
-        vm.prank(user);
-        return vault.withdraw(amount, user, user);
+        return withdraw(amount, user, user, user);
     }
 
     function withdraw(
@@ -143,8 +162,29 @@ contract BaseTest is Test, Constants {
         address operator,
         address receiver
     ) internal returns (uint256) {
+        uint256 assetsBeforeReceiver = assetBalance(receiver);
+        uint256 assetsBeforeController = assetBalance(controller);
+        uint256 assetsBeforeOperator = assetBalance(operator);
         vm.prank(operator);
-        return vault.withdraw(amount, receiver, controller);
+        uint256 shares = vault.withdraw(amount, receiver, controller);
+        assertEq(
+            assetsBeforeReceiver + amount,
+            assetBalance(receiver),
+            "Receiver assets balance did not increase properly"
+        );
+        if (controller != receiver)
+            assertEq(
+                assetsBeforeController,
+                assetBalance(controller),
+                "Controller assets balance should remain the same after redeem"
+            );
+        if (operator != receiver)
+            assertEq(
+                assetsBeforeOperator,
+                assetBalance(operator),
+                "Operator assets balance should remain the same after redeem"
+            );
+        return shares;
     }
 
     function updateTotalAssets(uint256 newTotalAssets) internal {

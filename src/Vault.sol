@@ -112,7 +112,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
             $whitelistStorage.isWhitelisted[init.valorization] = true;
             $whitelistStorage.isWhitelisted[init.admin] = true;
             $whitelistStorage.isWhitelisted[pendingSilo()] = true;
-            $whitelistStorage.isWhitelisted[claimableSilo()] = true;
             $whitelistStorage.isWhitelisted[address(0)] = true;
             for (uint256 i = 0; i < init.whitelist.length; i++) {
                 $whitelistStorage.isWhitelisted[init.whitelist[i]] = true;
@@ -329,7 +328,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         epoch.totalSupply = totalSupply();
 
         uint256 shares = _convertToShares(pendingAssets, Math.Rounding.Floor);
-        _mint(claimableSilo(), shares);
+        _mint(address(this), shares);
         _totalAssets += pendingAssets;
         $erc7540.totalAssets = _totalAssets;
         // We must not take into account new assets into next fee calculation
@@ -386,7 +385,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
         IERC20(asset()).safeTransferFrom(
             assetManager,
-            claimableSilo(),
+            address(this),
             assetsToWithdraw
         );
         $erc7540.redeemId += 2;
