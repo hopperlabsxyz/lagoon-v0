@@ -63,6 +63,9 @@ abstract contract Constants is Test {
 
     VmSafe.Wallet[] users;
 
+    address[] whitelistInit = new address[](0);
+    bool enableWhitelist = true;
+
     // Wallet
     VmSafe.Wallet address0 =
         VmSafe.Wallet({
@@ -111,7 +114,6 @@ abstract contract Constants is Test {
         string memory _vaultSymbol,
         uint256 _managementRate,
         uint256 _performanceRate,
-        bool enableWhitelist,
         address[] memory whitelist
     ) internal returns (VaultHelper) {
         Vault.InitStruct memory v = Vault.InitStruct({
@@ -155,7 +157,6 @@ abstract contract Constants is Test {
         feeRegistry.initialize(dao.addr);
 
         feeModule = new FeeModule();
-        bool enableWhitelist = true;
         address[] memory whitelist = new address[](0);
 
         vm.prank(dao.addr);
@@ -171,7 +172,6 @@ abstract contract Constants is Test {
                 vaultSymbol,
                 _managementRate,
                 _performanceRate,
-                enableWhitelist,
                 whitelist
             );
         } else {
@@ -194,7 +194,7 @@ abstract contract Constants is Test {
                 performanceRate: _performanceRate,
                 cooldown: 1 days,
                 enableWhitelist: enableWhitelist,
-                whitelist: whitelist
+                whitelist: whitelistInit
             });
             vault.initialize(v);
             vm.stopPrank();
@@ -202,6 +202,6 @@ abstract contract Constants is Test {
 
         vm.label(address(vault), vaultName);
         vm.label(vault.pendingSilo(), "vault.pendingSilo");
-        vm.label(vault.claimableSilo(), "vault.claimableSilo");
+        // vm.label(vault.claimableSilo(), "vault.claimableSilo");
     }
 }

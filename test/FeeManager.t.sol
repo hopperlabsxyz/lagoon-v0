@@ -85,7 +85,7 @@ contract TestFeeManager is BaseTest {
             "Amount of shares did not increase properly"
         );
         assertEq(
-            vault.balanceOf(vault.claimableSilo()),
+            vault.balanceOf(address(vault)),
             userBalance,
             "Wrong amount of shares available in claimable silo"
         );
@@ -178,7 +178,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), expectedHighWaterMark);
         assertEq(
             vault.totalSupply() -
-                vault.balanceOf(vault.claimableSilo()) -
+                vault.balanceOf(address(vault)) -
                 managerShares -
                 daoShares,
             expectedTotalNewShares
@@ -221,7 +221,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), expectedHighWaterMark);
         assertEq(
             vault.totalSupply() -
-                vault.balanceOf(vault.claimableSilo()) -
+                vault.balanceOf(address(vault)) -
                 managerShares -
                 daoShares,
             expectedTotalNewShares
@@ -264,7 +264,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), expectedHighWaterMark);
         assertEq(
             vault.totalSupply() -
-                vault.balanceOf(vault.claimableSilo()) -
+                vault.balanceOf(address(vault)) -
                 managerShares -
                 daoShares,
             expectedTotalNewShares
@@ -307,7 +307,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), expectedHighWaterMark);
         assertEq(
             vault.totalSupply() -
-                vault.balanceOf(vault.claimableSilo()) -
+                vault.balanceOf(address(vault)) -
                 managerShares -
                 daoShares,
             expectedTotalNewShares
@@ -354,7 +354,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), expectedHighWaterMark);
         assertEq(
             vault.totalSupply() -
-                vault.balanceOf(vault.claimableSilo()) -
+                vault.balanceOf(address(vault)) -
                 vault.balanceOf(user1.addr) -
                 managerShares -
                 daoShares,

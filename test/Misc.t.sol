@@ -77,13 +77,4 @@ contract TestMisc is BaseTest {
             underlying.allowance(pendingSilo, address(vault))
         );
     }
-
-    function test_claimableSilo() public view {
-        address claimableSilo = vault.claimableSilo();
-        assertNotEq(claimableSilo, address(0));
-        assertEq(
-            type(uint256).max,
-            underlying.allowance(claimableSilo, address(vault))
-        );
-    }
 }
