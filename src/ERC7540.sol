@@ -274,7 +274,7 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address receiver,
         address controller
-    ) external onlyOperator(controller) returns (uint256) {
+    ) external virtual onlyOperator(controller) returns (uint256) {
         return _deposit(assets, receiver, controller);
     }
 
@@ -308,7 +308,7 @@ abstract contract ERC7540Upgradeable is
         uint256 shares,
         address receiver,
         address controller
-    ) external onlyOperator(controller) returns (uint256) {
+    ) external virtual onlyOperator(controller) returns (uint256) {
         return _mint(shares, receiver, controller);
     }
 
@@ -346,7 +346,7 @@ abstract contract ERC7540Upgradeable is
         uint256 shares,
         address controller,
         address owner
-    ) external returns (uint256) {
+    ) public virtual returns (uint256) {
         if (_msgSender() != owner && !isOperator(owner, _msgSender()))
             _spendAllowance(owner, _msgSender(), shares);
 

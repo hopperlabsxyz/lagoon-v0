@@ -14,6 +14,7 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {Whitelistable, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
+import {WhitelistableStorage} from "./Whitelistable.sol";
 // import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
@@ -31,13 +32,7 @@ error CooldownNotOver();
 error AssetManagerNotSet();
 
 /// @custom:oz-upgrades-from VaultV2
-contract Vault is
-    ERC7540Upgradeable,
-    ERC20BurnableUpgradeable,
-    ERC20PermitUpgradeable,
-    Whitelistable,
-    FeeManager
-{
+contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     struct InitStruct {
         IERC20 underlying;
         string name;
@@ -52,7 +47,8 @@ contract Vault is
         uint256 managementRate;
         uint256 performanceRate;
         uint256 cooldown;
-        address whitelistModule;
+        bool enableWhitelist;
+        address[] whitelist;
     }
 
     /// @custom:storage-location erc7201:hopper.storage.vault
@@ -82,7 +78,6 @@ contract Vault is
     function initialize(InitStruct memory init) public virtual initializer {
         __ERC4626_init(init.underlying);
         __ERC20_init(init.name, init.symbol);
-        __ERC20Permit_init(init.name);
         __ERC20Pausable_init();
         __FeeManager_init(
             init.feeModule,
@@ -91,7 +86,7 @@ contract Vault is
             init.performanceRate
         );
         __ERC7540_init(init.underlying);
-        __Whitelistable_init(init.whitelistModule);
+        __Whitelistable_init(init.enableWhitelist);
 
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = init.cooldown;
@@ -108,39 +103,28 @@ contract Vault is
         _grantRole(DEFAULT_ADMIN_ROLE, init.admin);
 
         _grantRole(FEE_RECEIVER, init.feeReceiver);
-    }
-
-    function _update(
-        address from,
-        address to,
-        uint256 value
-    ) internal virtual override(ERC7540Upgradeable, ERC20Upgradeable) {
-        return _update(from, to, value, "");
-    }
-
-    function _update(
-        address from,
-        address to,
-        uint256 value,
-        bytes memory data // abi encoded merkle proof expected (bytes32[])
-    ) internal virtual onlyWhitelisted(to, data) {
-        return ERC20PausableUpgradeable._update(from, to, value);
-    }
-
-    function decimals()
-        public
-        view
-        override(ERC20Upgradeable, ERC7540Upgradeable)
-        returns (uint8)
-    {
-        return ERC4626Upgradeable.decimals();
+        if (init.enableWhitelist) {
+            WhitelistableStorage
+                storage $whitelistStorage = _getWhitelistableStorage();
+            $whitelistStorage.isWhitelisted[init.feeReceiver] = true;
+            $whitelistStorage.isWhitelisted[init.dao] = true;
+            $whitelistStorage.isWhitelisted[init.assetManager] = true;
+            $whitelistStorage.isWhitelisted[init.valorization] = true;
+            $whitelistStorage.isWhitelisted[init.admin] = true;
+            $whitelistStorage.isWhitelisted[pendingSilo()] = true;
+            $whitelistStorage.isWhitelisted[claimableSilo()] = true;
+            $whitelistStorage.isWhitelisted[address(0)] = true;
+            for (uint256 i = 0; i < init.whitelist.length; i++) {
+                $whitelistStorage.isWhitelisted[init.whitelist[i]] = true;
+            }
+        }
     }
 
     function requestDeposit(
         uint256 assets,
         address controller,
         address owner
-    ) public override returns (uint256) {
+    ) public override(ERC7540Upgradeable) returns (uint256) {
         return _requestDeposit(assets, controller, owner, "");
     }
 
@@ -161,6 +145,124 @@ contract Vault is
     ) internal onlyWhitelisted(controller, data) returns (uint256) {
         return super.requestDeposit(assets, controller, owner);
     }
+
+    function deposit(
+        uint256 assets,
+        address receiver,
+        address controller
+    )
+        external
+        override(ERC7540Upgradeable)
+        onlyOperator(controller)
+        returns (uint256)
+    {
+        return _deposit(assets, receiver, controller, "");
+    }
+
+    function deposit(
+        uint256 assets,
+        address receiver,
+        address controller,
+        bytes calldata data
+    ) external onlyOperator(controller) returns (uint256) {
+        return _deposit(assets, receiver, controller, data);
+    }
+
+    function deposit(
+        uint256 assets,
+        address receiver
+    ) public override(ERC7540Upgradeable) returns (uint256) {
+        return _deposit(assets, receiver, _msgSender(), "");
+    }
+
+    function deposit(
+        uint256 assets,
+        address receiver,
+        bytes calldata data
+    ) public returns (uint256) {
+        return _deposit(assets, receiver, _msgSender(), data);
+    }
+
+    function _deposit(
+        uint256 assets,
+        address receiver,
+        address controller,
+        bytes memory data // abi encoded merkle proof expected (bytes32[])
+    ) internal onlyWhitelisted(receiver, data) returns (uint256 shares) {
+        return super._deposit(assets, receiver, controller);
+    }
+
+    function mint(
+        uint256 shares,
+        address receiver
+    ) public override(ERC7540Upgradeable) returns (uint256) {
+        return _mint(shares, receiver, _msgSender(), "");
+    }
+
+    function mint(
+        uint256 shares,
+        address receiver,
+        bytes calldata data
+    ) public returns (uint256) {
+        return _mint(shares, receiver, _msgSender(), data);
+    }
+
+    function mint(
+        uint256 shares,
+        address receiver,
+        address controller
+    )
+        external
+        override(ERC7540Upgradeable)
+        onlyOperator(controller)
+        returns (uint256)
+    {
+        return _mint(shares, receiver, controller, "");
+    }
+
+    function mint(
+        uint256 shares,
+        address receiver,
+        address controller,
+        bytes calldata data
+    ) external onlyOperator(controller) returns (uint256) {
+        return _mint(shares, receiver, controller, data);
+    }
+
+    function _mint(
+        uint256 shares,
+        address receiver,
+        address controller,
+        bytes memory data // abi encoded merkle proof expected (bytes32[])
+    ) internal onlyWhitelisted(receiver, data) returns (uint256 assets) {
+        return super._mint(shares, receiver, controller);
+    }
+
+    // function requestRedeem(
+    //     uint256 shares,
+    //     address controller,
+    //     address owner
+    // ) public override(ERC7540Upgradeable) returns (uint256) {
+    //     return _requestRedeem(shares, controller, owner, "");
+    // }
+
+    // function requestRedeem(
+    //     uint256 shares,
+    //     address controller,
+    //     address owner,
+    //     bytes calldata data
+    // ) external returns (uint256) {
+    //     return _requestRedeem(shares, controller, owner, data);
+    // }
+
+    // function _requestRedeem(
+    //     uint256 shares,
+    //     address controller,
+    //     address owner,
+    //     bytes memory data
+    // ) internal onlyWhitelisted(controller, data) returns (uint256) {
+    //     return super.requestRedeem(shares, controller, owner);
+    // }
 
     function updateTotalAssets(
         uint256 _newTotalAssets
