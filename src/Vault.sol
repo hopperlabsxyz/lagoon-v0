@@ -11,7 +11,7 @@ import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {Whitelistable, WHITELISTED} from "./Whitelistable.sol";
+import {Whitelistable, WHITELISTED, WHITELIST_MANAGER_ROLE} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
 import {WhitelistableStorage} from "./Whitelistable.sol";
@@ -39,6 +39,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         string symbol;
         address dao;
         address assetManager;
+        address whitelistManager;
         address valorization;
         address admin;
         address feeReceiver;
@@ -57,6 +58,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 newTotalAssetsTimestamp;
         uint256 newTotalAssetsCooldown;
     }
+
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant vaultStorage =
@@ -96,6 +98,9 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
         _grantRole(ASSET_MANAGER_ROLE, init.assetManager);
         _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+
+        _grantRole(WHITELIST_MANAGER_ROLE, init.whitelistManager);
+        _setRoleAdmin(WHITELIST_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
 
         _grantRole(VALORIZATION_ROLE, init.valorization);
         _setRoleAdmin(VALORIZATION_ROLE, DEFAULT_ADMIN_ROLE);
@@ -418,6 +423,10 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
     function valorizationRole() public view returns (address) {
         return getRoleMember(VALORIZATION_ROLE, 0);
+    }
+
+    function whitelistManagerRole() public view returns (address) {
+        return getRoleMember(WHITELIST_MANAGER_ROLE, 0);
     }
 
     function grantRole(

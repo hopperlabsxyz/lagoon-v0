@@ -6,8 +6,6 @@ import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProo
 import {IWhitelistModule} from "./interfaces/IWhitelistModule.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-bytes32 constant WHITELISTED = keccak256("WHITELISTED");
-
 // errors
 error NotWhitelisted(address account);
 error MerkleTreeMode();
@@ -23,6 +21,9 @@ struct WhitelistableStorage {
     mapping(address => bool) isWhitelisted;
     bool isActivated;
 }
+
+bytes32 constant WHITELIST_MANAGER_ROLE = keccak256("WHITELIST_MANAGER_ROLE");
+bytes32 constant WHITELISTED = keccak256("WHITELISTED");
 
 contract Whitelistable is AccessControlEnumerableUpgradeable {
 
@@ -53,7 +54,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         return $.isActivated;
     }
 
-    function deactivateWhitelist() public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function deactivateWhitelist() public onlyRole(WHITELIST_MANAGER_ROLE) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         $.isActivated = false;
     }
@@ -80,7 +81,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         return MerkleProof.verify(proof, $.root, leaf);
     }
 
-    function setRoot(bytes32 root) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setRoot(bytes32 root) external onlyRole(WHITELIST_MANAGER_ROLE) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
         $.root = root;
@@ -92,7 +93,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
      **/
     function addToWhitelist(
         address account
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(WHITELIST_MANAGER_ROLE) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
         require($.root == 0 /*, MerkleTreeMode() */);
@@ -106,7 +107,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
      **/
     function addToWhitelist(
         address[] memory accounts
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(WHITELIST_MANAGER_ROLE) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
         require($.root == 0 /*, MerkleTreeMode() */);
@@ -122,7 +123,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
      **/
     function revokeFromWhitelist(
         address account
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(WHITELIST_MANAGER_ROLE) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
         require($.root == 0 /*, MerkleTreeMode() */);
@@ -136,7 +137,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
      **/
     function revokeFromWhitelist(
         address[] memory accounts
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(WHITELIST_MANAGER_ROLE) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
         require($.root == 0 /*, MerkleTreeMode() */);
