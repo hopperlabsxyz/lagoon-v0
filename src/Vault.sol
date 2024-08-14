@@ -130,7 +130,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address controller,
         address owner
     ) public override(ERC7540Upgradeable) returns (uint256) {
-        return _requestDeposit(assets, controller, owner, "");
+        return _requestDeposit(assets, controller, owner, abi.encode(""));
     }
 
     function requestDeposit(
@@ -161,7 +161,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         onlyOperator(controller)
         returns (uint256)
     {
-        return _deposit(assets, receiver, controller, "");
+        return _deposit(assets, receiver, controller, abi.encode(""));
     }
 
     function deposit(
@@ -177,7 +177,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 assets,
         address receiver
     ) public override(ERC7540Upgradeable) returns (uint256) {
-        return _deposit(assets, receiver, _msgSender(), "");
+        return _deposit(assets, receiver, _msgSender(), abi.encode(""));
     }
 
     function deposit(
@@ -201,7 +201,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 shares,
         address receiver
     ) public override(ERC7540Upgradeable) returns (uint256) {
-        return _mint(shares, receiver, _msgSender(), "");
+        return _mint(shares, receiver, _msgSender(), abi.encode(""));
     }
 
     function mint(
@@ -222,7 +222,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         onlyOperator(controller)
         returns (uint256)
     {
-        return _mint(shares, receiver, controller, "");
+        return _mint(shares, receiver, controller, abi.encode(""));
     }
 
     function mint(

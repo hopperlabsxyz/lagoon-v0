@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import "forge-std/Test.sol";
 import {Vault} from "@src/Vault.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {NotWhitelisted} from "@src/Whitelistable.sol";
 import {BaseTest} from "./Base.sol";
@@ -19,20 +20,23 @@ struct Commit {
     bytes32 root;
 }
 
+// Add whitelist here after adding it to proofs/config.json
 struct Config {
-    address[][] accounts;
+    address[][] whitelist_0; // default whitelist (dw)
+    address[][] whitelist_1; // dw + user1
+    address[][] whitelist_2; // dw + user2
 }
 
 contract TestMerkleTreeWhitelist is BaseTest {
     bytes proofsData;
     bytes configData;
 
-    bytes32 root;
-    mapping(address account => Proof) proofs;
-
-    address[] accounts;
-
-    function setUp() public {
+    function loadConfig(
+        uint256 id
+    )
+        public
+        returns (bytes32 root, Proof[] memory proofs, address[] memory accounts)
+    {
         string memory rootPath = vm.projectRoot();
 
         // Loading config
@@ -43,28 +47,52 @@ contract TestMerkleTreeWhitelist is BaseTest {
         string memory json = vm.readFile(path);
         configData = vm.parseJson(json);
         Config memory config = abi.decode(configData, (Config));
-        for (uint256 i; i < config.accounts.length; i++) {
-            accounts.push(config.accounts[i][0]);
+
+        address[][] memory whitelist;
+        if (id == 0) {
+            whitelist = config.whitelist_0;
+        } else if (id == 1) {
+            whitelist = config.whitelist_1;
+        }
+
+        accounts = new address[](whitelist.length);
+        for (uint256 i; i < whitelist.length; i++) {
+            accounts[i] = whitelist[i][0];
         }
 
         // Loading proofs
-        path = string.concat(rootPath, "/test/proofs/output/proofs.json");
+        path = string.concat(
+            rootPath,
+            "/test/proofs/output/proofs_",
+            Strings.toString(id),
+            ".json"
+        );
         json = vm.readFile(path);
         proofsData = vm.parseJson(json);
         Commit memory commit = abi.decode(proofsData, (Commit));
-
+        proofs = commit.proofs;
         root = commit.root;
-        for (uint256 i; i < commit.proofs.length; i++) {
-            address account = commit.proofs[i].account;
-            bytes32[] memory proof = commit.proofs[i].proof;
-            proofs[account].account = account;
-            for (uint256 j; j < proof.length; j++) {
-                proofs[account].proof.push(proof[j]);
-            }
-        }
     }
 
-    function withWhitelistSetUp() public {
+    function findProof(
+        address account,
+        Proof[] memory proofs
+    ) internal pure returns (Proof memory proof, bool found) {
+        for (uint256 i; i < proofs.length; i++) {
+            if (proofs[i].account == account) {
+                return (proofs[i], true);
+            }
+        }
+        return (Proof(address(0), new bytes32[](0)), false);
+    }
+
+    function withWhitelistSetUp(
+        uint256 whitelistId
+    )
+        public
+        returns (bytes32 root, Proof[] memory proofs, address[] memory accounts)
+    {
+        (root, proofs, accounts) = loadConfig(whitelistId);
         setUpVault(0, 0, 0);
         vm.prank(vault.whitelistManagerRole());
         vault.setRoot(root);
@@ -72,9 +100,9 @@ contract TestMerkleTreeWhitelist is BaseTest {
         uint256 len = accounts.length;
 
         for (uint256 i; i < len; i++) {
-            Proof memory proof = proofs[accounts[i]];
+            assertEq(proofs[i].account, accounts[i]);
             assertTrue(
-                vault.isWhitelisted(proof.account, abi.encode(proof.proof))
+                vault.isWhitelisted(accounts[i], abi.encode(proofs[i].proof))
             );
         }
         dealAndApprove(user1.addr);
@@ -90,52 +118,66 @@ contract TestMerkleTreeWhitelist is BaseTest {
     }
 
     function test_whitelistInitListMembersShouldBeWhitelisted() public {
-        withWhitelistSetUp();
+        withWhitelistSetUp(0);
     }
 
     function test_requestDeposit_ShouldFailWhenControllerNotWhitelisted()
         public
     {
-        withWhitelistSetUp();
+        (, Proof[] memory proofs, ) = withWhitelistSetUp(0); // user1.addr is NOT whitelisted
+
+        (Proof memory proof, bool found) = findProof(user1.addr, proofs);
+        assertEq(
+            found,
+            false,
+            "Proof was found but we expect it not to be found"
+        );
 
         uint256 userBalance = assetBalance(user1.addr);
         vm.startPrank(user1.addr);
         vm.expectRevert(
             abi.encodeWithSelector(NotWhitelisted.selector, user1.addr)
         );
+
         vault.requestDeposit(
             userBalance,
             user1.addr,
             user1.addr,
-            abi.encode(proofs[user1.addr].proof)
+            abi.encode(proof.proof)
         );
     }
 
-    // function test_requestDeposit_ShouldFailWhenControllerNotWhitelistedandOperatorAndOwnerAre()
-    //     public
-    // {
-    //     withWhitelistSetUp();
-    //     uint256 userBalance = assetBalance(user1.addr);
-    //     whitelist(user1.addr);
-    //     address controller = user2.addr;
-    //     address operator = user1.addr;
-    //     address owner = user1.addr;
-    //     vm.startPrank(operator);
-    //     vm.expectRevert(
-    //         abi.encodeWithSelector(NotWhitelisted.selector, controller)
-    //     );
-    //     vault.requestDeposit(userBalance, controller, owner);
-    // }
+    function test_requestDeposit_ShouldFailWhenControllerNotWhitelistedandOperatorAndOwnerAre()
+        public
+    {
+        withWhitelistSetUp(1); // user1.addr is whitelisted
+        uint256 userBalance = assetBalance(user1.addr);
+        address controller = user2.addr;
+        address operator = user1.addr;
+        address owner = user1.addr;
+        vm.startPrank(operator);
+        vm.expectRevert(
+            abi.encodeWithSelector(NotWhitelisted.selector, controller)
+        );
+        vault.requestDeposit(userBalance, controller, owner);
+    }
 
-    // function test_requestDeposit_WhenControllerWhitelisted() public {
-    //     withWhitelistSetUp();
-    //     uint256 userBalance = assetBalance(user1.addr);
-    //     whitelist(user2.addr);
-    //     address controller = user2.addr;
-    //     address operator = user1.addr;
-    //     address owner = user1.addr;
-    //     requestDeposit(userBalance, controller, operator, owner);
-    // }
+    function test_requestDeposit_WhenControllerWhitelisted2() public {
+        (, Proof[] memory proofs, ) = withWhitelistSetUp(2); // user2.addr is whitelisted
+        (Proof memory proof, bool found) = findProof(user2.addr, proofs);
+        assertEq(found, true, "Should find proof but it didn't");
+        uint256 userBalance = assetBalance(user1.addr);
+        address controller = user2.addr;
+        address operator = user1.addr;
+        address owner = user1.addr;
+        requestDeposit(
+            userBalance,
+            controller,
+            owner,
+            operator,
+            abi.encode(proof.proof)
+        );
+    }
 
     // function test_deposit_ShouldFailWhenReceiverNotWhitelisted() public {
     //     withWhitelistSetUp();

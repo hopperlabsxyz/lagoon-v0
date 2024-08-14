@@ -43,6 +43,35 @@ contract BaseTest is Test, Constants {
 
     function requestDeposit(
         uint256 amount,
+        address controller,
+        address owner,
+        address operator,
+        bytes memory data
+    ) internal returns (uint256) {
+        uint256 requestDepBefore = vault.pendingDeposit();
+        uint256 depositId = vault.depositId();
+        vm.prank(operator);
+        uint256 requestId = vault.requestDeposit(
+            amount,
+            controller,
+            owner,
+            data
+        );
+        assertEq(
+            vault.pendingDeposit(),
+            requestDepBefore + amount,
+            "pendingDeposit value did not increase properly"
+        );
+        assertEq(
+            depositId,
+            requestId,
+            "requestId should be equal to current depositId"
+        );
+        return requestId;
+    }
+
+    function requestDeposit(
+        uint256 amount,
         address user
     ) internal returns (uint256) {
         return requestDeposit(amount, user, user, user);
