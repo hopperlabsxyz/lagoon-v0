@@ -1,4 +1,5 @@
 {
+  "root": "0x2d4a4a77812b41a135553e347ceecc3525a5a32e1bc0f2291bc10d186a847c23",
   "proofs": [
     {
       "account": "0x344ef496b004663a04d70B427a78E33cC3E9f619",
@@ -64,6 +65,5 @@
         "0x65a89c39c203452e60cdc55c3ea219f3e597b6c442327e00a03c5450975acde8"
       ]
     }
-  ],
-  "root": "0x2d4a4a77812b41a135553e347ceecc3525a5a32e1bc0f2291bc10d186a847c23"
+  ]
 }
