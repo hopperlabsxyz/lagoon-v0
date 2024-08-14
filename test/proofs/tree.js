@@ -1,19 +1,19 @@
 const { StandardMerkleTree } = require("@openzeppelin/merkle-tree");
 const fs = require("fs");
 
-// Generate a merkle tree root based on config.json accounts
-// the tree dump is then saved into output/tree.json
+// Generate a merkle trees based on the whitelist config in config.json
 //
-// Once you created your tree root you can run proofs.js to
-// generate all proofs according to each account. Proofs or
-// stored into output/proofs.json
+// Create the whitelist you want in config.json and then run this script
+// It will dump all trees in output folder
+//
+// Then you can run proofs.js which will generate proofs for each account
+// of each whitelist
 
-const treeOutput = "output/tree.json";
+const config = JSON.parse(fs.readFileSync("config.json", "utf8"));
 
-const { accounts } = JSON.parse(fs.readFileSync("config.json", "utf8"));
-
-const tree = StandardMerkleTree.of(accounts, ["address"]);
-
-console.log("Merkle Root:", tree.root);
-
-fs.writeFileSync(treeOutput, JSON.stringify(tree.dump(), null, 2));
+for (const [key, accounts] of Object.entries(config)) {
+  const treeOutput = `output/tree_${key}.json`;
+  const tree = StandardMerkleTree.of(accounts, ["address"]);
+  console.log("Merkle Root:", tree.root);
+  fs.writeFileSync(treeOutput, JSON.stringify(tree.dump(), null, 2));
+}
