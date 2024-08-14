@@ -96,7 +96,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
     ) external onlyRole(WHITELIST_MANAGER_ROLE) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
-        require($.root == 0 /*, MerkleTreeMode() */);
+         require($.root == 0 /*, MerkleTreeMode() */);
 
         $.isWhitelisted[account] = true;
         emit AddedToWhitelist(account);
