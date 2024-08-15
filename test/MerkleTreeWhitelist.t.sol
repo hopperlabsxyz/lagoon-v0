@@ -179,96 +179,129 @@ contract TestMerkleTreeWhitelist is BaseTest {
         );
     }
 
-    // function test_deposit_ShouldFailWhenReceiverNotWhitelisted() public {
-    //     withWhitelistSetUp();
+    function test_deposit_ShouldFailWhenReceiverNotWhitelisted() public {
+        (, Proof[] memory proofs, ) = withWhitelistSetUp(1); // user1.addr is whitelisted
+        (Proof memory proof, bool found) = findProof(user1.addr, proofs);
+        assertEq(found, true, "Should find proof but it didn't");
+        uint256 userBalance = assetBalance(user1.addr);
+        requestDeposit(userBalance, user1.addr, abi.encode(proof.proof));
+        settle();
+        address controller = user1.addr;
+        address operator = user1.addr;
+        address receiver = user2.addr;
+        vm.expectRevert(
+            abi.encodeWithSelector(NotWhitelisted.selector, receiver)
+        );
+        deposit(userBalance, controller, operator, receiver);
+    }
+
+    // function test_transfer_ShouldFailWhenReceiverNotWhitelisted() public {
     //     uint256 userBalance = assetBalance(user1.addr);
     //     whitelist(user1.addr);
     //     requestDeposit(userBalance, user1.addr);
     //     settle();
-    //     address controller = user1.addr;
-    //     address operator = user1.addr;
+    //     deposit(userBalance, user1.addr);
     //     address receiver = user2.addr;
+    //     vm.startPrank(user1.addr);
     //     vm.expectRevert(
     //         abi.encodeWithSelector(NotWhitelisted.selector, receiver)
     //     );
-    //     deposit(userBalance, controller, operator, receiver);
+    //     vault.transfer(receiver, userBalance / 2);
+    //     vm.stopPrank();
     // }
 
-    // // function test_transfer_ShouldFailWhenReceiverNotWhitelisted() public {
-    // //     uint256 userBalance = assetBalance(user1.addr);
-    // //     whitelist(user1.addr);
-    // //     requestDeposit(userBalance, user1.addr);
-    // //     settle();
-    // //     deposit(userBalance, user1.addr);
-    // //     address receiver = user2.addr;
-    // //     vm.startPrank(user1.addr);
-    // //     vm.expectRevert(
-    // //         abi.encodeWithSelector(NotWhitelisted.selector, receiver)
-    // //     );
-    // //     vault.transfer(receiver, userBalance / 2);
-    // //     vm.stopPrank();
-    // // }
+    function test_transfer_WhenReceiverNotWhitelistedAfterDeactivateOfWhitelisting()
+        public
+    {
+        (, Proof[] memory proofs, ) = withWhitelistSetUp(1); // user1.addr is whitelisted
+        (Proof memory proof, bool found) = findProof(user1.addr, proofs);
+        assertEq(found, true, "Should find proof but it didn't");
+        uint256 userBalance = assetBalance(user1.addr);
+        requestDeposit(userBalance, user1.addr, abi.encode(proof.proof));
+        settle();
 
-    // function test_transfer_WhenReceiverNotWhitelistedAfterDeactivateOfWhitelisting()
-    //     public
-    // {
-    //     withWhitelistSetUp();
-    //     uint256 userBalance = assetBalance(user1.addr);
-    //     whitelist(user1.addr);
-    //     requestDeposit(userBalance, user1.addr);
-    //     settle();
+        deposit(userBalance, user1.addr, abi.encode(proof.proof));
+        address receiver = user2.addr;
+        vm.prank(vault.whitelistManagerRole());
+        vault.deactivateWhitelist();
+        vm.assertEq(vault.isWhitelistActivated(), false);
+        uint256 shares = vault.balanceOf(user1.addr);
+        vm.prank(user1.addr);
+        vault.transfer(receiver, shares);
+    }
 
-    //     deposit(userBalance, user1.addr);
-    //     address receiver = user2.addr;
-    //     vm.prank(vault.whitelistManagerRole());
-    //     vault.deactivateWhitelist();
-    //     vm.assertEq(vault.isWhitelistActivated(), false);
-    //     uint256 shares = vault.balanceOf(user1.addr);
-    //     vm.prank(user1.addr);
-    //     vault.transfer(receiver, shares);
-    // }
+    function test_transfer_ShouldWorkWhenReceiverWhitelisted() public {
+        (, Proof[] memory proofs, ) = withWhitelistSetUp(1); // user1.addr is whitelisted
+        (Proof memory proof, bool found) = findProof(user1.addr, proofs);
+        assertEq(found, true, "Should find proof but it didn't");
 
-    // function test_transfer_ShouldWorkWhenReceiverWhitelisted() public {
-    //     withWhitelistSetUp();
-    //     uint256 userBalance = assetBalance(user1.addr);
-    //     whitelist(user1.addr);
-    //     requestDeposit(userBalance, user1.addr);
-    //     settle();
-    //     deposit(userBalance, user1.addr);
-    //     uint256 shares = vault.balanceOf(user1.addr);
-    //     address receiver = user2.addr;
-    //     whitelist(user2.addr);
-    //     vm.prank(user1.addr);
-    //     vault.transfer(receiver, shares);
-    // }
+        uint256 userBalance = assetBalance(user1.addr);
+        requestDeposit(userBalance, user1.addr, abi.encode(proof.proof));
+        settle();
+        deposit(userBalance, user1.addr, abi.encode(proof.proof));
+        uint256 shares = vault.balanceOf(user1.addr);
+        address receiver = user2.addr;
 
-    // function test_whitelist() public {
-    //     withWhitelistSetUp();
-    //     whitelist(user1.addr);
-    //     assertEq(vault.isWhitelisted(user1.addr, ""), true);
-    // }
+        vm.prank(user1.addr);
+        vault.transfer(receiver, shares);
+    }
 
-    // function test_whitelistList() public {
-    //     withWhitelistSetUp();
-    //     address[] memory users = new address[](2);
-    //     users[0] = user1.addr;
-    //     users[1] = user2.addr;
-    //     whitelist(users);
-    //     assertEq(vault.isWhitelisted(user1.addr, ""), true);
-    // }
+    function test_whitelist() public {
+        (, Proof[] memory proofs, ) = withWhitelistSetUp(1); // user1.addr is whitelisted
+        (Proof memory proof, bool found) = findProof(user1.addr, proofs);
+        assertEq(found, true, "Should find proof but it didn't");
 
-    // function test_unwhitelistList() public {
-    //     withWhitelistSetUp();
-    //     address[] memory users = new address[](2);
-    //     users[0] = user1.addr;
-    //     users[1] = user2.addr;
-    //     whitelist(users);
-    //     assertEq(vault.isWhitelisted(user1.addr, ""), true);
-    //     unwhitelist(users[0]);
-    //     assertEq(vault.isWhitelisted(user1.addr, ""), false);
-    //     unwhitelist(users[1]);
-    //     assertEq(vault.isWhitelisted(user2.addr, ""), false);
-    // }
+        assertEq(
+            vault.isWhitelisted(user1.addr, abi.encode(proof.proof)),
+            true
+        );
+    }
+
+    function test_whitelistList() public {
+        (, Proof[] memory proofs, ) = withWhitelistSetUp(3); // user1.addr & user2.addr are whitelisted
+        (Proof memory proof, bool found) = findProof(user1.addr, proofs);
+        assertEq(found, true, "Should find proof but it didn't");
+        assertEq(
+            vault.isWhitelisted(user1.addr, abi.encode(proof.proof)),
+            true
+        );
+        (proof, found) = findProof(user2.addr, proofs);
+        assertEq(found, true, "Should find proof but it didn't");
+        assertEq(
+            vault.isWhitelisted(user2.addr, abi.encode(proof.proof)),
+            true
+        );
+    }
+
+    function test_unwhitelistList() public {
+        (, Proof[] memory proofs, ) = withWhitelistSetUp(1); // user1.addr is whitelisted
+        (Proof memory proof, bool found) = findProof(user1.addr, proofs);
+        assertEq(found, true, "Should find proof but it didn't");
+
+        assertEq(
+            vault.isWhitelisted(user1.addr, abi.encode(proof.proof)),
+            true
+        );
+        (, proofs, ) = withWhitelistSetUp(2); // user2.addr is whitelisted
+        (proof, found) = findProof(user1.addr, proofs);
+        assertEq(
+            found,
+            false,
+            "Proof was found but we expect it not to be found"
+        );
+
+        assertEq(
+            vault.isWhitelisted(user2.addr, abi.encode(proof.proof)),
+            false
+        );
+        (proof, found) = findProof(user2.addr, proofs);
+        assertEq(found, true, "Should find proof but it didn't");
+
+        assertEq(
+            vault.isWhitelisted(user2.addr, abi.encode(proof.proof)),
+            true
+        );
+    }
 
     function test_noWhitelist() public {
         withoutWhitelistSetUp();
