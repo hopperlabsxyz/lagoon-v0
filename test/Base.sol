@@ -22,6 +22,16 @@ contract BaseTest is Test, Constants {
         uint256 amount,
         address controller,
         address owner,
+        bytes memory data
+    ) internal returns (uint256) {
+        vm.prank(owner);
+        return vault.requestDeposit(amount, controller, owner, data);
+    }
+
+    function requestDeposit(
+        uint256 amount,
+        address controller,
+        address owner,
         address operator
     ) internal returns (uint256) {
         uint256 requestDepBefore = vault.pendingDeposit();
@@ -77,6 +87,14 @@ contract BaseTest is Test, Constants {
         return requestDeposit(amount, user, user, user);
     }
 
+    function requestDeposit(
+        uint256 amount,
+        address user,
+        bytes memory data
+    ) internal returns (uint256) {
+        return requestDeposit(amount, user, user, user, data);
+    }
+
     function deposit(
         uint256 amount,
         address controller,
@@ -85,6 +103,26 @@ contract BaseTest is Test, Constants {
     ) internal returns (uint256) {
         vm.prank(operator);
         return vault.deposit(amount, receiver, controller);
+    }
+
+    function deposit(
+        uint256 amount,
+        address controller,
+        address operator,
+        address receiver,
+        bytes memory data
+    ) internal returns (uint256) {
+        vm.prank(operator);
+        return vault.deposit(amount, receiver, controller, data);
+    }
+
+    function deposit(
+        uint256 amount,
+        address user,
+        bytes memory data
+    ) internal returns (uint256) {
+        vm.prank(user);
+        return vault.deposit(amount, user, data);
     }
 
     function deposit(uint256 amount, address user) internal returns (uint256) {
@@ -222,10 +260,7 @@ contract BaseTest is Test, Constants {
     }
 
     function settle() internal {
-        dealAmountAndApproveAndWhitelist(
-            vault.assetManagerRole(),
-            vault.newTotalAssets()
-        );
+        dealAmountAndApprove(vault.assetManagerRole(), vault.newTotalAssets());
         vm.startPrank(vault.assetManagerRole());
         vault.settleDeposit();
         vm.stopPrank();
@@ -238,22 +273,15 @@ contract BaseTest is Test, Constants {
     }
 
     function dealAndApproveAndWhitelist(address user) public {
-        dealAmountAndApproveAndWhitelist(user, 100000);
+        dealAmountAndApprove(user, 100000);
+        whitelist(user);
     }
 
     function dealAmountAndApproveAndWhitelist(
         address user,
         uint256 amount
     ) public {
-        address asset = vault.asset();
-        deal(user, type(uint256).max);
-        deal(
-            vault.asset(),
-            user,
-            amount * 10 ** IERC20Metadata(asset).decimals()
-        );
-        vm.prank(user);
-        IERC4626(asset).approve(address(vault), UINT256_MAX);
+        dealAmountAndApprove(user, amount);
         whitelist(user);
     }
 
