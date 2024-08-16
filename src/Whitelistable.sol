@@ -49,11 +49,19 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         __AccessControlEnumerable_init();
     }
 
+    /*
+      * @notice Checks if the whitelist feature is activated
+      * @return bool True if the whitelist feature is activated, false otherwise
+      **/
     function isWhitelistActivated() public view returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         return $.isActivated;
     }
 
+    /*
+      * @notice Deactivates the whitelist
+      * @require The caller must have the WHITELIST_MANAGER_ROLE role
+      **/
     function deactivateWhitelist() public onlyRole(WHITELIST_MANAGER_ROLE) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         $.isActivated = false;
@@ -66,6 +74,12 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         _;
     }
 
+    /*
+      * @notice Checks if an account is whitelisted
+      * @param account The address of the account to check
+      * @param data The Merkle proof data, required when the root hash is set
+      * @return bool True if the account is whitelisted, false otherwise
+      **/
     function isWhitelisted(
         address account,
         bytes memory data
@@ -81,6 +95,12 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         return MerkleProof.verify(proof, $.root, leaf);
     }
 
+    /*
+      * @notice Updates the Merkle tree root hash
+      * @require The caller must have the WHITELIST_MANAGER_ROLE role
+      * @param root The new Merkle tree root hash
+      * @event RootUpdated The event emitted when the root hash is successfully updated
+      **/
     function setRoot(bytes32 root) external onlyRole(WHITELIST_MANAGER_ROLE) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
@@ -89,7 +109,11 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
     }
 
     /*
-     * @notice Add or remove an account from the whitelist
+     * @notice Adds an account to the whitelist
+     * @require The caller must have the WHITELIST_MANAGER_ROLE role
+     * @require The Merkle tree root hash must not be set (root == 0)
+     * @param account The address of the account to add to the whitelist
+     * @event AddedToWhitelist The event emitted when an account is successfully added to the whitelist
      **/
     function addToWhitelist(
         address account
@@ -103,7 +127,11 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
     }
 
     /*
-     * @notice Add multiple accounts to the whitelist
+     * @notice Adds multiple accounts to the whitelist
+     * @require The caller must have the WHITELIST_MANAGER_ROLE role
+     * @require The Merkle tree root hash must not be set (root == 0)
+     * @param accounts An array of addresses to add to the whitelist
+     * @event AddedToWhitelist The event emitted for each account successfully added to the whitelist
      **/
     function addToWhitelist(
         address[] memory accounts
@@ -119,8 +147,11 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
     }
 
     /*
-     * @notice Remove an account from the whitelist
-     **/
+      * @notice Removes an account from the whitelist
+      * @require The caller must have the WHITELIST_MANAGER_ROLE role
+      * @param account The address of the account to remove from the whitelist
+      * @event RevokedFromWhitelist The event emitted when an account is successfully removed from the whitelist
+      **/
     function revokeFromWhitelist(
         address account
     ) external onlyRole(WHITELIST_MANAGER_ROLE) {
@@ -133,8 +164,12 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
     }
 
     /*
-     * @notice Revoke multiple accounts from the whitelist
-     **/
+      * @notice Removes multiple accounts from the whitelist
+      * @require The caller must have the WHITELIST_MANAGER_ROLE role
+      * @require The Merkle tree root hash must not be set (root == 0)
+      * @param accounts An array of addresses to remove from the whitelist
+      * @event RevokedFromWhitelist The event emitted for each account successfully removed from the whitelist
+      **/
     function revokeFromWhitelist(
         address[] memory accounts
     ) external onlyRole(WHITELIST_MANAGER_ROLE) {
