@@ -105,26 +105,6 @@ contract BaseTest is Test, Constants {
         return vault.deposit(amount, receiver, controller);
     }
 
-    function deposit(
-        uint256 amount,
-        address controller,
-        address operator,
-        address receiver,
-        bytes memory data
-    ) internal returns (uint256) {
-        vm.prank(operator);
-        return vault.deposit(amount, receiver, controller, data);
-    }
-
-    function deposit(
-        uint256 amount,
-        address user,
-        bytes memory data
-    ) internal returns (uint256) {
-        vm.prank(user);
-        return vault.deposit(amount, user, data);
-    }
-
     function deposit(uint256 amount, address user) internal returns (uint256) {
         vm.prank(user);
         return vault.deposit(amount, user);
