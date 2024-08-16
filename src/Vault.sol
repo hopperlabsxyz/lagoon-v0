@@ -11,7 +11,7 @@ import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {Whitelistable, WHITELISTED, WHITELIST_MANAGER_ROLE} from "./Whitelistable.sol";
+import {Whitelistable, NotWhitelisted, WHITELISTED, WHITELIST_MANAGER_ROLE} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
 import {WhitelistableStorage} from "./Whitelistable.sol";
@@ -20,6 +20,8 @@ import {WhitelistableStorage} from "./Whitelistable.sol";
 
 using Math for uint256;
 using SafeERC20 for IERC20;
+
+event Referral(address indexed referral, uint256 indexed requestId, uint256 assets);
 
 uint256 constant BPS_DIVIDER = 10_000;
 
@@ -129,7 +131,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 assets,
         address controller,
         address owner
-    ) public override(ERC7540Upgradeable) returns (uint256) {
+    ) public override(ERC7540Upgradeable) returns (uint256 requestId) {
         return _requestDeposit(assets, controller, owner, abi.encode(""));
     }
 
@@ -137,18 +139,33 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 assets,
         address controller,
         address owner,
-        bytes calldata data // abi encoded merkle proof expected (bytes32[])
-    ) public returns (uint256) {
+        bytes calldata data
+    ) public returns (uint256 requestId) {
         return _requestDeposit(assets, controller, owner, data);
     }
 
+    // @notice Requests a deposit of assets, subject to whitelist validation.
+    // @param assets The amount of assets to deposit.
+    // @param controller The address of the controller involved in the deposit request.
+    // @param owner The address of the owner for whom the deposit is requested.
+    // @param data ABI-encoded data expected to contain a Merkle proof (bytes32[]) and a referral address (address).
+    // @return The id of the deposit request.
     function _requestDeposit(
         uint256 assets,
         address controller,
         address owner,
         bytes memory data
-    ) internal onlyWhitelisted(controller, data) returns (uint256) {
-        return super.requestDeposit(assets, controller, owner);
+    ) internal  returns (uint256) {
+        (bytes32[] memory proof, address referral) = abi.decode(data, (bytes32[], address));
+        // todo: convert this to require(NotWhitelisted(owner))
+        if (isWhitelisted(controller, proof) == false) {
+          revert NotWhitelisted(controller);
+        }
+        uint256 requestId = super.requestDeposit(assets, controller, owner);
+        if (address(referral) != address(0)) {
+          emit Referral(referral, requestId, assets);
+        }
+        return requestId;
     }
 
     function deposit(
@@ -159,7 +176,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         external
         override(ERC7540Upgradeable)
         onlyOperator(controller)
-        returns (uint256)
+        returns (uint256 requestId)
     {
         return _deposit(assets, receiver, controller, abi.encode(""));
     }
@@ -169,14 +186,14 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address receiver,
         address controller,
         bytes calldata data
-    ) external onlyOperator(controller) returns (uint256) {
+    ) external onlyOperator(controller) returns (uint256 shares) {
         return _deposit(assets, receiver, controller, data);
     }
 
     function deposit(
         uint256 assets,
         address receiver
-    ) public override(ERC7540Upgradeable) returns (uint256) {
+    ) public override(ERC7540Upgradeable) returns (uint256 shares) {
         return _deposit(assets, receiver, _msgSender(), abi.encode(""));
     }
 
@@ -184,23 +201,34 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 assets,
         address receiver,
         bytes calldata data
-    ) public returns (uint256) {
+    ) public returns (uint256 shares) {
         return _deposit(assets, receiver, _msgSender(), data);
     }
 
+    // @notice Claim shares on behalf of a receiver, subject to whitelist validation.
+    // @param assets The amount of assets to claim.
+    // @param receiver The address of the receiver for whom the assets are being claimed.
+    // @param controller The address of the controller involved in the claim operation.
+    // @param data ABI-encoded Merkle proof (bytes32[]) used to validate the `receiver`'s whitelist status.
+    // @return shares The number of shares claimed.
     function _deposit(
         uint256 assets,
         address receiver,
         address controller,
-        bytes memory data // abi encoded merkle proof expected (bytes32[])
-    ) internal onlyWhitelisted(receiver, data) returns (uint256 shares) {
+        bytes memory data
+    ) internal returns (uint256 shares) {
+        bytes32[] memory proof = abi.decode(data, (bytes32[]));
+        // todo: convert this to require(NotWhitelisted(owner))
+        if (isWhitelisted(receiver, proof) == false) {
+          revert NotWhitelisted(receiver);
+        }
         return super._deposit(assets, receiver, controller);
     }
 
     function mint(
         uint256 shares,
         address receiver
-    ) public override(ERC7540Upgradeable) returns (uint256) {
+    ) public override(ERC7540Upgradeable) returns (uint256 assets) {
         return _mint(shares, receiver, _msgSender(), abi.encode(""));
     }
 
@@ -208,7 +236,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 shares,
         address receiver,
         bytes calldata data
-    ) public returns (uint256) {
+    ) public returns (uint256 assets) {
         return _mint(shares, receiver, _msgSender(), data);
     }
 
@@ -220,7 +248,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         external
         override(ERC7540Upgradeable)
         onlyOperator(controller)
-        returns (uint256)
+        returns (uint256 assets)
     {
         return _mint(shares, receiver, controller, abi.encode(""));
     }
@@ -230,44 +258,67 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address receiver,
         address controller,
         bytes calldata data
-    ) external onlyOperator(controller) returns (uint256) {
+    ) external onlyOperator(controller) returns (uint256 assets) {
         return _mint(shares, receiver, controller, data);
     }
 
+    // @notice Mints new `shares` to the `receiver`, subject to whitelist validation.
+    // @param shares The number of token to mint.
+    // @param receiver The address receiving the newly minted `shares`.
+    // @param controller The address of the controller involved in the minting operation.
+    // @param data ABI-encoded Merkle proof (bytes32[]) used to validate the `receiver`'s whitelist status.
+    // @return The result of the superclass's _mint call, indicating the success of the minting operation.
+    // @custom:error NotWhitelisted Indicates that the controller address is not on the whitelist.
     function _mint(
         uint256 shares,
         address receiver,
         address controller,
-        bytes memory data // abi encoded merkle proof expected (bytes32[])
-    ) internal onlyWhitelisted(receiver, data) returns (uint256 assets) {
+        bytes memory data
+    ) internal returns (uint256) {
+        bytes32[] memory proof = abi.decode(data, (bytes32[]));
+        // todo: convert this to require(NotWhitelisted(owner))
+        if (isWhitelisted(receiver, proof) == false) {
+          revert NotWhitelisted(receiver);
+        }
         return super._mint(shares, receiver, controller);
     }
 
-    // function requestRedeem(
-    //     uint256 shares,
-    //     address controller,
-    //     address owner
-    // ) public override(ERC7540Upgradeable) returns (uint256) {
-    //     return _requestRedeem(shares, controller, owner, "");
-    // }
+    function requestRedeem(
+        uint256 shares,
+        address controller,
+        address owner
+    ) public override(ERC7540Upgradeable) returns (uint256 requestId) {
+        return _requestRedeem(shares, controller, owner, abi.encode(""));
+    }
 
-    // function requestRedeem(
-    //     uint256 shares,
-    //     address controller,
-    //     address owner,
-    //     bytes calldata data
-    // ) external returns (uint256) {
-    //     return _requestRedeem(shares, controller, owner, data);
-    // }
+    function requestRedeem(
+        uint256 shares,
+        address controller,
+        address owner,
+        bytes calldata data
+    ) external returns (uint256 requestId) {
+        return _requestRedeem(shares, controller, owner, data);
+    }
 
-    // function _requestRedeem(
-    //     uint256 shares,
-    //     address controller,
-    //     address owner,
-    //     bytes memory data
-    // ) internal onlyWhitelisted(controller, data) returns (uint256) {
-    //     return super.requestRedeem(shares, controller, owner);
-    // }
+    // @notice Requests the redemption of tokens, subject to whitelist validation.
+    // @param shares The number of tokens to redeem.
+    // @param controller The address of the controller involved in the redemption request.
+    // @param owner The address of the token owner requesting redemption.
+    // @param data ABI-encoded Merkle proof (bytes32[]) used to validate the controller's whitelist status.
+    // @return The id of the redeem request.
+    function _requestRedeem(
+        uint256 shares,
+        address controller,
+        address owner,
+        bytes memory data
+    ) internal  returns (uint256) {
+        bytes32[] memory proof = abi.decode(data, (bytes32[]));
+        // todo: convert this to require(NotWhitelisted(owner))
+        if (isWhitelisted(controller, proof) == false) {
+          revert NotWhitelisted(controller);
+        }
+        return super.requestRedeem(shares, controller, owner);
+    }
 
     function updateTotalAssets(
         uint256 _newTotalAssets
