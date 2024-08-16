@@ -157,9 +157,9 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         bytes memory data
     ) internal  returns (uint256) {
         (bytes32[] memory proof, address referral) = abi.decode(data, (bytes32[], address));
-        // todo: convert this to require(NotWhitelisted(owner))
-        if (isWhitelisted(controller, proof) == false) {
-          revert NotWhitelisted(controller);
+        // todo: convert this to require(isWhitelisted(owner, proof), NotWhitelisted(owner));
+        if (isWhitelisted(owner, proof) == false) {
+          revert NotWhitelisted(owner);
         }
         uint256 requestId = super.requestDeposit(assets, controller, owner);
         if (address(referral) != address(0)) {
@@ -198,9 +198,9 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         bytes memory data
     ) internal  returns (uint256) {
         bytes32[] memory proof = abi.decode(data, (bytes32[]));
-        // todo: convert this to require(NotWhitelisted(owner))
-        if (isWhitelisted(controller, proof) == false) {
-          revert NotWhitelisted(controller);
+        // todo: convert this to require(isWhitelisted(owner, proof), NotWhitelisted(owner));
+        if (isWhitelisted(owner, proof) == false) {
+          revert NotWhitelisted(owner);
         }
         return super.requestRedeem(shares, controller, owner);
     }
