@@ -179,22 +179,6 @@ contract TestMerkleTreeWhitelist is BaseTest {
         );
     }
 
-    function test_deposit_ShouldFailWhenReceiverNotWhitelisted2() public {
-        (, Proof[] memory proofs, ) = withWhitelistSetUp(1); // user1.addr is whitelisted
-        (Proof memory proof, bool found) = findProof(user1.addr, proofs);
-        assertEq(found, true, "Should find proof but it didn't");
-        uint256 userBalance = assetBalance(user1.addr);
-        requestDeposit(userBalance, user1.addr, abi.encode(proof.proof));
-        settle();
-        address controller = user1.addr;
-        address operator = user1.addr;
-        address receiver = user2.addr;
-        vm.expectRevert(
-            abi.encodeWithSelector(NotWhitelisted.selector, receiver)
-        );
-        deposit(userBalance, controller, operator, receiver);
-    }
-
     // function test_transfer_ShouldFailWhenReceiverNotWhitelisted() public {
     //     uint256 userBalance = assetBalance(user1.addr);
     //     whitelist(user1.addr);
@@ -220,7 +204,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
         requestDeposit(userBalance, user1.addr, abi.encode(proof.proof));
         settle();
 
-        deposit(userBalance, user1.addr, abi.encode(proof.proof));
+        deposit(userBalance, user1.addr);
         address receiver = user2.addr;
         vm.prank(vault.whitelistManagerRole());
         vault.deactivateWhitelist();
@@ -238,7 +222,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance, user1.addr, abi.encode(proof.proof));
         settle();
-        deposit(userBalance, user1.addr, abi.encode(proof.proof));
+        deposit(userBalance, user1.addr);
         uint256 shares = vault.balanceOf(user1.addr);
         address receiver = user2.addr;
 

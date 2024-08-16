@@ -21,7 +21,7 @@ import {WhitelistableStorage} from "./Whitelistable.sol";
 using Math for uint256;
 using SafeERC20 for IERC20;
 
-event Referral(address indexed referral, uint256 indexed requestId, uint256 assets);
+event Referral(address indexed referral, address indexed owner, uint256 indexed requestId, uint256 assets);
 
 uint256 constant BPS_DIVIDER = 10_000;
 
@@ -163,124 +163,9 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         }
         uint256 requestId = super.requestDeposit(assets, controller, owner);
         if (address(referral) != address(0)) {
-          emit Referral(referral, requestId, assets);
+          emit Referral(referral, owner, requestId, assets);
         }
         return requestId;
-    }
-
-    function deposit(
-        uint256 assets,
-        address receiver,
-        address controller
-    )
-        external
-        override(ERC7540Upgradeable)
-        onlyOperator(controller)
-        returns (uint256 requestId)
-    {
-        return _deposit(assets, receiver, controller, abi.encode(""));
-    }
-
-    function deposit(
-        uint256 assets,
-        address receiver,
-        address controller,
-        bytes calldata data
-    ) external onlyOperator(controller) returns (uint256 shares) {
-        return _deposit(assets, receiver, controller, data);
-    }
-
-    function deposit(
-        uint256 assets,
-        address receiver
-    ) public override(ERC7540Upgradeable) returns (uint256 shares) {
-        return _deposit(assets, receiver, _msgSender(), abi.encode(""));
-    }
-
-    function deposit(
-        uint256 assets,
-        address receiver,
-        bytes calldata data
-    ) public returns (uint256 shares) {
-        return _deposit(assets, receiver, _msgSender(), data);
-    }
-
-    // @notice Claim shares on behalf of a receiver, subject to whitelist validation.
-    // @param assets The amount of assets to claim.
-    // @param receiver The address of the receiver for whom the assets are being claimed.
-    // @param controller The address of the controller involved in the claim operation.
-    // @param data ABI-encoded Merkle proof (bytes32[]) used to validate the `receiver`'s whitelist status.
-    // @return shares The number of shares claimed.
-    function _deposit(
-        uint256 assets,
-        address receiver,
-        address controller,
-        bytes memory data
-    ) internal returns (uint256 shares) {
-        bytes32[] memory proof = abi.decode(data, (bytes32[]));
-        // todo: convert this to require(NotWhitelisted(owner))
-        if (isWhitelisted(receiver, proof) == false) {
-          revert NotWhitelisted(receiver);
-        }
-        return super._deposit(assets, receiver, controller);
-    }
-
-    function mint(
-        uint256 shares,
-        address receiver
-    ) public override(ERC7540Upgradeable) returns (uint256 assets) {
-        return _mint(shares, receiver, _msgSender(), abi.encode(""));
-    }
-
-    function mint(
-        uint256 shares,
-        address receiver,
-        bytes calldata data
-    ) public returns (uint256 assets) {
-        return _mint(shares, receiver, _msgSender(), data);
-    }
-
-    function mint(
-        uint256 shares,
-        address receiver,
-        address controller
-    )
-        external
-        override(ERC7540Upgradeable)
-        onlyOperator(controller)
-        returns (uint256 assets)
-    {
-        return _mint(shares, receiver, controller, abi.encode(""));
-    }
-
-    function mint(
-        uint256 shares,
-        address receiver,
-        address controller,
-        bytes calldata data
-    ) external onlyOperator(controller) returns (uint256 assets) {
-        return _mint(shares, receiver, controller, data);
-    }
-
-    // @notice Mints new `shares` to the `receiver`, subject to whitelist validation.
-    // @param shares The number of token to mint.
-    // @param receiver The address receiving the newly minted `shares`.
-    // @param controller The address of the controller involved in the minting operation.
-    // @param data ABI-encoded Merkle proof (bytes32[]) used to validate the `receiver`'s whitelist status.
-    // @return The result of the superclass's _mint call, indicating the success of the minting operation.
-    // @custom:error NotWhitelisted Indicates that the controller address is not on the whitelist.
-    function _mint(
-        uint256 shares,
-        address receiver,
-        address controller,
-        bytes memory data
-    ) internal returns (uint256) {
-        bytes32[] memory proof = abi.decode(data, (bytes32[]));
-        // todo: convert this to require(NotWhitelisted(owner))
-        if (isWhitelisted(receiver, proof) == false) {
-          revert NotWhitelisted(receiver);
-        }
-        return super._mint(shares, receiver, controller);
     }
 
     function requestRedeem(

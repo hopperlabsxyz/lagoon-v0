@@ -18,7 +18,7 @@ contract TestReferral is BaseTest {
     function test_referral() public {
         uint256 userBalance = assetBalance(user1.addr);
         vm.expectEmit(true, true, true, true);
-        emit Referral(user2.addr, 1, userBalance);
+        emit Referral(user2.addr, user1.addr, 1, userBalance);
         requestDeposit(
             userBalance,
             user1.addr,

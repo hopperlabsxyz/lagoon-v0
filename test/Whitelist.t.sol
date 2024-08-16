@@ -72,36 +72,6 @@ contract TestWhitelist is BaseTest {
         requestDeposit(userBalance, controller, operator, owner);
     }
 
-    function test_deposit_ShouldFailWhenReceiverNotWhitelisted() public {
-        withWhitelistSetUp();
-        uint256 userBalance = assetBalance(user1.addr);
-        whitelist(user1.addr);
-        requestDeposit(userBalance, user1.addr);
-        settle();
-        address controller = user1.addr;
-        address operator = user1.addr;
-        address receiver = user2.addr;
-        vm.expectRevert(
-            abi.encodeWithSelector(NotWhitelisted.selector, receiver)
-        );
-        deposit(userBalance, controller, operator, receiver);
-    }
-
-    // function test_transfer_ShouldFailWhenReceiverNotWhitelisted() public {
-    //     uint256 userBalance = assetBalance(user1.addr);
-    //     whitelist(user1.addr);
-    //     requestDeposit(userBalance, user1.addr);
-    //     settle();
-    //     deposit(userBalance, user1.addr);
-    //     address receiver = user2.addr;
-    //     vm.startPrank(user1.addr);
-    //     vm.expectRevert(
-    //         abi.encodeWithSelector(NotWhitelisted.selector, receiver)
-    //     );
-    //     vault.transfer(receiver, userBalance / 2);
-    //     vm.stopPrank();
-    // }
-
     function test_transfer_WhenReceiverNotWhitelistedAfterDeactivateOfWhitelisting()
         public
     {
