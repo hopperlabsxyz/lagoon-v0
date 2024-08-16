@@ -46,7 +46,7 @@ contract TestWhitelist is BaseTest {
         vault.requestDeposit(userBalance, user1.addr, user1.addr);
     }
 
-    function test_requestDeposit_ShouldFailWhenControllerNotWhitelistedandOperatorAndOwnerAre()
+    function test_requestDeposit_ShouldNotFailWhenControllerNotWhitelistedandOperatorAndOwnerAre()
         public
     {
         withWhitelistSetUp();
@@ -56,16 +56,13 @@ contract TestWhitelist is BaseTest {
         address operator = user1.addr;
         address owner = user1.addr;
         vm.startPrank(operator);
-        vm.expectRevert(
-            abi.encodeWithSelector(NotWhitelisted.selector, controller)
-        );
         vault.requestDeposit(userBalance, controller, owner);
     }
 
-    function test_requestDeposit_WhenControllerWhitelisted() public {
+    function test_requestDeposit_WhenOwnerWhitelistedAndOperator() public {
         withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
-        whitelist(user2.addr);
+        whitelist(user1.addr);
         address controller = user2.addr;
         address operator = user1.addr;
         address owner = user1.addr;

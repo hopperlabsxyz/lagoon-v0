@@ -156,43 +156,9 @@ contract TestMerkleTreeWhitelist is BaseTest {
         address operator = user1.addr;
         address owner = user1.addr;
         vm.startPrank(operator);
-        vm.expectRevert(
-            abi.encodeWithSelector(NotWhitelisted.selector, controller)
-        );
+        vm.expectRevert(abi.encodeWithSelector(NotWhitelisted.selector, owner));
         vault.requestDeposit(userBalance, controller, owner);
     }
-
-    function test_requestDeposit_WhenControllerWhitelisted2() public {
-        (, Proof[] memory proofs, ) = withWhitelistSetUp(2); // user2.addr is whitelisted
-        (Proof memory proof, bool found) = findProof(user2.addr, proofs);
-        assertEq(found, true, "Should find proof but it didn't");
-        uint256 userBalance = assetBalance(user1.addr);
-        address controller = user2.addr;
-        address operator = user1.addr;
-        address owner = user1.addr;
-        requestDeposit(
-            userBalance,
-            controller,
-            owner,
-            operator,
-            abi.encode(proof.proof)
-        );
-    }
-
-    // function test_transfer_ShouldFailWhenReceiverNotWhitelisted() public {
-    //     uint256 userBalance = assetBalance(user1.addr);
-    //     whitelist(user1.addr);
-    //     requestDeposit(userBalance, user1.addr);
-    //     settle();
-    //     deposit(userBalance, user1.addr);
-    //     address receiver = user2.addr;
-    //     vm.startPrank(user1.addr);
-    //     vm.expectRevert(
-    //         abi.encodeWithSelector(NotWhitelisted.selector, receiver)
-    //     );
-    //     vault.transfer(receiver, userBalance / 2);
-    //     vm.stopPrank();
-    // }
 
     function test_transfer_WhenReceiverNotWhitelistedAfterDeactivateOfWhitelisting()
         public
