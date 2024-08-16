@@ -49,58 +49,39 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         __AccessControlEnumerable_init();
     }
 
-    /*
-      * @notice Checks if the whitelist feature is activated
-      * @return bool True if the whitelist feature is activated, false otherwise
-      **/
     function isWhitelistActivated() public view returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         return $.isActivated;
     }
 
-    /*
-      * @notice Deactivates the whitelist
-      * @require The caller must have the WHITELIST_MANAGER_ROLE role
-      **/
+    // @notice Deactivates the whitelist
     function deactivateWhitelist() public onlyRole(WHITELIST_MANAGER_ROLE) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         $.isActivated = false;
     }
 
-    modifier onlyWhitelisted(address account, bytes memory data) {
-        if (isWhitelistActivated() == true && !isWhitelisted(account, data)) {
-            revert NotWhitelisted(account);
-        }
-        _;
-    }
-
-    /*
-      * @notice Checks if an account is whitelisted
-      * @param account The address of the account to check
-      * @param data The Merkle proof data, required when the root hash is set
-      * @return bool True if the account is whitelisted, false otherwise
-      **/
+    // @notice Checks if an account is whitelisted
+    // @param account The address of the account to check
+    // @param data The Merkle proof data, required when the root hash is set
+    // @return bool True if the account is whitelisted, false otherwise
     function isWhitelisted(
         address account,
-        bytes memory data
+        bytes32[] memory proof 
     ) public view returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-        if ($.root == 0) {
-            return $.isWhitelisted[account];
+        if ($.isActivated == false) {
+          return true; 
         }
-        bytes32[] memory proof = abi.decode(data, (bytes32[]));
+        if ($.root == 0) {
+          return $.isWhitelisted[account];
+        }
         bytes32 leaf = keccak256(
           bytes.concat(keccak256(abi.encode(account)))
         );
         return MerkleProof.verify(proof, $.root, leaf);
     }
 
-    /*
-      * @notice Updates the Merkle tree root hash
-      * @require The caller must have the WHITELIST_MANAGER_ROLE role
-      * @param root The new Merkle tree root hash
-      * @event RootUpdated The event emitted when the root hash is successfully updated
-      **/
+    // @notice Updates the Merkle tree root hash
     function setRoot(bytes32 root) external onlyRole(WHITELIST_MANAGER_ROLE) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
@@ -108,13 +89,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         emit RootUpdated(root);
     }
 
-    /*
-     * @notice Adds an account to the whitelist
-     * @require The caller must have the WHITELIST_MANAGER_ROLE role
-     * @require The Merkle tree root hash must not be set (root == 0)
-     * @param account The address of the account to add to the whitelist
-     * @event AddedToWhitelist The event emitted when an account is successfully added to the whitelist
-     **/
+    // @notice Adds an account to the whitelist
     function addToWhitelist(
         address account
     ) external onlyRole(WHITELIST_MANAGER_ROLE) {
@@ -126,13 +101,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         emit AddedToWhitelist(account);
     }
 
-    /*
-     * @notice Adds multiple accounts to the whitelist
-     * @require The caller must have the WHITELIST_MANAGER_ROLE role
-     * @require The Merkle tree root hash must not be set (root == 0)
-     * @param accounts An array of addresses to add to the whitelist
-     * @event AddedToWhitelist The event emitted for each account successfully added to the whitelist
-     **/
+    // @notice Adds multiple accounts to the whitelist
     function addToWhitelist(
         address[] memory accounts
     ) external onlyRole(WHITELIST_MANAGER_ROLE) {
@@ -146,12 +115,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         }
     }
 
-    /*
-      * @notice Removes an account from the whitelist
-      * @require The caller must have the WHITELIST_MANAGER_ROLE role
-      * @param account The address of the account to remove from the whitelist
-      * @event RevokedFromWhitelist The event emitted when an account is successfully removed from the whitelist
-      **/
+    // @notice Removes an account from the whitelist
     function revokeFromWhitelist(
         address account
     ) external onlyRole(WHITELIST_MANAGER_ROLE) {
@@ -163,13 +127,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         emit RevokedFromWhitelist(account);
     }
 
-    /*
-      * @notice Removes multiple accounts from the whitelist
-      * @require The caller must have the WHITELIST_MANAGER_ROLE role
-      * @require The Merkle tree root hash must not be set (root == 0)
-      * @param accounts An array of addresses to remove from the whitelist
-      * @event RevokedFromWhitelist The event emitted for each account successfully removed from the whitelist
-      **/
+    // @notice Removes multiple accounts from the whitelist
     function revokeFromWhitelist(
         address[] memory accounts
     ) external onlyRole(WHITELIST_MANAGER_ROLE) {

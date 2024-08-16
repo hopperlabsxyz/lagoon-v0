@@ -9,8 +9,9 @@ import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.so
 
 contract TestRequestRedeem is BaseTest {
     function setUp() public {
+        enableWhitelist = false;
         setUpVault(0, 0, 0);
-        dealAndApproveAndWhitelist(user1.addr);
+        dealAndApprove(user1.addr);
         uint256 balance = assetBalance(user1.addr);
         requestDeposit(balance, user1.addr);
         updateAndSettle(0);
