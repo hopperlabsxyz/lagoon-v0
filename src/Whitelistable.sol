@@ -48,9 +48,12 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         __AccessControlEnumerable_init();
     }
 
+    function getRoot() public view returns(bytes32) {
+      return _getWhitelistableStorage().root;
+    }
+
     function isWhitelistActivated() public view returns (bool) {
-        WhitelistableStorage storage $ = _getWhitelistableStorage();
-        return $.isActivated;
+        return _getWhitelistableStorage().isActivated;
     }
 
     // @notice Deactivates the whitelist
