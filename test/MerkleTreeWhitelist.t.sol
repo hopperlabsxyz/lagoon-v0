@@ -243,4 +243,13 @@ contract TestMerkleTreeWhitelist is BaseTest {
         withoutWhitelistSetUp();
         requestDeposit(1, user1.addr);
     }
+
+    function test_getRoot() public {
+        (bytes32 root, , ) = withWhitelistSetUp(1); // user1.addr is whitelisted
+        assertEq(root, vault.getRoot());
+        (root, , ) = loadConfig(2);
+        vm.prank(vault.whitelistManagerRole());
+        vault.setRoot(root);
+        assertEq(root, vault.getRoot());
+    }
 }
