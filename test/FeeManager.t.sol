@@ -34,9 +34,9 @@ contract TestFeeManager is BaseTest {
     function test_collect_fees() public {
         dealAmountAndApproveAndWhitelist(user1.addr, 10_000_000);
 
-        address assetManager = vault.getRoleMember(ASSET_MANAGER_ROLE, 0);
-        address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
-        address vaultFeeReceiver = vault.getRoleMember(FEE_RECEIVER, 0);
+        address assetManager = vault.assetManager();
+        address hopperDao = vault.protocolFeeReceiver();
+        address vaultFeeReceiver = vault.feeReceiver();
 
         assertEq(vault.balanceOf(assetManager), 0);
         assertEq(vault.balanceOf(vaultFeeReceiver), 0);
@@ -85,7 +85,7 @@ contract TestFeeManager is BaseTest {
             "Amount of shares did not increase properly"
         );
         assertEq(
-            vault.balanceOf(vault.claimableSilo()),
+            vault.balanceOf(address(vault)),
             userBalance,
             "Wrong amount of shares available in claimable silo"
         );
@@ -118,8 +118,8 @@ contract TestFeeManager is BaseTest {
     // +------+---------+----------+------+-------+---------+--------+------+-----------+---------+
 
     function test_multiple_year() public {
-        address feeReceiver = vault.getRoleMember(FEE_RECEIVER, 0);
-        address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
+        address feeReceiver = vault.feeReceiver();
+        address hopperDao = vault.protocolFeeReceiver();
 
         uint256 managerShares = vault.balanceOf(feeReceiver);
         uint256 daoShares = vault.balanceOf(hopperDao);
@@ -178,7 +178,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), expectedHighWaterMark);
         assertEq(
             vault.totalSupply() -
-                vault.balanceOf(vault.claimableSilo()) -
+                vault.balanceOf(address(vault)) -
                 managerShares -
                 daoShares,
             expectedTotalNewShares
@@ -221,7 +221,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), expectedHighWaterMark);
         assertEq(
             vault.totalSupply() -
-                vault.balanceOf(vault.claimableSilo()) -
+                vault.balanceOf(address(vault)) -
                 managerShares -
                 daoShares,
             expectedTotalNewShares
@@ -264,7 +264,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), expectedHighWaterMark);
         assertEq(
             vault.totalSupply() -
-                vault.balanceOf(vault.claimableSilo()) -
+                vault.balanceOf(address(vault)) -
                 managerShares -
                 daoShares,
             expectedTotalNewShares
@@ -307,7 +307,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), expectedHighWaterMark);
         assertEq(
             vault.totalSupply() -
-                vault.balanceOf(vault.claimableSilo()) -
+                vault.balanceOf(address(vault)) -
                 managerShares -
                 daoShares,
             expectedTotalNewShares
@@ -354,7 +354,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), expectedHighWaterMark);
         assertEq(
             vault.totalSupply() -
-                vault.balanceOf(vault.claimableSilo()) -
+                vault.balanceOf(address(vault)) -
                 vault.balanceOf(user1.addr) -
                 managerShares -
                 daoShares,

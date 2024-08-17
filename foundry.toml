@@ -1,3 +1,4 @@
+
 [profile.default]
 src = "src"
 out = "out"
@@ -8,6 +9,7 @@ cache_path = 'cache'
 # ast = true
 # build_info = true
 # extra_output = ["storageLayout"]
+fs_permissions = [{ access = "read", path = "./"}] # Read access is needed for MerkleTree whitelist tests
 
 solc_version = "0.8.25"
 

@@ -211,7 +211,7 @@ contract VaultV2 is
         VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
-        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+        address _assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
         address feeReceiver = getRoleMember(FEE_RECEIVER, 0);
         address hopperDao = getRoleMember(HOPPER_ROLE, 0);
 
@@ -291,11 +291,11 @@ contract VaultV2 is
         pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
         if (pendingAssets > 0) {
             // there must be an asset manager
-            if (assetManager == address(0)) revert AssetManagerNotSet();
+            if (_assetManager == address(0)) revert AssetManagerNotSet();
 
             IERC20(asset()).safeTransferFrom(
                 pendingSilo(),
-                assetManager,
+                _assetManager,
                 pendingAssets
             );
         }
@@ -367,7 +367,7 @@ contract VaultV2 is
         return getRoleMember(DEFAULT_ADMIN_ROLE, 0);
     }
 
-    function assetManagerRole() public view returns (address) {
+    function assetManager() public view returns (address) {
         return getRoleMember(ASSET_MANAGER_ROLE, 0);
     }
 

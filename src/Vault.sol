@@ -11,14 +11,18 @@ import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {Whitelistable, WHITELISTED} from "./Whitelistable.sol";
+import {Whitelistable, NotWhitelisted, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
+import {WhitelistableStorage} from "./Whitelistable.sol";
+import {Roles} from "./Roles.sol";
 // import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
 using Math for uint256;
 using SafeERC20 for IERC20;
+
+event Referral(address indexed referral, address indexed owner, uint256 indexed requestId, uint256 assets);
 
 uint256 constant BPS_DIVIDER = 10_000;
 
@@ -31,19 +35,14 @@ error CooldownNotOver();
 error AssetManagerNotSet();
 
 /// @custom:oz-upgrades-from VaultV2
-contract Vault is
-    ERC7540Upgradeable,
-    ERC20BurnableUpgradeable,
-    ERC20PermitUpgradeable,
-    Whitelistable,
-    FeeManager
-{
+contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     struct InitStruct {
         IERC20 underlying;
         string name;
         string symbol;
         address dao;
         address assetManager;
+        address whitelistManager;
         address valorization;
         address admin;
         address feeReceiver;
@@ -62,6 +61,7 @@ contract Vault is
         uint256 newTotalAssetsTimestamp;
         uint256 newTotalAssetsCooldown;
     }
+
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant vaultStorage =
@@ -83,7 +83,6 @@ contract Vault is
     function initialize(InitStruct memory init) public virtual initializer {
         __ERC4626_init(init.underlying);
         __ERC20_init(init.name, init.symbol);
-        __ERC20Permit_init(init.name);
         __ERC20Pausable_init();
         __FeeManager_init(
             init.feeModule,
@@ -93,76 +92,124 @@ contract Vault is
         );
         __ERC7540_init(init.underlying);
         __Whitelistable_init(init.enableWhitelist);
+        __Roles_init(Roles.RolesStorage({
+            whitelistManager: init.whitelistManager,
+            feeReceiver: init.feeReceiver,
+            assetManager: init.assetManager,
+            protocolRegistry: init.feeRegistry,
+            protocolFeeReceiver: init.dao,
+            valorizationManager: init.valorization
+        }));
 
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = init.cooldown;
 
-        _grantRole(HOPPER_ROLE, init.dao);
-        _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE);
 
-        _grantRole(ASSET_MANAGER_ROLE, init.assetManager);
-        _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
 
-        _grantRole(VALORIZATION_ROLE, init.valorization);
-        _setRoleAdmin(VALORIZATION_ROLE, DEFAULT_ADMIN_ROLE);
 
-        _grantRole(DEFAULT_ADMIN_ROLE, init.admin);
-
-        _grantRole(FEE_RECEIVER, init.feeReceiver);
         if (init.enableWhitelist) {
-            _grantRole(WHITELISTED, init.feeReceiver);
-            _grantRole(WHITELISTED, init.dao);
-            _grantRole(WHITELISTED, init.assetManager);
-            _grantRole(WHITELISTED, init.valorization);
-            _grantRole(WHITELISTED, init.admin);
-            _grantRole(WHITELISTED, pendingSilo());
-            _grantRole(WHITELISTED, claimableSilo());
-            _grantRole(WHITELISTED, address(0));
+            WhitelistableStorage
+                storage $whitelistStorage = _getWhitelistableStorage();
+            $whitelistStorage.isWhitelisted[init.feeReceiver] = true;
+            $whitelistStorage.isWhitelisted[init.dao] = true;
+            $whitelistStorage.isWhitelisted[init.assetManager] = true;
+            $whitelistStorage.isWhitelisted[init.whitelistManager] = true;
+            $whitelistStorage.isWhitelisted[init.valorization] = true;
+            $whitelistStorage.isWhitelisted[init.admin] = true;
+            $whitelistStorage.isWhitelisted[pendingSilo()] = true;
             for (uint256 i = 0; i < init.whitelist.length; i++) {
-                _grantRole(WHITELISTED, init.whitelist[i]);
+                $whitelistStorage.isWhitelisted[init.whitelist[i]] = true;
             }
         }
-    }
-
-    function _update(
-        address from,
-        address to,
-        uint256 value
-    )
-        internal
-        virtual
-        override(ERC7540Upgradeable, ERC20Upgradeable)
-        onlyWhitelisted(to)
-    {
-        return ERC20PausableUpgradeable._update(from, to, value);
-    }
-
-    function decimals()
-        public
-        view
-        override(ERC20Upgradeable, ERC7540Upgradeable)
-        returns (uint8)
-    {
-        return ERC4626Upgradeable.decimals();
     }
 
     function requestDeposit(
         uint256 assets,
         address controller,
         address owner
-    ) public override onlyWhitelisted(controller) returns (uint256) {
-        return super.requestDeposit(assets, controller, owner);
+    ) public override(ERC7540Upgradeable) returns (uint256 requestId) {
+        return _requestDeposit(assets, controller, owner, abi.encode(""));
+    }
+
+    function requestDeposit(
+        uint256 assets,
+        address controller,
+        address owner,
+        bytes calldata data
+    ) public returns (uint256 requestId) {
+        return _requestDeposit(assets, controller, owner, data);
+    }
+
+    // @notice Requests a deposit of assets, subject to whitelist validation.
+    // @param assets The amount of assets to deposit.
+    // @param controller The address of the controller involved in the deposit request.
+    // @param owner The address of the owner for whom the deposit is requested.
+    // @param data ABI-encoded data expected to contain a Merkle proof (bytes32[]) and a referral address (address).
+    // @return The id of the deposit request.
+    function _requestDeposit(
+        uint256 assets,
+        address controller,
+        address owner,
+        bytes memory data
+    ) internal  returns (uint256) {
+        (bytes32[] memory proof, address referral) = abi.decode(data, (bytes32[], address));
+        // todo: convert this to require(isWhitelisted(owner, proof), NotWhitelisted(owner));
+        if (isWhitelisted(owner, proof) == false) {
+          revert NotWhitelisted(owner);
+        }
+        uint256 requestId = super.requestDeposit(assets, controller, owner);
+        if (address(referral) != address(0)) {
+          emit Referral(referral, owner, requestId, assets);
+        }
+        return requestId;
+    }
+
+    function requestRedeem(
+        uint256 shares,
+        address controller,
+        address owner
+    ) public override(ERC7540Upgradeable) returns (uint256 requestId) {
+        return _requestRedeem(shares, controller, owner, abi.encode(""));
+    }
+
+    function requestRedeem(
+        uint256 shares,
+        address controller,
+        address owner,
+        bytes calldata data
+    ) external returns (uint256 requestId) {
+        return _requestRedeem(shares, controller, owner, data);
+    }
+
+    // @notice Requests the redemption of tokens, subject to whitelist validation.
+    // @param shares The number of tokens to redeem.
+    // @param controller The address of the controller involved in the redemption request.
+    // @param owner The address of the token owner requesting redemption.
+    // @param data ABI-encoded Merkle proof (bytes32[]) used to validate the controller's whitelist status.
+    // @return The id of the redeem request.
+    function _requestRedeem(
+        uint256 shares,
+        address controller,
+        address owner,
+        bytes memory data
+    ) internal  returns (uint256) {
+        bytes32[] memory proof = abi.decode(data, (bytes32[]));
+        // todo: convert this to require(isWhitelisted(owner, proof), NotWhitelisted(owner));
+        if (isWhitelisted(owner, proof) == false) {
+          revert NotWhitelisted(owner);
+        }
+        return super.requestRedeem(shares, controller, owner);
     }
 
     function updateTotalAssets(
         uint256 _newTotalAssets
-    ) public onlyRole(VALORIZATION_ROLE) {
+    ) public onlyValorizationManager {
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssets = _newTotalAssets;
         $.newTotalAssetsTimestamp = block.timestamp;
     }
 
-    function settleDeposit() public override onlyRole(ASSET_MANAGER_ROLE) {
+    function settleDeposit() public override onlyAssetManager {
         _updateTotalAssets();
         _takeFees();
         _settleDeposit();
@@ -185,8 +232,6 @@ contract Vault is
     function _takeFees() internal {
         if (lastFeeTime() == block.timestamp) return;
 
-        address feeReceiver = getRoleMember(FEE_RECEIVER, 0);
-        address hopperDao = getRoleMember(HOPPER_ROLE, 0);
 
         uint256 _totalAssets = totalAssets();
         (uint256 managerShares, uint256 protocolShares) = _calculateFees(
@@ -195,11 +240,11 @@ contract Vault is
         );
 
         if (managerShares > 0) {
-            _mint(feeReceiver, managerShares);
+            _mint(feeReceiver(), managerShares);
         }
 
         if (protocolShares > 0) {
-            _mint(hopperDao, protocolShares);
+            _mint(protocolFeeReceiver(), protocolShares);
         }
         FeeManagerStorage storage $feeManagerStorage = _getFeeManagerStorage();
         $feeManagerStorage.lastFeeTime = block.timestamp;
@@ -219,13 +264,13 @@ contract Vault is
         epoch.totalSupply = totalSupply();
 
         uint256 shares = _convertToShares(pendingAssets, Math.Rounding.Floor);
-        _mint(claimableSilo(), shares);
+        _mint(address(this), shares);
         _totalAssets += pendingAssets;
         $erc7540.totalAssets = _totalAssets;
         // We must not take into account new assets into next fee calculation
         _increaseHighWaterMarkOf(pendingAssets);
 
-        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+        address assetManager = assetManager();
         IERC20(asset()).safeTransferFrom(
             pendingSilo(),
             assetManager,
@@ -235,7 +280,7 @@ contract Vault is
         // todo emit event
     }
 
-    function settleRedeem() public override onlyRole(ASSET_MANAGER_ROLE) {
+    function settleRedeem() public override onlyAssetManager {
         _updateTotalAssets();
         _takeFees();
         _settleRedeem();
@@ -247,7 +292,7 @@ contract Vault is
             pendingShares,
             Math.Rounding.Floor
         );
-        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+        address assetManager = assetManager();
         uint256 assetsInTheSafe = IERC20(asset()).balanceOf(assetManager);
         uint256 approvedBySafe = IERC20(asset()).allowance(
             assetManager,
@@ -276,55 +321,12 @@ contract Vault is
 
         IERC20(asset()).safeTransferFrom(
             assetManager,
-            claimableSilo(),
+            address(this),
             assetsToWithdraw
         );
         $erc7540.redeemId += 2;
     }
-
-    function supportsInterface(
-        bytes4 interfaceId
-    )
-        public
-        view
-        override(ERC7540Upgradeable, AccessControlEnumerableUpgradeable)
-        returns (bool)
-    {
-        return
-            AccessControlEnumerableUpgradeable.supportsInterface(interfaceId) ||
-            ERC7540Upgradeable.supportsInterface(interfaceId);
-    }
-
-    function hopperRole() public view returns (address) {
-        return getRoleMember(HOPPER_ROLE, 0);
-    }
-
-    function adminRole() public view returns (address) {
-        return getRoleMember(DEFAULT_ADMIN_ROLE, 0);
-    }
-
-    function assetManagerRole() public view returns (address) {
-        return getRoleMember(ASSET_MANAGER_ROLE, 0);
-    }
-
-    function valorizationRole() public view returns (address) {
-        return getRoleMember(VALORIZATION_ROLE, 0);
-    }
-
-    function grantRole(
-        bytes32 role,
-        address account
-    )
-        public
-        virtual
-        override(AccessControlUpgradeable, IAccessControl)
-        onlyRole(getRoleAdmin(role))
-    {
-        // we accept only one role holder for the hopper/asset manager/valorization/fee receiver/admin role
-        if (role != WHITELISTED) _revokeRole(role, getRoleMember(role, 0));
-        super.grantRole(role, account);
-    }
-
+   
     /////////////////
     // MVP UPGRADE //
     /////////////////
@@ -356,9 +358,9 @@ contract Vault is
         return 0;
     }
 
-    function updateNewTotalAssetsCountdown(
+    function updateNewTotalAssetsCountdown( //todo delete for prod
         uint256 _newTotalAssetsCooldown
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) public onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = _newTotalAssetsCooldown;
     }
