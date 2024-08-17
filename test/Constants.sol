@@ -60,6 +60,7 @@ abstract contract Constants is Test {
     VmSafe.Wallet admin = vm.createWallet("admin");
     VmSafe.Wallet feeReceiver = vm.createWallet("feeReceiver");
     VmSafe.Wallet dao = vm.createWallet("dao");
+    VmSafe.Wallet whitelistManager = vm.createWallet("whitelistManager");
 
     VmSafe.Wallet[] users;
 
@@ -113,16 +114,16 @@ abstract contract Constants is Test {
         string memory _vaultName,
         string memory _vaultSymbol,
         uint256 _managementRate,
-        uint256 _performanceRate
+        uint256 _performanceRate,
+        address[] memory whitelist
     ) internal returns (VaultHelper) {
-        address[] memory whitelist = new address[](0);
-
         Vault.InitStruct memory v = Vault.InitStruct({
             underlying: _underlying,
             name: _vaultName,
             symbol: _vaultSymbol,
             dao: dao.addr,
             assetManager: assetManager.addr,
+            whitelistManager: whitelistManager.addr,
             valorization: valorizator.addr,
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
@@ -156,7 +157,10 @@ abstract contract Constants is Test {
 
         feeRegistry = new FeeRegistry();
         feeRegistry.initialize(dao.addr);
+
         feeModule = new FeeModule();
+        address[] memory whitelist = new address[](0);
+
         vm.prank(dao.addr);
         feeRegistry.setProtocolRate(_protocolRate);
 
@@ -169,7 +173,8 @@ abstract contract Constants is Test {
                 vaultName,
                 vaultSymbol,
                 _managementRate,
-                _performanceRate
+                _performanceRate,
+                whitelist
             );
         } else {
             vm.startPrank(owner.addr);
@@ -182,6 +187,7 @@ abstract contract Constants is Test {
                 symbol: vaultSymbol,
                 dao: dao.addr,
                 assetManager: assetManager.addr,
+                whitelistManager: whitelistManager.addr,
                 valorization: valorizator.addr,
                 admin: admin.addr,
                 feeReceiver: feeReceiver.addr,
@@ -196,6 +202,16 @@ abstract contract Constants is Test {
             vault.initialize(v);
             vm.stopPrank();
         }
+
+        // console.log(feeReceiver.addr);
+        // console.log(dao.addr);
+        // console.log(assetManager.addr);
+        // console.log(whitelistManager.addr);
+        // console.log(valorizator.addr);
+        // console.log(admin.addr);
+        // console.log(vault.pendingSilo());
+        // console.log(address(0));
+
         vm.label(address(vault), vaultName);
         vm.label(vault.pendingSilo(), "vault.pendingSilo");
         // vm.label(vault.claimableSilo(), "vault.claimableSilo");
