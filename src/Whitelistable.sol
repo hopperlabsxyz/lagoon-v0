@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
-import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import {Roles} from "./Roles.sol";
 
 bytes32 constant WHITELISTED = keccak256("WHITELISTED");
 
 error NotWhitelisted(address account);
 
-contract Whitelistable is AccessControlEnumerableUpgradeable {
+contract Whitelistable is Roles {
     /// @custom:storage-location erc7201:hopper.storage.Whitelistable
     struct WhitelistableStorage {
         bool activated;
@@ -34,7 +34,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
     ) internal onlyInitializing {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         $.activated = _activateWhitelist;
-        __AccessControlEnumerable_init();
+        // __AccessControlEnumerable_init();
     }
 
     function getWhitelistActivated() public view returns (bool) {
@@ -42,7 +42,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         return $.activated;
     }
 
-    function deactivateWhitelist() public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function deactivateWhitelist() public onlyOwner {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         $.activated = false;
     }
