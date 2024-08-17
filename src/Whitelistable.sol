@@ -12,8 +12,7 @@ error MerkleTreeMode();
 
 // events
 event RootUpdated(bytes32 indexed root);
-event AddedToWhitelist(address indexed account);
-event RevokedFromWhitelist(address indexed account);
+event WhitelistUpdated(address indexed account, bool authorized);
 
 /// @custom:storage-location erc7201:hopper.storage.Whitelistable
 struct WhitelistableStorage {
@@ -98,7 +97,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
          require($.root == 0 /*, MerkleTreeMode() */);
 
         $.isWhitelisted[account] = true;
-        emit AddedToWhitelist(account);
+        emit WhitelistUpdated(account, true);
     }
 
     // @notice Adds multiple accounts to the whitelist
@@ -111,7 +110,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
 
         for (uint256 i = 0; i < accounts.length; i++) {
             $.isWhitelisted[accounts[i]] = true;
-            emit AddedToWhitelist(accounts[i]);
+            emit WhitelistUpdated(accounts[i], true);
         }
     }
 
@@ -124,7 +123,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
         require($.root == 0 /*, MerkleTreeMode() */);
 
         $.isWhitelisted[account] = false;
-        emit RevokedFromWhitelist(account);
+        emit WhitelistUpdated(account, false);
     }
 
     // @notice Removes multiple accounts from the whitelist
@@ -137,7 +136,7 @@ contract Whitelistable is AccessControlEnumerableUpgradeable {
 
         for (uint256 i = 0; i < accounts.length; i++) {
             $.isWhitelisted[accounts[i]] = false;
-            emit RevokedFromWhitelist(accounts[i]);
+            emit WhitelistUpdated(accounts[i], false);
         }
     }
 }
