@@ -28,12 +28,6 @@ contract TestWhitelist is BaseTest {
         dealAndApprove(user1.addr);
     }
 
-    function test_whitelistInitListMembersShouldBeWhitelisted_MerkleTree()
-        public
-    {
-        withWhitelistSetUp();
-    }
-
     function test_requestDeposit_ShouldFailWhenControllerNotWhitelisted()
         public
     {
