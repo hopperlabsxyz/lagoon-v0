@@ -147,7 +147,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
         );
     }
 
-    function test_requestDeposit_ShouldFailWhenControllerNotWhitelistedandOperatorAndOwnerAre()
+    function test_requestDeposit_ShouldFailWhenControllerNotWhitelistedAndOperatorAndOwnerAre()
         public
     {
         withWhitelistSetUp(1); // user1.addr is whitelisted
