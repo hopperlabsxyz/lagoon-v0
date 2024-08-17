@@ -295,6 +295,11 @@ contract BaseTest is Test, Constants {
         vault.addToWhitelist(users);
     }
 
+    function unwhitelist(address[] memory users) public {
+        vm.prank(vault.whitelistManagerRole());
+        vault.revokeFromWhitelist(users);
+    }
+
     function unwhitelist(address user) public {
         vm.prank(vault.whitelistManagerRole());
         vault.revokeFromWhitelist(user);

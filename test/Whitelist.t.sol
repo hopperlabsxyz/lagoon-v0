@@ -4,7 +4,7 @@ pragma solidity 0.8.25;
 import "forge-std/Test.sol";
 import {Vault} from "@src/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {NotWhitelisted} from "@src/Whitelistable.sol";
+import {NotWhitelisted, WhitelistUpdated} from "@src/Whitelistable.sol";
 import {BaseTest} from "./Base.sol";
 
 contract TestWhitelist is BaseTest {
@@ -104,6 +104,8 @@ contract TestWhitelist is BaseTest {
 
     function test_whitelist() public {
         withWhitelistSetUp();
+        vm.expectEmit(true, true, true, true);
+        emit WhitelistUpdated(user1.addr, true);
         whitelist(user1.addr);
         assertEq(vault.isWhitelisted(user1.addr, new bytes32[](0)), true);
     }
@@ -113,28 +115,87 @@ contract TestWhitelist is BaseTest {
         address[] memory users = new address[](2);
         users[0] = user1.addr;
         users[1] = user2.addr;
+        vm.expectEmit(true, true, true, true);
+        emit WhitelistUpdated(user1.addr, true);
+        vm.expectEmit(true, true, true, true);
+        emit WhitelistUpdated(user2.addr, true);
         whitelist(users);
         assertEq(vault.isWhitelisted(user1.addr, new bytes32[](0)), true);
     }
 
-    function test_unwhitelistList() public {
+    function test_unwhitelist() public {
         withWhitelistSetUp();
         address[] memory users = new address[](2);
         users[0] = user1.addr;
         users[1] = user2.addr;
+        vm.expectEmit(true, true, true, true);
+        emit WhitelistUpdated(user1.addr, true);
+        vm.expectEmit(true, true, true, true);
+        emit WhitelistUpdated(user2.addr, true);
         whitelist(users);
         assertEq(
             vault.isWhitelisted(user1.addr, new bytes32[](0)),
             true,
             "user1 is not whitelisted"
         );
+        vm.expectEmit(true, true, true, true);
+        emit WhitelistUpdated(user1.addr, false);
         unwhitelist(users[0]);
         assertEq(
             vault.isWhitelisted(user1.addr, new bytes32[](0)),
             false,
             "user1 is still whitelisted"
         );
+        vm.expectEmit(true, true, true, true);
+        emit WhitelistUpdated(user2.addr, false);
         unwhitelist(users[1]);
+        assertEq(
+            vault.isWhitelisted(user2.addr, new bytes32[](0)),
+            false,
+            "user2 is still whitelisted"
+        );
+    }
+
+    function test_unwhitelistList() public {
+        withWhitelistSetUp();
+        address[] memory users = new address[](2);
+
+        users[0] = user1.addr;
+        users[1] = user2.addr;
+
+        vm.expectEmit(true, true, true, true);
+        emit WhitelistUpdated(user1.addr, true);
+
+        vm.expectEmit(true, true, true, true);
+        emit WhitelistUpdated(user2.addr, true);
+
+        whitelist(users);
+
+        assertEq(
+            vault.isWhitelisted(user1.addr, new bytes32[](0)),
+            true,
+            "user1 is not whitelisted"
+        );
+
+        assertEq(
+            vault.isWhitelisted(user2.addr, new bytes32[](0)),
+            true,
+            "user2 is not whitelisted"
+        );
+
+        vm.expectEmit(true, true, true, true);
+        emit WhitelistUpdated(user1.addr, false);
+
+        vm.expectEmit(true, true, true, true);
+        emit WhitelistUpdated(user2.addr, false);
+
+        unwhitelist(users);
+
+        assertEq(
+            vault.isWhitelisted(user1.addr, new bytes32[](0)),
+            false,
+            "user1 is still whitelisted"
+        );
         assertEq(
             vault.isWhitelisted(user2.addr, new bytes32[](0)),
             false,
