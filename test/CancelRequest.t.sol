@@ -8,8 +8,9 @@ import {BaseTest} from "./Base.sol";
 
 contract TestCancelRequest is BaseTest {
     function setUp() public {
+        enableWhitelist = false;
         setUpVault(0, 0, 0);
-        dealAndApproveAndWhitelist(user1.addr);
+        dealAndApprove(user1.addr);
         uint256 user1Assets = assetBalance(user1.addr);
         requestDeposit(user1Assets / 2, user1.addr);
 
@@ -35,7 +36,7 @@ contract TestCancelRequest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_cancelRequestRedeem() public {
+    function test_cancelRequestRedeem2() public {
         uint256 sharesBeforeRequest = vault.balanceOf(user1.addr);
         requestRedeem(sharesBeforeRequest, user1.addr);
         uint256 sharesBeforeCancel = vault.balanceOf(user1.addr);

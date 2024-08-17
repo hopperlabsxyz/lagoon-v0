@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
-contract FeeRegistry is OwnableUpgradeable {
-    uint256 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
+uint256 constant MAX_PROTOCOL_RATE = 3000; // 30 %
 
+contract FeeRegistry is Ownable2StepUpgradeable {
     /// @custom:storage-location erc7201:hopper.storage.FeeRegistry
     struct FeeRegistryStorage {
         uint256 protocolRate;
@@ -75,4 +75,6 @@ contract FeeRegistry is OwnableUpgradeable {
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
         return $.customRate[vault];
     }
+
+    function protocol() external view returns (address) {}
 }
