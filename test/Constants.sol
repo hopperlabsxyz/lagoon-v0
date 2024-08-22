@@ -21,6 +21,8 @@ abstract contract Constants is Test {
         ERC20Permit(vm.envAddress(string.concat("USDC_", network)));
     ERC20 immutable WETH =
         ERC20(vm.envAddress(string.concat("WETH_", network)));
+    address immutable WRAPPED_NATIVE_TOKEN =
+        vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
     ERC20 immutable WBTC =
         ERC20(vm.envAddress(string.concat("WBTC_", network)));
     ERC20 immutable ETH = ERC20(vm.envAddress(string.concat("ETH_", network)));
@@ -131,6 +133,7 @@ abstract contract Constants is Test {
             feeRegistry: address(feeRegistry),
             managementRate: _managementRate,
             performanceRate: _performanceRate,
+            wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
             cooldown: 1 days,
             enableWhitelist: enableWhitelist,
             whitelist: whitelist
@@ -195,6 +198,7 @@ abstract contract Constants is Test {
                 feeRegistry: address(feeRegistry),
                 managementRate: _managementRate,
                 performanceRate: _performanceRate,
+                wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
                 cooldown: 1 days,
                 enableWhitelist: enableWhitelist,
                 whitelist: whitelistInit
