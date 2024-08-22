@@ -10,6 +10,7 @@ import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC20, ERC20Upgradeable, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {Silo} from "./Silo.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IWETH9} from "./interfaces/IWETH9.sol";
 // import {console} from "forge-std/console.sol";
 
 struct EpochData {
@@ -56,6 +57,7 @@ abstract contract ERC7540Upgradeable is
         mapping(uint256 epochId => EpochData epoch) epochs;
         mapping(address user => uint256 epochId) lastDepositRequestId;
         mapping(address user => uint256 epochId) lastRedeemRequestId;
+        IWETH9 wrapped_native_token;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
@@ -74,12 +76,15 @@ abstract contract ERC7540Upgradeable is
         }
     }
 
-    function __ERC7540_init(IERC20 underlying) internal onlyInitializing {
+    function __ERC7540_init(
+        IERC20 underlying,
+        address wrapped_native_token
+    ) internal onlyInitializing {
         ERC7540Storage storage $ = _getERC7540Storage();
         $.depositId = 1;
         $.redeemId = 2;
-        // $.claimableSilo = new Silo(underlying);
         $.pendingSilo = new Silo(underlying);
+        $.wrapped_native_token = IWETH9(wrapped_native_token);
     }
 
     modifier onlyOperator(address controller) {
@@ -209,7 +214,7 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address controller,
         address owner
-    ) public virtual onlyOperator(owner) returns (uint256 _depositId) {
+    ) public payable virtual onlyOperator(owner) returns (uint256 _depositId) {
         if (assets == 0) revert RequestDepositZero();
 
         uint256 claimbaleDeposit = claimableDepositRequest(0, controller);
@@ -217,8 +222,16 @@ abstract contract ERC7540Upgradeable is
             _deposit(claimbaleDeposit, controller, controller);
 
         ERC7540Storage storage $ = _getERC7540Storage();
-
-        IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
+        if (msg.value != 0) {
+            if (asset() == address($.wrapped_native_token))
+                IWETH9($.wrapped_native_token).deposit{value: msg.value}();
+            else revert("");
+        } else
+            IERC20(asset()).safeTransferFrom(
+                owner,
+                address($.pendingSilo),
+                assets
+            );
 
         _depositId = $.depositId;
         $.epochs[_depositId].depositRequest[controller] += assets;
