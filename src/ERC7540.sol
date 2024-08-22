@@ -40,6 +40,8 @@ error ZeroPendingRedeem();
 
 error RequestIdNotClaimable();
 
+error CantDepositEth();
+
 abstract contract ERC7540Upgradeable is
     IERC7540Redeem,
     IERC7540Deposit,
@@ -225,7 +227,7 @@ abstract contract ERC7540Upgradeable is
         if (msg.value != 0) {
             if (asset() == address($.wrapped_native_token))
                 IWETH9($.wrapped_native_token).deposit{value: msg.value}();
-            else revert("");
+            else revert CantDepositEth();
         } else
             IERC20(asset()).safeTransferFrom(
                 owner,
