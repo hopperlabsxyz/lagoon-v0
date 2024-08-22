@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 import {Vault} from "@src/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseTest} from "./Base.sol";
-import {CantDepositEth} from "@src/ERC7540.sol";
 
 // import {console} from "forge-std/console.sol";
 
@@ -26,21 +25,15 @@ contract TestRequestDeposit is BaseTest {
     }
 
     function test_requestDeposit_with_eth() public {
-        uint256 userBalance = 10e18;
-        string memory wtoken = "WRAPPED_NATIVE_TOKEN";
-        bool shouldFail = keccak256(abi.encode(underlyingName)) !=
-            keccak256(abi.encode(wtoken));
+        uint256 userRequest = 10e18;
         vm.startPrank(user1.addr);
-        if (shouldFail) vm.expectRevert(CantDepositEth.selector);
-        vault.requestDeposit{value: userBalance}(
-            userBalance,
+        vault.requestDeposit{value: userRequest}(
+            userRequest,
             user1.addr,
             user1.addr
         );
-        if (!shouldFail) {
-            assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance);
-            assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
-        }
+        assertEq(vault.pendingDepositRequest(0, user1.addr), userRequest);
+        assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
     }
 
     function test_requestDepositTwoTimes() public {
