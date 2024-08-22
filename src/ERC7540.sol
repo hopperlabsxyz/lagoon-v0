@@ -40,6 +40,8 @@ error ZeroPendingRedeem();
 
 error RequestIdNotClaimable();
 
+error CantDepositNativeToken();
+
 abstract contract ERC7540Upgradeable is
     IERC7540Redeem,
     IERC7540Deposit,
@@ -222,9 +224,16 @@ abstract contract ERC7540Upgradeable is
             _deposit(claimbaleDeposit, controller, controller);
 
         ERC7540Storage storage $ = _getERC7540Storage();
-        if (msg.value != 0)
-            IWETH9($.wrapped_native_token).deposit{value: msg.value}();
-        else
+        if (msg.value != 0) {
+            // if user sends eth and the underlying is wETH we will wrap it for him
+            if (asset() == address($.wrapped_native_token)) {
+                IWETH9($.wrapped_native_token).deposit{value: msg.value}();
+                IWETH9($.wrapped_native_token).transfer(
+                    address($.pendingSilo),
+                    msg.value
+                );
+            } else revert CantDepositNativeToken();
+        } else
             IERC20(asset()).safeTransferFrom(
                 owner,
                 address($.pendingSilo),
