@@ -47,6 +47,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address feeReceiver;
         address feeModule;
         address feeRegistry;
+        address wrappedNativeToken;
         uint256 managementRate;
         uint256 performanceRate;
         uint256 cooldown;
@@ -89,7 +90,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
             init.managementRate,
             init.performanceRate
         );
-        __ERC7540_init(init.underlying);
+        __ERC7540_init(init.underlying, init.wrappedNativeToken);
         __Whitelistable_init(init.enableWhitelist);
 
         VaultStorage storage $ = _getVaultStorage();
@@ -130,7 +131,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 assets,
         address controller,
         address owner
-    ) public override(ERC7540Upgradeable) returns (uint256 requestId) {
+    ) public payable override(ERC7540Upgradeable) returns (uint256 requestId) {
         return _requestDeposit(assets, controller, owner, abi.encode(""));
     }
 
@@ -139,7 +140,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address controller,
         address owner,
         bytes calldata data
-    ) public returns (uint256 requestId) {
+    ) public payable returns (uint256 requestId) {
         return _requestDeposit(assets, controller, owner, data);
     }
 
