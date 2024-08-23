@@ -34,21 +34,15 @@ contract BaseTest is Test, Constants {
         address owner,
         address operator
     ) internal returns (uint256) {
-        uint256 requestDepBefore = vault.pendingDeposit();
-        uint256 depositId = vault.depositId();
-        vm.prank(operator);
-        uint256 requestId = vault.requestDeposit(amount, controller, owner);
-        assertEq(
-            vault.pendingDeposit(),
-            requestDepBefore + amount,
-            "pendingDeposit value did not increase properly"
-        );
-        assertEq(
-            depositId,
-            requestId,
-            "requestId should be equal to current depositId"
-        );
-        return requestId;
+        return
+            _requestDeposit(
+                amount,
+                controller,
+                owner,
+                operator,
+                abi.encode(""),
+                false
+            );
     }
 
     function requestDeposit(
@@ -58,26 +52,8 @@ contract BaseTest is Test, Constants {
         address operator,
         bytes memory data
     ) internal returns (uint256) {
-        uint256 requestDepBefore = vault.pendingDeposit();
-        uint256 depositId = vault.depositId();
-        vm.prank(operator);
-        uint256 requestId = vault.requestDeposit(
-            amount,
-            controller,
-            owner,
-            data
-        );
-        assertEq(
-            vault.pendingDeposit(),
-            requestDepBefore + amount,
-            "pendingDeposit value did not increase properly"
-        );
-        assertEq(
-            depositId,
-            requestId,
-            "requestId should be equal to current depositId"
-        );
-        return requestId;
+        return
+            _requestDeposit(amount, controller, owner, operator, data, false);
     }
 
     function requestDeposit(
@@ -90,9 +66,67 @@ contract BaseTest is Test, Constants {
     function requestDeposit(
         uint256 amount,
         address user,
+        bool viaEth
+    ) internal returns (uint256) {
+        return
+            _requestDeposit(amount, user, user, user, abi.encode(""), viaEth);
+    }
+
+    function requestDeposit(
+        uint256 amount,
+        address user,
         bytes memory data
     ) internal returns (uint256) {
-        return requestDeposit(amount, user, user, user, data);
+        return _requestDeposit(amount, user, user, user, data, false);
+    }
+
+    function _requestDeposit(
+        uint256 amount,
+        address controller,
+        address owner,
+        address operator,
+        bytes memory data,
+        bool viaEth
+    ) internal returns (uint256) {
+        uint256 requestDepBefore = vault.pendingDeposit();
+        uint256 pendingSiloAssetBalance = assetBalance(
+            address(vault.pendingSilo())
+        );
+        uint256 vaultAssetBalance = assetBalance(address(vault));
+
+        uint256 depositId = vault.depositId();
+        uint256 requestId;
+        vm.prank(operator);
+        uint256 value = viaEth ? amount : 0;
+        if (keccak256(data) == keccak256(abi.encode("")))
+            requestId = vault.requestDeposit{value: value}(
+                amount,
+                controller,
+                owner
+            );
+        else requestId = vault.requestDeposit(amount, controller, owner, data);
+
+        assertEq(
+            vault.pendingDeposit(),
+            requestDepBefore + amount,
+            "pendingDeposit value did not increase properly"
+        );
+        assertEq(
+            assetBalance(address(vault.pendingSilo())),
+            pendingSiloAssetBalance + amount,
+            "pending silo asset balance did not increase properly"
+        );
+        assertEq(
+            assetBalance(address(vault)),
+            vaultAssetBalance,
+            "vault asset balance should not increase"
+        );
+        assertEq(
+            depositId,
+            requestId,
+            "requestId should be equal to current depositId"
+        );
+        return requestId;
     }
 
     function deposit(
