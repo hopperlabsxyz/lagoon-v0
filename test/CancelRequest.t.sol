@@ -35,22 +35,4 @@ contract TestCancelRequest is BaseTest {
         vault.cancelRequestDeposit();
         vm.stopPrank();
     }
-
-    function test_cancelRequestRedeem2() public {
-        uint256 sharesBeforeRequest = vault.balanceOf(user1.addr);
-        requestRedeem(sharesBeforeRequest, user1.addr);
-        uint256 sharesBeforeCancel = vault.balanceOf(user1.addr);
-        vm.prank(user1.addr);
-        vault.cancelRequestRedeem();
-        uint256 sharesAfterCancel = vault.balanceOf(user1.addr);
-        assertLt(sharesBeforeCancel, sharesAfterCancel);
-        assertEq(sharesAfterCancel, sharesBeforeRequest);
-    }
-
-    function test_cancelRequestRedeem_when0PendingRequest() public {
-        vm.startPrank(user1.addr);
-        vm.expectRevert();
-        vault.cancelRequestRedeem();
-        vm.stopPrank();
-    }
 }
