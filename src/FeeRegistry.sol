@@ -11,6 +11,7 @@ contract FeeRegistry is Ownable2StepUpgradeable {
         uint256 protocolRate;
         mapping(address => bool) isCustomRate;
         mapping(address => uint256) customRate;
+        address protocolFeeReceiver;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -18,8 +19,13 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     bytes32 private constant feeRegistryStorage =
         0xfae567c932a2d69f96a50330b7967af6689561bf72e1f4ad815fc97800b3f300;
 
-    function initialize(address initialOwner) public initializer {
+    function initialize(
+        address initialOwner,
+        address _protocolFeeReceiver
+    ) public initializer {
         __Ownable_init(initialOwner);
+        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
+        $.protocolFeeReceiver = _protocolFeeReceiver;
     }
 
     function _getFeeRegistryStorage()
@@ -76,5 +82,7 @@ contract FeeRegistry is Ownable2StepUpgradeable {
         return $.customRate[vault];
     }
 
-    function protocol() external view returns (address) {}
+    function protocolFeeReceiver() external view returns (address) {
+        return _getFeeRegistryStorage().protocolFeeReceiver;
+    }
 }
