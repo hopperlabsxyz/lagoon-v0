@@ -156,7 +156,7 @@ abstract contract Constants is Test {
         bool proxy = vm.envBool("PROXY");
 
         feeRegistry = new FeeRegistry();
-        feeRegistry.initialize(dao.addr);
+        feeRegistry.initialize(dao.addr, dao.addr);
 
         feeModule = new FeeModule();
         address[] memory whitelist = new address[](0);
