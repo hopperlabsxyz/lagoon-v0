@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
-contract FeeRegistry is OwnableUpgradeable {
-    uint256 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
+uint256 constant MAX_PROTOCOL_RATE = 3000; // 30 %
 
+contract FeeRegistry is Ownable2StepUpgradeable {
     /// @custom:storage-location erc7201:hopper.storage.FeeRegistry
     struct FeeRegistryStorage {
         uint256 protocolRate;
         mapping(address => bool) isCustomRate;
         mapping(address => uint256) customRate;
+        address protocolFeeReceiver;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -18,8 +19,13 @@ contract FeeRegistry is OwnableUpgradeable {
     bytes32 private constant feeRegistryStorage =
         0xfae567c932a2d69f96a50330b7967af6689561bf72e1f4ad815fc97800b3f300;
 
-    function initialize(address initialOwner) public initializer {
+    function initialize(
+        address initialOwner,
+        address _protocolFeeReceiver
+    ) public initializer {
         __Ownable_init(initialOwner);
+        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
+        $.protocolFeeReceiver = _protocolFeeReceiver;
     }
 
     function _getFeeRegistryStorage()
@@ -74,5 +80,9 @@ contract FeeRegistry is OwnableUpgradeable {
     function customRate(address vault) external view returns (uint256) {
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
         return $.customRate[vault];
+    }
+
+    function protocolFeeReceiver() external view returns (address) {
+        return _getFeeRegistryStorage().protocolFeeReceiver;
     }
 }

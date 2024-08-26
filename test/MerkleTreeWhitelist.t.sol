@@ -94,7 +94,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
     {
         (root, proofs, accounts) = loadConfig(whitelistId);
         setUpVault(0, 0, 0);
-        vm.prank(vault.whitelistManagerRole());
+        vm.prank(vault.whitelistManager());
         vault.setRoot(root);
 
         uint256 len = accounts.length;
@@ -172,7 +172,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
 
         deposit(userBalance, user1.addr);
         address receiver = user2.addr;
-        vm.prank(vault.whitelistManagerRole());
+        vm.prank(vault.owner());
         vault.deactivateWhitelist();
         vm.assertEq(vault.isWhitelistActivated(), false);
         uint256 shares = vault.balanceOf(user1.addr);
@@ -248,7 +248,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
         (bytes32 root, , ) = withWhitelistSetUp(1); // user1.addr is whitelisted
         assertEq(root, vault.getRoot());
         (root, , ) = loadConfig(2);
-        vm.prank(vault.whitelistManagerRole());
+        vm.prank(vault.whitelistManager());
         vault.setRoot(root);
         assertEq(root, vault.getRoot());
     }
