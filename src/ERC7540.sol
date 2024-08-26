@@ -479,15 +479,6 @@ abstract contract ERC7540Upgradeable is
         return shares;
     }
 
-    function cancelRequestRedeem() external {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        address msgSender = _msgSender();
-        uint256 request = $.epochs[$.redeemId].redeemRequest[msgSender];
-        if (request == 0) revert ZeroPendingRedeem();
-        $.epochs[$.redeemId].redeemRequest[msgSender] = 0;
-        _transfer(pendingSilo(), msgSender, request);
-    }
-
     // ## Conversion functions ##
     function convertToShares(
         uint256 assets,
