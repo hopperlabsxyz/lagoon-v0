@@ -40,7 +40,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         IERC20 underlying;
         string name;
         string symbol;
-        address dao;
         address safe;
         address whitelistManager;
         address valorization;
@@ -97,25 +96,21 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
             whitelistManager: init.whitelistManager,
             feeReceiver: init.feeReceiver,
             safe: init.safe,
-            protocolRegistry: init.feeRegistry,
-            protocolFeeReceiver: init.dao,
+            feeRegistry: init.feeRegistry,
             valorizationManager: init.valorization
         }));
 
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = init.cooldown;
 
-
-
-
         if (init.enableWhitelist) {
             WhitelistableStorage
                 storage $whitelistStorage = _getWhitelistableStorage();
             $whitelistStorage.isWhitelisted[init.feeReceiver] = true;
-            $whitelistStorage.isWhitelisted[init.dao] = true;
+            $whitelistStorage.isWhitelisted[protocolFeeReceiver()] = true;
             $whitelistStorage.isWhitelisted[init.safe] = true;
             $whitelistStorage.isWhitelisted[init.whitelistManager] = true;
-            $whitelistStorage.isWhitelisted[init.valorization] = true;
+            $whitelistStorage.isWhitelisted[init.valorization] = true; // todo remove ??
             $whitelistStorage.isWhitelisted[init.admin] = true;
             $whitelistStorage.isWhitelisted[pendingSilo()] = true;
             for (uint256 i = 0; i < init.whitelist.length; i++) {

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {FeeRegistry} from "./FeeRegistry.sol";
 
 contract Roles is Ownable2StepUpgradeable {
     struct RolesStorage {
         address whitelistManager;
         address feeReceiver;
         address safe;
-        address protocolRegistry; // todo use
-        address protocolFeeReceiver; // todo get it from protocolFeeReceiver
+        address feeRegistry;
         address valorizationManager;
     }
 
@@ -17,8 +17,7 @@ contract Roles is Ownable2StepUpgradeable {
         $.whitelistManager = roles.whitelistManager;
         $.feeReceiver = roles.feeReceiver;
         $.safe = roles.safe;
-        $.protocolRegistry = roles.protocolRegistry;
-        $.protocolFeeReceiver = roles.protocolFeeReceiver;
+        $.feeRegistry = roles.feeRegistry;
         $.valorizationManager = roles.valorizationManager;
     }
 
@@ -58,7 +57,8 @@ contract Roles is Ownable2StepUpgradeable {
     }
 
     function protocolFeeReceiver() public view returns (address) {
-        return _getRolesStorage().protocolFeeReceiver;
+        return
+            FeeRegistry(_getRolesStorage().feeRegistry).protocolFeeReceiver();
     }
 
     function safe() public view returns (address) {
@@ -69,8 +69,8 @@ contract Roles is Ownable2StepUpgradeable {
         return _getRolesStorage().valorizationManager;
     }
 
-    function protocolRegistry() public view returns (address) {
-        return _getRolesStorage().protocolRegistry;
+    function feeRegistry() public view returns (address) {
+        return _getRolesStorage().feeRegistry;
     }
 
     function updateWhitelistManager(
