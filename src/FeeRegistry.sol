@@ -9,9 +9,9 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     /// @custom:storage-location erc7201:hopper.storage.FeeRegistry
     struct FeeRegistryStorage {
         uint256 protocolRate;
+        address protocolFeeReceiver;
         mapping(address => bool) isCustomRate;
         mapping(address => uint256) customRate;
-        address protocolFeeReceiver;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -38,20 +38,10 @@ contract FeeRegistry is Ownable2StepUpgradeable {
         }
     }
 
-    function protocolRate(address vault) external view returns (uint256 rate) {
-        return _protocolRate(vault);
-    }
-
-    function protocolRate() external view returns (uint256 rate) {
-        return _protocolRate(msg.sender);
-    }
-
-    function _protocolRate(address vault) internal view returns (uint256 rate) {
-        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
-        if ($.isCustomRate[vault]) {
-            return $.customRate[vault];
-        }
-        return $.protocolRate;
+    function updateProtocolFeeReceiver(
+        address _protocolFeeReceiver
+    ) external onlyOwner {
+        _getFeeRegistryStorage().protocolFeeReceiver = _protocolFeeReceiver;
     }
 
     function setProtocolRate(uint256 rate) external onlyOwner {
@@ -84,5 +74,21 @@ contract FeeRegistry is Ownable2StepUpgradeable {
 
     function protocolFeeReceiver() external view returns (address) {
         return _getFeeRegistryStorage().protocolFeeReceiver;
+    }
+
+    function protocolRate(address vault) external view returns (uint256 rate) {
+        return _protocolRate(vault);
+    }
+
+    function protocolRate() external view returns (uint256 rate) {
+        return _protocolRate(msg.sender);
+    }
+
+    function _protocolRate(address vault) internal view returns (uint256 rate) {
+        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
+        if ($.isCustomRate[vault]) {
+            return $.customRate[vault];
+        }
+        return $.protocolRate;
     }
 }

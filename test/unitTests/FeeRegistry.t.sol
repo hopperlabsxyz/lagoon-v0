@@ -13,7 +13,7 @@ contract TestFeeRegistry is BaseTest {
 
     function setUp() public {
         feeRegistry = new FeeRegistry();
-        feeRegistry.initialize(dao.addr, address(0));
+        feeRegistry.initialize(dao.addr, dao.addr);
     }
 
     function test_init() public view {
