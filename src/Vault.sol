@@ -41,7 +41,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         string name;
         string symbol;
         address dao;
-        address assetManager;
+        address safe;
         address whitelistManager;
         address valorization;
         address admin;
@@ -96,7 +96,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         __Roles_init(Roles.RolesStorage({
             whitelistManager: init.whitelistManager,
             feeReceiver: init.feeReceiver,
-            assetManager: init.assetManager,
+            safe: init.safe,
             protocolRegistry: init.feeRegistry,
             protocolFeeReceiver: init.dao,
             valorizationManager: init.valorization
@@ -113,7 +113,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
                 storage $whitelistStorage = _getWhitelistableStorage();
             $whitelistStorage.isWhitelisted[init.feeReceiver] = true;
             $whitelistStorage.isWhitelisted[init.dao] = true;
-            $whitelistStorage.isWhitelisted[init.assetManager] = true;
+            $whitelistStorage.isWhitelisted[init.safe] = true;
             $whitelistStorage.isWhitelisted[init.whitelistManager] = true;
             $whitelistStorage.isWhitelisted[init.valorization] = true;
             $whitelistStorage.isWhitelisted[init.admin] = true;
@@ -210,7 +210,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         $.newTotalAssetsTimestamp = block.timestamp;
     }
 
-    function settleDeposit() public override onlyAssetManager {
+    function settleDeposit() public override onlySafe {
         _updateTotalAssets();
         _takeFees();
         _settleDeposit();
@@ -271,17 +271,17 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         // We must not take into account new assets into next fee calculation
         _increaseHighWaterMarkOf(pendingAssets);
 
-        address assetManager = assetManager();
+        address _safe = safe();
         IERC20(asset()).safeTransferFrom(
             pendingSilo(),
-            assetManager,
+            _safe,
             pendingAssets
         );
         $erc7540.depositId += 2;
         // todo emit event
     }
 
-    function settleRedeem() public override onlyAssetManager {
+    function settleRedeem() public override onlySafe {
         _updateTotalAssets();
         _takeFees();
         _settleRedeem();
@@ -293,10 +293,10 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
             pendingShares,
             Math.Rounding.Floor
         );
-        address assetManager = assetManager();
-        uint256 assetsInTheSafe = IERC20(asset()).balanceOf(assetManager);
+        address _safe = safe();
+        uint256 assetsInTheSafe = IERC20(asset()).balanceOf(_safe);
         uint256 approvedBySafe = IERC20(asset()).allowance(
-            assetManager,
+            _safe,
             address(this)
         );
         if (
@@ -321,7 +321,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         _decreaseHighWaterMarkOf(assetsToWithdraw);
 
         IERC20(asset()).safeTransferFrom(
-            assetManager,
+            _safe,
             address(this),
             assetsToWithdraw
         );

@@ -6,7 +6,7 @@ contract Roles is Ownable2StepUpgradeable {
     struct RolesStorage {
         address whitelistManager;
         address feeReceiver;
-        address assetManager; // todo rename safe
+        address safe;
         address protocolRegistry; // todo use
         address protocolFeeReceiver; // todo get it from protocolFeeReceiver
         address valorizationManager;
@@ -16,7 +16,7 @@ contract Roles is Ownable2StepUpgradeable {
         RolesStorage storage $ = _getRolesStorage();
         $.whitelistManager = roles.whitelistManager;
         $.feeReceiver = roles.feeReceiver;
-        $.assetManager = roles.assetManager;
+        $.safe = roles.safe;
         $.protocolRegistry = roles.protocolRegistry;
         $.protocolFeeReceiver = roles.protocolFeeReceiver;
         $.valorizationManager = roles.valorizationManager;
@@ -34,8 +34,8 @@ contract Roles is Ownable2StepUpgradeable {
         }
     }
 
-    modifier onlyAssetManager() {
-        require(_getRolesStorage().assetManager == _msgSender());
+    modifier onlySafe() {
+        require(_getRolesStorage().safe == _msgSender());
         _;
     }
 
@@ -61,8 +61,8 @@ contract Roles is Ownable2StepUpgradeable {
         return _getRolesStorage().protocolFeeReceiver;
     }
 
-    function assetManager() public view returns (address) {
-        return _getRolesStorage().assetManager;
+    function safe() public view returns (address) {
+        return _getRolesStorage().safe;
     }
 
     function valorizationManager() public view returns (address) {
