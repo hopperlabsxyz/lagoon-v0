@@ -6,7 +6,6 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {VaultHelper} from "./VaultHelper.sol";
 import {Vault} from "@src/Vault.sol";
 import {FeeRegistry} from "@src/FeeRegistry.sol";
-import {FeeModule} from "@src/FeeModule.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 import {Upgrades, Options} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -36,7 +35,6 @@ abstract contract Constants is Test {
     string underlyingName = vm.envString("UNDERLYING_NAME");
     VaultHelper vault;
     FeeRegistry feeRegistry;
-    FeeModule feeModule;
     string vaultName = "vault_";
     string vaultSymbol = "hop_vault_";
 
@@ -129,7 +127,6 @@ abstract contract Constants is Test {
             valorization: valorizator.addr,
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
-            feeModule: address(feeModule),
             feeRegistry: address(feeRegistry),
             managementRate: _managementRate,
             performanceRate: _performanceRate,
@@ -161,7 +158,6 @@ abstract contract Constants is Test {
         feeRegistry = new FeeRegistry();
         feeRegistry.initialize(dao.addr);
 
-        feeModule = new FeeModule();
         address[] memory whitelist = new address[](0);
 
         vm.prank(dao.addr);
@@ -194,7 +190,6 @@ abstract contract Constants is Test {
                 valorization: valorizator.addr,
                 admin: admin.addr,
                 feeReceiver: feeReceiver.addr,
-                feeModule: address(feeModule),
                 feeRegistry: address(feeRegistry),
                 managementRate: _managementRate,
                 performanceRate: _performanceRate,

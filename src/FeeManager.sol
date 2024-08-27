@@ -31,7 +31,6 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
         uint256 lastFeeTime;
         uint256 highWaterMark;
         FeeRegistry feeRegistry;
-        IFeeModule feeModule;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
@@ -59,7 +58,6 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
     }
 
     function __FeeManager_init(
-        address _feeModule,
         address _registry,
         uint256 _managementRate,
         uint256 _performanceRate,
@@ -71,7 +69,6 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         $.feeRegistry = FeeRegistry(_registry);
-        $.feeModule = IFeeModule(_feeModule);
         $.highWaterMark = 10 ** _decimals;
 
         $.managementRate = _managementRate;
