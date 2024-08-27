@@ -5,7 +5,8 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IFeeModule} from "./interfaces/IFeeModule.sol";
 import {FeeRegistry} from "./FeeRegistry.sol";
-// import {console} from "forge-std/console.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {console} from "forge-std/console.sol";
 
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS_DIVIDER = 10_000;
@@ -17,7 +18,7 @@ uint256 constant COOLDOWN = 1 days;
 
 error AboveMaxFee();
 
-contract FeeManager is Initializable {
+abstract contract FeeManager is Initializable, IERC20Metadata {
     using Math for uint256;
 
     uint256 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
@@ -48,11 +49,21 @@ contract FeeManager is Initializable {
         }
     }
 
+    function _convertToAssets(
+        uint256 shares,
+        uint256 totalAssets,
+        uint256 totalSupply,
+        Math.Rounding rounding
+    ) internal view virtual returns (uint256) {
+        return shares.mulDiv(totalAssets + 1, totalSupply + 1, rounding);
+    }
+
     function __FeeManager_init(
         address _feeModule,
         address _registry,
         uint256 _managementRate,
-        uint256 _performanceRate
+        uint256 _performanceRate,
+        uint256 _decimals
     ) internal onlyInitializing {
         require(_managementRate < MAX_MANAGEMENT_RATE /*, AboveMaxFee()*/);
         require(_performanceRate < MAX_PERFORMANCE_RATE /*, AboveMaxFee()*/);
@@ -61,7 +72,7 @@ contract FeeManager is Initializable {
 
         $.feeRegistry = FeeRegistry(_registry);
         $.feeModule = IFeeModule(_feeModule);
-        $.highWaterMark = 0;
+        $.highWaterMark = 10 ** _decimals;
 
         $.managementRate = _managementRate;
         $.performanceRate = _performanceRate;
@@ -119,73 +130,89 @@ contract FeeManager is Initializable {
         $.highWaterMark += amount; // todo: what to do in case of underflow ?
     }
 
-    function maxManagementFee(
-        uint256 _assets,
-        uint256 _timeElapsed
-    ) public pure returns (uint256 maxManagementFees) {
-        uint256 annualFee = _assets.mulDiv(MAX_MANAGEMENT_RATE, BPS);
-        maxManagementFees = annualFee.mulDiv(_timeElapsed, ONE_YEAR);
+    function calculateManagementFee(
+        uint256 assets,
+        uint256 rate,
+        uint256 timeElapsed
+    ) public pure returns (uint256 managementFee) {
+        uint256 annualFee = assets.mulDiv(rate, BPS_DIVIDER);
+        managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
     }
 
-    function maxPerformanceFee(
-        uint256 _assets,
-        uint256 _highWaterMark
-    ) public pure returns (uint256 maxPerformanceFees) {
-        if (_assets > _highWaterMark) {
-            uint256 profit;
+    function calculatePerformanceFee(
+        uint256 _rate,
+        uint256 _totalSupply,
+        uint256 _pricePerShare,
+        uint256 _highWaterMark,
+        uint256 _decimals
+    ) public view returns (uint256 performanceFee) {
+        console.log("_highWaterMark: ", _highWaterMark);
+        if (_pricePerShare > _highWaterMark) {
+            uint256 profitPerShare;
             unchecked {
-                profit = _assets - _highWaterMark;
+                profitPerShare = _pricePerShare - _highWaterMark;
             }
-            maxPerformanceFees = profit.mulDiv(MAX_PERFORMANCE_RATE, BPS);
+            console.log("_profitePerSha: ", profitPerShare);
+            uint256 profit = profitPerShare.mulDiv(
+                _totalSupply,
+                10 ** _decimals
+            );
+            console.log("_profiteeeeeee: ", profit);
+            performanceFee = profit.mulDiv(_rate, BPS);
+            console.log("_perffeeeeeeee: ", performanceFee);
         }
     }
 
     function _calculateFees(
         uint256 newTotalAssets,
-        uint256 totalSupply
+        uint256 totalSupply,
+        uint256 decimals
     ) internal view returns (uint256 managerShares, uint256 protocolShares) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         /// Management fee calculation ///
 
         uint256 timeElapsed = block.timestamp - $.lastFeeTime;
-        uint256 maxManagementFees = maxManagementFee(
-            newTotalAssets,
-            timeElapsed
-        );
-        uint256 managementFees = $.feeModule.calculateManagementFee(
+
+        uint256 managementFees = calculateManagementFee(
             newTotalAssets,
             $.managementRate,
-            timeElapsed,
-            maxManagementFees
+            timeElapsed
         );
-        require(managementFees <= maxManagementFees);
 
         /// Performance fee calculation ///
 
-        uint256 maxPerformanceFees = maxPerformanceFee(
+        uint256 _pricePerShare = _convertToAssets(
+            1 * 10 ** decimals,
             newTotalAssets,
-            $.highWaterMark
+            totalSupply,
+            Math.Rounding.Floor
         );
 
-        uint256 performanceFees = $.feeModule.calculatePerformanceFee(
-            newTotalAssets - managementFees,
+        console.log("_pricePerShare: ", _pricePerShare);
+
+        uint256 performanceFees = calculatePerformanceFee(
             $.performanceRate,
+            totalSupply,
+            _pricePerShare,
             $.highWaterMark,
-            maxPerformanceFees
+            decimals
         );
-
-        require(performanceFees <= maxPerformanceFees);
 
         /// Protocol fee calculation & convertion to shares ///
 
         uint256 totalFees = managementFees + performanceFees;
 
+        console.log("----------------");
+        console.log("totalFees     :", totalFees);
+        console.log("totalSupply   :", totalSupply);
+        console.log("newtotalAssets:", newTotalAssets);
         uint256 totalShares = totalFees.mulDiv(
             totalSupply + 1,
             (newTotalAssets - totalFees) + 1,
             Math.Rounding.Floor
         );
+        console.log("totalShares: ", totalShares);
 
         protocolShares = totalShares.mulDiv($.feeRegistry.protocolRate(), BPS);
         managerShares = totalShares - protocolShares;
