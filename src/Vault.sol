@@ -15,8 +15,7 @@ import {Whitelistable, NotWhitelisted, WHITELISTED, WHITELIST_MANAGER_ROLE} from
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
 import {WhitelistableStorage} from "./Whitelistable.sol";
-import {console} from "forge-std/console.sol";
-// import {console2} from "forge-std/console2.sol";
+// import {console} from "forge-std/console.sol";
 
 using Math for uint256;
 using SafeERC20 for IERC20;
@@ -31,7 +30,6 @@ bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
 bytes32 constant FEE_RECEIVER = keccak256("FEE_RECEIVER");
 
 error CooldownNotOver();
-error AssetManagerNotSet();
 
 /// @custom:oz-upgrades-from VaultV2
 contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
@@ -260,7 +258,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
             1 * 10 ** decimals(),
             Math.Rounding.Floor
         );
-        console.log('Here pps: ', _pricePerShare);
         _setHighWaterMark(_pricePerShare); // when fees are taken done being taken, we update highWaterMark
 
         FeeManagerStorage storage $feeManagerStorage = _getFeeManagerStorage();
@@ -284,8 +281,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         _mint(address(this), shares);
         _totalAssets += pendingAssets;
         $erc7540.totalAssets = _totalAssets;
-        // We must not take into account new assets into next fee calculation
-        // _increaseHighWaterMarkOf(pendingAssets);
+
 
         address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
         IERC20(asset()).safeTransferFrom(
@@ -333,8 +329,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         _burn(pendingSilo(), pendingShares);
         $erc7540.totalAssets = _totalAssets - assetsToWithdraw;
 
-        // high water mark must now be decreased of withdrawn assets
-        // _decreaseHighWaterMarkOf(assetsToWithdraw);
 
         IERC20(asset()).safeTransferFrom(
             assetManager,
