@@ -39,4 +39,17 @@ contract VaultHelper is Vault {
         IERC20Metadata asset = IERC20Metadata(asset());
         return asset.decimals();
     }
+
+    function setFeesHELPER(
+        uint256 managementRate,
+        uint256 performanceRate
+    ) public {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        $.managementRate = managementRate;
+        $.performanceRate = performanceRate;
+    }
+
+    function pricePerShare() public view returns (uint256) {
+        return _convertToAssets(1 * 10 ** decimals(), Math.Rounding.Floor);
+    }
 }
