@@ -15,7 +15,7 @@ import {Whitelistable, NotWhitelisted, WHITELISTED, WHITELIST_MANAGER_ROLE} from
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
 import {WhitelistableStorage} from "./Whitelistable.sol";
-// import {console} from "forge-std/console.sol";
+import {console} from "forge-std/console.sol";
 // import {console2} from "forge-std/console2.sol";
 
 using Math for uint256;
@@ -35,6 +35,8 @@ error AssetManagerNotSet();
 
 /// @custom:oz-upgrades-from VaultV2
 contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
+    using Math for uint256;
+    
     struct InitStruct {
         IERC20 underlying;
         string name;
@@ -88,7 +90,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
             init.feeModule,
             init.feeRegistry,
             init.managementRate,
-            init.performanceRate
+            init.performanceRate,
+            decimals()
         );
         __ERC7540_init(init.underlying, init.wrappedNativeToken);
         __Whitelistable_init(init.enableWhitelist);
@@ -242,7 +245,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 _totalAssets = totalAssets();
         (uint256 managerShares, uint256 protocolShares) = _calculateFees(
             _totalAssets,
-            totalSupply()
+            totalSupply(),
+            decimals()
         );
 
         if (managerShares > 0) {
@@ -252,9 +256,15 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         if (protocolShares > 0) {
             _mint(hopperDao, protocolShares);
         }
+        uint256 _pricePerShare = _convertToAssets(
+            1 * 10 ** decimals(),
+            Math.Rounding.Floor
+        );
+        console.log('Here pps: ', _pricePerShare);
+        _setHighWaterMark(_pricePerShare); // when fees are taken done being taken, we update highWaterMark
+
         FeeManagerStorage storage $feeManagerStorage = _getFeeManagerStorage();
         $feeManagerStorage.lastFeeTime = block.timestamp;
-        _setHighWaterMark(_totalAssets); // when fees are taken done being taken, we update highWaterMark
     }
 
     function _settleDeposit() public {
@@ -269,12 +279,13 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         epoch.totalAssets = _totalAssets;
         epoch.totalSupply = totalSupply();
 
+
         uint256 shares = _convertToShares(pendingAssets, Math.Rounding.Floor);
         _mint(address(this), shares);
         _totalAssets += pendingAssets;
         $erc7540.totalAssets = _totalAssets;
         // We must not take into account new assets into next fee calculation
-        _increaseHighWaterMarkOf(pendingAssets);
+        // _increaseHighWaterMarkOf(pendingAssets);
 
         address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
         IERC20(asset()).safeTransferFrom(
@@ -323,7 +334,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         $erc7540.totalAssets = _totalAssets - assetsToWithdraw;
 
         // high water mark must now be decreased of withdrawn assets
-        _decreaseHighWaterMarkOf(assetsToWithdraw);
+        // _decreaseHighWaterMarkOf(assetsToWithdraw);
 
         IERC20(asset()).safeTransferFrom(
             assetManager,
