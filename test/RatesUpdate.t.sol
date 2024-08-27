@@ -173,4 +173,49 @@ contract testRateUpdates is BaseTest {
             "management rate after 2nd warp"
         );
     }
+
+    function test_updateRatesShouldBeApplyed24HoursAfter_VerifyThroughASettle()
+        public
+    {
+        setUpVault(100, 0, 0); // no fees will be taken
+        address feeReceiver = vault.feeReceiver();
+        assertEq(
+            vault.balanceOf(feeReceiver),
+            0,
+            "fee receiver should have 0 shares, init"
+        );
+        dealAmountAndApproveAndWhitelist(user1.addr, 1000);
+        requestDeposit(1000, user1.addr);
+        updateAndSettle(0);
+        assertEq(
+            vault.balanceOf(feeReceiver),
+            0,
+            "fee receiver should have 0 shares, first settle"
+        );
+        updateTotalAssets(2000);
+        vm.warp(block.timestamp + 1 days);
+        // owner updates rates
+        Rates memory newRates = Rates({
+            managementRate: MAX_MANAGEMENT_RATE,
+            performanceRate: MAX_PERFORMANCE_RATE
+        });
+
+        vm.startPrank(vault.owner());
+
+        vault.updateRates(newRates);
+        vm.stopPrank();
+        settle();
+        assertEq(
+            vault.balanceOf(feeReceiver),
+            0,
+            "fee receiver should have 0 shares, 2nd settle"
+        );
+
+        updateAndSettle(4000); // +100%
+        assertNotEq(
+            vault.balanceOf(feeReceiver),
+            0,
+            "fee receiver should have shares"
+        );
+    }
 }
