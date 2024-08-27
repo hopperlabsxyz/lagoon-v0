@@ -6,7 +6,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IFeeModule} from "./interfaces/IFeeModule.sol";
 import {FeeRegistry} from "./FeeRegistry.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {console} from "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS_DIVIDER = 10_000;
@@ -120,16 +120,6 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
         return _highWaterMark;
     }
 
-    function _decreaseHighWaterMarkOf(uint256 amount) internal {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.highWaterMark -= amount; // todo: what to do in case of underflow ?
-    }
-
-    function _increaseHighWaterMarkOf(uint256 amount) internal {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        $.highWaterMark += amount; // todo: what to do in case of underflow ?
-    }
-
     function calculateManagementFee(
         uint256 assets,
         uint256 rate,
@@ -145,21 +135,17 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
         uint256 _pricePerShare,
         uint256 _highWaterMark,
         uint256 _decimals
-    ) public view returns (uint256 performanceFee) {
-        console.log("_highWaterMark: ", _highWaterMark);
+    ) public pure returns (uint256 performanceFee) {
         if (_pricePerShare > _highWaterMark) {
             uint256 profitPerShare;
             unchecked {
                 profitPerShare = _pricePerShare - _highWaterMark;
             }
-            console.log("_profitePerSha: ", profitPerShare);
             uint256 profit = profitPerShare.mulDiv(
                 _totalSupply,
                 10 ** _decimals
             );
-            console.log("_profiteeeeeee: ", profit);
             performanceFee = profit.mulDiv(_rate, BPS);
-            console.log("_perffeeeeeeee: ", performanceFee);
         }
     }
 
@@ -189,7 +175,7 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
             Math.Rounding.Floor
         );
 
-        console.log("_pricePerShare: ", _pricePerShare);
+        // console.log("_pricePerShare: ", _pricePerShare);
 
         uint256 performanceFees = calculatePerformanceFee(
             $.performanceRate,
@@ -203,18 +189,22 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
 
         uint256 totalFees = managementFees + performanceFees;
 
-        console.log("----------------");
-        console.log("totalFees     :", totalFees);
-        console.log("totalSupply   :", totalSupply);
-        console.log("newtotalAssets:", newTotalAssets);
+        // console.log("----------------");
+        // console.log("totalFees     :", totalFees);
+        // console.log("totalSupply   :", totalSupply);
+        // console.log("newtotalAssets:", newTotalAssets);
         uint256 totalShares = totalFees.mulDiv(
             totalSupply + 1,
             (newTotalAssets - totalFees) + 1,
-            Math.Rounding.Floor
+            Math.Rounding.Ceil
         );
-        console.log("totalShares: ", totalShares);
+        // console.log("totalShares: ", totalShares);
 
-        protocolShares = totalShares.mulDiv($.feeRegistry.protocolRate(), BPS);
+        protocolShares = totalShares.mulDiv(
+            $.feeRegistry.protocolRate(),
+            BPS,
+            Math.Rounding.Ceil
+        );
         managerShares = totalShares - protocolShares;
     }
 }
