@@ -22,8 +22,16 @@ contract testRateUpdates is BaseTest {
         uint256 performanceRate = 2000;
         setUpVault(protocolRate, managementRate, performanceRate);
         assertEq(vault.protocolRate(), protocolRate, "protocolRate");
-        assertEq(vault.performanceRate(), performanceRate, "performanceRate");
-        assertEq(vault.managementRate(), managementRate, "managementRate");
+        assertEq(
+            vault.feeRates().performanceRate,
+            performanceRate,
+            "performanceRate"
+        );
+        assertEq(
+            vault.feeRates().managementRate,
+            managementRate,
+            "managementRate"
+        );
     }
 
     function test_ratesShouldRevertAtInitWhenToHigh() public {
@@ -129,27 +137,39 @@ contract testRateUpdates is BaseTest {
         vm.startPrank(vault.owner());
         vault.updateRates(newRates);
 
-        assertEq(200, vault.performanceRate(), "performance rate after update");
-        assertEq(200, vault.managementRate(), "management rate after update");
+        assertEq(
+            200,
+            vault.feeRates().performanceRate,
+            "performance rate after update"
+        );
+        assertEq(
+            200,
+            vault.feeRates().managementRate,
+            "management rate after update"
+        );
 
         vm.warp(block.timestamp + 1 days - 1);
         assertEq(
             200,
-            vault.performanceRate(),
+            vault.feeRates().performanceRate,
             "performance rate after 1st warp"
         );
-        assertEq(200, vault.managementRate(), "management rate after 1st warp");
+        assertEq(
+            200,
+            vault.feeRates().managementRate,
+            "management rate after 1st warp"
+        );
 
         vm.warp(block.timestamp + 1 days);
 
         assertEq(
             MAX_PERFORMANCE_RATE,
-            vault.performanceRate(),
+            vault.feeRates().performanceRate,
             "performance rate after 2nd warp"
         );
         assertEq(
             MAX_MANAGEMENT_RATE,
-            vault.managementRate(),
+            vault.feeRates().managementRate,
             "management rate after 2nd warp"
         );
     }

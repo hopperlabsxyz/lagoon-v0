@@ -128,6 +128,7 @@ contract TestFeeManager is BaseTest {
             performanceRate: 1_000
         });
         updateRates(newRates);
+        vm.warp(block.timestamp + 1 days);
         address feeReceiver = vault.feeReceiver();
         address hopperDao = vault.protocolFeeReceiver();
 
@@ -245,6 +246,7 @@ contract TestFeeManager is BaseTest {
             performanceRate: 2_000
         });
         updateRates(newRates);
+        vm.warp(block.timestamp + 1 days);
         address feeReceiver = vault.feeReceiver();
         address hopperDao = vault.protocolFeeReceiver();
 
@@ -335,6 +337,7 @@ contract TestFeeManager is BaseTest {
             performanceRate: 2_000
         });
         updateRates(newRates);
+        vm.warp(block.timestamp + 1 days);
 
         address feeReceiver = vault.feeReceiver();
         address hopperDao = vault.protocolFeeReceiver();
