@@ -269,13 +269,13 @@ contract BaseTest is Test, Constants {
     }
 
     function updateTotalAssets(uint256 newTotalAssets) internal {
-        vm.prank(vault.valorizationRole());
+        vm.prank(vault.valorizationManager());
         vault.updateTotalAssets(newTotalAssets);
     }
 
     function settle() internal {
-        dealAmountAndApprove(vault.assetManagerRole(), vault.newTotalAssets());
-        vm.startPrank(vault.assetManagerRole());
+        dealAmountAndApprove(vault.safe(), vault.newTotalAssets());
+        vm.startPrank(vault.safe());
         vault.settleDeposit();
         vm.stopPrank();
     }
@@ -320,22 +320,22 @@ contract BaseTest is Test, Constants {
     }
 
     function whitelist(address user) public {
-        vm.prank(vault.whitelistManagerRole());
+        vm.prank(vault.whitelistManager());
         vault.addToWhitelist(user);
     }
 
     function whitelist(address[] memory users) public {
-        vm.prank(vault.whitelistManagerRole());
+        vm.prank(vault.whitelistManager());
         vault.addToWhitelist(users);
     }
 
     function unwhitelist(address[] memory users) public {
-        vm.prank(vault.whitelistManagerRole());
+        vm.prank(vault.whitelistManager());
         vault.revokeFromWhitelist(users);
     }
 
     function unwhitelist(address user) public {
-        vm.prank(vault.whitelistManagerRole());
+        vm.prank(vault.whitelistManager());
         vault.revokeFromWhitelist(user);
     }
 

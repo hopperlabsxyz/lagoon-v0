@@ -74,7 +74,7 @@ contract TestWhitelist is BaseTest {
 
         deposit(userBalance, user1.addr);
         address receiver = user2.addr;
-        vm.prank(vault.whitelistManagerRole());
+        vm.prank(vault.owner());
         vault.deactivateWhitelist();
         vm.assertEq(vault.isWhitelistActivated(), false);
         uint256 shares = vault.balanceOf(user1.addr);
