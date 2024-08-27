@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {FeeRegistry} from "./FeeRegistry.sol";
 
 contract Roles is Ownable2StepUpgradeable {
     struct RolesStorage {
         address whitelistManager;
         address feeReceiver;
-        address assetManager; // todo rename safe
-        address protocolRegistry; // todo use
-        address protocolFeeReceiver; // todo get it from protocolFeeReceiver
+        address safe;
+        address feeRegistry;
         address valorizationManager;
     }
 
@@ -16,9 +16,8 @@ contract Roles is Ownable2StepUpgradeable {
         RolesStorage storage $ = _getRolesStorage();
         $.whitelistManager = roles.whitelistManager;
         $.feeReceiver = roles.feeReceiver;
-        $.assetManager = roles.assetManager;
-        $.protocolRegistry = roles.protocolRegistry;
-        $.protocolFeeReceiver = roles.protocolFeeReceiver;
+        $.safe = roles.safe;
+        $.feeRegistry = roles.feeRegistry;
         $.valorizationManager = roles.valorizationManager;
     }
 
@@ -34,8 +33,8 @@ contract Roles is Ownable2StepUpgradeable {
         }
     }
 
-    modifier onlyAssetManager() {
-        require(_getRolesStorage().assetManager == _msgSender());
+    modifier onlySafe() {
+        require(_getRolesStorage().safe == _msgSender());
         _;
     }
 
@@ -58,19 +57,20 @@ contract Roles is Ownable2StepUpgradeable {
     }
 
     function protocolFeeReceiver() public view returns (address) {
-        return _getRolesStorage().protocolFeeReceiver;
+        return
+            FeeRegistry(_getRolesStorage().feeRegistry).protocolFeeReceiver();
     }
 
-    function assetManager() public view returns (address) {
-        return _getRolesStorage().assetManager;
+    function safe() public view returns (address) {
+        return _getRolesStorage().safe;
     }
 
     function valorizationManager() public view returns (address) {
         return _getRolesStorage().valorizationManager;
     }
 
-    function protocolRegistry() public view returns (address) {
-        return _getRolesStorage().protocolRegistry;
+    function feeRegistry() public view returns (address) {
+        return _getRolesStorage().feeRegistry;
     }
 
     function updateWhitelistManager(

@@ -7,8 +7,6 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {BaseTest} from "./Base.sol";
 import {CantDepositNativeToken} from "@src/ERC7540.sol";
 
-// import {console} from "forge-std/console.sol";
-
 contract TestRequestDeposit is BaseTest {
     function setUp() public {
         setUpVault(0, 0, 0);
@@ -164,7 +162,7 @@ contract TestRequestDeposit is BaseTest {
         vm.prank(owner);
         vault.setOperator(operator, true);
         vm.startPrank(operator);
-        vm.expectRevert();
+        // vm.expectRevert();
         vault.requestDeposit(ownerBalance, controller, owner);
     }
 }

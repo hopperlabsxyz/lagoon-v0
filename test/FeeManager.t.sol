@@ -34,11 +34,11 @@ contract TestFeeManager is BaseTest {
     function test_collect_fees() public {
         dealAmountAndApproveAndWhitelist(user1.addr, 10_000_000);
 
-        address assetManager = vault.assetManager();
+        address safe = vault.safe();
         address hopperDao = vault.protocolFeeReceiver();
         address vaultFeeReceiver = vault.feeReceiver();
 
-        assertEq(vault.balanceOf(assetManager), 0);
+        assertEq(vault.balanceOf(safe), 0);
         assertEq(vault.balanceOf(vaultFeeReceiver), 0);
         assertEq(vault.balanceOf(hopperDao), 0);
         assertEq(vault.highWaterMark(), 0);
@@ -49,7 +49,7 @@ contract TestFeeManager is BaseTest {
         requestDeposit(userBalance, user1.addr);
         updateAndSettle(0);
 
-        assertEq(vault.balanceOf(assetManager), 0);
+        assertEq(vault.balanceOf(safe), 0);
         assertEq(vault.balanceOf(hopperDao), 0);
         assertEq(vault.balanceOf(vaultFeeReceiver), 0);
 
