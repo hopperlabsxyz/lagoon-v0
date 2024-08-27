@@ -274,8 +274,8 @@ contract BaseTest is Test, Constants {
     }
 
     function settle() internal {
-        dealAmountAndApprove(vault.assetManager(), vault.newTotalAssets());
-        vm.startPrank(vault.assetManager());
+        dealAmountAndApprove(vault.safe(), vault.newTotalAssets());
+        vm.startPrank(vault.safe());
         vault.settleDeposit();
         vm.stopPrank();
     }

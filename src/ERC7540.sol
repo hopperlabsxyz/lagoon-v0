@@ -28,12 +28,6 @@ error ERC7540PreviewMintDisabled();
 error ERC7540PreviewRedeemDisabled();
 error ERC7540PreviewWithdrawDisabled();
 
-error RequestDepositZero();
-error RequestRedeemZero();
-error DepositZero();
-error RedeemZero();
-error WithdrawZero();
-
 error ERC7540InvalidOperator();
 error ZeroPendingDeposit();
 error ZeroPendingRedeem();
@@ -217,8 +211,6 @@ abstract contract ERC7540Upgradeable is
         address controller,
         address owner
     ) public payable virtual onlyOperator(owner) returns (uint256 _depositId) {
-        if (assets == 0) revert RequestDepositZero();
-
         uint256 claimbaleDeposit = claimableDepositRequest(0, controller);
         if (claimbaleDeposit > 0)
             _deposit(claimbaleDeposit, controller, controller);
@@ -303,8 +295,6 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) internal virtual returns (uint256 shares) {
-        if (assets == 0) revert DepositZero();
-
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
@@ -337,7 +327,6 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) internal virtual returns (uint256 assets) {
-        if (shares == 0) revert DepositZero();
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
@@ -432,8 +421,6 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) private returns (uint256 assets) {
-        if (shares == 0) revert RedeemZero();
-
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
@@ -465,8 +452,6 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) private returns (uint256 shares) {
-        if (assets == 0) revert WithdrawZero();
-
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
