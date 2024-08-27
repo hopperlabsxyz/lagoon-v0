@@ -4,8 +4,6 @@ pragma solidity "0.8.25";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract FeeRegistry is OwnableUpgradeable {
-    uint256 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
-
     /// @custom:storage-location erc7201:hopper.storage.FeeRegistry
     struct FeeRegistryStorage {
         uint256 protocolRate;
@@ -49,13 +47,13 @@ contract FeeRegistry is OwnableUpgradeable {
     }
 
     function setProtocolRate(uint256 rate) external onlyOwner {
-        require(rate <= MAX_PROTOCOL_RATE);
+        // require(rate <= MAX_PROTOCOL_RATE);
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
         $.protocolRate = rate;
     }
 
     function setCustomRate(address vault, uint256 rate) external onlyOwner {
-        require(rate <= MAX_PROTOCOL_RATE);
+        // require(rate <= MAX_PROTOCOL_RATE);
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
         $.customRate[vault] = rate;
         $.isCustomRate[vault] = true;
