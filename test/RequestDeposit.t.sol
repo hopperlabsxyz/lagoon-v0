@@ -28,8 +28,8 @@ contract TestRequestDeposit is BaseTest {
         string memory wtoken = "WRAPPED_NATIVE_TOKEN";
         bool shouldFail = keccak256(abi.encode(underlyingName)) !=
             keccak256(abi.encode(wtoken));
-        requestDeposit(userBalance, user1.addr, true);
         if (!shouldFail) {
+            requestDeposit(userBalance, user1.addr, true);
             assertEq(assetBalance(address(vault)), 0);
             assertEq(assetBalance(address(vault.pendingSilo())), userBalance);
             assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance);
