@@ -45,7 +45,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address valorization;
         address admin;
         address feeReceiver;
-        address feeModule;
         address feeRegistry;
         address wrappedNativeToken;
         uint256 managementRate;
@@ -85,7 +84,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         __ERC20_init(init.name, init.symbol);
         __ERC20Pausable_init();
         __FeeManager_init(
-            init.feeModule,
             init.feeRegistry,
             init.managementRate,
             init.performanceRate,
