@@ -11,10 +11,11 @@ import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {Whitelistable, NotWhitelisted, WHITELISTED, WHITELIST_MANAGER_ROLE} from "./Whitelistable.sol";
+import {Whitelistable, NotWhitelisted, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
 import {WhitelistableStorage} from "./Whitelistable.sol";
+import {Roles} from "./Roles.sol";
 // import {console} from "forge-std/console.sol";
 
 using Math for uint256;
@@ -39,8 +40,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         IERC20 underlying;
         string name;
         string symbol;
-        address dao;
-        address assetManager;
+        address safe;
         address whitelistManager;
         address valorization;
         address admin;
@@ -91,33 +91,25 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         );
         __ERC7540_init(init.underlying, init.wrappedNativeToken);
         __Whitelistable_init(init.enableWhitelist);
+        __Roles_init(Roles.RolesStorage({
+            whitelistManager: init.whitelistManager,
+            feeReceiver: init.feeReceiver,
+            safe: init.safe,
+            feeRegistry: init.feeRegistry,
+            valorizationManager: init.valorization
+        }));
 
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = init.cooldown;
 
-        _grantRole(HOPPER_ROLE, init.dao);
-        _setRoleAdmin(HOPPER_ROLE, HOPPER_ROLE);
-
-        _grantRole(ASSET_MANAGER_ROLE, init.assetManager);
-        _setRoleAdmin(ASSET_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
-
-        _grantRole(WHITELIST_MANAGER_ROLE, init.whitelistManager);
-        _setRoleAdmin(WHITELIST_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
-
-        _grantRole(VALORIZATION_ROLE, init.valorization);
-        _setRoleAdmin(VALORIZATION_ROLE, DEFAULT_ADMIN_ROLE);
-
-        _grantRole(DEFAULT_ADMIN_ROLE, init.admin);
-
-        _grantRole(FEE_RECEIVER, init.feeReceiver);
         if (init.enableWhitelist) {
             WhitelistableStorage
                 storage $whitelistStorage = _getWhitelistableStorage();
             $whitelistStorage.isWhitelisted[init.feeReceiver] = true;
-            $whitelistStorage.isWhitelisted[init.dao] = true;
-            $whitelistStorage.isWhitelisted[init.assetManager] = true;
+            $whitelistStorage.isWhitelisted[protocolFeeReceiver()] = true;
+            $whitelistStorage.isWhitelisted[init.safe] = true;
             $whitelistStorage.isWhitelisted[init.whitelistManager] = true;
-            $whitelistStorage.isWhitelisted[init.valorization] = true;
+            $whitelistStorage.isWhitelisted[init.valorization] = true; // todo remove ??
             $whitelistStorage.isWhitelisted[init.admin] = true;
             $whitelistStorage.isWhitelisted[pendingSilo()] = true;
             for (uint256 i = 0; i < init.whitelist.length; i++) {
@@ -206,13 +198,13 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
     function updateTotalAssets(
         uint256 _newTotalAssets
-    ) public onlyRole(VALORIZATION_ROLE) {
+    ) public onlyValorizationManager {
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssets = _newTotalAssets;
         $.newTotalAssetsTimestamp = block.timestamp;
     }
 
-    function settleDeposit() public override onlyRole(ASSET_MANAGER_ROLE) {
+    function settleDeposit() public override onlySafe {
         _updateTotalAssets();
         _takeFees();
         _settleDeposit();
@@ -235,8 +227,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     function _takeFees() internal {
         if (lastFeeTime() == block.timestamp) return;
 
-        address feeReceiver = getRoleMember(FEE_RECEIVER, 0);
-        address hopperDao = getRoleMember(HOPPER_ROLE, 0);
 
         uint256 _totalAssets = totalAssets();
         (uint256 managerShares, uint256 protocolShares) = _calculateFees(
@@ -246,11 +236,11 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         );
 
         if (managerShares > 0) {
-            _mint(feeReceiver, managerShares);
+            _mint(feeReceiver(), managerShares);
         }
 
         if (protocolShares > 0) {
-            _mint(hopperDao, protocolShares);
+            _mint(protocolFeeReceiver(), protocolShares);
         }
         uint256 _pricePerShare = _convertToAssets(
             1 * 10 ** decimals(),
@@ -281,17 +271,17 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         $erc7540.totalAssets = _totalAssets;
 
 
-        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
+        address _safe = safe();
         IERC20(asset()).safeTransferFrom(
             pendingSilo(),
-            assetManager,
+            _safe,
             pendingAssets
         );
         $erc7540.depositId += 2;
         // todo emit event
     }
 
-    function settleRedeem() public override onlyRole(ASSET_MANAGER_ROLE) {
+    function settleRedeem() public override onlySafe {
         _updateTotalAssets();
         _takeFees();
         _settleRedeem();
@@ -303,10 +293,10 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
             pendingShares,
             Math.Rounding.Floor
         );
-        address assetManager = getRoleMember(ASSET_MANAGER_ROLE, 0);
-        uint256 assetsInTheSafe = IERC20(asset()).balanceOf(assetManager);
+        address _safe = safe();
+        uint256 assetsInTheSafe = IERC20(asset()).balanceOf(_safe);
         uint256 approvedBySafe = IERC20(asset()).allowance(
-            assetManager,
+            _safe,
             address(this)
         );
         if (
@@ -329,60 +319,13 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
 
         IERC20(asset()).safeTransferFrom(
-            assetManager,
+            _safe,
             address(this),
             assetsToWithdraw
         );
         $erc7540.redeemId += 2;
     }
-
-    function supportsInterface(
-        bytes4 interfaceId
-    )
-        public
-        view
-        override(ERC7540Upgradeable, AccessControlEnumerableUpgradeable)
-        returns (bool)
-    {
-        return
-            AccessControlEnumerableUpgradeable.supportsInterface(interfaceId) ||
-            ERC7540Upgradeable.supportsInterface(interfaceId);
-    }
-
-    function hopperRole() public view returns (address) {
-        return getRoleMember(HOPPER_ROLE, 0);
-    }
-
-    function adminRole() public view returns (address) {
-        return getRoleMember(DEFAULT_ADMIN_ROLE, 0);
-    }
-
-    function assetManagerRole() public view returns (address) {
-        return getRoleMember(ASSET_MANAGER_ROLE, 0);
-    }
-
-    function valorizationRole() public view returns (address) {
-        return getRoleMember(VALORIZATION_ROLE, 0);
-    }
-
-    function whitelistManagerRole() public view returns (address) {
-        return getRoleMember(WHITELIST_MANAGER_ROLE, 0);
-    }
-
-    function grantRole(
-        bytes32 role,
-        address account
-    )
-        public
-        virtual
-        override(AccessControlUpgradeable, IAccessControl)
-        onlyRole(getRoleAdmin(role))
-    {
-        // we accept only one role holder for the hopper/asset manager/valorization/fee receiver/admin role
-        if (role != WHITELISTED) _revokeRole(role, getRoleMember(role, 0));
-        super.grantRole(role, account);
-    }
-
+   
     /////////////////
     // MVP UPGRADE //
     /////////////////
@@ -414,9 +357,9 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         return 0;
     }
 
-    function updateNewTotalAssetsCountdown(
+    function updateNewTotalAssetsCountdown( //todo delete for prod
         uint256 _newTotalAssetsCooldown
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) public onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = _newTotalAssetsCooldown;
     }

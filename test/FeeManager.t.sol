@@ -123,8 +123,8 @@ contract TestFeeManager is BaseTest {
     //
     function test_ExactNoFeesAreTakenDuringFreeRide() public {
         vault.setFeesHELPER(0, 1_000);
-        address feeReceiver = vault.getRoleMember(FEE_RECEIVER, 0);
-        address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
+        address feeReceiver = vault.feeReceiver();
+        address hopperDao = vault.protocolFeeReceiver();
 
         // ------------ Year 0 ------------ //
         uint256 newTotalAssets = 0;
@@ -236,8 +236,8 @@ contract TestFeeManager is BaseTest {
     //
     function test_NoFeesAreTakenDuringFreeRide() public {
         vault.setFeesHELPER(0, 2_000);
-        address feeReceiver = vault.getRoleMember(FEE_RECEIVER, 0);
-        address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
+        address feeReceiver = vault.feeReceiver();
+        address hopperDao = vault.protocolFeeReceiver();
 
         // ------------ Year 0 ------------ //
         uint256 newTotalAssets = 0;
@@ -322,9 +322,8 @@ contract TestFeeManager is BaseTest {
     //
     function test_FeesAreTakenAfterFreeride() public {
         vault.setFeesHELPER(0, 2_000);
-        address feeReceiver = vault.getRoleMember(FEE_RECEIVER, 0);
-        address hopperDao = vault.getRoleMember(HOPPER_ROLE, 0);
-
+        address feeReceiver = vault.feeReceiver();
+        address hopperDao = vault.protocolFeeReceiver();
         // ------------ Year 0 ------------ //
         uint256 newTotalAssets = 0;
 

@@ -64,7 +64,7 @@ contract TestSettle is BaseTest {
     function test_settleDepositAfterUpdate_TooSoon() public {
         updateTotalAssets(1);
 
-        vm.startPrank(vault.assetManagerRole());
+        vm.startPrank(vault.safe());
         vm.expectRevert();
         vault.settleDeposit();
         vm.stopPrank();
@@ -73,7 +73,7 @@ contract TestSettle is BaseTest {
     function test_settleRedeemAfterUpdate_TooSoon() public {
         updateTotalAssets(1);
 
-        vm.startPrank(vault.assetManagerRole());
+        vm.startPrank(vault.safe());
         vm.expectRevert();
         vault.settleRedeem();
         vm.stopPrank();
@@ -82,7 +82,7 @@ contract TestSettle is BaseTest {
     function test_settleDepositThenRedeemAfterUpdate_TooSoon() public {
         updateTotalAssets(1);
         vm.warp(block.timestamp + 1 days);
-        vm.startPrank(vault.assetManagerRole());
+        vm.startPrank(vault.safe());
         vault.settleDeposit();
         vm.expectRevert();
         vault.settleRedeem();

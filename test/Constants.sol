@@ -55,7 +55,7 @@ abstract contract Constants is Test {
     VmSafe.Wallet user9 = vm.createWallet("user9");
     VmSafe.Wallet user10 = vm.createWallet("user10");
     VmSafe.Wallet owner = vm.createWallet("owner");
-    VmSafe.Wallet assetManager = vm.createWallet("assetManager");
+    VmSafe.Wallet safe = vm.createWallet("safe");
     VmSafe.Wallet valorizator = vm.createWallet("valorizator");
     VmSafe.Wallet admin = vm.createWallet("admin");
     VmSafe.Wallet feeReceiver = vm.createWallet("feeReceiver");
@@ -121,8 +121,7 @@ abstract contract Constants is Test {
             underlying: _underlying,
             name: _vaultName,
             symbol: _vaultSymbol,
-            dao: dao.addr,
-            assetManager: assetManager.addr,
+            safe: safe.addr,
             whitelistManager: whitelistManager.addr,
             valorization: valorizator.addr,
             admin: admin.addr,
@@ -156,7 +155,7 @@ abstract contract Constants is Test {
         bool proxy = vm.envBool("PROXY");
 
         feeRegistry = new FeeRegistry();
-        feeRegistry.initialize(dao.addr);
+        feeRegistry.initialize(dao.addr, dao.addr);
 
         address[] memory whitelist = new address[](0);
 
@@ -184,8 +183,7 @@ abstract contract Constants is Test {
                 underlying: underlying,
                 name: vaultName,
                 symbol: vaultSymbol,
-                dao: dao.addr,
-                assetManager: assetManager.addr,
+                safe: safe.addr,
                 whitelistManager: whitelistManager.addr,
                 valorization: valorizator.addr,
                 admin: admin.addr,
