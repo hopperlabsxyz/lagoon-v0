@@ -23,6 +23,7 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
 
     uint256 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
     uint256 public constant MAX_PERFORMANCE_RATE = 5_000; // 50 %
+    uint256 public constant MAX_PROTOCOL_RATE = 3_000; // 30 %
 
     /// @custom:storage-location erc7201:hopper.storage.FeeManager
     struct FeeManagerStorage {
@@ -88,7 +89,9 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
     }
 
     function protocolRate() external view returns (uint256) {
+        // TODO bound this value to max protocol rate
         FeeManagerStorage storage $ = _getFeeManagerStorage();
+
         return $.feeRegistry.protocolRate();
     }
 
