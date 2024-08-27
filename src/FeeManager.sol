@@ -1,34 +1,35 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {IFeeModule} from "./interfaces/IFeeModule.sol";
 import {FeeRegistry} from "./FeeRegistry.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-// import {console} from "forge-std/console.sol";
+import {console} from "forge-std/console.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 uint256 constant ONE_YEAR = 365 days;
-uint256 constant BPS_DIVIDER = 10_000;
-uint256 constant MAX_MANAGEMENT_FEES = 500; // 5%
-uint256 constant MAX_PERFORMANCE_FEES = 5000; // 50%
-uint256 constant MAX_PROTOCOL_FEES = 3000; // 30%
 uint256 constant BPS = 10_000; // 100 %
-uint256 constant COOLDOWN = 1 days;
 
-error AboveMaxFee();
+struct Rates {
+    uint256 managementRate;
+    uint256 performanceRate;
+}
 
-abstract contract FeeManager is Initializable, IERC20Metadata {
+error AboveMaxRate(uint256 rate, uint256 maxRate);
+
+abstract contract FeeManager is Ownable2StepUpgradeable, IERC20Metadata {
     using Math for uint256;
 
     uint256 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
     uint256 public constant MAX_PERFORMANCE_RATE = 5_000; // 50 %
     uint256 public constant MAX_PROTOCOL_RATE = 3_000; // 30 %
+    uint256 constant COOLDOWN = 1 days;
 
     /// @custom:storage-location erc7201:hopper.storage.FeeManager
     struct FeeManagerStorage {
-        uint256 managementRate;
-        uint256 performanceRate;
+        Rates rates;
+        Rates oldRates;
+        uint256 newRatesTimestamp;
         uint256 lastFeeTime;
         uint256 highWaterMark;
         FeeRegistry feeRegistry;
@@ -49,50 +50,60 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
         }
     }
 
-    function _convertToAssets(
-        uint256 shares,
-        uint256 totalAssets,
-        uint256 totalSupply,
-        Math.Rounding rounding
-    ) internal view virtual returns (uint256) {
-        return shares.mulDiv(totalAssets + 1, totalSupply + 1, rounding);
-    }
-
     function __FeeManager_init(
         address _registry,
         uint256 _managementRate,
         uint256 _performanceRate,
         uint256 _decimals
     ) internal onlyInitializing {
-        require(_managementRate < MAX_MANAGEMENT_RATE /*, AboveMaxFee()*/);
-        require(_performanceRate < MAX_PERFORMANCE_RATE /*, AboveMaxFee()*/);
+        if (_managementRate > MAX_MANAGEMENT_RATE)
+            revert AboveMaxRate(_managementRate, MAX_MANAGEMENT_RATE);
+        if (_performanceRate > MAX_PERFORMANCE_RATE)
+            revert AboveMaxRate(_performanceRate, MAX_PERFORMANCE_RATE);
 
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         $.feeRegistry = FeeRegistry(_registry);
         $.highWaterMark = 10 ** _decimals;
 
-        $.managementRate = _managementRate;
-        $.performanceRate = _performanceRate;
+        $.rates.managementRate = _managementRate;
+        $.rates.performanceRate = _performanceRate;
 
         $.lastFeeTime = block.timestamp;
     }
 
+    function updateRates(Rates memory newRates) public onlyOwner {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        if (newRates.managementRate > MAX_MANAGEMENT_RATE)
+            revert AboveMaxRate(newRates.managementRate, MAX_MANAGEMENT_RATE);
+        if (newRates.performanceRate > MAX_PERFORMANCE_RATE)
+            revert AboveMaxRate(newRates.performanceRate, MAX_PERFORMANCE_RATE);
+
+        $.newRatesTimestamp = block.timestamp + COOLDOWN;
+        $.oldRates = $.rates;
+        $.rates = newRates;
+    }
+
     function managementRate() external view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        return $.managementRate;
+        if ($.newRatesTimestamp <= block.timestamp)
+            return $.rates.managementRate;
+        return $.oldRates.managementRate;
     }
 
     function performanceRate() external view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        return $.performanceRate;
+        if ($.newRatesTimestamp <= block.timestamp)
+            return $.rates.performanceRate;
+        return $.oldRates.performanceRate;
     }
 
-    function protocolRate() external view returns (uint256) {
-        // TODO bound this value to max protocol rate
+    function _protocolRate() internal view returns (uint256 protocolRate) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        return $.feeRegistry.protocolRate();
+        protocolRate = $.feeRegistry.protocolRate();
+        if (protocolRate > MAX_PROTOCOL_RATE) return MAX_PROTOCOL_RATE;
+        return protocolRate;
     }
 
     function lastFeeTime() public view returns (uint256) {
@@ -125,7 +136,7 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
         uint256 rate,
         uint256 timeElapsed
     ) public pure returns (uint256 managementFee) {
-        uint256 annualFee = assets.mulDiv(rate, BPS_DIVIDER);
+        uint256 annualFee = assets.mulDiv(rate, BPS);
         managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
     }
 
@@ -162,7 +173,7 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
 
         uint256 managementFees = calculateManagementFee(
             newTotalAssets,
-            $.managementRate,
+            $.rates.managementRate,
             timeElapsed
         );
 
@@ -178,7 +189,7 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
         // console.log("_pricePerShare: ", _pricePerShare);
 
         uint256 performanceFees = calculatePerformanceFee(
-            $.performanceRate,
+            $.rates.performanceRate,
             totalSupply,
             _pricePerShare,
             $.highWaterMark,
@@ -201,10 +212,19 @@ abstract contract FeeManager is Initializable, IERC20Metadata {
         // console.log("totalShares: ", totalShares);
 
         protocolShares = totalShares.mulDiv(
-            $.feeRegistry.protocolRate(),
+            _protocolRate(),
             BPS,
             Math.Rounding.Ceil
         );
         managerShares = totalShares - protocolShares;
+    }
+
+    function _convertToAssets(
+        uint256 shares,
+        uint256 totalAssets,
+        uint256 totalSupply,
+        Math.Rounding rounding
+    ) internal view virtual returns (uint256) {
+        return shares.mulDiv(totalAssets + 1, totalSupply + 1, rounding);
     }
 }

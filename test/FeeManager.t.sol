@@ -7,6 +7,7 @@ import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
 import {FeeManager} from "@src/FeeManager.sol";
+import {Rates} from "@src/FeeManager.sol";
 
 contract TestFeeManager is BaseTest {
     using Math for uint256;
@@ -122,7 +123,11 @@ contract TestFeeManager is BaseTest {
     // Freeride: when pps (price per share) is under highwatermark (highest pps registered)
     //
     function test_ExactNoFeesAreTakenDuringFreeRide() public {
-        vault.setFeesHELPER(0, 1_000);
+        Rates memory newRates = Rates({
+            managementRate: 0,
+            performanceRate: 1_000
+        });
+        updateRates(newRates);
         address feeReceiver = vault.feeReceiver();
         address hopperDao = vault.protocolFeeReceiver();
 
@@ -235,7 +240,11 @@ contract TestFeeManager is BaseTest {
     // Freeride: when pps (price per share) is under highwatermark (highest pps registered)
     //
     function test_NoFeesAreTakenDuringFreeRide() public {
-        vault.setFeesHELPER(0, 2_000);
+        Rates memory newRates = Rates({
+            managementRate: 0,
+            performanceRate: 2_000
+        });
+        updateRates(newRates);
         address feeReceiver = vault.feeReceiver();
         address hopperDao = vault.protocolFeeReceiver();
 
@@ -321,7 +330,12 @@ contract TestFeeManager is BaseTest {
     // Freeride: when pps (price per share) is under highwatermark (highest pps registered)
     //
     function test_FeesAreTakenAfterFreeride() public {
-        vault.setFeesHELPER(0, 2_000);
+        Rates memory newRates = Rates({
+            managementRate: 0,
+            performanceRate: 2_000
+        });
+        updateRates(newRates);
+
         address feeReceiver = vault.feeReceiver();
         address hopperDao = vault.protocolFeeReceiver();
         // ------------ Year 0 ------------ //
