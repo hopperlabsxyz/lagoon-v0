@@ -228,22 +228,16 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         if (lastFeeTime() == block.timestamp) return;
 
 
-        uint256 _totalAssets = totalAssets();
-        (uint256 managerShares, uint256 protocolShares) = _calculateFees(
-            _totalAssets,
-            totalSupply(),
-            decimals()
-        );
+        (uint256 managerShares, uint256 protocolShares) = _calculateFees();
 
         if (managerShares > 0) {
             _mint(feeReceiver(), managerShares);
+             if (protocolShares > 0) // they can't be protocolShares without managerShares
+                _mint(protocolFeeReceiver(), protocolShares); 
         }
-
-        if (protocolShares > 0) {
-            _mint(protocolFeeReceiver(), protocolShares);
-        }
+       
         uint256 _pricePerShare = _convertToAssets(
-            1 * 10 ** decimals(),
+            10 ** decimals(),
             Math.Rounding.Floor
         );
         _setHighWaterMark(_pricePerShare); // when fees are taken done being taken, we update highWaterMark
