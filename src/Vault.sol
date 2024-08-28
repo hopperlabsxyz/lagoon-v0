@@ -237,7 +237,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         }
        
         uint256 _pricePerShare = _convertToAssets(
-            1 * 10 ** decimals(),
+            10 ** decimals(),
             Math.Rounding.Floor
         );
         _setHighWaterMark(_pricePerShare); // when fees are taken done being taken, we update highWaterMark
