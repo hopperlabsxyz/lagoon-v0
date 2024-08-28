@@ -444,10 +444,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     {
         VaultStorage storage $ = _getVaultStorage();
 
-        // console.log("claimableRedeemRequest ", claimableRedeemRequest(0, controller));
-        // console.log("controller             ", controller);
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
-            // console.log('IN');
             return _exitRedeem(shares, receiver, controller);
 
         }
