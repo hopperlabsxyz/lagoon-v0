@@ -17,7 +17,7 @@ import {FeeManager} from "./FeeManager.sol";
 import {WhitelistableStorage} from "./Whitelistable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Roles} from "./Roles.sol";
-// import {console} from "forge-std/console.sol";
+import {console} from "forge-std/console.sol";
 
 using Math for uint256;
 using SafeERC20 for IERC20;
@@ -35,6 +35,12 @@ error CooldownNotOver();
 error NotOpen();
 error NotClosing();
 error NotClosed();
+
+enum State {
+    Open,
+    Closing,
+    Closed
+}
 
 /// @custom:oz-upgrades-from VaultV2
 contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
@@ -56,12 +62,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 cooldown;
         bool enableWhitelist;
         address[] whitelist;
-    }
-
-    enum State {
-        Open,
-        Closing,
-        Closed
     }
 
     /// @custom:storage-location erc7201:hopper.storage.vault
@@ -109,6 +109,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
             feeRegistry: init.feeRegistry,
             valorizationManager: init.valorization
         }));
+        __Ownable_init(init.admin); // initial vault owner
 
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = init.cooldown;
@@ -145,12 +146,12 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         _;
     }
 
-    modifier onlyClosed() {
-        VaultStorage storage $ = _getVaultStorage();
+    // modifier onlyClosed() {
+    //     VaultStorage storage $ = _getVaultStorage();
 
-        require($.state == State.Closed, "Not Closed");
-        _;
-    }
+    //     require($.state == State.Closed, "Not Closed");
+    //     _;
+    // }
 
     function requestDeposit(
         uint256 assets,
@@ -238,7 +239,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         $.newTotalAssetsTimestamp = block.timestamp;
     }
 
-    function settleDeposit() public override onlySafe {
+    function settleDeposit() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees();
         _settleDeposit();
@@ -309,7 +310,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         // todo emit event
     }
 
-    function settleRedeem() public override onlySafe {
+    function settleRedeem() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees();
         _settleRedeem();
@@ -394,6 +395,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
     function initiateClosing() external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
+        require($.state == State.Open, "Vault is not Open");
         $.state = State.Closing;
     }
 
@@ -408,10 +410,26 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
         address _safe = safe();
         uint256 safeBalance =  IERC20(asset()).balanceOf(_safe);
-        require($erc7540.totalAssets >= safeBalance);
+        require($erc7540.totalAssets <= safeBalance, "not enough liquidity to unwind");
         IERC20(asset()).safeTransferFrom(_safe, address(this), safeBalance);
 
         $.state = State.Closed;
+    }
+
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address controller
+    )
+        public
+        override
+        onlyOperator(controller)
+        returns (uint256)
+    {
+      VaultStorage storage $ = _getVaultStorage();
+      if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0)
+          return _exitWithdraw(assets, receiver, controller);
+      return _withdraw(assets, receiver, controller);
     }
 
     function redeem(
@@ -426,17 +444,43 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     {
         VaultStorage storage $ = _getVaultStorage();
 
-        if ($.state == State.Closed) 
-            return _exitFund(shares, receiver, controller);
+        // console.log("claimableRedeemRequest ", claimableRedeemRequest(0, controller));
+        // console.log("controller             ", controller);
+        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
+            // console.log('IN');
+            return _exitRedeem(shares, receiver, controller);
+
+        }
         return _redeem(shares, receiver, controller);
     }
+    
+    function _exitWithdraw(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) internal returns (uint256 shares) {
+      shares = convertToShares(assets); 
+      _burn(controller, shares);
 
-    function _exitFund(
+      IERC20(asset()).safeTransfer(receiver, assets);
+
+      emit Withdraw(_msgSender(), receiver, controller, assets, shares);
+    }
+
+    function _exitRedeem(
         uint256 shares,
         address receiver,
         address controller
     ) internal returns (uint256 assets) {
         assets = convertToAssets(shares);
+
+        _burn(controller, shares);
         IERC20(asset()).safeTransfer(receiver, assets);
+
+        emit Withdraw(_msgSender(), receiver, controller, assets, shares);
     } 
+
+    function state() external view returns(State) {
+        return _getVaultStorage().state;
+    }
 }
