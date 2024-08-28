@@ -409,6 +409,7 @@ abstract contract ERC7540Upgradeable is
         address controller
     )
         public
+        virtual
         override(ERC4626Upgradeable, IERC4626)
         onlyOperator(controller)
         returns (uint256)
@@ -420,7 +421,7 @@ abstract contract ERC7540Upgradeable is
         uint256 shares,
         address receiver,
         address controller
-    ) private returns (uint256 assets) {
+    ) internal returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];

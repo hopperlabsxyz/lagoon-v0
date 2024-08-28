@@ -15,6 +15,7 @@ import {Whitelistable, NotWhitelisted, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
 import {WhitelistableStorage} from "./Whitelistable.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Roles} from "./Roles.sol";
 // import {console} from "forge-std/console.sol";
 
@@ -220,7 +221,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address controller,
         address owner,
         bytes memory data
-    ) internal  returns (uint256) {
+    ) internal onlyOpen returns (uint256) {
         bytes32[] memory proof = abi.decode(data, (bytes32[]));
         // todo: convert this to require(isWhitelisted(owner, proof), NotWhitelisted(owner));
         if (isWhitelisted(owner, proof) == false) {
@@ -396,5 +397,46 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         $.state = State.Closing;
     }
 
+    function close() external onlySafe onlyClosing {
+        VaultStorage storage $ = _getVaultStorage();
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
+        _updateTotalAssets();
+        _takeFees();
+        _settleDeposit();
+        _settleRedeem();
+
+        address _safe = safe();
+        uint256 safeBalance =  IERC20(asset()).balanceOf(_safe);
+        require($erc7540.totalAssets >= safeBalance);
+        IERC20(asset()).safeTransferFrom(_safe, address(this), safeBalance);
+
+        $.state = State.Closed;
+    }
+
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address controller
+    )
+        public
+        override
+        onlyOperator(controller)
+        returns (uint256)
+    {
+        VaultStorage storage $ = _getVaultStorage();
+
+        if ($.state == State.Closed) 
+            return _exitFund(shares, receiver, controller);
+        return _redeem(shares, receiver, controller);
+    }
+
+    function _exitFund(
+        uint256 shares,
+        address receiver,
+        address controller
+    ) internal returns (uint256 assets) {
+        assets = convertToAssets(shares);
+        IERC20(asset()).safeTransfer(receiver, assets);
+    } 
 }
