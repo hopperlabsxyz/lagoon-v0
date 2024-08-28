@@ -430,7 +430,6 @@ abstract contract ERC7540Upgradeable is
         $.epochs[requestId].redeemRequest[controller] -= shares;
         assets = convertToAssets(shares, requestId);
         IERC20(asset()).safeTransfer(receiver, assets);
-
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
         return assets;
     }
