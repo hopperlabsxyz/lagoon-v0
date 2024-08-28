@@ -17,7 +17,7 @@ import {FeeManager} from "./FeeManager.sol";
 import {WhitelistableStorage} from "./Whitelistable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Roles} from "./Roles.sol";
-import {console} from "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 
 using Math for uint256;
 using SafeERC20 for IERC20;
@@ -459,8 +459,10 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address receiver,
         address controller
     ) internal returns (uint256 shares) {
+                ERC7540Storage storage $ = _getERC7540Storage();
       shares = convertToShares(assets); 
       _burn(controller, shares);
+        $.totalAssets -= assets;
 
       IERC20(asset()).safeTransfer(receiver, assets);
 
@@ -472,11 +474,12 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address receiver,
         address controller
     ) internal returns (uint256 assets) {
+        ERC7540Storage storage $ = _getERC7540Storage();
+
         assets = convertToAssets(shares);
-
         _burn(controller, shares);
+        $.totalAssets -= assets;
         IERC20(asset()).safeTransfer(receiver, assets);
-
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
     } 
 
