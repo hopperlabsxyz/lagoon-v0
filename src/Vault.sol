@@ -252,7 +252,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         $feeManagerStorage.lastFeeTime = block.timestamp;
     }
 
-    function _settleDeposit() public {
+    function _settleDeposit() internal {
         uint256 pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
         if (pendingAssets == 0) return;
 
