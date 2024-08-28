@@ -301,7 +301,7 @@ contract BaseTest is Test, Constants {
     }
 
     function dealAndApprove(address user) public {
-        dealAmountAndApprove(user, 100000);
+        dealAmountAndApprove(user, 100_000);
     }
 
     function dealAmountAndApprove(address user, uint256 amount) public {
