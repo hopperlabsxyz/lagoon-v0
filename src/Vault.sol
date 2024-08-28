@@ -31,6 +31,9 @@ bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
 bytes32 constant FEE_RECEIVER = keccak256("FEE_RECEIVER");
 
 error CooldownNotOver();
+error NotOpen();
+error NotClosing();
+error NotClosed();
 
 /// @custom:oz-upgrades-from VaultV2
 contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
@@ -54,11 +57,18 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address[] whitelist;
     }
 
+    enum State {
+        Open,
+        Closing,
+        Closed
+    }
+
     /// @custom:storage-location erc7201:hopper.storage.vault
     struct VaultStorage {
         uint256 newTotalAssets;
         uint256 newTotalAssetsTimestamp;
         uint256 newTotalAssetsCooldown;
+        State state;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
@@ -102,6 +112,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = init.cooldown;
 
+        $.state = State.Open;
+
         if (init.enableWhitelist) {
             WhitelistableStorage
                 storage $whitelistStorage = _getWhitelistableStorage();
@@ -116,6 +128,27 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
                 $whitelistStorage.isWhitelisted[init.whitelist[i]] = true;
             }
         }
+    }
+
+    modifier onlyOpen() {
+        VaultStorage storage $ = _getVaultStorage();
+
+        require($.state == State.Open, "Not open");
+        _;
+    }
+
+    modifier onlyClosing() {
+        VaultStorage storage $ = _getVaultStorage();
+
+        require($.state == State.Closing, "Not Closing");
+        _;
+    }
+
+    modifier onlyClosed() {
+        VaultStorage storage $ = _getVaultStorage();
+
+        require($.state == State.Closed, "Not Closed");
+        _;
     }
 
     function requestDeposit(
@@ -357,4 +390,11 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = _newTotalAssetsCooldown;
     }
+
+    function initiateClosing() external onlyOwner {
+        VaultStorage storage $ = _getVaultStorage();
+        $.state = State.Closing;
+    }
+
+
 }
