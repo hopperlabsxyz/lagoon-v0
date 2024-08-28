@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import {Constants} from "./Constants.sol";
 import {Vault} from "@src/Vault.sol";
+import {Rates} from "@src/FeeManager.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
@@ -337,6 +338,11 @@ contract BaseTest is Test, Constants {
     function unwhitelist(address user) public {
         vm.prank(vault.whitelistManager());
         vault.revokeFromWhitelist(user);
+    }
+
+    function updateRates(Rates memory newRates) public {
+        vm.prank(vault.owner());
+        vault.updateRates(newRates);
     }
 
     function balance(address user) public view returns (uint256) {
