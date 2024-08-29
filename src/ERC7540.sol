@@ -510,11 +510,6 @@ abstract contract ERC7540Upgradeable is
         return address($.pendingSilo);
     }
 
-    // function claimableSilo() public view returns (address) {
-    //     ERC7540Storage storage $ = _getERC7540Storage();
-    //     return address($.claimableSilo);
-    // }
-
     function redeemId() public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
         return $.redeemId;
