@@ -22,6 +22,7 @@ using Math for uint256;
 using SafeERC20 for IERC20;
 
 event Referral(address indexed referral, address indexed owner, uint256 indexed requestId, uint256 assets);
+event StateUpdated(State state);
 
 uint256 constant BPS_DIVIDER = 10_000;
 
@@ -31,6 +32,15 @@ bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
 bytes32 constant FEE_RECEIVER = keccak256("FEE_RECEIVER");
 
 error CooldownNotOver();
+error NotOpen();
+error NotClosing();
+error NotClosed();
+
+enum State {
+    Open,
+    Closing,
+    Closed
+}
 
 /// @custom:oz-upgrades-from VaultV2
 contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
@@ -59,6 +69,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 newTotalAssets;
         uint256 newTotalAssetsTimestamp;
         uint256 newTotalAssetsCooldown;
+        State state;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
@@ -98,9 +109,13 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
             feeRegistry: init.feeRegistry,
             valorizationManager: init.valorization
         }));
+        __Ownable_init(init.admin); // initial vault owner
 
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = init.cooldown;
+
+        $.state = State.Open;
+        emit StateUpdated(State.Open);
 
         if (init.enableWhitelist) {
             WhitelistableStorage
@@ -116,6 +131,20 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
                 $whitelistStorage.isWhitelisted[init.whitelist[i]] = true;
             }
         }
+    }
+
+    modifier onlyOpen() {
+        VaultStorage storage $ = _getVaultStorage();
+
+        require($.state == State.Open, "Not open");
+        _;
+    }
+
+    modifier onlyClosing() {
+        VaultStorage storage $ = _getVaultStorage();
+
+        require($.state == State.Closing, "Not Closing");
+        _;
     }
 
     function requestDeposit(
@@ -187,7 +216,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address controller,
         address owner,
         bytes memory data
-    ) internal  returns (uint256) {
+    ) internal onlyOpen returns (uint256) {
         bytes32[] memory proof = abi.decode(data, (bytes32[]));
         // todo: convert this to require(isWhitelisted(owner, proof), NotWhitelisted(owner));
         if (isWhitelisted(owner, proof) == false) {
@@ -204,7 +233,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         $.newTotalAssetsTimestamp = block.timestamp;
     }
 
-    function settleDeposit() public override onlySafe {
+    function settleDeposit() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees();
         _settleDeposit();
@@ -272,10 +301,11 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
             pendingAssets
         );
         $erc7540.depositId += 2;
-        // todo emit event
+        emit Deposit(_msgSender(), address(this), pendingAssets, shares);
+        
     }
 
-    function settleRedeem() public override onlySafe {
+    function settleRedeem() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees();
         _settleRedeem();
@@ -296,7 +326,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         if (
             assetsToWithdraw == 0 ||
             assetsToWithdraw > assetsInTheSafe ||
-            assetsToWithdraw > approvedBySafe
+            assetsToWithdraw > approvedBySafe // todo maybe we should remove this and let revert ?
         ) return;
 
         // first we save epochs data
@@ -311,13 +341,13 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         _burn(pendingSilo(), pendingShares);
         $erc7540.totalAssets = _totalAssets - assetsToWithdraw;
 
-
         IERC20(asset()).safeTransferFrom(
             _safe,
             address(this),
             assetsToWithdraw
         );
         $erc7540.redeemId += 2;
+        emit Withdraw(_msgSender(), address(this), pendingSilo(), assetsToWithdraw, pendingShares);
     }
    
     /////////////////
@@ -356,5 +386,97 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     ) public onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = _newTotalAssetsCooldown;
+    }
+
+    function initiateClosing() external onlyOwner onlyOpen {
+        VaultStorage storage $ = _getVaultStorage();
+        $.state = State.Closing;
+        emit StateUpdated(State.Closing);
+
+    }
+
+    function close() external onlySafe onlyClosing {
+        VaultStorage storage $ = _getVaultStorage();
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+
+        _updateTotalAssets();
+        _takeFees();
+        _settleDeposit();
+        _settleRedeem();
+
+        address _safe = safe();
+        uint256 safeBalance =  IERC20(asset()).balanceOf(_safe);
+        require($erc7540.totalAssets <= safeBalance, "not enough liquidity to unwind");
+        IERC20(asset()).safeTransferFrom(_safe, address(this), safeBalance);
+
+        $.state = State.Closed;
+        emit StateUpdated(State.Closed);
+
+    }
+
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address controller
+    )
+        public
+        override
+        onlyOperator(controller)
+        returns (uint256)
+    {
+      VaultStorage storage $ = _getVaultStorage();
+
+      if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0)
+          return _syncWithdraw(assets, receiver, controller);
+      return _withdraw(assets, receiver, controller);
+    }
+
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address controller
+    )
+        public
+        override
+        onlyOperator(controller)
+        returns (uint256)
+    {
+        VaultStorage storage $ = _getVaultStorage();
+
+        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0)
+            return _syncRedeem(shares, receiver, controller);
+        return _redeem(shares, receiver, controller);
+    }
+    
+    function _syncWithdraw(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) internal returns (uint256 shares) {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        
+        shares = _convertToShares(assets, Math.Rounding.Ceil); 
+        _burn(controller, shares);
+        $.totalAssets -= assets;
+        IERC20(asset()).safeTransfer(receiver, assets);
+        emit Withdraw(_msgSender(), receiver, controller, assets, shares);
+    }
+
+    function _syncRedeem(
+        uint256 shares,
+        address receiver,
+        address controller
+    ) internal returns (uint256 assets) {
+        ERC7540Storage storage $ = _getERC7540Storage();
+
+        assets = _convertToAssets(shares, Math.Rounding.Floor);
+        _burn(controller, shares);
+        $.totalAssets -= assets;
+        IERC20(asset()).safeTransfer(receiver, assets);
+        emit Withdraw(_msgSender(), receiver, controller, assets, shares);
+    } 
+
+    function state() external view returns(State) {
+        return _getVaultStorage().state;
     }
 }
