@@ -38,6 +38,11 @@ contract TestInitiateClosing is BaseTest {
 
         assertEq(uint256(vault.state()), uint256(State.Open));
 
+        // Make sure we can't call close without initiating close
+        vm.prank(safe.addr);
+        vm.expectRevert("Not Closing");
+        vault.close();
+
         vm.prank(admin.addr);
         vault.initiateClosing();
 
@@ -47,6 +52,12 @@ contract TestInitiateClosing is BaseTest {
         updateTotalAssets(vault.totalAssets());
 
         vm.warp(block.timestamp + 1 days);
+    }
+
+    function test_canNotCallInitiateClosingTwice() public {
+        vm.prank(admin.addr);
+        vm.expectRevert("Not open");
+        vault.initiateClosing();
     }
 
     function test_closingVaultMarkTheVaultAsClosed() public {
