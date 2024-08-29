@@ -22,6 +22,7 @@ using Math for uint256;
 using SafeERC20 for IERC20;
 
 event Referral(address indexed referral, address indexed owner, uint256 indexed requestId, uint256 assets);
+event StateUpdated(State state);
 
 uint256 constant BPS_DIVIDER = 10_000;
 
@@ -114,6 +115,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         $.newTotalAssetsCooldown = init.cooldown;
 
         $.state = State.Open;
+        emit StateUpdated(State.Open);
 
         if (init.enableWhitelist) {
             WhitelistableStorage
@@ -299,7 +301,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
             pendingAssets
         );
         $erc7540.depositId += 2;
-        // todo emit event
+        emit Deposit(_msgSender(), address(this), pendingAssets, shares);
+        
     }
 
     function settleRedeem() public override onlySafe onlyOpen {
@@ -323,7 +326,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         if (
             assetsToWithdraw == 0 ||
             assetsToWithdraw > assetsInTheSafe ||
-            assetsToWithdraw > approvedBySafe
+            assetsToWithdraw > approvedBySafe // todo maybe we should remove this and let revert ?
         ) return;
 
         // first we save epochs data
@@ -338,13 +341,13 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         _burn(pendingSilo(), pendingShares);
         $erc7540.totalAssets = _totalAssets - assetsToWithdraw;
 
-
         IERC20(asset()).safeTransferFrom(
             _safe,
             address(this),
             assetsToWithdraw
         );
         $erc7540.redeemId += 2;
+        emit Withdraw(_msgSender(), address(this), pendingSilo(), assetsToWithdraw, pendingShares);
     }
    
     /////////////////
@@ -388,6 +391,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     function initiateClosing() external onlyOwner onlyOpen {
         VaultStorage storage $ = _getVaultStorage();
         $.state = State.Closing;
+        emit StateUpdated(State.Closing);
+
     }
 
     function close() external onlySafe onlyClosing {
@@ -405,6 +410,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         IERC20(asset()).safeTransferFrom(_safe, address(this), safeBalance);
 
         $.state = State.Closed;
+        emit StateUpdated(State.Closed);
+
     }
 
     function withdraw(
@@ -448,7 +455,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     ) internal returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
         
-        shares = convertToShares(assets); 
+        shares = _convertToShares(assets, Math.Rounding.Ceil); 
         _burn(controller, shares);
         $.totalAssets -= assets;
         IERC20(asset()).safeTransfer(receiver, assets);
@@ -462,7 +469,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     ) internal returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        assets = convertToAssets(shares);
+        assets = _convertToAssets(shares, Math.Rounding.Floor);
         _burn(controller, shares);
         $.totalAssets -= assets;
         IERC20(asset()).safeTransfer(receiver, assets);
