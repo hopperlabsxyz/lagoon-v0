@@ -19,10 +19,6 @@ contract TestReferral is BaseTest {
         uint256 userBalance = assetBalance(user1.addr);
         vm.expectEmit(true, true, true, true);
         emit Referral(user2.addr, user1.addr, 1, userBalance);
-        requestDeposit(
-            userBalance,
-            user1.addr,
-            abi.encode(new bytes32[](0), user2.addr)
-        );
+        requestDeposit(userBalance, user1.addr, abi.encode(new bytes32[](0), user2.addr));
     }
 }

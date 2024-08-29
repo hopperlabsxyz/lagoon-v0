@@ -6,6 +6,7 @@ import {FeeRegistry} from "./FeeRegistry.sol";
 // import {console} from "forge-std/console.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ERC7540Upgradeable} from "@src/ERC7540.sol";
+
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS = 10_000; // 100 %
 
@@ -36,30 +37,25 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant feeManagerStorage =
-        0xa5292f7ccd85acc1b3080c01f5da9af7799f2c26826bd4d79081d6511780bd00;
+    bytes32 private constant feeManagerStorage = 0xa5292f7ccd85acc1b3080c01f5da9af7799f2c26826bd4d79081d6511780bd00;
 
-    function _getFeeManagerStorage()
-        internal
-        pure
-        returns (FeeManagerStorage storage $)
-    {
+    function _getFeeManagerStorage() internal pure returns (FeeManagerStorage storage $) {
         assembly {
             $.slot := feeManagerStorage
         }
     }
 
-    function __FeeManager_init(
-        address _registry,
-        uint256 _managementRate,
-        uint256 _performanceRate,
-        uint256 _decimals
-    ) internal onlyInitializing {
-        if (_managementRate > MAX_MANAGEMENT_RATE)
+    function __FeeManager_init(address _registry, uint256 _managementRate, uint256 _performanceRate, uint256 _decimals)
+        internal
+        onlyInitializing
+    {
+        if (_managementRate > MAX_MANAGEMENT_RATE) {
             // todo change to require form
             revert AboveMaxRate(_managementRate, MAX_MANAGEMENT_RATE);
-        if (_performanceRate > MAX_PERFORMANCE_RATE)
+        }
+        if (_performanceRate > MAX_PERFORMANCE_RATE) {
             revert AboveMaxRate(_performanceRate, MAX_PERFORMANCE_RATE);
+        }
 
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
@@ -74,10 +70,12 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
     function updateRates(Rates memory newRates) external onlyOwner {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if (newRates.managementRate > MAX_MANAGEMENT_RATE)
+        if (newRates.managementRate > MAX_MANAGEMENT_RATE) {
             revert AboveMaxRate(newRates.managementRate, MAX_MANAGEMENT_RATE);
-        if (newRates.performanceRate > MAX_PERFORMANCE_RATE)
+        }
+        if (newRates.performanceRate > MAX_PERFORMANCE_RATE) {
             revert AboveMaxRate(newRates.performanceRate, MAX_PERFORMANCE_RATE);
+        }
 
         $.newRatesTimestamp = block.timestamp + COOLDOWN;
         $.oldRates = $.rates;
@@ -101,9 +99,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         return $.highWaterMark;
     }
 
-    function _setHighWaterMark(
-        uint256 _newHighWaterMark
-    ) internal returns (uint256) {
+    function _setHighWaterMark(uint256 _newHighWaterMark) internal returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 _highWaterMark = $.highWaterMark;
@@ -124,11 +120,11 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         return protocolRate;
     }
 
-    function _calculateManagementFee(
-        uint256 assets,
-        uint256 rate,
-        uint256 timeElapsed
-    ) internal pure returns (uint256 managementFee) {
+    function _calculateManagementFee(uint256 assets, uint256 rate, uint256 timeElapsed)
+        internal
+        pure
+        returns (uint256 managementFee)
+    {
         uint256 annualFee = assets.mulDiv(rate, BPS);
         managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
     }
@@ -145,19 +141,12 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
             unchecked {
                 profitPerShare = _pricePerShare - _highWaterMark;
             }
-            uint256 profit = profitPerShare.mulDiv(
-                _totalSupply,
-                10 ** _decimals
-            );
+            uint256 profit = profitPerShare.mulDiv(_totalSupply, 10 ** _decimals);
             performanceFee = profit.mulDiv(_rate, BPS);
         }
     }
 
-    function _calculateFees()
-        internal
-        view
-        returns (uint256 managerShares, uint256 protocolShares)
-    {
+    function _calculateFees() internal view returns (uint256 managerShares, uint256 protocolShares) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         Rates memory _rates = feeRates();
@@ -166,42 +155,22 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
         uint256 timeElapsed = block.timestamp - $.lastFeeTime;
         uint256 _totalAssets = totalAssets();
-        uint256 managementFees = _calculateManagementFee(
-            _totalAssets,
-            _rates.managementRate,
-            timeElapsed
-        );
+        uint256 managementFees = _calculateManagementFee(_totalAssets, _rates.managementRate, timeElapsed);
 
         /// Performance fee computation ///
 
-        uint256 _pricePerShare = _convertToAssets(
-            10 ** decimals(),
-            Math.Rounding.Floor
-        );
+        uint256 _pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
         uint256 _totalSupply = totalSupply();
-        uint256 performanceFees = _calculatePerformanceFee(
-            _rates.performanceRate,
-            _totalSupply,
-            _pricePerShare,
-            $.highWaterMark,
-            decimals()
-        );
+        uint256 performanceFees =
+            _calculatePerformanceFee(_rates.performanceRate, _totalSupply, _pricePerShare, $.highWaterMark, decimals());
 
         /// Protocol fee computation & convertion to shares ///
 
         uint256 totalFees = managementFees + performanceFees;
 
-        uint256 totalShares = totalFees.mulDiv(
-            _totalSupply + 1,
-            (totalAssets() - totalFees) + 1,
-            Math.Rounding.Ceil
-        );
+        uint256 totalShares = totalFees.mulDiv(_totalSupply + 1, (totalAssets() - totalFees) + 1, Math.Rounding.Ceil);
 
-        protocolShares = totalShares.mulDiv(
-            _protocolRate(),
-            BPS,
-            Math.Rounding.Ceil
-        );
+        protocolShares = totalShares.mulDiv(_protocolRate(), BPS, Math.Rounding.Ceil);
         managerShares = totalShares - protocolShares;
     }
 }

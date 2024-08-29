@@ -72,9 +72,6 @@ contract TestMisc is BaseTest {
     function test_pendingSilo() public view {
         address pendingSilo = vault.pendingSilo();
         assertNotEq(pendingSilo, address(0));
-        assertEq(
-            type(uint256).max,
-            underlying.allowance(pendingSilo, address(vault))
-        );
+        assertEq(type(uint256).max, underlying.allowance(pendingSilo, address(vault)));
     }
 }

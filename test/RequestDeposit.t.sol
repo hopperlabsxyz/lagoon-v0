@@ -26,8 +26,7 @@ contract TestRequestDeposit is BaseTest {
     function test_requestDeposit_with_eth() public {
         uint256 userBalance = 10e18;
         string memory wtoken = "WRAPPED_NATIVE_TOKEN";
-        bool shouldFail = keccak256(abi.encode(underlyingName)) !=
-            keccak256(abi.encode(wtoken));
+        bool shouldFail = keccak256(abi.encode(underlyingName)) != keccak256(abi.encode(wtoken));
         if (!shouldFail) {
             requestDeposit(userBalance, user1.addr, true);
             assertEq(assetBalance(address(vault)), 0);
@@ -41,10 +40,7 @@ contract TestRequestDeposit is BaseTest {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance / 2, user1.addr);
         requestDeposit(userBalance / 2, user1.addr);
-        assertEq(
-            vault.pendingDepositRequest(vault.depositId(), user1.addr),
-            userBalance
-        );
+        assertEq(vault.pendingDepositRequest(vault.depositId(), user1.addr), userBalance);
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
     }
 
@@ -59,59 +55,26 @@ contract TestRequestDeposit is BaseTest {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance / 2, user1.addr);
         updateAndSettle(0);
-        assertEq(
-            vault.maxDeposit(user1.addr),
-            userBalance / 2,
-            "wrong claimable deposit value"
-        );
+        assertEq(vault.maxDeposit(user1.addr), userBalance / 2, "wrong claimable deposit value");
         requestDeposit(userBalance / 2, user1.addr);
-        assertEq(
-            vault.maxDeposit(user1.addr),
-            0,
-            "wrong claimable deposit value"
-        );
-        assertEq(
-            vault.pendingDepositRequest(0, user1.addr),
-            userBalance / 2,
-            "wrong pending deposit value"
-        );
-        assertEq(
-            vault.balanceOf(user1.addr),
-            userBalance / 2,
-            "wrong shares balance"
-        );
+        assertEq(vault.maxDeposit(user1.addr), 0, "wrong claimable deposit value");
+        assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance / 2, "wrong pending deposit value");
+        assertEq(vault.balanceOf(user1.addr), userBalance / 2, "wrong shares balance");
     }
 
     function test_requestDeposit_withClaimableBalance_with_eth() public {
         uint256 userBalance = 10e18;
         string memory wtoken = "WRAPPED_NATIVE_TOKEN";
 
-        bool shouldFail = keccak256(abi.encode(underlyingName)) !=
-            keccak256(abi.encode(wtoken));
+        bool shouldFail = keccak256(abi.encode(underlyingName)) != keccak256(abi.encode(wtoken));
         if (!shouldFail) {
             requestDeposit(userBalance / 2, user1.addr);
             updateAndSettle(0);
-            assertEq(
-                vault.maxDeposit(user1.addr),
-                userBalance / 2,
-                "wrong claimable deposit value"
-            );
+            assertEq(vault.maxDeposit(user1.addr), userBalance / 2, "wrong claimable deposit value");
             requestDeposit(userBalance / 2, user1.addr, true);
-            assertEq(
-                vault.maxDeposit(user1.addr),
-                0,
-                "wrong claimable deposit value"
-            );
-            assertEq(
-                vault.pendingDepositRequest(0, user1.addr),
-                userBalance / 2,
-                "wrong pending deposit value"
-            );
-            assertEq(
-                vault.balanceOf(user1.addr),
-                userBalance / 2,
-                "wrong shares balance"
-            );
+            assertEq(vault.maxDeposit(user1.addr), 0, "wrong claimable deposit value");
+            assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance / 2, "wrong pending deposit value");
+            assertEq(vault.balanceOf(user1.addr), userBalance / 2, "wrong shares balance");
         }
     }
 
@@ -126,16 +89,8 @@ contract TestRequestDeposit is BaseTest {
         vm.prank(owner);
         vault.setOperator(operator, true);
         requestDeposit(ownerBalance, controller, owner, operator);
-        assertEq(
-            operatorBalance,
-            assetBalance(operator),
-            "operator balance should not change"
-        );
-        assertEq(
-            controllerBalance,
-            assetBalance(controller),
-            "controller balance should not change"
-        );
+        assertEq(operatorBalance, assetBalance(operator), "operator balance should not change");
+        assertEq(controllerBalance, assetBalance(controller), "controller balance should not change");
         assertEq(
             ownerBalance,
             vault.pendingDepositRequest(0, controller),

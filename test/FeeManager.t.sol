@@ -11,6 +11,7 @@ import {Rates} from "@src/FeeManager.sol";
 
 contract TestFeeManager is BaseTest {
     using Math for uint256;
+
     uint256 _1;
     uint256 _1K;
     uint256 _10K;
@@ -123,10 +124,7 @@ contract TestFeeManager is BaseTest {
     // Freeride: when pps (price per share) is under highwatermark (highest pps registered)
     //
     function test_ExactNoFeesAreTakenDuringFreeRide() public {
-        Rates memory newRates = Rates({
-            managementRate: 0,
-            performanceRate: 1_000
-        });
+        Rates memory newRates = Rates({managementRate: 0, performanceRate: 1_000});
         updateRates(newRates);
         vm.warp(block.timestamp + 1 days);
         address feeReceiver = vault.feeReceiver();
@@ -151,10 +149,7 @@ contract TestFeeManager is BaseTest {
 
         // USER 1 deposit into vault at 0$ per share
         assertEq(vault.totalSupply(), 1 * 10 ** vault.decimals());
-        assertEq(
-            vault.claimableDepositRequest(0, user1.addr),
-            1 * 10 ** vault.decimals()
-        );
+        assertEq(vault.claimableDepositRequest(0, user1.addr), 1 * 10 ** vault.decimals());
 
         // // USER2 deposit at 0.5$ per shares
         requestDeposit(_1M, user2.addr);
@@ -241,10 +236,7 @@ contract TestFeeManager is BaseTest {
     // Freeride: when pps (price per share) is under highwatermark (highest pps registered)
     //
     function test_NoFeesAreTakenDuringFreeRide() public {
-        Rates memory newRates = Rates({
-            managementRate: 0,
-            performanceRate: 2_000
-        });
+        Rates memory newRates = Rates({managementRate: 0, performanceRate: 2_000});
         updateRates(newRates);
         vm.warp(block.timestamp + 1 days);
         address feeReceiver = vault.feeReceiver();
@@ -269,10 +261,7 @@ contract TestFeeManager is BaseTest {
 
         // USER 1 deposit into vault at 0$ per share
         assertEq(vault.totalSupply(), 1 * 10 ** vault.decimals());
-        assertEq(
-            vault.claimableDepositRequest(0, user1.addr),
-            1 * 10 ** vault.decimals()
-        );
+        assertEq(vault.claimableDepositRequest(0, user1.addr), 1 * 10 ** vault.decimals());
 
         // // USER2 deposit at 0.5$ per shares
         requestDeposit(_1M, user2.addr);
@@ -280,27 +269,14 @@ contract TestFeeManager is BaseTest {
         newTotalAssets = (5 * 10 ** vault.underlyingDecimals()) / 10;
         // settlement
         updateAndSettle(newTotalAssets);
-        assertEq(
-            vault.totalAssets(),
-            _1M + ((5 * 10 ** vault.underlyingDecimals()) / 10)
-        );
-        assertEq(
-            vault.claimableDepositRequest(0, user1.addr),
-            1 * 10 ** vault.underlyingDecimals()
-        );
-        assertEq(
-            vault.claimableDepositRequest(0, user2.addr),
-            1_000_000 * 10 ** vault.underlyingDecimals()
-        );
+        assertEq(vault.totalAssets(), _1M + ((5 * 10 ** vault.underlyingDecimals()) / 10));
+        assertEq(vault.claimableDepositRequest(0, user1.addr), 1 * 10 ** vault.underlyingDecimals());
+        assertEq(vault.claimableDepositRequest(0, user2.addr), 1_000_000 * 10 ** vault.underlyingDecimals());
 
         vm.prank(user2.addr);
         vault.deposit(_1M, user2.addr, user2.addr);
 
-        assertApproxEqAbs(
-            vault.balanceOf(user2.addr),
-            2_000_000 * 10 ** vault.decimals(),
-            2 * 10 ** vault.decimals()
-        );
+        assertApproxEqAbs(vault.balanceOf(user2.addr), 2_000_000 * 10 ** vault.decimals(), 2 * 10 ** vault.decimals());
 
         vm.warp(vm.getBlockTimestamp() + 363 days);
 
@@ -332,10 +308,7 @@ contract TestFeeManager is BaseTest {
     // Freeride: when pps (price per share) is under highwatermark (highest pps registered)
     //
     function test_FeesAreTakenAfterFreeride() public {
-        Rates memory newRates = Rates({
-            managementRate: 0,
-            performanceRate: 2_000
-        });
+        Rates memory newRates = Rates({managementRate: 0, performanceRate: 2_000});
         updateRates(newRates);
         vm.warp(block.timestamp + 1 days);
 
@@ -360,10 +333,7 @@ contract TestFeeManager is BaseTest {
 
         // // USER 1 deposit into vault at 0$ per share
         assertEq(vault.totalSupply(), 1 * 10 ** vault.decimals());
-        assertEq(
-            vault.claimableDepositRequest(0, user1.addr),
-            1 * 10 ** vault.decimals()
-        );
+        assertEq(vault.claimableDepositRequest(0, user1.addr), 1 * 10 ** vault.decimals());
 
         // // USER2 deposit at 0.5$ per shares
         requestDeposit(_1M, user2.addr);
@@ -371,18 +341,9 @@ contract TestFeeManager is BaseTest {
         newTotalAssets = (5 * 10 ** vault.underlyingDecimals()) / 10;
         // settlement
         updateAndSettle(newTotalAssets);
-        assertEq(
-            vault.totalAssets(),
-            _1M + ((5 * 10 ** vault.underlyingDecimals()) / 10)
-        );
-        assertEq(
-            vault.claimableDepositRequest(0, user1.addr),
-            1 * 10 ** vault.underlyingDecimals()
-        );
-        assertEq(
-            vault.claimableDepositRequest(0, user2.addr),
-            1_000_000 * 10 ** vault.underlyingDecimals()
-        );
+        assertEq(vault.totalAssets(), _1M + ((5 * 10 ** vault.underlyingDecimals()) / 10));
+        assertEq(vault.claimableDepositRequest(0, user1.addr), 1 * 10 ** vault.underlyingDecimals());
+        assertEq(vault.claimableDepositRequest(0, user2.addr), 1_000_000 * 10 ** vault.underlyingDecimals());
 
         vm.prank(user2.addr);
         vault.deposit(_1M, user2.addr, user2.addr);

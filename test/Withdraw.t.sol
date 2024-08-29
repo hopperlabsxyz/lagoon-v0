@@ -25,22 +25,11 @@ contract TestWithdraw is BaseTest {
 
         assertEq(vault.claimableRedeemRequest(vault.redeemId(), user1.addr), 0);
         updateAndSettle(userBalance + 100);
-        assertEq(
-            vault.maxRedeem(user1.addr),
-            sharesObtained,
-            "user1 should be able to redeem all his shares"
-        );
-        uint256 assetsToWithdraw = vault.convertToAssets(
-            sharesObtained,
-            vault.redeemId() - 2
-        );
+        assertEq(vault.maxRedeem(user1.addr), sharesObtained, "user1 should be able to redeem all his shares");
+        uint256 assetsToWithdraw = vault.convertToAssets(sharesObtained, vault.redeemId() - 2);
 
         uint256 sharesTaken = withdraw(assetsToWithdraw, user1.addr);
-        assertEq(
-            assetsToWithdraw,
-            assetBalance(user1.addr),
-            "assetsToWithdraw should be equal to assetBalance"
-        );
+        assertEq(assetsToWithdraw, assetBalance(user1.addr), "assetsToWithdraw should be equal to assetBalance");
         assertApproxEqAbs(
             sharesObtained - sharesTaken,
             vault.balanceOf(user1.addr),
@@ -49,10 +38,6 @@ contract TestWithdraw is BaseTest {
         );
         assertEq(vault.maxWithdraw(user1.addr), 0, "maxWithdraw should be 0");
         assertEq(vault.redeemId(), 4, "redeemId should be 4");
-        assertEq(
-            vault.claimableRedeemRequest(vault.redeemId(), user1.addr),
-            0,
-            "claimableRedeemRequest should be 0"
-        );
+        assertEq(vault.claimableRedeemRequest(vault.redeemId(), user1.addr), 0, "claimableRedeemRequest should be 0");
     }
 }

@@ -31,19 +31,11 @@ contract TestMerkleTreeWhitelist is BaseTest {
     bytes proofsData;
     bytes configData;
 
-    function loadConfig(
-        uint256 id
-    )
-        public
-        returns (bytes32 root, Proof[] memory proofs, address[] memory accounts)
-    {
+    function loadConfig(uint256 id) public returns (bytes32 root, Proof[] memory proofs, address[] memory accounts) {
         string memory rootPath = vm.projectRoot();
 
         // Loading config
-        string memory path = string.concat(
-            rootPath,
-            "/test/proofs/config.json"
-        );
+        string memory path = string.concat(rootPath, "/test/proofs/config.json");
         string memory json = vm.readFile(path);
         configData = vm.parseJson(json);
         Config memory config = abi.decode(configData, (Config));
@@ -61,12 +53,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
         }
 
         // Loading proofs
-        path = string.concat(
-            rootPath,
-            "/test/proofs/output/proofs_",
-            Strings.toString(id),
-            ".json"
-        );
+        path = string.concat(rootPath, "/test/proofs/output/proofs_", Strings.toString(id), ".json");
         json = vm.readFile(path);
         proofsData = vm.parseJson(json);
         Commit memory commit = abi.decode(proofsData, (Commit));
@@ -74,10 +61,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
         root = commit.root;
     }
 
-    function findProof(
-        address account,
-        Proof[] memory proofs
-    ) internal pure returns (Proof memory proof, bool found) {
+    function findProof(address account, Proof[] memory proofs) internal pure returns (Proof memory proof, bool found) {
         for (uint256 i; i < proofs.length; i++) {
             if (proofs[i].account == account) {
                 return (proofs[i], true);
@@ -86,9 +70,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
         return (Proof(address(0), new bytes32[](0)), false);
     }
 
-    function withWhitelistSetUp(
-        uint256 whitelistId
-    )
+    function withWhitelistSetUp(uint256 whitelistId)
         public
         returns (bytes32 root, Proof[] memory proofs, address[] memory accounts)
     {
@@ -110,9 +92,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
         enableWhitelist = false;
         setUpVault(0, 0, 0);
         for (uint256 i; i < whitelistInit.length; i++) {
-            assertFalse(
-                vault.isWhitelisted(whitelistInit[i], new bytes32[](0))
-            );
+            assertFalse(vault.isWhitelisted(whitelistInit[i], new bytes32[](0)));
         }
         dealAndApprove(user1.addr);
     }
@@ -121,35 +101,20 @@ contract TestMerkleTreeWhitelist is BaseTest {
         withWhitelistSetUp(0);
     }
 
-    function test_requestDeposit_ShouldFailWhenControllerNotWhitelisted()
-        public
-    {
-        (, Proof[] memory proofs, ) = withWhitelistSetUp(0); // user1.addr is NOT whitelisted
+    function test_requestDeposit_ShouldFailWhenControllerNotWhitelisted() public {
+        (, Proof[] memory proofs,) = withWhitelistSetUp(0); // user1.addr is NOT whitelisted
 
         (Proof memory proof, bool found) = findProof(user1.addr, proofs);
-        assertEq(
-            found,
-            false,
-            "Proof was found but we expect it not to be found"
-        );
+        assertEq(found, false, "Proof was found but we expect it not to be found");
 
         uint256 userBalance = assetBalance(user1.addr);
         vm.startPrank(user1.addr);
-        vm.expectRevert(
-            abi.encodeWithSelector(NotWhitelisted.selector, user1.addr)
-        );
+        vm.expectRevert(abi.encodeWithSelector(NotWhitelisted.selector, user1.addr));
 
-        vault.requestDeposit(
-            userBalance,
-            user1.addr,
-            user1.addr,
-            abi.encode(proof.proof)
-        );
+        vault.requestDeposit(userBalance, user1.addr, user1.addr, abi.encode(proof.proof));
     }
 
-    function test_requestDeposit_ShouldFailWhenControllerNotWhitelistedAndOperatorAndOwnerAre()
-        public
-    {
+    function test_requestDeposit_ShouldFailWhenControllerNotWhitelistedAndOperatorAndOwnerAre() public {
         withWhitelistSetUp(1); // user1.addr is whitelisted
         uint256 userBalance = assetBalance(user1.addr);
         address controller = user2.addr;
@@ -160,10 +125,8 @@ contract TestMerkleTreeWhitelist is BaseTest {
         vault.requestDeposit(userBalance, controller, owner);
     }
 
-    function test_transfer_WhenReceiverNotWhitelistedAfterDeactivateOfWhitelisting()
-        public
-    {
-        (, Proof[] memory proofs, ) = withWhitelistSetUp(1); // user1.addr is whitelisted
+    function test_transfer_WhenReceiverNotWhitelistedAfterDeactivateOfWhitelisting() public {
+        (, Proof[] memory proofs,) = withWhitelistSetUp(1); // user1.addr is whitelisted
         (Proof memory proof, bool found) = findProof(user1.addr, proofs);
         assertEq(found, true, "Should find proof but it didn't");
         uint256 userBalance = assetBalance(user1.addr);
@@ -181,7 +144,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
     }
 
     function test_transfer_ShouldWorkWhenReceiverWhitelisted() public {
-        (, Proof[] memory proofs, ) = withWhitelistSetUp(1); // user1.addr is whitelisted
+        (, Proof[] memory proofs,) = withWhitelistSetUp(1); // user1.addr is whitelisted
         (Proof memory proof, bool found) = findProof(user1.addr, proofs);
         assertEq(found, true, "Should find proof but it didn't");
 
@@ -197,7 +160,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
     }
 
     function test_whitelist() public {
-        (, Proof[] memory proofs, ) = withWhitelistSetUp(1); // user1.addr is whitelisted
+        (, Proof[] memory proofs,) = withWhitelistSetUp(1); // user1.addr is whitelisted
         (Proof memory proof, bool found) = findProof(user1.addr, proofs);
         assertEq(found, true, "Should find proof but it didn't");
 
@@ -205,7 +168,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
     }
 
     function test_whitelistList() public {
-        (, Proof[] memory proofs, ) = withWhitelistSetUp(3); // user1.addr & user2.addr are whitelisted
+        (, Proof[] memory proofs,) = withWhitelistSetUp(3); // user1.addr & user2.addr are whitelisted
         (Proof memory proof, bool found) = findProof(user1.addr, proofs);
         assertEq(found, true, "Should find proof but it didn't");
         assertEq(vault.isWhitelisted(user1.addr, proof.proof), true);
@@ -215,28 +178,20 @@ contract TestMerkleTreeWhitelist is BaseTest {
     }
 
     function test_unwhitelistList() public {
-        (, Proof[] memory proofs, ) = withWhitelistSetUp(1); // user1.addr is whitelisted
+        (, Proof[] memory proofs,) = withWhitelistSetUp(1); // user1.addr is whitelisted
         (Proof memory proof, bool found) = findProof(user1.addr, proofs);
         assertEq(found, true, "Should find proof but it didn't");
 
         assertEq(vault.isWhitelisted(user1.addr, proof.proof), true);
-        (, proofs, ) = withWhitelistSetUp(2); // user2.addr is whitelisted
+        (, proofs,) = withWhitelistSetUp(2); // user2.addr is whitelisted
         (proof, found) = findProof(user1.addr, proofs);
-        assertEq(
-            found,
-            false,
-            "Proof was found but we expect it not to be found"
-        );
+        assertEq(found, false, "Proof was found but we expect it not to be found");
 
         assertEq(vault.isWhitelisted(user2.addr, proof.proof), false);
         (proof, found) = findProof(user2.addr, proofs);
         assertEq(found, true, "Should find proof but it didn't");
 
-        assertEq(
-            vault.isWhitelisted(user2.addr, proof.proof),
-            true,
-            "user2 should be whitelisted"
-        );
+        assertEq(vault.isWhitelisted(user2.addr, proof.proof), true, "user2 should be whitelisted");
     }
 
     function test_noWhitelist() public {
@@ -245,9 +200,9 @@ contract TestMerkleTreeWhitelist is BaseTest {
     }
 
     function test_getRoot() public {
-        (bytes32 root, , ) = withWhitelistSetUp(1); // user1.addr is whitelisted
+        (bytes32 root,,) = withWhitelistSetUp(1); // user1.addr is whitelisted
         assertEq(root, vault.getRoot());
-        (root, , ) = loadConfig(2);
+        (root,,) = loadConfig(2);
         vm.prank(vault.whitelistManager());
         vault.setRoot(root);
         assertEq(root, vault.getRoot());
