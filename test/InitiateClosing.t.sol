@@ -13,32 +13,42 @@ contract TestInitiateClosing is BaseTest {
     function setUp() public {
         enableWhitelist = false;
         setUpVault(0, 0, 0);
-        dealAndApprove(user1.addr);
-        dealAndApprove(user2.addr);
+
+        dealAndApprove(user1.addr); // if we deal 100k assets
+        dealAndApprove(user2.addr); // if we deal 100k assets
+
         uint256 user1Assets = assetBalance(user1.addr);
-        user1AssetsBeginning = user1Assets;
+        user1AssetsBeginning = user1Assets; // 100k assets
+
         uint256 user2Assets = assetBalance(user2.addr);
-        user2AssetsBeginning = user2Assets;
+        user2AssetsBeginning = user2Assets; // 100k assets
 
-        requestDeposit(user1Assets / 2, user1.addr);
-        requestDeposit(user2Assets / 2, user2.addr);
+        requestDeposit(user1Assets / 2, user1.addr); // 50k assets
+        requestDeposit(user2Assets / 2, user2.addr); // 50k assets
 
+        // user1: 50k shares claimable
+        // user2: 50k shares claimable
         updateAndSettle(0);
 
-        // User2 has pending redeem request
+        // User2 claims 50k shares
         vm.startPrank(user2.addr);
         vault.deposit(user2Assets / 2, user2.addr);
+
         // user2 ask for redemption on half of his shares
-        vault.requestRedeem(user2Assets / 4, user2.addr, user2.addr);
+        vault.requestRedeem(user2Assets / 4, user2.addr, user2.addr); // 25k shares
         vm.stopPrank();
 
+        // user1: 50k shares claimable
+        // user2:
+        //    - 25k shares pending redeem
+        //    - 25k shares holding
         updateAndSettle(100_000 * 10 ** vault.underlyingDecimals());
 
         vm.warp(block.timestamp + 30 days);
 
         assertEq(uint256(vault.state()), uint256(State.Open));
 
-        // Make sure we can't call close without initiating close
+        // Invariant: We can't call close without initiating close
         vm.prank(safe.addr);
         vm.expectRevert("Not Closing");
         vault.close();
@@ -48,7 +58,10 @@ contract TestInitiateClosing is BaseTest {
 
         assertEq(uint256(vault.state()), uint256(State.Closing));
 
-        // User1 has claimbale deposit & user2 has claimable redeem
+        // user1: 50k shares claimable
+        // user2:
+        //    - 25k assets claimable
+        //    - 25k shares holding
         updateTotalAssets(vault.totalAssets());
 
         vm.warp(block.timestamp + 1 days);
