@@ -422,13 +422,15 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         public
         override
         onlyOperator(controller)
-        returns (uint256)
+        returns (uint256 shares)
     {
-      VaultStorage storage $ = _getVaultStorage();
+        VaultStorage storage $ = _getVaultStorage();
 
-      if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0)
-          return _syncWithdraw(assets, receiver, controller);
-      return _withdraw(assets, receiver, controller);
+        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
+            shares = _convertToShares(assets, Math.Rounding.Ceil); 
+            _withdraw(_msgSender(), receiver, controller, assets, shares);
+            _getERC7540Storage().totalAssets -= assets;
+        } else return _withdraw(assets, receiver, controller);
     }
 
     function redeem(
@@ -439,42 +441,17 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         public
         override
         onlyOperator(controller)
-        returns (uint256)
+        returns (uint256 assets)
     {
         VaultStorage storage $ = _getVaultStorage();
 
-        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0)
-            return _syncRedeem(shares, receiver, controller);
-        return _redeem(shares, receiver, controller);
+        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
+            assets = _convertToAssets(shares, Math.Rounding.Floor);            
+            _withdraw(_msgSender(), receiver, controller, assets, shares);
+            _getERC7540Storage().totalAssets -= assets;
+        } 
+        else return _redeem(shares, receiver, controller);
     }
-    
-    function _syncWithdraw(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) internal returns (uint256 shares) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        
-        shares = _convertToShares(assets, Math.Rounding.Ceil); 
-        _burn(controller, shares);
-        $.totalAssets -= assets;
-        IERC20(asset()).safeTransfer(receiver, assets);
-        emit Withdraw(_msgSender(), receiver, controller, assets, shares);
-    }
-
-    function _syncRedeem(
-        uint256 shares,
-        address receiver,
-        address controller
-    ) internal returns (uint256 assets) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-
-        assets = _convertToAssets(shares, Math.Rounding.Floor);
-        _burn(controller, shares);
-        $.totalAssets -= assets;
-        IERC20(asset()).safeTransfer(receiver, assets);
-        emit Withdraw(_msgSender(), receiver, controller, assets, shares);
-    } 
 
     function state() external view returns(State) {
         return _getVaultStorage().state;
