@@ -15,7 +15,6 @@ import {Whitelistable, NotWhitelisted, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
 import {WhitelistableStorage} from "./Whitelistable.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Roles} from "./Roles.sol";
 // import {console} from "forge-std/console.sol";
 
@@ -145,13 +144,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         require($.state == State.Closing, "Not Closing");
         _;
     }
-
-    // modifier onlyClosed() {
-    //     VaultStorage storage $ = _getVaultStorage();
-
-    //     require($.state == State.Closed, "Not Closed");
-    //     _;
-    // }
 
     function requestDeposit(
         uint256 assets,
@@ -393,9 +385,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         $.newTotalAssetsCooldown = _newTotalAssetsCooldown;
     }
 
-    function initiateClosing() external onlyOwner {
+    function initiateClosing() external onlyOwner onlyOpen {
         VaultStorage storage $ = _getVaultStorage();
-        require($.state == State.Open, "Vault is not Open");
         $.state = State.Closing;
     }
 
@@ -427,8 +418,9 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         returns (uint256)
     {
       VaultStorage storage $ = _getVaultStorage();
+
       if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0)
-          return _exitWithdraw(assets, receiver, controller);
+          return _syncWithdraw(assets, receiver, controller);
       return _withdraw(assets, receiver, controller);
     }
 
@@ -444,29 +436,26 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     {
         VaultStorage storage $ = _getVaultStorage();
 
-        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
-            return _exitRedeem(shares, receiver, controller);
-
-        }
+        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0)
+            return _syncRedeem(shares, receiver, controller);
         return _redeem(shares, receiver, controller);
     }
     
-    function _exitWithdraw(
+    function _syncWithdraw(
         uint256 assets,
         address receiver,
         address controller
     ) internal returns (uint256 shares) {
-                ERC7540Storage storage $ = _getERC7540Storage();
-      shares = convertToShares(assets); 
-      _burn(controller, shares);
+        ERC7540Storage storage $ = _getERC7540Storage();
+        
+        shares = convertToShares(assets); 
+        _burn(controller, shares);
         $.totalAssets -= assets;
-
-      IERC20(asset()).safeTransfer(receiver, assets);
-
-      emit Withdraw(_msgSender(), receiver, controller, assets, shares);
+        IERC20(asset()).safeTransfer(receiver, assets);
+        emit Withdraw(_msgSender(), receiver, controller, assets, shares);
     }
 
-    function _exitRedeem(
+    function _syncRedeem(
         uint256 shares,
         address receiver,
         address controller
