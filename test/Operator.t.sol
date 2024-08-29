@@ -22,10 +22,7 @@ contract TestOperator is BaseTest {
         vm.prank(user1.addr);
         vault.setOperator(user2.addr, true);
         assertFalse(isOpBefore, "isOperator should be false");
-        assertTrue(
-            vault.isOperator(user1.addr, user2.addr),
-            "isOperator should be true"
-        );
+        assertTrue(vault.isOperator(user1.addr, user2.addr), "isOperator should be true");
     }
 
     function test_addOperatorwhenOpIsAlreadyOp() public {
@@ -35,10 +32,7 @@ contract TestOperator is BaseTest {
         assertTrue(isOpBefore, "isOperator should be true");
         vm.prank(user1.addr);
         vault.setOperator(user2.addr, true);
-        assertTrue(
-            vault.isOperator(user1.addr, user2.addr),
-            "isOperator should be true"
-        );
+        assertTrue(vault.isOperator(user1.addr, user2.addr), "isOperator should be true");
     }
 
     function test_rmvOperator() public {
@@ -48,10 +42,7 @@ contract TestOperator is BaseTest {
         assertTrue(isOpBefore, "isOperator should be true");
         vm.prank(user1.addr);
         vault.setOperator(user2.addr, false);
-        assertFalse(
-            vault.isOperator(user1.addr, user2.addr),
-            "isOperator should be false"
-        );
+        assertFalse(vault.isOperator(user1.addr, user2.addr), "isOperator should be false");
     }
 
     function test_rmvOperatorWhenAddressIsNotOperator() public {
@@ -59,9 +50,6 @@ contract TestOperator is BaseTest {
         assertFalse(isOpBefore, "isOperator should be false");
         vm.prank(user1.addr);
         vault.setOperator(user2.addr, false);
-        assertFalse(
-            vault.isOperator(user1.addr, user2.addr),
-            "isOperator should be false"
-        );
+        assertFalse(vault.isOperator(user1.addr, user2.addr), "isOperator should be false");
     }
 }

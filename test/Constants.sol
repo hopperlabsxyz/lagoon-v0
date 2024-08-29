@@ -16,21 +16,16 @@ import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20P
 abstract contract Constants is Test {
     // ERC20 tokens
     string network = vm.envString("NETWORK");
-    ERC20Permit immutable USDC =
-        ERC20Permit(vm.envAddress(string.concat("USDC_", network)));
-    ERC20 immutable WETH =
-        ERC20(vm.envAddress(string.concat("WETH_", network)));
-    address immutable WRAPPED_NATIVE_TOKEN =
-        vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
-    ERC20 immutable WBTC =
-        ERC20(vm.envAddress(string.concat("WBTC_", network)));
+    ERC20Permit immutable USDC = ERC20Permit(vm.envAddress(string.concat("USDC_", network)));
+    ERC20 immutable WETH = ERC20(vm.envAddress(string.concat("WETH_", network)));
+    address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
+    ERC20 immutable WBTC = ERC20(vm.envAddress(string.concat("WBTC_", network)));
     ERC20 immutable ETH = ERC20(vm.envAddress(string.concat("ETH_", network)));
 
     uint8 decimalsOffset = 0;
 
     //ERC20 whales
-    address immutable USDC_WHALE =
-        vm.envAddress(string.concat("USDC_WHALE", "_", network));
+    address immutable USDC_WHALE = vm.envAddress(string.concat("USDC_WHALE", "_", network));
 
     string underlyingName = vm.envString("UNDERLYING_NAME");
     VaultHelper vault;
@@ -39,8 +34,7 @@ abstract contract Constants is Test {
     string vaultSymbol = "hop_vault_";
 
     //Underlying
-    ERC20 immutable underlying =
-        ERC20(vm.envAddress(string.concat(underlyingName, "_", network)));
+    ERC20 immutable underlying = ERC20(vm.envAddress(string.concat(underlyingName, "_", network)));
     ERC20Permit immutable underlyingPermit;
 
     // Users
@@ -68,13 +62,7 @@ abstract contract Constants is Test {
     bool enableWhitelist = true;
 
     // Wallet
-    VmSafe.Wallet address0 =
-        VmSafe.Wallet({
-            addr: address(0),
-            publicKeyX: 0,
-            publicKeyY: 0,
-            privateKey: 0
-        });
+    VmSafe.Wallet address0 = VmSafe.Wallet({addr: address(0), publicKeyX: 0, publicKeyY: 0, privateKey: 0});
 
     int256 immutable bipsDividerSigned = 10_000;
 
@@ -99,10 +87,7 @@ abstract contract Constants is Test {
         users.push(user10);
     }
 
-    function _beaconDeploy(
-        string memory contractName,
-        address _owner
-    ) internal returns (UpgradeableBeacon) {
+    function _beaconDeploy(string memory contractName, address _owner) internal returns (UpgradeableBeacon) {
         Options memory deploy;
         deploy.constructorData = abi.encode(true);
         return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner));
@@ -135,23 +120,13 @@ abstract contract Constants is Test {
             whitelist: whitelist
         });
 
-        BeaconProxy proxy = BeaconProxy(
-            payable(
-                Upgrades.deployBeaconProxy(
-                    address(beacon),
-                    abi.encodeCall(Vault.initialize, v)
-                )
-            )
-        );
+        BeaconProxy proxy =
+            BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault.initialize, v))));
 
         return VaultHelper(address(proxy));
     }
 
-    function setUpVault(
-        uint256 _protocolRate,
-        uint256 _managementRate,
-        uint256 _performanceRate
-    ) internal {
+    function setUpVault(uint256 _protocolRate, uint256 _managementRate, uint256 _performanceRate) internal {
         bool proxy = vm.envBool("PROXY");
 
         feeRegistry = new FeeRegistry();
@@ -165,15 +140,8 @@ abstract contract Constants is Test {
         UpgradeableBeacon beacon;
         if (proxy) {
             beacon = _beaconDeploy("Vault.sol", owner.addr);
-            vault = _proxyDeploy(
-                beacon,
-                underlying,
-                vaultName,
-                vaultSymbol,
-                _managementRate,
-                _performanceRate,
-                whitelist
-            );
+            vault =
+                _proxyDeploy(beacon, underlying, vaultName, vaultSymbol, _managementRate, _performanceRate, whitelist);
         } else {
             vm.startPrank(owner.addr);
 

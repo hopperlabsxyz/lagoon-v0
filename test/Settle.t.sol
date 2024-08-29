@@ -40,11 +40,8 @@ contract TestSettle is BaseTest {
 
         // totalAssets when settle-redeem:
         uint256 totalAssetsWhenRedeem = totalAssetsWhenDeposit + user2Assets;
-        uint256 user2Shares = user2Assets.mulDiv(
-            totalSupplyWhenDeposit + 1,
-            totalAssetsWhenDeposit + 1,
-            Math.Rounding.Floor
-        );
+        uint256 user2Shares =
+            user2Assets.mulDiv(totalSupplyWhenDeposit + 1, totalAssetsWhenDeposit + 1, Math.Rounding.Floor);
         uint256 totalSupplyWhenRedeem = totalSupplyWhenDeposit + user2Shares;
         redeem(user1Shares, user1.addr);
         deposit(user2Assets, user2.addr);
@@ -52,12 +49,7 @@ contract TestSettle is BaseTest {
         // user1 assets: user1Assets + user1Shares.muldiv(75*1e6 + 1, 50e1e6 + 1, Math.Round.floor)
         assertEq(
             user1NewAssets,
-            user1Assets +
-                user1Shares.mulDiv(
-                    totalAssetsWhenRedeem,
-                    totalSupplyWhenRedeem,
-                    Math.Rounding.Floor
-                )
+            user1Assets + user1Shares.mulDiv(totalAssetsWhenRedeem, totalSupplyWhenRedeem, Math.Rounding.Floor)
         );
     }
 
