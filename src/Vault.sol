@@ -455,7 +455,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address owner,
         uint256 assets,
         uint256 shares
-    ) internal virtual override{
+    ) internal virtual override {
         if (caller != owner && !isOperator(owner, caller)) {
             _spendAllowance(owner, caller, shares);
         }
