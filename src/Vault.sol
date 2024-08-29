@@ -22,6 +22,7 @@ using Math for uint256;
 using SafeERC20 for IERC20;
 
 event Referral(address indexed referral, address indexed owner, uint256 indexed requestId, uint256 assets);
+event StateUpdated(State state);
 
 uint256 constant BPS_DIVIDER = 10_000;
 
@@ -114,6 +115,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         $.newTotalAssetsCooldown = init.cooldown;
 
         $.state = State.Open;
+        emit StateUpdated(State.Open);
 
         if (init.enableWhitelist) {
             WhitelistableStorage
@@ -388,6 +390,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     function initiateClosing() external onlyOwner onlyOpen {
         VaultStorage storage $ = _getVaultStorage();
         $.state = State.Closing;
+        emit StateUpdated(State.Closing);
+
     }
 
     function close() external onlySafe onlyClosing {
@@ -405,6 +409,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         IERC20(asset()).safeTransferFrom(_safe, address(this), safeBalance);
 
         $.state = State.Closed;
+        emit StateUpdated(State.Closed);
+
     }
 
     function withdraw(
