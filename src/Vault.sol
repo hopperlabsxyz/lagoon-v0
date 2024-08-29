@@ -455,7 +455,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     ) internal returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
         
-        shares = convertToShares(assets); 
+        shares = _convertToShares(assets, Math.Rounding.Ceil); 
         _burn(controller, shares);
         $.totalAssets -= assets;
         IERC20(asset()).safeTransfer(receiver, assets);
