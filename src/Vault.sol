@@ -421,7 +421,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     )
         public
         override
-        onlyOperator(controller)
         returns (uint256 shares)
     {
         VaultStorage storage $ = _getVaultStorage();
@@ -429,7 +428,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             shares = _convertToShares(assets, Math.Rounding.Ceil); 
             _withdraw(_msgSender(), receiver, controller, assets, shares);
-            _getERC7540Storage().totalAssets -= assets;
         } else return _withdraw(assets, receiver, controller);
     }
 
@@ -440,7 +438,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     )
         public
         override
-        onlyOperator(controller)
         returns (uint256 assets)
     {
         VaultStorage storage $ = _getVaultStorage();
@@ -448,9 +445,26 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             assets = _convertToAssets(shares, Math.Rounding.Floor);            
             _withdraw(_msgSender(), receiver, controller, assets, shares);
-            _getERC7540Storage().totalAssets -= assets;
         } 
         else return _redeem(shares, receiver, controller);
+    }
+
+       function _withdraw(
+        address caller,
+        address receiver,
+        address owner,
+        uint256 assets,
+        uint256 shares
+    ) internal virtual override {
+        if (caller != owner && !isOperator(owner, caller)) {
+            _spendAllowance(owner, caller, shares);
+        }
+
+        _burn(owner, shares);
+        SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
+        _getERC7540Storage().totalAssets -= assets;
+
+        emit Withdraw(caller, receiver, owner, assets, shares);
     }
 
     function state() external view returns(State) {

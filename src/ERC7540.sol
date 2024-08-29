@@ -86,7 +86,6 @@ abstract contract ERC7540Upgradeable is
     modifier onlyOperator(address controller) {
         if (controller != _msgSender() && !isOperator(controller, _msgSender()))
             revert ERC7540InvalidOperator();
-
         _;
     }
 
@@ -407,13 +406,7 @@ abstract contract ERC7540Upgradeable is
         uint256 shares,
         address receiver,
         address controller
-    )
-        public
-        virtual
-        override(ERC4626Upgradeable, IERC4626)
-        onlyOperator(controller)
-        returns (uint256)
-    {
+    ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         return _redeem(shares, receiver, controller);
     }
 
@@ -421,7 +414,7 @@ abstract contract ERC7540Upgradeable is
         uint256 shares,
         address receiver,
         address controller
-    ) internal returns (uint256 assets) {
+    ) internal onlyOperator(controller) returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
@@ -438,13 +431,7 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address receiver,
         address controller
-    )
-        public
-        virtual
-        override(ERC4626Upgradeable, IERC4626)
-        onlyOperator(controller)
-        returns (uint256)
-    {
+    ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         return _withdraw(assets, receiver, controller);
     }
 
@@ -452,7 +439,7 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address receiver,
         address controller
-    ) internal returns (uint256 shares) {
+    ) internal onlyOperator(controller) returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
@@ -522,11 +509,6 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
         return address($.pendingSilo);
     }
-
-    // function claimableSilo() public view returns (address) {
-    //     ERC7540Storage storage $ = _getERC7540Storage();
-    //     return address($.claimableSilo);
-    // }
 
     function redeemId() public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();

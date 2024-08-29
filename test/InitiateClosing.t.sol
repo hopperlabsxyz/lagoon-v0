@@ -3,7 +3,9 @@ pragma solidity 0.8.25;
 
 import "forge-std/Test.sol";
 import {Vault, State} from "@src/Vault.sol";
+import {ERC7540InvalidOperator} from "@src/ERC7540.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {BaseTest} from "./Base.sol";
 
 contract TestInitiateClosing is BaseTest {
@@ -35,12 +37,12 @@ contract TestInitiateClosing is BaseTest {
         vault.deposit(user2Assets / 2, user2.addr);
 
         // user2 ask for redemption on half of his shares
-        vault.requestRedeem(user2Assets / 4, user2.addr, user2.addr); // 25k shares
+        vault.requestRedeem(user2Assets / 4, user2.addr, user2.addr); // 25k shares pending
         vm.stopPrank();
 
         // user1: 50k shares claimable
         // user2:
-        //    - 25k shares pending redeem
+        //    - 25k assets claimable
         //    - 25k shares holding
         updateAndSettle(100_000 * 10 ** vault.underlyingDecimals());
 
@@ -400,5 +402,135 @@ contract TestInitiateClosing is BaseTest {
             1,
             "wrong end asset balance user1"
         );
+    }
+
+    // @dev The vault is State.Closing => classic async path is used
+    function test_inClosingStateCanNotWithdrawOrRedeemIfNotOperatorAndEvenWithEnoughAllowance()
+        public
+    {
+        uint256 assetsClaimable = vault.claimableRedeemRequest(0, user2.addr);
+
+        vm.prank(user2.addr);
+        vault.approve(user3.addr, assetsClaimable);
+
+        vm.prank(user3.addr);
+        vm.expectRevert(ERC7540InvalidOperator.selector);
+        vault.withdraw(assetsClaimable, user2.addr, user2.addr);
+
+        vm.prank(user3.addr);
+        vm.expectRevert(ERC7540InvalidOperator.selector);
+        vault.redeem(assetsClaimable, user2.addr, user2.addr);
+    }
+
+    // @dev The vault is State.Closing => classic async path is used
+    function test_inClosingStateCanWithdrawAndRedeemIfOperator() public {
+        uint256 assetsClaimable = vault.claimableRedeemRequest(0, user2.addr);
+
+        vm.prank(user2.addr);
+        vault.setOperator(user3.addr, true);
+
+        vm.prank(user3.addr);
+        uint256 amount1 = vault.withdraw(
+            assetsClaimable / 2,
+            user2.addr,
+            user2.addr
+        );
+        assertEq(amount1, assetsClaimable / 2, "amount1 is wrong");
+
+        vm.prank(user3.addr);
+        uint256 amount2 = vault.redeem(
+            assetsClaimable / 2,
+            user2.addr,
+            user2.addr
+        );
+        assertEq(amount2, assetsClaimable / 2, "amount2 is wrong");
+    }
+
+    // @dev The vault is State.Closed => sync path is used after all async claims are claimed
+    function test_inClosedStateCanWithdrawAndRedeemIfOperatorOrEnoughAllowance()
+        public
+    {
+        vm.prank(safe.addr);
+        vault.close();
+
+        uint256 assetsClaimable = vault.claimableRedeemRequest(0, user2.addr);
+
+        vm.prank(user2.addr);
+        vault.setOperator(user3.addr, true);
+
+        vm.prank(user2.addr);
+        vault.approve(user4.addr, assetsClaimable / 2);
+
+        // All assets that where redeemed in async mode are claimed first
+        vm.prank(user3.addr);
+        uint256 amount1 = vault.withdraw(
+            assetsClaimable,
+            user2.addr,
+            user2.addr
+        );
+        assertEq(amount1, assetsClaimable, "amount1 is wrong");
+
+        // There are still assetsClaimable assets available to claim synchronously (see initial setUp)
+        assertEq(vault.balanceOf(user2.addr), assetsClaimable);
+
+        // user3 is an operator so he can sync withdraw on behalf of user2...
+        vm.prank(user3.addr);
+        uint256 amount2 = vault.withdraw(
+            assetsClaimable / 4,
+            user2.addr,
+            user2.addr
+        );
+        assertEq(amount2, assetsClaimable / 4, "amount2 is wrong");
+
+        // ... and sync redeem also
+        vm.prank(user3.addr);
+        uint256 amount3 = vault.redeem(
+            assetsClaimable / 4,
+            user2.addr,
+            user2.addr
+        );
+        assertEq(amount3, assetsClaimable / 4, "amount3 is wrong");
+
+        // user5 can't redeem because he is not an operator nor has enough allowance for doing so
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientAllowance.selector,
+                user5.addr,
+                vault.allowance(user2.addr, user5.addr),
+                assetsClaimable / 4
+            )
+        );
+        vm.prank(user5.addr);
+        vault.redeem(assetsClaimable / 4, user2.addr, user2.addr);
+
+        // ... same for withdraw
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientAllowance.selector,
+                user5.addr,
+                vault.allowance(user2.addr, user5.addr),
+                assetsClaimable / 4
+            )
+        );
+        vm.prank(user5.addr);
+        vault.withdraw(assetsClaimable / 4, user2.addr, user2.addr);
+
+        // User4 has enough allow to withdraw assets on behalf of user2
+        vm.prank(user4.addr);
+        uint256 amount4 = vault.withdraw(
+            assetsClaimable / 4,
+            user2.addr,
+            user2.addr
+        );
+        assertEq(amount4, assetsClaimable / 4, "amount4 is wrong");
+
+        // ... same for redeem
+        vm.prank(user4.addr);
+        uint256 amount5 = vault.redeem(
+            assetsClaimable / 4,
+            user2.addr,
+            user2.addr
+        );
+        assertEq(amount5, assetsClaimable / 4, "amount5 is wrong");
     }
 }
