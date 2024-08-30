@@ -35,6 +35,7 @@ error CooldownNotOver();
 error NotOpen();
 error NotClosing();
 error NotClosed();
+error NotEnoughLiquidity();
 
 enum State {
     Open,
@@ -136,14 +137,14 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     modifier onlyOpen() {
         VaultStorage storage $ = _getVaultStorage();
 
-        require($.state == State.Open, "Not open");
+        if ($.state != State.Open) revert NotOpen();
         _;
     }
 
     modifier onlyClosing() {
         VaultStorage storage $ = _getVaultStorage();
 
-        require($.state == State.Closing, "Not Closing");
+        if ($.state != State.Closing) revert NotClosing();
         _;
     }
 
@@ -177,7 +178,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         bytes memory data
     ) internal  returns (uint256) {
         (bytes32[] memory proof, address referral) = abi.decode(data, (bytes32[], address));
-        // todo: convert this to require(isWhitelisted(owner, proof), NotWhitelisted(owner));
         if (isWhitelisted(owner, proof) == false) {
           revert NotWhitelisted(owner);
         }
@@ -218,7 +218,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         bytes memory data
     ) internal onlyOpen returns (uint256) {
         bytes32[] memory proof = abi.decode(data, (bytes32[]));
-        // todo: convert this to require(isWhitelisted(owner, proof), NotWhitelisted(owner));
         if (isWhitelisted(owner, proof) == false) {
           revert NotWhitelisted(owner);
         }
@@ -406,7 +405,10 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
         address _safe = safe();
         uint256 safeBalance =  IERC20(asset()).balanceOf(_safe);
-        require($erc7540.totalAssets <= safeBalance, "not enough liquidity to unwind");
+
+        if ($erc7540.totalAssets > safeBalance) 
+          revert NotEnoughLiquidity();
+        
         IERC20(asset()).safeTransferFrom(_safe, address(this), safeBalance);
 
         $.state = State.Closed;
