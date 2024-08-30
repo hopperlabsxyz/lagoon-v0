@@ -3,6 +3,10 @@ pragma solidity "0.8.26";
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {FeeRegistry} from "./FeeRegistry.sol";
 
+error OnlySafe();
+error OnlyWhitelistManager();
+error OnlyValorizationManager();
+
 contract Roles is Ownable2StepUpgradeable {
     struct RolesStorage {
         address whitelistManager;
@@ -34,17 +38,19 @@ contract Roles is Ownable2StepUpgradeable {
     }
 
     modifier onlySafe() {
-        require(_getRolesStorage().safe == _msgSender());
+        if (_getRolesStorage().safe != _msgSender()) revert OnlySafe();
         _;
     }
 
     modifier onlyWhitelistManager() {
-        require(_getRolesStorage().whitelistManager == _msgSender());
+        if (_getRolesStorage().whitelistManager != _msgSender())
+            revert OnlyWhitelistManager();
         _;
     }
 
     modifier onlyValorizationManager() {
-        require(_getRolesStorage().valorizationManager == _msgSender());
+        if (_getRolesStorage().valorizationManager != _msgSender())
+            revert OnlyValorizationManager();
         _;
     }
 
