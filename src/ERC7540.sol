@@ -21,6 +21,7 @@ error ERC7540PreviewDepositDisabled();
 error ERC7540PreviewMintDisabled();
 error ERC7540PreviewRedeemDisabled();
 error ERC7540PreviewWithdrawDisabled();
+error OnlyOneRequestAllowed();
 
 error ERC7540InvalidOperator();
 error ZeroPendingDeposit();
@@ -32,13 +33,11 @@ error CantDepositNativeToken();
 
 struct NavData {
     uint256 settleId;
-    mapping(address => uint256) cumulativeDepositRequest;
     mapping(address => uint256) depositRequest;
     mapping(address => uint256) redeemRequest; // todo maybe merge those 2 since navid can't be same
 }
 
 struct SettleData {
-    uint256 pendingDeposit;
     uint256 totalSupply;
     uint256 totalAssets;
 }
@@ -261,10 +260,7 @@ abstract contract ERC7540Upgradeable is
         uint256 pendingReq = pendingDepositRequest(0, controller);
         uint256 lastDepositId = $.lastDepositRequestId[controller];
         if (pendingReq > 0 && lastDepositId != _depositId) {
-            $.navs[_depositId].depositRequest[controller] = $
-                .navs[lastDepositId]
-                .depositRequest[controller];
-            $.navs[lastDepositId].depositRequest[controller] = 0;
+            revert OnlyOneRequestAllowed();
         }
 
         $.navs[_depositId].depositRequest[controller] += assets;
@@ -285,19 +281,13 @@ abstract contract ERC7540Upgradeable is
         address controller
     ) public view returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        uint256 _depositId = $.depositNavId;
 
-        if (requestId == 0 || requestId == _depositId) {
-            return $.navs[_depositId].depositRequest[controller];
+        if (requestId == 0) {
+            requestId = $.lastDepositRequestId[controller];
         }
-
-        // if (requestId == 0) {
-        //     for (requestIduser)
-        //         assets += 123;
-        // }
-        // else if (requestId > _depositId) {
-        //     return $.navs[_depositId].depositRequest[controller];
-        // }
+        if (requestId > $.lastDepositNavIdSettle) {
+            return $.navs[requestId].depositRequest[controller];
+        }
     }
 
     function claimableDepositRequest(
@@ -391,7 +381,7 @@ abstract contract ERC7540Upgradeable is
         address msgSender = _msgSender();
         uint256 requestId = $.lastDepositRequestId[msgSender];
         if (requestId <= $.lastDepositNavIdSettle)
-            revert("can't cancel cliamable request");
+            revert("can't cancel claimable request");
 
         uint256 request = $.navs[requestId].depositRequest[msgSender];
         if (request == 0) return;
@@ -407,7 +397,7 @@ abstract contract ERC7540Upgradeable is
         uint256 shares,
         address controller,
         address owner
-    ) public virtual returns (uint256) {
+    ) public virtual returns (uint256 _redeemId) {
         if (_msgSender() != owner && !isOperator(owner, _msgSender())) {
             _spendAllowance(owner, _msgSender(), shares);
         }
@@ -416,18 +406,15 @@ abstract contract ERC7540Upgradeable is
         if (claimable > 0) _redeem(claimable, controller, controller);
 
         ERC7540Storage storage $ = _getERC7540Storage();
-        uint256 _redeemId = $.redeemNavId;
         _update(owner, address($.pendingSilo), shares);
 
         // pending ?
 
+        _redeemId = $.redeemNavId;
         uint256 pendingReq = pendingRedeemRequest(0, controller);
         uint256 lastRedeemId = $.lastRedeemRequestId[controller];
         if (pendingReq > 0 && lastRedeemId != _redeemId) {
-            $.navs[_redeemId].redeemRequest[controller] = $
-                .navs[lastRedeemId]
-                .redeemRequest[controller];
-            $.navs[lastRedeemId].redeemRequest[controller] = 0;
+            revert OnlyOneRequestAllowed();
         }
         $.navs[_redeemId].redeemRequest[controller] += shares;
         if ($.lastRedeemRequestId[controller] != _redeemId) {
@@ -435,7 +422,6 @@ abstract contract ERC7540Upgradeable is
         }
 
         emit RedeemRequest(controller, owner, _redeemId, _msgSender(), shares);
-        return _redeemId;
     }
 
     function pendingRedeemRequest(
@@ -443,11 +429,12 @@ abstract contract ERC7540Upgradeable is
         address controller
     ) public view returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        // uint256 _redeemId = $.redeemNavId;
-        uint256 _lastRedeemIdSettle = $.lastRedeemNavIdSettle;
-        uint256 _lastRedeemRequestId = $.lastRedeemRequestId[controller];
-        if (requestId == 0 || requestId > _lastRedeemIdSettle) {
-            return $.navs[_lastRedeemRequestId].redeemRequest[controller];
+
+        if (requestId == 0) {
+            requestId = $.lastRedeemRequestId[controller];
+        }
+        if (requestId > $.lastRedeemNavIdSettle) {
+            return $.navs[requestId].redeemRequest[controller];
         }
     }
 
@@ -458,10 +445,8 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) requestId = $.lastRedeemRequestId[controller];
-        // uint256 _redeemId = $.redeemNavId;
-        uint256 _lastRedeemIdSettle = $.lastRedeemNavIdSettle;
 
-        if (requestId <= _lastRedeemIdSettle) {
+        if (requestId <= $.lastRedeemNavIdSettle) {
             return $.navs[requestId].redeemRequest[controller];
         }
     }
