@@ -2,7 +2,7 @@
 pragma solidity "0.8.25";
 
 // import "forge-std/Test.sol";
-import {ERC7540Upgradeable, EpochData} from "./ERC7540.sol";
+import {ERC7540Upgradeable, NavData, SettleData} from "./ERC7540.sol";
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {
@@ -225,6 +225,16 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
     function updateTotalAssets(uint256 _newTotalAssets) public onlyValorizationManager {
         VaultStorage storage $ = _getVaultStorage();
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+
+        $erc7540.navs[$erc7540.depositNavId].settleId = $erc7540.depositSettleId;
+        $erc7540.navs[$erc7540.redeemNavId].settleId = $erc7540.depositSettleId;
+
+        // todo: check to not increment when no request have been made
+        $erc7540.depositNavId += 1;
+        $erc7540.redeemNavId += 1;
+
+
         $.newTotalAssets = _newTotalAssets;
         $.newTotalAssetsTimestamp = block.timestamp;
     }
@@ -274,10 +284,12 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         // Then save the deposit parameters
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
         uint256 _totalAssets = totalAssets();
-        uint256 depositId = $erc7540.depositId;
-        EpochData storage epoch = $erc7540.epochs[depositId];
-        epoch.totalAssets = _totalAssets;
-        epoch.totalSupply = totalSupply();
+        uint256 depositId = $erc7540.depositSettleId;
+        SettleData storage settleData = $erc7540.settles[depositId];
+
+
+        settleData.totalAssets = _totalAssets;
+        settleData.totalSupply = totalSupply();
 
         uint256 shares = _convertToShares(pendingAssets, Math.Rounding.Floor);
         _mint(address(this), shares);
@@ -286,7 +298,10 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
         address _safe = safe();
         IERC20(asset()).safeTransferFrom(pendingSilo(), _safe, pendingAssets);
-        $erc7540.depositId += 2;
+
+        $erc7540.navs[$erc7540.depositNavId].settleId = $erc7540.depositSettleId;
+        $erc7540.depositSettleId += 2;
+
         emit Deposit(_msgSender(), address(this), pendingAssets, shares);
     }
 
@@ -305,18 +320,21 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
         // first we save epochs data
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
-        uint256 redeemId = $erc7540.redeemId;
-        EpochData storage epoch = $erc7540.epochs[redeemId];
+        uint256 redeemId = $erc7540.redeemSettleId;
+        SettleData storage settleData = $erc7540.settles[redeemId];
         uint256 _totalAssets = totalAssets();
-        epoch.totalAssets = _totalAssets;
-        epoch.totalSupply = totalSupply();
+        settleData.totalAssets = _totalAssets;
+        settleData.totalSupply = totalSupply();
 
         // then we proceed to redeem the shares
         _burn(pendingSilo(), pendingShares);
         $erc7540.totalAssets = _totalAssets - assetsToWithdraw;
 
         IERC20(asset()).safeTransferFrom(_safe, address(this), assetsToWithdraw);
-        $erc7540.redeemId += 2;
+
+        $erc7540.navs[$erc7540.redeemNavId].settleId = $erc7540.redeemSettleId;
+        $erc7540.redeemSettleId += 2;
+
         emit Withdraw(_msgSender(), address(this), pendingSilo(), assetsToWithdraw, pendingShares);
     }
 
