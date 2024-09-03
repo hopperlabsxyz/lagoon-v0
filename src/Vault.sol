@@ -231,8 +231,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         $erc7540.navs[$erc7540.redeemNavId].settleId = $erc7540.depositSettleId;
 
         // todo: check to not increment when no request have been made
-        $erc7540.depositNavId += 1;
-        $erc7540.redeemNavId += 1;
+        $erc7540.depositNavId += 2;
+        $erc7540.redeemNavId += 2;
 
 
         $.newTotalAssets = _newTotalAssets;
@@ -299,8 +299,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address _safe = safe();
         IERC20(asset()).safeTransferFrom(pendingSilo(), _safe, pendingAssets);
 
-        $erc7540.navs[$erc7540.depositNavId].settleId = $erc7540.depositSettleId;
         $erc7540.depositSettleId += 2;
+        $erc7540.lastDepositNavIdSettle = $erc7540.depositNavId - 2;
 
         emit Deposit(_msgSender(), address(this), pendingAssets, shares);
     }
