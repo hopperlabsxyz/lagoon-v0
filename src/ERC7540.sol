@@ -231,9 +231,7 @@ abstract contract ERC7540Upgradeable is
         address owner
     ) public payable virtual onlyOperator(owner) returns (uint256 _depositId) {
         uint256 claimable = claimableDepositRequest(0, controller);
-        if (claimable > 0) {
-            _deposit(claimable, controller, controller);
-        }
+        if (claimable > 0) _deposit(claimable, controller, controller);
 
         ERC7540Storage storage $ = _getERC7540Storage();
         if (msg.value != 0) {
@@ -290,6 +288,7 @@ abstract contract ERC7540Upgradeable is
         }
     }
 
+    // todo: Pass this function as external
     function claimableDepositRequest(
         uint256 requestId,
         address controller
@@ -303,6 +302,7 @@ abstract contract ERC7540Upgradeable is
         }
     }
 
+    // todo: replace with the implementation of claimableDepositRequest
     function maxDeposit(
         address controller
     ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
@@ -337,9 +337,10 @@ abstract contract ERC7540Upgradeable is
 
         $.navs[requestId].depositRequest[controller] -= assets;
         shares = convertToShares(assets, requestId);
+
         _update(address(this), receiver, shares);
+
         emit Deposit(controller, receiver, assets, shares);
-        return shares;
     }
 
     function mint(
@@ -376,6 +377,7 @@ abstract contract ERC7540Upgradeable is
         return assets;
     }
 
+    // todo: block cancel request deposit after first nav of the current settle period
     function cancelRequestDeposit() external {
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
@@ -521,18 +523,15 @@ abstract contract ERC7540Upgradeable is
         Math.Rounding rounding
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        if (
-            requestId > $.lastRedeemNavIdSettle ||
-            requestId > $.lastDepositNavIdSettle ||
-            requestId == 0
-        ) return 0; //todo debate if it useful
 
         uint256 _totalAssets = $
             .settles[$.navs[requestId].settleId]
             .totalAssets + 1;
+
         uint256 _totalSupply = $
             .settles[$.navs[requestId].settleId]
             .totalSupply + 10 ** _decimalsOffset();
+
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
     }
 
@@ -550,15 +549,10 @@ abstract contract ERC7540Upgradeable is
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        if (
-            requestId > $.lastRedeemNavIdSettle ||
-            requestId > $.lastDepositNavIdSettle ||
-            requestId == 0
-        ) return 0; //todo debate if it useful
-
         uint256 _totalAssets = $
             .settles[$.navs[requestId].settleId]
             .totalAssets + 1;
+
         uint256 _totalSupply = $
             .settles[$.navs[requestId].settleId]
             .totalSupply + 10 ** _decimalsOffset();
