@@ -47,6 +47,7 @@ contract TestMisc is BaseTest {
     function test_redeemId() public {
         uint256 redeemId = vault.redeemId();
         assertEq(redeemId, 2);
+
         requestDeposit(10, user1.addr);
         updateAndSettle(1);
         redeemId = vault.redeemId();
@@ -72,6 +73,9 @@ contract TestMisc is BaseTest {
     function test_pendingSilo() public view {
         address pendingSilo = vault.pendingSilo();
         assertNotEq(pendingSilo, address(0));
-        assertEq(type(uint256).max, underlying.allowance(pendingSilo, address(vault)));
+        assertEq(
+            type(uint256).max,
+            underlying.allowance(pendingSilo, address(vault))
+        );
     }
 }

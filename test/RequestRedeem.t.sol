@@ -20,7 +20,11 @@ contract TestRequestRedeem is BaseTest {
 
     function test_requestRedeem() public {
         uint256 userBalance = balance(user1.addr);
-        requestRedeem(userBalance, user1.addr);
+        uint256 requestId = requestRedeem(userBalance, user1.addr);
+        assertEq(
+            vault.pendingRedeemRequest(requestId, user1.addr),
+            userBalance
+        );
         assertEq(vault.pendingRedeemRequest(0, user1.addr), userBalance);
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
     }
@@ -29,7 +33,10 @@ contract TestRequestRedeem is BaseTest {
         uint256 userBalance = balance(user1.addr);
         requestRedeem(userBalance / 2, user1.addr);
         requestRedeem(userBalance / 2, user1.addr);
-        assertEq(vault.pendingRedeemRequest(vault.redeemId(), user1.addr), userBalance);
+        assertEq(
+            vault.pendingRedeemRequest(vault.redeemId(), user1.addr),
+            userBalance
+        );
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
     }
 
@@ -44,11 +51,27 @@ contract TestRequestRedeem is BaseTest {
         uint256 userBalance = balance(user1.addr);
         requestRedeem(userBalance / 2, user1.addr);
         updateAndSettle(vault.totalAssets());
-        assertEq(vault.claimableRedeemRequest(0, user1.addr), userBalance / 2, "wrong claimable redeem value");
+        assertEq(
+            vault.claimableRedeemRequest(0, user1.addr),
+            userBalance / 2,
+            "wrong claimable redeem value"
+        );
         requestRedeem(balance(user1.addr), user1.addr);
-        assertEq(vault.claimableRedeemRequest(0, user1.addr), 0, "wrong claimable redeem value");
-        assertEq(vault.pendingRedeemRequest(0, user1.addr), userBalance / 2, "wrong pending redeem value");
-        assertEq(assetBalance(user1.addr), userBalance / 2, "wrong assets balance");
+        assertEq(
+            vault.claimableRedeemRequest(0, user1.addr),
+            0,
+            "wrong claimable redeem value"
+        );
+        assertEq(
+            vault.pendingRedeemRequest(0, user1.addr),
+            userBalance / 2,
+            "wrong pending redeem value"
+        );
+        assertEq(
+            assetBalance(user1.addr),
+            userBalance / 2,
+            "wrong assets balance"
+        );
     }
 
     function test_requestRedeem_asAnOperator() public {
@@ -61,8 +84,16 @@ contract TestRequestRedeem is BaseTest {
         vm.prank(owner);
         vault.setOperator(operator, true);
         requestRedeem(ownerBalance, controller, owner, operator);
-        assertEq(operatorBalance, balance(operator), "operator balance should not change");
-        assertEq(controllerBalance, balance(controller), "controller balance should not change");
+        assertEq(
+            operatorBalance,
+            balance(operator),
+            "operator balance should not change"
+        );
+        assertEq(
+            controllerBalance,
+            balance(controller),
+            "controller balance should not change"
+        );
         assertEq(
             ownerBalance,
             vault.pendingRedeemRequest(0, controller),
@@ -78,7 +109,12 @@ contract TestRequestRedeem is BaseTest {
         uint256 ownerBalance = balance(owner);
         vm.startPrank(operator);
         vm.expectRevert(
-            abi.encodeWithSelector(IERC20Errors.ERC20InsufficientAllowance.selector, operator, 0, ownerBalance)
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientAllowance.selector,
+                operator,
+                0,
+                ownerBalance
+            )
         );
         vault.requestRedeem(ownerBalance, controller, owner);
     }

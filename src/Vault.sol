@@ -230,15 +230,21 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         $erc7540.navs[$erc7540.depositNavId].settleId = $erc7540.depositSettleId;
         $erc7540.navs[$erc7540.redeemNavId].settleId = $erc7540.depositSettleId;
 
-        // todo: check to not increment when no request have been made
-        $erc7540.depositNavId += 2;
-        $erc7540.redeemNavId += 2;
+        uint256 pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
+        uint256 pendingShares = balanceOf(pendingSilo());
+
+        // todo(done): check to not increment when no request have been made
+        // Is this sufficient ? Won't it happen that some dust will be in the vault
+        // preventing this opti to be relevant at all ?
+        if (pendingAssets != 0) $erc7540.depositNavId += 2;
+        if (pendingShares != 0) $erc7540.redeemNavId += 2;
 
 
         $.newTotalAssets = _newTotalAssets;
         $.newTotalAssetsTimestamp = block.timestamp;
     }
 
+    // It should not be possible to call settleDeposit without at least one new nav
     function settleDeposit() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees();
@@ -284,8 +290,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         // Then save the deposit parameters
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
         uint256 _totalAssets = totalAssets();
-        uint256 depositId = $erc7540.depositSettleId;
-        SettleData storage settleData = $erc7540.settles[depositId];
+        uint256 depositSettleId = $erc7540.depositSettleId;
+        SettleData storage settleData = $erc7540.settles[depositSettleId];
 
 
         settleData.totalAssets = _totalAssets;
@@ -299,12 +305,13 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address _safe = safe();
         IERC20(asset()).safeTransferFrom(pendingSilo(), _safe, pendingAssets);
 
-        $erc7540.depositSettleId += 2;
+        $erc7540.depositSettleId = depositSettleId + 2;
         $erc7540.lastDepositNavIdSettle = $erc7540.depositNavId - 2;
 
         emit Deposit(_msgSender(), address(this), pendingAssets, shares);
     }
 
+    // It should not be possible to call settleRedeem without at least one new nav
     function settleRedeem() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees();
@@ -320,8 +327,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
         // first we save epochs data
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
-        uint256 redeemId = $erc7540.redeemSettleId;
-        SettleData storage settleData = $erc7540.settles[redeemId];
+        uint256 redeemSettleId = $erc7540.redeemSettleId;
+        SettleData storage settleData = $erc7540.settles[redeemSettleId];
         uint256 _totalAssets = totalAssets();
         settleData.totalAssets = _totalAssets;
         settleData.totalSupply = totalSupply();
@@ -332,8 +339,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
         IERC20(asset()).safeTransferFrom(_safe, address(this), assetsToWithdraw);
 
-        $erc7540.navs[$erc7540.redeemNavId].settleId = $erc7540.redeemSettleId;
-        $erc7540.redeemSettleId += 2;
+        $erc7540.redeemSettleId = redeemSettleId + 2;
+        $erc7540.lastRedeemNavIdSettle = $erc7540.redeemNavId - 2;
 
         emit Withdraw(_msgSender(), address(this), pendingSilo(), assetsToWithdraw, pendingShares);
     }
