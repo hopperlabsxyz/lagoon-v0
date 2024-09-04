@@ -91,8 +91,10 @@ abstract contract ERC7540Upgradeable is
         address wrapped_native_token
     ) internal onlyInitializing {
         ERC7540Storage storage $ = _getERC7540Storage();
+
         $.depositNavId = 1;
         $.redeemNavId = 2;
+
         $.depositSettleId = 1;
         $.redeemSettleId = 2;
 
@@ -390,6 +392,8 @@ abstract contract ERC7540Upgradeable is
         $.navs[requestId].depositRequest[msgSender] = 0;
         IERC20(asset()).safeTransferFrom(pendingSilo(), msgSender, request);
     }
+
+    // cancelRedeemRequest before nav update should be possible
 
     // ## EIP7540 Redeem flow ##
     /**
