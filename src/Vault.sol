@@ -43,6 +43,7 @@ error CooldownNotOver();
 error NotOpen();
 error NotClosing();
 error NotClosed();
+error NavIsMissing();
 
 enum State {
     Open,
@@ -117,6 +118,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
         VaultStorage storage $ = _getVaultStorage();
         $.newTotalAssetsCooldown = init.cooldown;
+        $.newTotalAssetsTimestamp = type(uint256).max; // make sure that we update the nav for the first settle
 
         $.state = State.Open;
         emit StateUpdated(State.Open);
@@ -233,12 +235,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
         uint256 pendingShares = balanceOf(pendingSilo());
 
-        // todo(done): check to not increment when no request have been made
-        // Is this sufficient ? Won't it happen that some dust will be in the vault
-        // preventing this opti to be relevant at all ?
         if (pendingAssets != 0) $erc7540.depositNavId += 2;
         if (pendingShares != 0) $erc7540.redeemNavId += 2;
-
 
         $.newTotalAssets = _newTotalAssets;
         $.newTotalAssetsTimestamp = block.timestamp;
@@ -256,6 +254,8 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
+        if ($vault.newTotalAssetsTimestamp == type(uint256).max)
+          revert NavIsMissing();
         if ($vault.newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown > block.timestamp) revert CooldownNotOver();
 
         $erc7540.totalAssets = $vault.newTotalAssets;
@@ -285,25 +285,28 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
     function _settleDeposit() internal {
         uint256 pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
-        if (pendingAssets == 0) return;
+        if (pendingAssets == 0)
+          return;
+
+        uint256 shares = _convertToShares(pendingAssets, Math.Rounding.Floor);
 
         // Then save the deposit parameters
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
+
         uint256 _totalAssets = totalAssets();
         uint256 depositSettleId = $erc7540.depositSettleId;
-        SettleData storage settleData = $erc7540.settles[depositSettleId];
 
+        SettleData storage settleData = $erc7540.settles[depositSettleId];
 
         settleData.totalAssets = _totalAssets;
         settleData.totalSupply = totalSupply();
 
-        uint256 shares = _convertToShares(pendingAssets, Math.Rounding.Floor);
         _mint(address(this), shares);
+
         _totalAssets += pendingAssets;
         $erc7540.totalAssets = _totalAssets;
 
-        address _safe = safe();
-        IERC20(asset()).safeTransferFrom(pendingSilo(), _safe, pendingAssets);
+        IERC20(asset()).safeTransferFrom(pendingSilo(), safe(), pendingAssets);
 
         $erc7540.depositSettleId = depositSettleId + 2;
         $erc7540.lastDepositNavIdSettle = $erc7540.depositNavId - 2;
@@ -325,17 +328,20 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 assetsInTheSafe = IERC20(asset()).balanceOf(_safe);
         if (assetsToWithdraw == 0 || assetsToWithdraw > assetsInTheSafe) return;
 
-        // first we save epochs data
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
-        uint256 redeemSettleId = $erc7540.redeemSettleId;
-        SettleData storage settleData = $erc7540.settles[redeemSettleId];
+
         uint256 _totalAssets = totalAssets();
+        uint256 redeemSettleId = $erc7540.redeemSettleId;
+
+        SettleData storage settleData = $erc7540.settles[redeemSettleId];
+
         settleData.totalAssets = _totalAssets;
         settleData.totalSupply = totalSupply();
 
-        // then we proceed to redeem the shares
         _burn(pendingSilo(), pendingShares);
-        $erc7540.totalAssets = _totalAssets - assetsToWithdraw;
+
+        _totalAssets -= assetsToWithdraw;
+        $erc7540.totalAssets = _totalAssets;
 
         IERC20(asset()).safeTransferFrom(_safe, address(this), assetsToWithdraw);
 
