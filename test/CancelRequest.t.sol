@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import "forge-std/Test.sol";
 import {Vault} from "@src/Vault.sol";
+import {RequestNotCancelable} from "@src/ERC7540.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseTest} from "./Base.sol";
 
@@ -34,5 +35,17 @@ contract TestCancelRequest is BaseTest {
         vm.expectRevert();
         vault.cancelRequestDeposit();
         vm.stopPrank();
+    }
+
+    function test_cancelRequestDeposit_revertsWhenNavHasBeenUpdated() public {
+        uint256 assetsBeforeRequest = assetBalance(user1.addr);
+
+        requestDeposit(assetsBeforeRequest / 2, user1.addr);
+
+        updateTotalAssets(0);
+
+        vm.prank(user1.addr);
+        vm.expectRevert(RequestNotCancelable.selector);
+        vault.cancelRequestDeposit();
     }
 }
