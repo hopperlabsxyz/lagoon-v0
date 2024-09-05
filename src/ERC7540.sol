@@ -22,6 +22,7 @@ error ERC7540PreviewMintDisabled();
 error ERC7540PreviewRedeemDisabled();
 error ERC7540PreviewWithdrawDisabled();
 error OnlyOneRequestAllowed();
+error RequestNotCancelable();
 
 error ERC7540InvalidOperator();
 error ZeroPendingDeposit();
@@ -386,14 +387,13 @@ abstract contract ERC7540Upgradeable is
         uint256 requestId = $.lastDepositRequestId[msgSender];
         if (requestId <= $.lastDepositNavIdSettle)
             revert("can't cancel claimable request");
+        if (requestId != $.depositNavId) revert RequestNotCancelable();
 
         uint256 request = $.navs[requestId].depositRequest[msgSender];
         if (request == 0) return;
         $.navs[requestId].depositRequest[msgSender] = 0;
         IERC20(asset()).safeTransferFrom(pendingSilo(), msgSender, request);
     }
-
-    // cancelRedeemRequest before nav update should be possible
 
     // ## EIP7540 Redeem flow ##
     /**
