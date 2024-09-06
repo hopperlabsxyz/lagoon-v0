@@ -23,10 +23,10 @@ contract TestFeeManager is BaseTest {
     uint256 _100M;
 
     function setUp() public {
-        // 10% performance fee
+        // 20% performance fee
         // 0% management fee
-        // 1%  protocol fee
-        setUpVault(0, 0, 0);
+        // 10%  protocol fee
+        setUpVault(1_000, 0, 2_000);
 
         _1 = 1 * 10 ** vault.underlyingDecimals();
         _1K = 1_000 * 10 ** vault.underlyingDecimals();
@@ -57,28 +57,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0);
     }
 
-    // +======+=========+==========+======+=======+=========+========+======+===========+=========+
-    // | users | deposit | nav | aum  | mfees | profits | pfees  | hwm  | totalFees     |   net   |
-    // +======+=========+==========+======+=======+=========+========+======+===========+=========+
-    // |    0 | 1       | 0.5        | 0    | 0     | 0       | 1      | 0  | 0         | 0       |
-    // +------+---------+----------+------+-------+---------+--------+------+-----------+---------+
-    // |    1 | 1M     | 1M + 0.5       | 0    | 0     | 0       | 1      | 0  | 0         | 0    |
-    // +------+---------+----------+------+-------+---------+--------+------+-----------+---------+
-    //
-    // nav update: 1 => 2M
-    //
-    // highWaterMark: 1
-    //
-    // pps: 1 => 0.5
-    //
-    // 0 fees expected
-    //
-    // Freeride: when pps (price per share) is under highwatermark (highest pps registered)
-    //
     function test_ExactNoFeesAreTakenDuringFreeRide() public {
-        address feeReceiver = vault.feeReceiver();
-        address hopperDao = vault.protocolFeeReceiver();
-
         uint256 newTotalAssets = 0;
 
         // new airdrop !
@@ -87,76 +66,38 @@ contract TestFeeManager is BaseTest {
 
         uint256 ppsAtStart = pricePerShare();
 
+        uint256 user1InitialDeposit = _1;
+        uint256 user2InitialDeposit = _1M;
+
         // user1 deposit into vault at 0$ per share
-        requestDeposit(_1, user1.addr);
+        requestDeposit(user1InitialDeposit, user1.addr);
 
         // ------------ Settle ------------ //
         updateAndSettle(newTotalAssets);
 
-        // tmp
-        assertEq(vault.totalSupply(), _1, "wrong total supply");
-
         vm.prank(user1.addr);
-        vault.deposit(_1, user1.addr, user1.addr);
+        vault.deposit(user1InitialDeposit, user1.addr, user1.addr);
 
         assertEq(vault.lastFeeTime(), block.timestamp);
         assertEq(pricePerShare(), ppsAtStart);
 
         // // user2 will deposit at 0.5$ per shares
-        requestDeposit(_1M, user2.addr);
-
-        newTotalAssets = 10 * 10 ** (vault.underlyingDecimals() - 1);
+        requestDeposit(user2InitialDeposit, user2.addr);
 
         // ------------ Settle ------------ //
+        newTotalAssets = 5 * 10 ** (vault.underlyingDecimals() - 1);
         updateAndSettle(newTotalAssets);
 
         vm.prank(user2.addr);
-        vault.deposit(_1M, user2.addr, user2.addr);
-
-        console.log("totalSupply: ", vault.totalSupply());
-        console.log("totalAssets: ", vault.totalAssets());
-        console.log("shares user1: ", vault.balanceOf(user1.addr));
-        console.log("sharese user2: ", vault.balanceOf(user2.addr));
+        vault.deposit(user2InitialDeposit, user2.addr, user2.addr);
 
         // no fees should be charged to user 1 because the pps
-        // have decreased from 1 to ~0.5 and therefore do not exceed the highWaterMark
-        // assertEq(
-        //     pricePerShare(),
-        //     5 * 10 ** (vault.underlyingDecimals() - 1),
-        //     "price per share didn't decreased as expected"
-        // );
-        // assertEq(vault.balanceOf(vault.feeReceiver()), 0);
-        // assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0);
-
-        // ------------ Settle ------------ //
-        newTotalAssets = 2_000_002 * 10 ** vault.underlyingDecimals();
-
-        requestRedeem(vault.balanceOf(user1.addr), user1.addr);
-        requestRedeem(vault.balanceOf(user2.addr), user2.addr);
-
-        // settlement
-        updateAndSettle(newTotalAssets);
-
-        uint256 balanceBefore1 = assetBalance(user1.addr);
-        uint256 balanceBefore2 = assetBalance(user2.addr);
-
-        console.log("1 balanceBefore:", balanceBefore1);
-        console.log("2 balanceBefore:", balanceBefore2);
-
-        redeem(vault.claimableRedeemRequest(0, user1.addr), user1.addr);
-        redeem(vault.claimableRedeemRequest(0, user2.addr), user2.addr);
-
-        uint256 balanceAfter1 = assetBalance(user1.addr);
-        uint256 balanceAfter2 = assetBalance(user2.addr);
-
-        console.log("balanceAfter1:", balanceAfter1);
-        console.log("balanceAfter2:", balanceAfter2);
-        console.log("user1 share balance:", vault.balanceOf(user1.addr));
-        console.log("user2 share balance:", vault.balanceOf(user2.addr));
-        console.log("totalSupply:", vault.totalSupply());
-
-        console.log("vault asset balance:", assetBalance(address(vault)));
-        console.log("totalAssets:", vault.totalAssets());
+        // have decreased from 1 to ~0.5 and therefore do not exceed the highWaterMark of 1pps
+        assertEq(
+            pricePerShare(),
+            5 * 10 ** (vault.underlyingDecimals() - 1),
+            "price per share didn't decreased as expected"
+        );
 
         assertEq(
             vault.balanceOf(vault.feeReceiver()),
@@ -169,232 +110,109 @@ contract TestFeeManager is BaseTest {
             "protocol received unexpected fee shares"
         );
 
-        // assertEq(
-        //     pricePerShare(),
-        //     2 * 10 ** vault.underlyingDecimals(),
-        //     "price per share didn't increased as expected"
-        // );
-
-        // assertApproxEqAbs(
-        //     vault.convertToAssets(vault.balanceOf(feeReceiver)),
-        //     198_000 * 10 ** vault.underlyingDecimals(),
-        //     (7 * 10 ** vault.underlyingDecimals()) / 10,
-        //     "Wrong amount of fees taken by fee receiver"
-        // );
-        // assertApproxEqAbs(
-        //     vault.convertToAssets(vault.balanceOf(dao.addr)),
-        //     2_000 * 10 ** vault.underlyingDecimals(),
-        //     7 * 10 ** (vault.underlyingDecimals() - 1),
-        //     "Wrong amount of fees taken by dao"
-        // );
-
-        // assertApproxEqAbs(
-        //     vault.pricePerShare(),
-        //     19 * 10 ** (vault.underlyingDecimals() - 1),
-        //     11 * 10 ** (vault.underlyingDecimals() - 1),
-        //     "price per share is wrong"
-        // );
-
-        // assertApproxEqAbs(
-        //     vault.highWaterMark() + 1000000,
-        //     19 * 10 ** (vault.underlyingDecimals() - 1),
-        //     11 * 10 ** (vault.underlyingDecimals() - 1),
-        //     "high water mark is wrong"
-        // );
-    }
-
-    // 1900002249998874998
-    //  190000000000000000
-    // +======+=========+==========+======+=======+=========+========+======+===========+=========+
-    // | users | deposit | nav | aum  | mfees | profits | pfees  | hwm  | totalFees     |   net   |
-    // +======+=========+==========+======+=======+=========+========+======+===========+=========+
-    // |    0 | 1       | 0.5        | 0    | 0     | 0       | 1      | 0  | 0         | 0       |
-    // +------+---------+----------+------+-------+---------+--------+------+-----------+---------+
-    // |    1 | 1M     | 1M + 0.5       | 0    | 0     | 0       | 1      | 0  | 0         | 0    |
-    // +------+---------+----------+------+-------+---------+--------+------+-----------+---------+
-    //
-    // nav update: 1 => 2M
-    //
-    // highWaterMark: 1
-    //
-    // pps: 1 => 0.5
-    //
-    // 0 fees expected
-    //
-    // Freeride: when pps (price per share) is under highwatermark (highest pps registered)
-    //
-    function test_NoFeesAreTakenDuringFreeRide() public {
-        Rates memory newRates = Rates({
-            managementRate: 0,
-            performanceRate: 2_000
-        });
-        updateRates(newRates);
-        vm.warp(block.timestamp + 1 days);
-        address feeReceiver = vault.feeReceiver();
-        address hopperDao = vault.protocolFeeReceiver();
-
-        // ------------ Year 0 ------------ //
-        uint256 newTotalAssets = 0;
-
-        // new airdrop !
-        dealAmountAndApproveAndWhitelist(user1.addr, 1);
-        requestDeposit(_1, user1.addr);
-
-        dealAmountAndApproveAndWhitelist(user2.addr, 1_000_000);
-
-        // settlement
+        // ------------ Settle ------------ //
+        newTotalAssets = 4_000_002 * 10 ** vault.underlyingDecimals(); // vault valo x4 what users have deposited
         updateAndSettle(newTotalAssets);
 
-        // assertEq(vault.highWaterMark(), expectedHighWaterMark);
-        assertEq(vault.balanceOf(feeReceiver), 0);
-        assertEq(vault.balanceOf(hopperDao), 0);
-        assertEq(vault.lastFeeTime(), block.timestamp);
-
-        // USER 1 deposit into vault at 0$ per share
-        assertEq(vault.totalSupply(), 1 * 10 ** vault.decimals());
-        assertEq(
-            vault.claimableDepositRequest(0, user1.addr),
-            1 * 10 ** vault.decimals()
-        );
-
-        // // USER2 deposit at 0.5$ per shares
-        requestDeposit(_1M, user2.addr);
-
-        newTotalAssets = (5 * 10 ** vault.underlyingDecimals()) / 10;
-        // settlement
-        updateAndSettle(newTotalAssets);
-        assertEq(
-            vault.totalAssets(),
-            _1M + ((5 * 10 ** vault.underlyingDecimals()) / 10)
-        );
-        assertEq(
-            vault.claimableDepositRequest(0, user1.addr),
-            1 * 10 ** vault.underlyingDecimals()
-        );
-        assertEq(
-            vault.claimableDepositRequest(0, user2.addr),
-            1_000_000 * 10 ** vault.underlyingDecimals()
-        );
-
-        vm.prank(user2.addr);
-        vault.deposit(_1M, user2.addr, user2.addr);
-
+        // We expect the price per share to do be equal to be: previous_pps * 2 - 20%
         assertApproxEqAbs(
-            vault.balanceOf(user2.addr),
-            2_000_000 * 10 ** vault.decimals(),
-            2 * 10 ** vault.decimals()
+            pricePerShare(),
+            18 * 10 ** (vault.underlyingDecimals() - 1),
+            5, // rounding approximation
+            "Price per share didn't increased as expected"
         );
 
-        vm.warp(vm.getBlockTimestamp() + 363 days);
-
-        newTotalAssets = 2 * _1M;
-
-        // settlement
-        updateAndSettle(newTotalAssets);
-
-        assertEq(vault.balanceOf(feeReceiver), 0);
-        assertEq(vault.highWaterMark(), 1 * 10 ** vault.decimals()); // price per share should not move since the vault has not take fees
-    }
-
-    // +======+=========+==========+======+=======+=========+========+======+===========+=========+
-    // | users | deposit | nav | aum  | mfees | profits | pfees  | hwm  | totalFees     |   net   |
-    // +======+=========+==========+======+=======+=========+========+======+===========+=========+
-    // |    0 | 1       | 0.5        | 0    | 0     | 0       | 1      | 0  | 0         | 0       |
-    // +------+---------+----------+------+-------+---------+--------+------+-----------+---------+
-    // |    1 | 1M     | 1M + 0.5       | 0    | 0     | 0       | 1      | 0  | 0         | 0    |
-    // +------+---------+----------+------+-------+---------+--------+------+-----------+---------+
-    //
-    // nav update: 1 => 0.5 => 4M
-    //
-    // highWaterMark: 1 => 1 => 2
-    //
-    // pps: 1 => 0.5 => 2
-    //
-    // 0 fees expected
-    //
-    // Freeride: when pps (price per share) is under highwatermark (highest pps registered)
-    //
-    function test_FeesAreTakenAfterFreeride() public {
-        Rates memory newRates = Rates({
-            managementRate: 0,
-            performanceRate: 2_000
-        });
-        updateRates(newRates);
-        vm.warp(block.timestamp + 1 days);
-
-        address feeReceiver = vault.feeReceiver();
-        address hopperDao = vault.protocolFeeReceiver();
-        // ------------ Year 0 ------------ //
-        uint256 newTotalAssets = 0;
-
-        // new airdrop !
-        dealAmountAndApproveAndWhitelist(user1.addr, 1);
-        requestDeposit(_1, user1.addr);
-
-        dealAmountAndApproveAndWhitelist(user2.addr, 1_000_000);
-
-        // // settlement
-        updateAndSettle(newTotalAssets);
-
-        // // assertEq(vault.highWaterMark(), expectedHighWaterMark);
-        assertEq(vault.balanceOf(feeReceiver), 0);
-        assertEq(vault.balanceOf(hopperDao), 0);
-        assertEq(vault.lastFeeTime(), block.timestamp);
-
-        // // USER 1 deposit into vault at 0$ per share
-        assertEq(vault.totalSupply(), 1 * 10 ** vault.decimals());
         assertEq(
-            vault.claimableDepositRequest(0, user1.addr),
-            1 * 10 ** vault.decimals()
-        );
-
-        // // USER2 deposit at 0.5$ per shares
-        requestDeposit(_1M, user2.addr);
-
-        newTotalAssets = (5 * 10 ** vault.underlyingDecimals()) / 10;
-        // settlement
-        updateAndSettle(newTotalAssets);
-        assertEq(
-            vault.totalAssets(),
-            _1M + ((5 * 10 ** vault.underlyingDecimals()) / 10)
-        );
-        assertEq(
-            vault.claimableDepositRequest(0, user1.addr),
-            1 * 10 ** vault.underlyingDecimals()
-        );
-        assertEq(
-            vault.claimableDepositRequest(0, user2.addr),
-            1_000_000 * 10 ** vault.underlyingDecimals()
-        );
-
-        vm.prank(user2.addr);
-        vault.deposit(_1M, user2.addr, user2.addr);
-
-        assertApproxEqAbs(
-            vault.balanceOf(user2.addr),
-            2_000_000 * 10 ** vault.decimals(),
-            2 * 10 ** vault.decimals(),
-            "Wrong amount of shares"
-        );
-
-        vm.warp(vm.getBlockTimestamp() + 363 days);
-
-        newTotalAssets = 4 * _1M;
-
-        // settlement
-        updateAndSettle(newTotalAssets);
-
-        assertApproxEqAbs(
-            vault.convertToAssets(vault.balanceOf(feeReceiver)),
-            400_000 * 10 ** vault.underlyingDecimals(),
-            5000 * 10 ** vault.underlyingDecimals(),
-            "Wrong amount of fees taken"
-        );
-        assertApproxEqAbs(
             vault.highWaterMark(),
-            (18 * 10 ** vault.underlyingDecimals()) / 10,
-            10 ** vault.underlyingDecimals(),
-            "wrong high water mark"
-        ); // price per share should not move since the vault has not take fees
+            pricePerShare(),
+            "Highwater mark hasn't been raised at expected price per share"
+        );
+
+        uint256 user1ShareBalance = vault.balanceOf(user1.addr);
+        uint256 user2ShareBalance = vault.balanceOf(user2.addr);
+
+        requestRedeem(user1ShareBalance, user1.addr);
+        requestRedeem(user2ShareBalance, user2.addr);
+
+        // ------------ Settle ------------ //
+        updateAndSettle(newTotalAssets);
+
+        uint256 user1AssetBefore = assetBalance(user1.addr);
+        uint256 user2AssetBefore = assetBalance(user2.addr);
+
+        uint256 user1AssetAfter = redeem(user1ShareBalance, user1.addr);
+        uint256 user2AssetAfter = redeem(user2ShareBalance, user2.addr);
+
+        assetBalance(user1.addr);
+        assetBalance(user2.addr);
+
+        uint256 user1Profit = (user1AssetAfter - user1AssetBefore) -
+            user1InitialDeposit;
+        uint256 user2Profit = (user2AssetAfter - user2AssetBefore) -
+            user2InitialDeposit;
+
+        // Valo at nav update
+        // 0.5$       => pps = 0.5
+        // 1.0$       => pps = 1.0 (we start taking fees)
+        // 2.0$       => pps = 2.0 (fees = (2$ - 1$) * 0.2 = 0.2$ && profit = 0.8$)
+        uint256 expectedUser1Profit = user1InitialDeposit -
+            (user1InitialDeposit * 20) /
+            100;
+
+        assertApproxEqAbs(
+            user1Profit,
+            expectedUser1Profit,
+            5,
+            "user1 expected profit is wrong"
+        );
+
+        // Valo at nav update
+        // 1M$       => pps = 0.5
+        // 2M$       => pps = 1.0 (we start taking fees, user2 benefit from a freeride between 0.5 and 1.0 pps)
+        // 4M$       => pps = 2.0 (fees = (4$ - 2$) * 0.2 = 0.2M$ && profit = 2.6$)
+        uint256 freeride = user2InitialDeposit;
+        uint256 expectedUser2Profit = (2 * user2InitialDeposit + freeride) -
+            (2 * user2InitialDeposit * 20) /
+            100;
+
+        assertApproxEqAbs(
+            user2Profit,
+            expectedUser2Profit,
+            5,
+            "user2 expected profit is wrong"
+        );
+        uint256 expectedTotalFees = 400_000_200_000;
+
+        address feeReceiver = vault.feeReceiver();
+        address dao = vault.protocolFeeReceiver();
+
+        uint256 feeReceiverShareBalance = vault.balanceOf(feeReceiver);
+        uint256 daoShareBalance = vault.balanceOf(dao);
+
+        requestRedeem(feeReceiverShareBalance, feeReceiver);
+        requestRedeem(daoShareBalance, dao);
+
+        // ------------ Settle ------------ //
+        updateAndSettle(vault.totalAssets());
+
+        uint256 feeReceiverAssetAfter = redeem(
+            feeReceiverShareBalance,
+            feeReceiver
+        );
+        uint256 daoAssetAfter = redeem(daoShareBalance, dao);
+
+        uint256 totalFees = feeReceiverAssetAfter + daoAssetAfter;
+
+        assertEq(
+            totalFees,
+            expectedTotalFees,
+            "wrong total Fees"
+        );
+    }
+    
+    function test_NoFeesAreTakenDuringFreeRide() public {
+    }
+
+    function test_FeesAreTakenAfterFreeride() public {
     }
 }
