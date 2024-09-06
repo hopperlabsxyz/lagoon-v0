@@ -230,10 +230,11 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         $erc7540.navs[$erc7540.depositNavId].settleId = $erc7540.depositSettleId;
-        $erc7540.navs[$erc7540.redeemNavId].settleId = $erc7540.depositSettleId;
+        $erc7540.navs[$erc7540.redeemNavId].settleId = $erc7540.redeemSettleId;
 
-        uint256 pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
-        uint256 pendingShares = balanceOf(pendingSilo());
+        address _pendingSilo = pendingSilo();
+        uint256 pendingAssets = IERC20(asset()).balanceOf(_pendingSilo);
+        uint256 pendingShares = balanceOf(_pendingSilo);
 
         if (pendingAssets != 0) $erc7540.depositNavId += 2;
         if (pendingShares != 0) $erc7540.redeemNavId += 2;
@@ -284,7 +285,10 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     }
 
     function _settleDeposit() internal {
-        uint256 pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
+        address _asset = asset();
+        address _pendingSilo = pendingSilo();
+
+        uint256 pendingAssets = IERC20(_asset).balanceOf(_pendingSilo);
         if (pendingAssets == 0)
           return;
 
@@ -306,7 +310,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         _totalAssets += pendingAssets;
         $erc7540.totalAssets = _totalAssets;
 
-        IERC20(asset()).safeTransferFrom(pendingSilo(), safe(), pendingAssets);
+        IERC20(_asset).safeTransferFrom(_pendingSilo, safe(), pendingAssets);
 
         $erc7540.depositSettleId = depositSettleId + 2;
         $erc7540.lastDepositNavIdSettle = $erc7540.depositNavId - 2;
@@ -322,10 +326,15 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     }
 
     function _settleRedeem() internal {
-        uint256 pendingShares = balanceOf(pendingSilo());
-        uint256 assetsToWithdraw = _convertToAssets(pendingShares, Math.Rounding.Floor);
         address _safe = safe();
-        uint256 assetsInTheSafe = IERC20(asset()).balanceOf(_safe);
+        address _asset = asset();
+        address _pendingSilo = pendingSilo();
+
+        uint256 pendingShares = balanceOf(_pendingSilo);
+        uint256 assetsToWithdraw = _convertToAssets(pendingShares, Math.Rounding.Floor);
+
+
+        uint256 assetsInTheSafe = IERC20(_asset).balanceOf(_safe);
         if (assetsToWithdraw == 0 || assetsToWithdraw > assetsInTheSafe) return;
 
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
@@ -338,17 +347,17 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         settleData.totalAssets = _totalAssets;
         settleData.totalSupply = totalSupply();
 
-        _burn(pendingSilo(), pendingShares);
+        _burn(_pendingSilo, pendingShares);
 
         _totalAssets -= assetsToWithdraw;
         $erc7540.totalAssets = _totalAssets;
 
-        IERC20(asset()).safeTransferFrom(_safe, address(this), assetsToWithdraw);
+        IERC20(_asset).safeTransferFrom(_safe, address(this), assetsToWithdraw);
 
         $erc7540.redeemSettleId = redeemSettleId + 2;
         $erc7540.lastRedeemNavIdSettle = $erc7540.redeemNavId - 2;
 
-        emit Withdraw(_msgSender(), address(this), pendingSilo(), assetsToWithdraw, pendingShares);
+        emit Withdraw(_msgSender(), address(this), _pendingSilo, assetsToWithdraw, pendingShares);
     }
 
     /////////////////
