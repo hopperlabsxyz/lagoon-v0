@@ -26,7 +26,7 @@ contract TestFeeManager is BaseTest {
         // 10% performance fee
         // 0% management fee
         // 1%  protocol fee
-        setUpVault(0, 0, 0);
+        setUpVault(100, 0, 1_000);
 
         _1 = 1 * 10 ** vault.underlyingDecimals();
         _1K = 1_000 * 10 ** vault.underlyingDecimals();
@@ -76,9 +76,16 @@ contract TestFeeManager is BaseTest {
     // Freeride: when pps (price per share) is under highwatermark (highest pps registered)
     //
     function test_ExactNoFeesAreTakenDuringFreeRide() public {
+        Rates memory newRates = Rates({
+            managementRate: 0,
+            performanceRate: 1_000
+        });
+        updateRates(newRates);
+        vm.warp(block.timestamp + 1 days);
         address feeReceiver = vault.feeReceiver();
         address hopperDao = vault.protocolFeeReceiver();
 
+        // ------------ Year 0 ------------ //
         uint256 newTotalAssets = 0;
 
         // new airdrop !
@@ -90,14 +97,8 @@ contract TestFeeManager is BaseTest {
         // user1 deposit into vault at 0$ per share
         requestDeposit(_1, user1.addr);
 
-        // ------------ Settle ------------ //
+        // settlement
         updateAndSettle(newTotalAssets);
-
-        // tmp
-        assertEq(vault.totalSupply(), _1, "wrong total supply");
-
-        vm.prank(user1.addr);
-        vault.deposit(_1, user1.addr, user1.addr);
 
         assertEq(vault.lastFeeTime(), block.timestamp);
         assertEq(pricePerShare(), ppsAtStart);
@@ -105,102 +106,57 @@ contract TestFeeManager is BaseTest {
         // // user2 will deposit at 0.5$ per shares
         requestDeposit(_1M, user2.addr);
 
-        newTotalAssets = 10 * 10 ** (vault.underlyingDecimals() - 1);
+        newTotalAssets = 5 * 10 ** (vault.underlyingDecimals() - 1);
 
-        // ------------ Settle ------------ //
+        // settlement
         updateAndSettle(newTotalAssets);
 
         vm.prank(user2.addr);
         vault.deposit(_1M, user2.addr, user2.addr);
 
-        console.log("totalSupply: ", vault.totalSupply());
-        console.log("totalAssets: ", vault.totalAssets());
-        console.log("shares user1: ", vault.balanceOf(user1.addr));
-        console.log("sharese user2: ", vault.balanceOf(user2.addr));
-
         // no fees should be charged to user 1 because the pps
         // have decreased from 1 to ~0.5 and therefore do not exceed the highWaterMark
-        // assertEq(
-        //     pricePerShare(),
-        //     5 * 10 ** (vault.underlyingDecimals() - 1),
-        //     "price per share didn't decreased as expected"
-        // );
-        // assertEq(vault.balanceOf(vault.feeReceiver()), 0);
-        // assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0);
+        console.log(vault.totalSupply());
+        assertEq(
+            pricePerShare(),
+            5 * 10 ** (vault.underlyingDecimals() - 1),
+            "price per share didn't decreased when we expected it to"
+        );
+        assertEq(vault.balanceOf(vault.feeReceiver()), 0);
+        assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0);
 
-        // ------------ Settle ------------ //
-        newTotalAssets = 2_000_002 * 10 ** vault.underlyingDecimals();
-
-        requestRedeem(vault.balanceOf(user1.addr), user1.addr);
-        requestRedeem(vault.balanceOf(user2.addr), user2.addr);
+        // ------------ Year 1 ------------ //
+        newTotalAssets = 4_000_002 * 10 ** vault.underlyingDecimals();
 
         // settlement
         updateAndSettle(newTotalAssets);
 
-        uint256 balanceBefore1 = assetBalance(user1.addr);
-        uint256 balanceBefore2 = assetBalance(user2.addr);
-
-        console.log("1 balanceBefore:", balanceBefore1);
-        console.log("2 balanceBefore:", balanceBefore2);
-
-        redeem(vault.claimableRedeemRequest(0, user1.addr), user1.addr);
-        redeem(vault.claimableRedeemRequest(0, user2.addr), user2.addr);
-
-        uint256 balanceAfter1 = assetBalance(user1.addr);
-        uint256 balanceAfter2 = assetBalance(user2.addr);
-
-        console.log("balanceAfter1:", balanceAfter1);
-        console.log("balanceAfter2:", balanceAfter2);
-        console.log("user1 share balance:", vault.balanceOf(user1.addr));
-        console.log("user2 share balance:", vault.balanceOf(user2.addr));
-        console.log("totalSupply:", vault.totalSupply());
-
-        console.log("vault asset balance:", assetBalance(address(vault)));
-        console.log("totalAssets:", vault.totalAssets());
-
-        assertEq(
-            vault.balanceOf(vault.feeReceiver()),
-            0,
-            "feeReceiver received unexpected fee shares"
+        assertApproxEqAbs(
+            vault.convertToAssets(vault.balanceOf(feeReceiver)),
+            198_000 * 10 ** vault.underlyingDecimals(),
+            (7 * 10 ** vault.underlyingDecimals()) / 10,
+            "Wrong amount of fees taken by fee receiver"
         );
-        assertEq(
-            vault.balanceOf(vault.protocolFeeReceiver()),
-            0,
-            "protocol received unexpected fee shares"
+        assertApproxEqAbs(
+            vault.convertToAssets(vault.balanceOf(dao.addr)),
+            2_000 * 10 ** vault.underlyingDecimals(),
+            7 * 10 ** (vault.underlyingDecimals() - 1),
+            "Wrong amount of fees taken by dao"
         );
 
-        // assertEq(
-        //     pricePerShare(),
-        //     2 * 10 ** vault.underlyingDecimals(),
-        //     "price per share didn't increased as expected"
-        // );
+        assertApproxEqAbs(
+            vault.pricePerShare(),
+            19 * 10 ** (vault.underlyingDecimals() - 1),
+            11 * 10 ** (vault.underlyingDecimals() - 1),
+            "price per share is wrong"
+        );
 
-        // assertApproxEqAbs(
-        //     vault.convertToAssets(vault.balanceOf(feeReceiver)),
-        //     198_000 * 10 ** vault.underlyingDecimals(),
-        //     (7 * 10 ** vault.underlyingDecimals()) / 10,
-        //     "Wrong amount of fees taken by fee receiver"
-        // );
-        // assertApproxEqAbs(
-        //     vault.convertToAssets(vault.balanceOf(dao.addr)),
-        //     2_000 * 10 ** vault.underlyingDecimals(),
-        //     7 * 10 ** (vault.underlyingDecimals() - 1),
-        //     "Wrong amount of fees taken by dao"
-        // );
-
-        // assertApproxEqAbs(
-        //     vault.pricePerShare(),
-        //     19 * 10 ** (vault.underlyingDecimals() - 1),
-        //     11 * 10 ** (vault.underlyingDecimals() - 1),
-        //     "price per share is wrong"
-        // );
-
-        // assertApproxEqAbs(
-        //     vault.highWaterMark() + 1000000,
-        //     19 * 10 ** (vault.underlyingDecimals() - 1),
-        //     11 * 10 ** (vault.underlyingDecimals() - 1),
-        //     "high water mark is wrong"
-        // );
+        assertApproxEqAbs(
+            vault.highWaterMark() + 1000000,
+            19 * 10 ** (vault.underlyingDecimals() - 1),
+            11 * 10 ** (vault.underlyingDecimals() - 1),
+            "high water mark is wrong"
+        );
     }
 
     // 1900002249998874998
