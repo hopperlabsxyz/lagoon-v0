@@ -6,8 +6,7 @@ import {Vault, ASSET_MANAGER_ROLE, FEE_RECEIVER, VALORIZATION_ROLE, HOPPER_ROLE}
 import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
-import {FeeManager} from "@src/FeeManager.sol";
-import {Rates} from "@src/FeeManager.sol";
+import {FeeManager, Rates, AboveMaxRate, CooldownNotOver} from "@src/FeeManager.sol";
 
 contract TestFeeManager is BaseTest {
     using Math for uint256;
@@ -57,7 +56,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0);
     }
 
-    function test_ExactNoFeesAreTakenDuringFreeRide() public {
+    function test_FeesAreTakenAfterFreeride() public {
         uint256 newTotalAssets = 0;
 
         // new airdrop !
@@ -81,7 +80,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.lastFeeTime(), block.timestamp);
         assertEq(pricePerShare(), ppsAtStart);
 
-        // // user2 will deposit at 0.5$ per shares
+        // user2 will deposit at 0.5$ per shares
         requestDeposit(user2InitialDeposit, user2.addr);
 
         // ------------ Settle ------------ //
@@ -98,7 +97,6 @@ contract TestFeeManager is BaseTest {
             5 * 10 ** (vault.underlyingDecimals() - 1),
             "price per share didn't decreased as expected"
         );
-
         assertEq(
             vault.balanceOf(vault.feeReceiver()),
             0,
@@ -111,10 +109,10 @@ contract TestFeeManager is BaseTest {
         );
 
         // ------------ Settle ------------ //
-        newTotalAssets = 4_000_002 * 10 ** vault.underlyingDecimals(); // vault valo x4 what users have deposited
+        newTotalAssets = 4_000_002 * 10 ** vault.underlyingDecimals(); // vault valo made a x4 for user2; and x2 for user1
         updateAndSettle(newTotalAssets);
 
-        // We expect the price per share to do be equal to be: previous_pps * 2 - 20%
+        // We expect the price per share to do be equal to: 2 - 20% = 1.8
         assertApproxEqAbs(
             pricePerShare(),
             18 * 10 ** (vault.underlyingDecimals() - 1),
@@ -168,7 +166,7 @@ contract TestFeeManager is BaseTest {
 
         // Valo at nav update
         // 1M$       => pps = 0.5
-        // 2M$       => pps = 1.0 (we start taking fees, user2 benefit from a freeride between 0.5 and 1.0 pps)
+        // 2M$       => pps = 1.0 (we start taking fees, user2 benefits a freeride between 0.5 and 1.0 pps)
         // 4M$       => pps = 2.0 (fees = (4$ - 2$) * 0.2 = 0.2M$ && profit = 2.6$)
         uint256 freeride = user2InitialDeposit;
         uint256 expectedUser2Profit = (2 * user2InitialDeposit + freeride) -
@@ -203,16 +201,225 @@ contract TestFeeManager is BaseTest {
 
         uint256 totalFees = feeReceiverAssetAfter + daoAssetAfter;
 
-        assertEq(
-            totalFees,
-            expectedTotalFees,
-            "wrong total Fees"
-        );
-    }
-    
-    function test_NoFeesAreTakenDuringFreeRide() public {
+        assertEq(totalFees, expectedTotalFees, "wrong total Fees");
     }
 
-    function test_FeesAreTakenAfterFreeride() public {
+    function test_NoFeesAreTakenDuringFreeRide() public {
+        uint256 newTotalAssets = 0;
+
+        // new airdrop !
+        dealAmountAndApproveAndWhitelist(user1.addr, 1);
+        dealAmountAndApproveAndWhitelist(user2.addr, 1_000_000);
+
+        uint256 ppsAtStart = pricePerShare();
+
+        uint256 user1InitialDeposit = _1;
+        uint256 user2InitialDeposit = _1M;
+
+        // user1 deposit into vault at 0$ per share
+        requestDeposit(user1InitialDeposit, user1.addr);
+
+        // ------------ Settle ------------ //
+        updateAndSettle(newTotalAssets);
+
+        vm.prank(user1.addr);
+        vault.deposit(user1InitialDeposit, user1.addr, user1.addr);
+
+        assertEq(vault.lastFeeTime(), block.timestamp);
+        assertEq(pricePerShare(), ppsAtStart);
+
+        // user2 will deposit at 0.5$ per shares
+        requestDeposit(user2InitialDeposit, user2.addr);
+
+        // ------------ Settle ------------ //
+        newTotalAssets = 5 * 10 ** (vault.underlyingDecimals() - 1);
+        updateAndSettle(newTotalAssets);
+
+        vm.prank(user2.addr);
+        vault.deposit(user2InitialDeposit, user2.addr, user2.addr);
+
+        // no fees should be charged to user 1 because the pps
+        // have decreased from 1 to ~0.5 and therefore do not exceed the highWaterMark of 1pps
+        assertEq(
+            pricePerShare(),
+            5 * 10 ** (vault.underlyingDecimals() - 1),
+            "price per share didn't decreased as expected"
+        );
+        assertEq(
+            vault.balanceOf(vault.feeReceiver()),
+            0,
+            "feeReceiver received unexpected fee shares"
+        );
+        assertEq(
+            vault.balanceOf(vault.protocolFeeReceiver()),
+            0,
+            "protocol received unexpected fee shares"
+        );
+
+        // ------------ Settle ------------ //
+
+        // user2 get x2 without paying performance fees
+        newTotalAssets = 2_000_001 * 10 ** vault.underlyingDecimals(); // vault valo made a x2 for user2; and x1 for user1
+        updateAndSettle(newTotalAssets);
+
+        // We expect the price per share to do be equal to: 2 - 20% = 1.8
+        assertApproxEqAbs(
+            pricePerShare(),
+            1 * 10 ** vault.underlyingDecimals(),
+            5, // rounding approximation
+            "Wrong price per share"
+        );
+
+        assertEq(
+            vault.highWaterMark(),
+            pricePerShare(),
+            "Highwater mark hasn't been raised at expected price per share"
+        );
+
+        uint256 user1ShareBalance = vault.balanceOf(user1.addr);
+        uint256 user2ShareBalance = vault.balanceOf(user2.addr);
+
+        requestRedeem(user1ShareBalance, user1.addr);
+        requestRedeem(user2ShareBalance, user2.addr);
+
+        // ------------ Settle ------------ //
+        updateAndSettle(newTotalAssets);
+
+        uint256 user1AssetBefore = assetBalance(user1.addr);
+        uint256 user2AssetBefore = assetBalance(user2.addr);
+
+        uint256 user1AssetAfter = redeem(user1ShareBalance, user1.addr);
+        uint256 user2AssetAfter = redeem(user2ShareBalance, user2.addr);
+
+        assetBalance(user1.addr);
+        assetBalance(user2.addr);
+
+        uint256 user1Profit = (user1AssetAfter - user1AssetBefore) -
+            user1InitialDeposit;
+        uint256 user2Profit = (user2AssetAfter - user2AssetBefore) -
+            user2InitialDeposit;
+
+        // Valo at nav update
+        // 0.5$       => pps = 0.5
+        // 1.0$       => pps = 1.0 (no fees taken since we are back to the intial price per share)
+        uint256 expectedUser1Profit = 0;
+
+        assertApproxEqAbs(
+            user1Profit,
+            expectedUser1Profit,
+            5,
+            "user1 expected profit is wrong"
+        );
+
+        // Valo at nav update
+        // 1M$       => pps = 0.5
+        // 2M$       => pps = 1.0 (user2 makes 1M profit without paying any fees)
+        uint256 freeride = user2InitialDeposit;
+
+        assertApproxEqAbs(
+            user2Profit,
+            freeride,
+            5,
+            "user2 expected profit is wrong"
+        );
+
+        assertEq(
+            vault.balanceOf(vault.feeReceiver()),
+            0,
+            "feeReceiver received unexpected fee shares"
+        );
+        assertEq(
+            vault.balanceOf(vault.protocolFeeReceiver()),
+            0,
+            "protocol received unexpected fee shares"
+        );
+    }
+
+    function test_updateRates_revertIfManagementRateAboveMaxRates() public {
+        uint256 MAX_MANAGEMENT_RATE = vault.MAX_MANAGEMENT_RATE();
+        uint256 MAX_PERFORMANCE_RATE = vault.MAX_PERFORMANCE_RATE();
+
+        Rates memory newRates = Rates({
+            managementRate: MAX_MANAGEMENT_RATE + 1,
+            performanceRate: MAX_PERFORMANCE_RATE - 1
+        });
+
+        Rates memory ratesBefore = vault.feeRates();
+
+        vm.prank(vault.owner());
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AboveMaxRate.selector,
+                MAX_MANAGEMENT_RATE + 1,
+                MAX_MANAGEMENT_RATE
+            )
+        );
+        vault.updateRates(newRates);
+
+        Rates memory ratesAfter = vault.feeRates();
+
+        assertEq(
+            ratesAfter.managementRate,
+            ratesBefore.managementRate,
+            "managementRate before and after are different"
+        );
+        assertEq(
+            ratesAfter.performanceRate,
+            ratesBefore.performanceRate,
+            "performanceRate before and after are different"
+        );
+    }
+
+    function test_updateRates_revertIfPerformanceRateAboveMaxRates() public {
+        uint256 MAX_MANAGEMENT_RATE = vault.MAX_MANAGEMENT_RATE();
+        uint256 MAX_PERFORMANCE_RATE = vault.MAX_PERFORMANCE_RATE();
+
+        Rates memory newRates = Rates({
+            managementRate: MAX_MANAGEMENT_RATE - 1,
+            performanceRate: MAX_PERFORMANCE_RATE + 1
+        });
+
+        Rates memory ratesBefore = vault.feeRates();
+
+        vm.prank(vault.owner());
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AboveMaxRate.selector,
+                MAX_PERFORMANCE_RATE + 1,
+                MAX_PERFORMANCE_RATE
+            )
+        );
+        vault.updateRates(newRates);
+
+        Rates memory ratesAfter = vault.feeRates();
+
+        assertEq(
+            ratesAfter.managementRate,
+            ratesBefore.managementRate,
+            "managementRate before and after are different"
+        );
+        assertEq(
+            ratesAfter.performanceRate,
+            ratesBefore.performanceRate,
+            "performanceRate before and after are different"
+        );
+    }
+
+    function test_updateRates_revertIfCoolDownNotOver() public {
+        Rates memory newRates = Rates({
+            managementRate: 42,
+            performanceRate: 42
+        });
+
+        vm.prank(vault.owner());
+        vault.updateRates(newRates);
+
+        vm.prank(vault.owner());
+        vm.expectRevert(CooldownNotOver.selector);
+        vault.updateRates(newRates);
+
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(vault.owner());
+        vault.updateRates(newRates);
     }
 }
