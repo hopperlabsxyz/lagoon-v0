@@ -5,10 +5,10 @@ out = "out"
 libs = ["lib"]
 cache = true
 cache_path = 'cache'
-# ffi = true
-# ast = true
-# build_info = true
-# extra_output = ["storageLayout"]
+ffi = true
+ast = true
+build_info = true
+extra_output = ["storageLayout"]
 fs_permissions = [{ access = "read", path = "./"}] # Read access is needed for MerkleTree whitelist tests
 
 solc_version = "0.8.25"
