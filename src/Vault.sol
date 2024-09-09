@@ -374,24 +374,12 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     }
 
     // Sensible variables countdown update
-    function newTotalAssetsCountdown() public view returns (uint256) {
+    function newTotalAssetsCountdown() public view returns (uint256 countdown) {
         VaultStorage storage $ = _getVaultStorage();
-        if ($.newTotalAssetsTimestamp == type(uint256).max) {
-            return 0;
-        }
-        if ($.newTotalAssetsTimestamp + $.newTotalAssetsCooldown > block.timestamp) {
-            return $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown - block.timestamp;
-        }
-        return 0;
-    }
-
-    function updateNewTotalAssetsCountdown( //todo delete for prod
-    uint256 _newTotalAssetsCooldown)
-        public
-        onlyOwner
-    {
-        VaultStorage storage $ = _getVaultStorage();
-        $.newTotalAssetsCooldown = _newTotalAssetsCooldown;
+        if (
+            $.newTotalAssetsTimestamp != type(uint256).max  &&
+            $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown > block.timestamp
+          ) countdown = $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown - block.timestamp;
     }
 
     function initiateClosing() external onlyOwner onlyOpen {
