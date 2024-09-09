@@ -14,7 +14,6 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {Whitelistable, NotWhitelisted, WHITELISTED} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
-import {WhitelistableStorage} from "./Whitelistable.sol";
 import {Roles} from "./Roles.sol";
 // import {console} from "forge-std/console.sol";
 
@@ -42,7 +41,6 @@ enum State {
     Closed
 }
 
-/// @custom:oz-upgrades-from VaultV2
 contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     using Math for uint256;
     
