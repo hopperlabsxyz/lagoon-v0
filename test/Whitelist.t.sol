@@ -6,6 +6,7 @@ import {Vault} from "@src/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {NotWhitelisted, WhitelistUpdated} from "@src/Whitelistable.sol";
 import {BaseTest} from "./Base.sol";
+import {OnlyWhitelistManager} from "@src/Roles.sol";
 
 contract TestWhitelist is BaseTest {
     function withWhitelistSetUp() public {
@@ -203,5 +204,25 @@ contract TestWhitelist is BaseTest {
     function test_noWhitelist() public {
         withoutWhitelistSetUp();
         requestDeposit(1, user1.addr);
+    }
+
+    function test_addToWhitelist_revert() public {
+        withWhitelistSetUp();
+
+        vm.expectRevert(OnlyWhitelistManager.selector);
+        vault.addToWhitelist(address(0x42));
+
+        vm.expectRevert(OnlyWhitelistManager.selector);
+        vault.addToWhitelist(new address[](5));
+    }
+
+    function test_revokeFromWhitelist_revert() public {
+        withWhitelistSetUp();
+
+        vm.expectRevert(OnlyWhitelistManager.selector);
+        vault.revokeFromWhitelist(address(0x42));
+
+        vm.expectRevert(OnlyWhitelistManager.selector);
+        vault.revokeFromWhitelist(new address[](5));
     }
 }
