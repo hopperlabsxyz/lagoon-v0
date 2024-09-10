@@ -332,6 +332,8 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) internal virtual returns (uint256 shares) {
+        // adding a check for overflows !
+
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
@@ -366,6 +368,8 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) internal virtual returns (uint256 assets) {
+        // adding a check for overflow !
+
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
@@ -476,6 +480,8 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) internal onlyOperator(controller) returns (uint256 assets) {
+        // adding a check for overflows !
+
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
@@ -501,6 +507,8 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) internal onlyOperator(controller) returns (uint256 shares) {
+        // adding a check for overflows
+
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];

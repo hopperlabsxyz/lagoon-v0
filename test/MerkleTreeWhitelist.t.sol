@@ -149,6 +149,50 @@ contract TestMerkleTreeWhitelist is BaseTest {
         );
     }
 
+    function test_requestRedeem_ShouldFailWhenControllerNotWhitelisted()
+        public
+    {
+        (, Proof[] memory proofs, ) = withWhitelistSetUp(1); // user1.addr is whitelisted
+
+        (Proof memory proof, bool found) = findProof(user1.addr, proofs);
+        assertEq(found, true, "Proof not found");
+
+        address controller = user2.addr;
+        address operator = user1.addr;
+        address owner = user1.addr;
+
+        uint256 userBalance = assetBalance(user1.addr);
+        vm.startPrank(operator);
+        vault.requestDeposit(
+            userBalance,
+            controller,
+            owner,
+            abi.encode(proof.proof)
+        );
+        vm.stopPrank();
+
+        // --- settlement --- //
+        updateAndSettle(0);
+
+        uint256 shares = deposit(userBalance, controller);
+        assertEq(shares, userBalance);
+
+        vm.prank(controller);
+        vault.transfer(owner, userBalance);
+
+        vm.prank(owner);
+        vault.approve(controller, userBalance);
+
+        vm.startPrank(controller);
+        vault.requestRedeem(
+            userBalance,
+            controller,
+            owner,
+            abi.encode(proof.proof)
+        );
+        vm.stopPrank();
+    }
+
     function test_requestDeposit_ShouldFailWhenControllerNotWhitelistedAndOperatorAndOwnerAre()
         public
     {

@@ -5,6 +5,7 @@ import {Roles} from "./Roles.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {IWhitelistModule} from "./interfaces/IWhitelistModule.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+// import {console} from "forge-std/console.sol";
 
 // errors
 error NotWhitelisted(address account);
