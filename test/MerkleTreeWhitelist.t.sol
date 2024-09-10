@@ -314,6 +314,32 @@ contract TestMerkleTreeWhitelist is BaseTest {
         vm.stopPrank();
     }
 
+    function test_requestRedeem_revertIfOwnerIsNotWhitelisted() public {
+        (, Proof[] memory proofs, ) = withWhitelistSetUp(1); // user1.addr is whitelisted
+
+        (Proof memory proof, bool found) = findProof(user1.addr, proofs);
+        assertEq(found, true, "Proof not found");
+
+        uint256 userBalance = assetBalance(user1.addr);
+
+        requestDeposit(userBalance, user1.addr, abi.encode(proof.proof));
+
+        // --- settlement --- //
+        updateAndSettle(0);
+
+        uint256 shares = deposit(userBalance, user1.addr);
+        assertEq(shares, userBalance);
+
+        vm.prank(user1.addr);
+        vault.transfer(user2.addr, userBalance);
+
+        vm.prank(user2.addr);
+        vm.expectRevert(
+            abi.encodeWithSelector(NotWhitelisted.selector, user2.addr)
+        );
+        vault.requestRedeem(userBalance, user2.addr, user2.addr);
+    }
+
     function test_addToWhitelist_revert() public {
         withWhitelistSetUp(0);
 
