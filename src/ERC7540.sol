@@ -68,7 +68,7 @@ abstract contract ERC7540Upgradeable is
         // mapping(uint256 epochId => Data epoch) epochs;
         mapping(address user => uint256 epochId) lastDepositRequestId;
         mapping(address user => uint256 epochId) lastRedeemRequestId;
-        IWETH9 wrapped_native_token;
+        IWETH9 wrappedTativeToken;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
@@ -89,7 +89,7 @@ abstract contract ERC7540Upgradeable is
 
     function __ERC7540_init(
         IERC20 underlying,
-        address wrapped_native_token
+        address wrappedNativeToken
     ) internal onlyInitializing {
         ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -100,7 +100,7 @@ abstract contract ERC7540Upgradeable is
         $.redeemSettleId = 2;
 
         $.pendingSilo = new Silo(underlying);
-        $.wrapped_native_token = IWETH9(wrapped_native_token);
+        $.wrappedTativeToken = IWETH9(wrappedNativeToken);
     }
 
     modifier onlyOperator(address controller) {
@@ -239,10 +239,10 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
         if (msg.value != 0) {
             // if user sends eth and the underlying is wETH we will wrap it for him
-            if (asset() == address($.wrapped_native_token)) {
+            if (asset() == address($.wrappedTativeToken)) {
                 //todo remove this security
-                IWETH9($.wrapped_native_token).deposit{value: msg.value}();
-                IWETH9($.wrapped_native_token).transfer(
+                IWETH9($.wrappedTativeToken).deposit{value: msg.value}();
+                IWETH9($.wrappedTativeToken).transfer(
                     address($.pendingSilo),
                     msg.value
                 );
