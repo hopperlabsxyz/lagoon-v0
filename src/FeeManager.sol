@@ -24,7 +24,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     uint256 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
     uint256 public constant MAX_PERFORMANCE_RATE = 5_000; // 50 %
     uint256 public constant MAX_PROTOCOL_RATE = 3_000; // 30 %
-    uint256 constant COOLDOWN = 1 days;
+    uint256 internal constant COOLDOWN = 1 days;
 
     /// @custom:storage-location erc7201:hopper.storage.FeeManager
     struct FeeManagerStorage {
