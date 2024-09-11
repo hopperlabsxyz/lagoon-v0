@@ -81,11 +81,29 @@ contract TestMisc is BaseTest {
     }
 
     function test_supportsInterface() public view {
-        assertTrue(vault.supportsInterface(0x2f0a18c5));
-        assertTrue(vault.supportsInterface(0x01ffc9a7));
-        assertTrue(vault.supportsInterface(0xce3bbe50));
-        assertTrue(vault.supportsInterface(0x620ee8e4));
-        assertTrue(vault.supportsInterface(0xe3bc4e65));
-        assertTrue(vault.supportsInterface(type(IERC165).interfaceId));
+        assertTrue(
+            vault.supportsInterface(0x2f0a18c5),
+            "interface IERC7575 not supported"
+        );
+        assertTrue(
+            vault.supportsInterface(0xf815c03d),
+            "interface IERC7575 share not supported"
+        );
+        assertTrue(
+            vault.supportsInterface(0xce3bbe50),
+            "interface IERC7540Deposit not supported"
+        );
+        assertTrue(
+            vault.supportsInterface(0x620ee8e4),
+            "interface IERC7540Redeem not supported"
+        );
+        assertTrue(
+            vault.supportsInterface(0xe3bc4e65),
+            "interface IERC7540 not supported"
+        );
+        assertTrue(
+            vault.supportsInterface(type(IERC165).interfaceId),
+            "interface IERC165 not supported"
+        );
     }
 }

@@ -172,7 +172,7 @@ abstract contract ERC7540Upgradeable is
     ) public view virtual returns (bool) {
         return
             interfaceId == 0x2f0a18c5 || // IERC7575
-            interfaceId == 0x01ffc9a7 || // IERC7575 shares
+            interfaceId == 0xf815c03d || // IERC7575 shares
             interfaceId == 0xce3bbe50 || // IERC7540Deposit
             interfaceId == 0x620ee8e4 || // IERC7540Redeem
             interfaceId == 0xe3bc4e65 || // IERC7540
