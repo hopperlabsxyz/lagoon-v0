@@ -384,7 +384,6 @@ abstract contract ERC7540Upgradeable is
         return assets;
     }
 
-    // todo: block cancel request deposit after first nav of the current settle period
     function cancelRequestDeposit() external {
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
@@ -394,9 +393,10 @@ abstract contract ERC7540Upgradeable is
         if (requestId != $.depositNavId) revert RequestNotCancelable();
 
         uint256 request = $.navs[requestId].depositRequest[msgSender];
-        if (request == 0) return;
-        $.navs[requestId].depositRequest[msgSender] = 0;
-        IERC20(asset()).safeTransferFrom(pendingSilo(), msgSender, request);
+        if (request != 0) {
+            $.navs[requestId].depositRequest[msgSender] = 0;
+            IERC20(asset()).safeTransferFrom(pendingSilo(), msgSender, request);
+        }
     }
 
     // ## EIP7540 Redeem flow ##
