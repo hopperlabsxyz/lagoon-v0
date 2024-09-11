@@ -4,6 +4,7 @@ pragma solidity 0.8.25;
 import "forge-std/Test.sol";
 import {Vault} from "@src/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ERC7540InvalidOperator} from "@src/ERC7540.sol";
 
 import {BaseTest} from "./Base.sol";
 
@@ -25,11 +26,22 @@ contract TestWithdraw is BaseTest {
 
         assertEq(vault.claimableRedeemRequest(vault.redeemId(), user1.addr), 0);
         updateAndSettle(userBalance + 100);
-        assertEq(vault.maxRedeem(user1.addr), sharesObtained, "user1 should be able to redeem all his shares");
-        uint256 assetsToWithdraw = vault.convertToAssets(sharesObtained, vault.redeemId() - 2);
+        assertEq(
+            vault.maxRedeem(user1.addr),
+            sharesObtained,
+            "user1 should be able to redeem all his shares"
+        );
+        uint256 assetsToWithdraw = vault.convertToAssets(
+            sharesObtained,
+            vault.redeemId() - 2
+        );
 
         uint256 sharesTaken = withdraw(assetsToWithdraw, user1.addr);
-        assertEq(assetsToWithdraw, assetBalance(user1.addr), "assetsToWithdraw should be equal to assetBalance");
+        assertEq(
+            assetsToWithdraw,
+            assetBalance(user1.addr),
+            "assetsToWithdraw should be equal to assetBalance"
+        );
         assertApproxEqAbs(
             sharesObtained - sharesTaken,
             vault.balanceOf(user1.addr),
@@ -38,6 +50,16 @@ contract TestWithdraw is BaseTest {
         );
         assertEq(vault.maxWithdraw(user1.addr), 0, "maxWithdraw should be 0");
         assertEq(vault.redeemId(), 4, "redeemId should be 4");
-        assertEq(vault.claimableRedeemRequest(vault.redeemId(), user1.addr), 0, "claimableRedeemRequest should be 0");
+        assertEq(
+            vault.claimableRedeemRequest(vault.redeemId(), user1.addr),
+            0,
+            "claimableRedeemRequest should be 0"
+        );
+    }
+
+    function test_withdraw_revertIfNotOperator() public {
+        vm.prank(user2.addr);
+        vm.expectRevert(ERC7540InvalidOperator.selector);
+        vault.withdraw(42, user1.addr, user1.addr);
     }
 }

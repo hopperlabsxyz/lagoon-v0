@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {Vault} from "@src/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseTest} from "./Base.sol";
-import {CantDepositNativeToken, OnlyOneRequestAllowed} from "@src/ERC7540.sol";
+import {CantDepositNativeToken, OnlyOneRequestAllowed, ERC7540InvalidOperator} from "@src/ERC7540.sol";
 
 contract TestRequestDeposit is BaseTest {
     function setUp() public {
@@ -207,5 +207,11 @@ contract TestRequestDeposit is BaseTest {
         vm.startPrank(operator);
         // vm.expectRevert();
         vault.requestDeposit(ownerBalance, controller, owner);
+    }
+
+    function test_requestDeposit_revertIfNotOperator() public {
+        vm.prank(user2.addr);
+        vm.expectRevert(ERC7540InvalidOperator.selector);
+        vault.requestDeposit(42, user1.addr, user1.addr);
     }
 }
