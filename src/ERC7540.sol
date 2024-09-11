@@ -423,9 +423,8 @@ abstract contract ERC7540Upgradeable is
         _redeemId = $.redeemNavId;
         uint256 pendingReq = pendingRedeemRequest(0, controller);
         uint256 lastRedeemId = $.lastRedeemRequestId[controller];
-        if (pendingReq > 0 && lastRedeemId != _redeemId) {
+        if (pendingReq > 0 && lastRedeemId != _redeemId)
             revert OnlyOneRequestAllowed();
-        }
         $.navs[_redeemId].redeemRequest[controller] += shares;
         if ($.lastRedeemRequestId[controller] != _redeemId) {
             $.lastRedeemRequestId[controller] = _redeemId;
