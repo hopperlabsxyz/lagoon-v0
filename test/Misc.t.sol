@@ -4,7 +4,7 @@ pragma solidity 0.8.25;
 import "forge-std/Test.sol";
 import {Vault} from "@src/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ERC7540PreviewRedeemDisabled, ERC7540PreviewDepositDisabled, ERC7540PreviewMintDisabled, ERC7540PreviewWithdrawDisabled} from "@src/ERC7540.sol";
+import {IERC165, ERC7540PreviewRedeemDisabled, ERC7540PreviewDepositDisabled, ERC7540PreviewMintDisabled, ERC7540PreviewWithdrawDisabled} from "@src/ERC7540.sol";
 
 import {BaseTest} from "./Base.sol";
 
@@ -78,5 +78,14 @@ contract TestMisc is BaseTest {
             type(uint256).max,
             underlying.allowance(pendingSilo, address(vault))
         );
+    }
+
+    function test_supportsInterface() public view {
+        assertTrue(vault.supportsInterface(0x2f0a18c5));
+        assertTrue(vault.supportsInterface(0x01ffc9a7));
+        assertTrue(vault.supportsInterface(0xce3bbe50));
+        assertTrue(vault.supportsInterface(0x620ee8e4));
+        assertTrue(vault.supportsInterface(0xe3bc4e65));
+        assertTrue(vault.supportsInterface(type(IERC165).interfaceId));
     }
 }
