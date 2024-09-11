@@ -8,7 +8,7 @@ error OnlySafe();
 error OnlyWhitelistManager();
 error OnlyValorizationManager();
 
-contract Roles is Ownable2StepUpgradeable {
+contract RolesUpgradeable is Ownable2StepUpgradeable {
     struct RolesStorage {
         address whitelistManager;
         address feeReceiver;

@@ -13,7 +13,7 @@ contract TestDeposit is BaseTest {
         dealAndApproveAndWhitelist(user1.addr);
     }
 
-    function test_initialCountdownIs0() public {
+    function test_initialCountdownIs0() public view {
         assertEq(vault.newTotalAssetsCountdown(), 0);
     }
 

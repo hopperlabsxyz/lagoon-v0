@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.25";
 
-// import "forge-std/Test.sol";
 import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {Whitelistable, NotWhitelisted} from "./Whitelistable.sol";
+import {WhitelistableUpgradeable, NotWhitelisted} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
 import {WhitelistableStorage} from "./Whitelistable.sol";
-import {Roles} from "./Roles.sol";
+import {RolesUpgradeable} from "./Roles.sol";
 // import {console} from "forge-std/console.sol";
 
 using Math for uint256;
@@ -38,7 +37,7 @@ enum State {
 }
 
 /// @custom:oz-upgrades-from VaultV2
-contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
+contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     using Math for uint256;
 
     struct InitStruct {
@@ -92,7 +91,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         __ERC7540_init(init.underlying, init.wrappedNativeToken);
         __Whitelistable_init(init.enableWhitelist);
         __Roles_init(
-            Roles.RolesStorage({
+            RolesUpgradeable.RolesStorage({
                 whitelistManager: init.whitelistManager,
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
