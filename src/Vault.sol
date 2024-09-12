@@ -14,8 +14,9 @@ using Math for uint256;
 using SafeERC20 for IERC20;
 
 event Referral(address indexed referral, address indexed owner, uint256 indexed requestId, uint256 assets);
-
 event StateUpdated(State state);
+event TotalAssetsUpdated(uint256 totalAssets);
+event UpdateTotalAssets(uint256 totalAssets);
 
 uint256 constant BPS_DIVIDER = 10_000;
 
@@ -227,7 +228,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         $.newTotalAssets = _newTotalAssets;
         $.newTotalAssetsTimestamp = block.timestamp;
 
-        // add event here
+        emit UpdateTotalAssets(_newTotalAssets);
     }
 
     // It should not be possible to call settleDeposit without at least one new nav
@@ -242,14 +243,17 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
-        if ($vault.newTotalAssetsTimestamp == type(uint256).max)
-          revert NavIsMissing();
-        if ($vault.newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown > block.timestamp) revert CooldownNotOver();
+        uint256 newTotalAssets = $vault.newTotalAssets;
+        uint256 newTotalAssetsTimestamp = $vault.newTotalAssetsTimestamp;
 
-        $erc7540.totalAssets = $vault.newTotalAssets;
+        if (newTotalAssetsTimestamp == type(uint256).max)
+          revert NavIsMissing();
+        if (newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown > block.timestamp) revert CooldownNotOver();
+
+        $erc7540.totalAssets = newTotalAssets;
         $vault.newTotalAssetsTimestamp = type(uint256).max; // we do not allow to use 2 time the same newTotalAssets in a row
 
-        // add event here
+        emit TotalAssetsUpdated(newTotalAssets);
     }
 
     function _takeFees() internal {
