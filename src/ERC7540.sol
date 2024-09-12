@@ -242,6 +242,7 @@ abstract contract ERC7540Upgradeable is
         }
         $.navs[_depositId].depositRequest[controller] += assets;
 
+        // Shoudn't we move native token wrapping outside the ERC7540?
         if (msg.value != 0) {
             // if user sends eth and the underlying is wETH we will wrap it for him
             if (asset() == address($.wrappedTativeToken)) {
@@ -461,8 +462,6 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) internal onlyOperator(controller) returns (uint256 assets) {
-        // adding a check for overflows !
-
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
@@ -488,16 +487,15 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) internal onlyOperator(controller) returns (uint256 shares) {
-        // adding a check for overflows
-
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
         if (requestId > $.lastRedeemNavIdSettle) revert RequestIdNotClaimable();
+
         shares = convertToShares(assets, requestId);
         $.navs[requestId].redeemRequest[controller] -= shares;
-
         IERC20(asset()).safeTransfer(receiver, assets);
+
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
     }
 
