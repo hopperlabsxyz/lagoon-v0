@@ -226,6 +226,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         $.newTotalAssets = _newTotalAssets;
         $.newTotalAssetsTimestamp = block.timestamp;
+
+        // add event here
     }
 
     // It should not be possible to call settleDeposit without at least one new nav
@@ -246,6 +248,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         $erc7540.totalAssets = $vault.newTotalAssets;
         $vault.newTotalAssetsTimestamp = type(uint256).max; // we do not allow to use 2 time the same newTotalAssets in a row
+
+        // add event here
     }
 
     function _takeFees() internal {
@@ -265,8 +269,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         uint256 _pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
         _setHighWaterMark(_pricePerShare); // when fees are taken done being taken, we update highWaterMark
 
-        FeeManagerStorage storage $feeManagerStorage = _getFeeManagerStorage();
-        $feeManagerStorage.lastFeeTime = block.timestamp;
+        _getFeeManagerStorage().lastFeeTime = block.timestamp;
     }
 
     function _settleDeposit() internal {
@@ -300,6 +303,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         IERC20(_asset).safeTransferFrom(_pendingSilo, safe(), pendingAssets);
 
+        // change this event maybe
         emit Deposit(_msgSender(), address(this), pendingAssets, shares);
     }
 
@@ -342,6 +346,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         IERC20(_asset).safeTransferFrom(_safe, address(this), assetsToWithdraw);
 
+        // change this event maybe
         emit Withdraw(_msgSender(), address(this), _pendingSilo, assetsToWithdraw, pendingShares);
     }
 
@@ -385,9 +390,9 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         address _safe = safe();
         uint256 safeBalance = IERC20(asset()).balanceOf(_safe);
         require($erc7540.totalAssets <= safeBalance, "not enough liquidity to unwind");
-        IERC20(asset()).safeTransferFrom(_safe, address(this), safeBalance);
-
         $.state = State.Closed;
+
+        IERC20(asset()).safeTransferFrom(_safe, address(this), safeBalance);
         emit StateUpdated(State.Closed);
     }
 
@@ -413,18 +418,20 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         }
     }
 
+    // @dev override ERC4626 synchronous withdraw; called when vault is closed
     function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
         internal
         virtual
         override
     {
-        if (caller != owner && !isOperator(owner, caller)) {
+        if (caller != owner && !isOperator(owner, caller))
             _spendAllowance(owner, caller, shares);
-        }
+
+        _getERC7540Storage().totalAssets -= assets;
 
         _burn(owner, shares);
+
         SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
-        _getERC7540Storage().totalAssets -= assets;
 
         emit Withdraw(caller, receiver, owner, assets, shares);
     }
