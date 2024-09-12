@@ -401,19 +401,16 @@ abstract contract ERC7540Upgradeable is
         if (claimable > 0) _redeem(claimable, controller, controller);
 
         ERC7540Storage storage $ = _getERC7540Storage();
-        _update(owner, address($.pendingSilo), shares);
-
-        // pending ?
 
         _redeemId = $.redeemNavId;
-        uint256 pendingReq = pendingRedeemRequest(0, controller);
-        uint256 lastRedeemId = $.lastRedeemRequestId[controller];
-        if (pendingReq > 0 && lastRedeemId != _redeemId)
-            revert OnlyOneRequestAllowed();
-        $.navs[_redeemId].redeemRequest[controller] += shares;
         if ($.lastRedeemRequestId[controller] != _redeemId) {
+            if (pendingRedeemRequest(0, controller) > 0)
+                revert OnlyOneRequestAllowed();
             $.lastRedeemRequestId[controller] = _redeemId;
         }
+        $.navs[_redeemId].redeemRequest[controller] += shares;
+
+        _update(owner, address($.pendingSilo), shares);
 
         emit RedeemRequest(controller, owner, _redeemId, _msgSender(), shares);
     }
