@@ -35,7 +35,7 @@ error CantDepositNativeToken();
 struct NavData {
     uint256 settleId;
     mapping(address => uint256) depositRequest;
-    mapping(address => uint256) redeemRequest; // todo maybe merge those 2 since navid can't be same
+    mapping(address => uint256) redeemRequest;
 }
 
 struct SettleData {
@@ -51,23 +51,19 @@ abstract contract ERC7540Upgradeable is
 {
     /// @custom:storage-location erc7201:hopper.storage.ERC7540
     struct ERC7540Storage {
-        mapping(address controller => mapping(address operator => bool)) isOperator;
         uint256 totalAssets;
         uint256 depositNavId;
         uint256 redeemNavId;
         uint256 depositSettleId;
         uint256 redeemSettleId;
-        // uint256 currentNavIdRequestAssets;
-
         uint256 lastRedeemNavIdSettle;
         uint256 lastDepositNavIdSettle;
-        Silo pendingSilo;
-        mapping(uint256 depositNavId => NavData) navs;
-        // mapping(uint256 redeemNavId => NavData) redeemNavs;
+        mapping(uint256 navId => NavData) navs;
         mapping(uint256 settleId => SettleData) settles;
-        // mapping(uint256 epochId => Data epoch) epochs;
         mapping(address user => uint256 epochId) lastDepositRequestId;
         mapping(address user => uint256 epochId) lastRedeemRequestId;
+        mapping(address controller => mapping(address operator => bool)) isOperator;
+        Silo pendingSilo;
         IWETH9 wrappedTativeToken;
     }
 
@@ -237,6 +233,15 @@ abstract contract ERC7540Upgradeable is
         if (claimable > 0) _deposit(claimable, controller, controller);
 
         ERC7540Storage storage $ = _getERC7540Storage();
+
+        _depositId = $.depositNavId;
+        if ($.lastDepositRequestId[controller] != _depositId) {
+            if (pendingDepositRequest(0, controller) > 0)
+                revert OnlyOneRequestAllowed();
+            $.lastDepositRequestId[controller] = _depositId;
+        }
+        $.navs[_depositId].depositRequest[controller] += assets;
+
         if (msg.value != 0) {
             // if user sends eth and the underlying is wETH we will wrap it for him
             if (asset() == address($.wrappedTativeToken)) {
@@ -257,17 +262,6 @@ abstract contract ERC7540Upgradeable is
             );
         }
 
-        _depositId = $.depositNavId;
-        uint256 pendingReq = pendingDepositRequest(0, controller);
-        uint256 lastDepositId = $.lastDepositRequestId[controller];
-        if (pendingReq > 0 && lastDepositId != _depositId) {
-            revert OnlyOneRequestAllowed();
-        }
-
-        $.navs[_depositId].depositRequest[controller] += assets;
-        if ($.lastDepositRequestId[controller] != _depositId) {
-            $.lastDepositRequestId[controller] = _depositId;
-        }
         emit DepositRequest(
             controller,
             owner,
@@ -283,12 +277,9 @@ abstract contract ERC7540Upgradeable is
     ) public view returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        if (requestId == 0) {
-            requestId = $.lastDepositRequestId[controller];
-        }
-        if (requestId > $.lastDepositNavIdSettle) {
+        if (requestId == 0) requestId = $.lastDepositRequestId[controller];
+        if (requestId > $.lastDepositNavIdSettle)
             return $.navs[requestId].depositRequest[controller];
-        }
     }
 
     // todo: Pass this function as external
@@ -299,10 +290,8 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
-
-        if (requestId <= $.lastDepositNavIdSettle) {
+        if (requestId <= $.lastDepositNavIdSettle)
             return $.navs[requestId].depositRequest[controller];
-        }
     }
 
     // todo: replace with the implementation of claimableDepositRequest
@@ -332,8 +321,6 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) internal virtual returns (uint256 shares) {
-        // adding a check for overflows !
-
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
@@ -368,8 +355,6 @@ abstract contract ERC7540Upgradeable is
         address receiver,
         address controller
     ) internal virtual returns (uint256 assets) {
-        // adding a check for overflow !
-
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
@@ -380,8 +365,8 @@ abstract contract ERC7540Upgradeable is
 
         $.navs[requestId].depositRequest[controller] -= assets;
         _update(address(this), receiver, shares);
+
         emit Deposit(controller, receiver, assets, shares);
-        return assets;
     }
 
     function cancelRequestDeposit() external {
@@ -489,8 +474,8 @@ abstract contract ERC7540Upgradeable is
         $.navs[requestId].redeemRequest[controller] -= shares;
         assets = convertToAssets(shares, requestId);
         IERC20(asset()).safeTransfer(receiver, assets);
+
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
-        return assets;
     }
 
     function withdraw(
@@ -517,7 +502,6 @@ abstract contract ERC7540Upgradeable is
 
         IERC20(asset()).safeTransfer(receiver, assets);
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
-        return shares;
     }
 
     // ## Conversion functions ##
