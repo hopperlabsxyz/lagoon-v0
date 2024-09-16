@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity "0.8.25";
+pragma solidity "0.8.26";
 
 import {Roles} from "./Roles.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
@@ -97,7 +97,7 @@ contract Whitelistable is Roles {
     ) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
-         require($.root == 0 /*, MerkleTreeMode() */);
+        if ($.root != 0) revert MerkleTreeMode();
 
         $.isWhitelisted[account] = true;
         emit WhitelistUpdated(account, true);
@@ -109,7 +109,7 @@ contract Whitelistable is Roles {
     ) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
-        require($.root == 0 /*, MerkleTreeMode() */);
+        if ($.root != 0) revert MerkleTreeMode();
 
         for (uint256 i = 0; i < accounts.length; i++) {
             $.isWhitelisted[accounts[i]] = true;
@@ -123,7 +123,7 @@ contract Whitelistable is Roles {
     ) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
-        require($.root == 0 /*, MerkleTreeMode() */);
+        if ($.root != 0) revert MerkleTreeMode();
 
         $.isWhitelisted[account] = false;
         emit WhitelistUpdated(account, false);
@@ -135,7 +135,7 @@ contract Whitelistable is Roles {
     ) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
-        require($.root == 0 /*, MerkleTreeMode() */);
+        if ($.root != 0) revert MerkleTreeMode();
 
         for (uint256 i = 0; i < accounts.length; i++) {
             $.isWhitelisted[accounts[i]] = false;

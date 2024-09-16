@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity "0.8.25";
+pragma solidity "0.8.26";
 import {IERC7540} from "./IERC7540.sol";
 
 interface IERC7540Deposit is IERC7540 {
