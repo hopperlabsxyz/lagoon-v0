@@ -60,8 +60,8 @@ abstract contract ERC7540Upgradeable is
         uint256 lastDepositNavIdSettle;
         mapping(uint256 navId => NavData) navs;
         mapping(uint256 settleId => SettleData) settles;
-        mapping(address user => uint256 epochId) lastDepositRequestId;
-        mapping(address user => uint256 epochId) lastRedeemRequestId;
+        mapping(address user => uint256 navId) lastDepositRequestId;
+        mapping(address user => uint256 navId) lastRedeemRequestId;
         mapping(address controller => mapping(address operator => bool)) isOperator;
         Silo pendingSilo;
         IWETH9 wrappedTativeToken;

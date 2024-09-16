@@ -214,4 +214,25 @@ contract TestRequestDeposit is BaseTest {
         vm.expectRevert(ERC7540InvalidOperator.selector);
         vault.requestDeposit(42, user1.addr, user1.addr);
     }
+
+    function test_requestDeposit_ShouldBeAbleToDepositAgainWhenIndeterminationIsRaidedAtSettlement()
+        public
+    {
+        vm.prank(user1.addr);
+        vault.requestDeposit(42, user1.addr, user1.addr);
+
+        vm.prank(user1.addr);
+        vault.requestDeposit(42, user1.addr, user1.addr);
+
+        updateTotalAssets(0);
+
+        vm.prank(user1.addr);
+        vm.expectRevert(OnlyOneRequestAllowed.selector);
+        vault.requestDeposit(42, user1.addr, user1.addr);
+
+        settle();
+
+        vm.prank(user1.addr);
+        vault.requestDeposit(42, user1.addr, user1.addr);
+    }
 }
