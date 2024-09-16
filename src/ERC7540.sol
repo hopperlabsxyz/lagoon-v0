@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity "0.8.25";
+pragma solidity "0.8.26";
 
 import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
@@ -12,7 +12,6 @@ import {IERC20, ERC20Upgradeable, IERC20Metadata} from "@openzeppelin/contracts-
 import {Silo} from "./Silo.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IWETH9} from "./interfaces/IWETH9.sol";
-// import {console} from "forge-std/console.sol";
 
 using SafeERC20 for IERC20;
 using Math for uint256;

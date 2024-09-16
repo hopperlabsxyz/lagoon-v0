@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.25;
+pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 import {Vault, ASSET_MANAGER_ROLE, FEE_RECEIVER, VALORIZATION_ROLE, HOPPER_ROLE} from "@src/Vault.sol";

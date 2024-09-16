@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity "0.8.25";
+pragma solidity "0.8.26";
 
 import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {WhitelistableUpgradeable, NotWhitelisted} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
-import {WhitelistableStorage} from "./Whitelistable.sol";
+// import {WhitelistableStorage} from "./Whitelistable.sol";
 import {RolesUpgradeable} from "./Roles.sol";
 // import {console} from "forge-std/console.sol";
 
@@ -29,6 +29,7 @@ error NotOpen();
 error NotClosing();
 error NotClosed();
 error NavIsMissing();
+error NotEnoughLiquidity();
 
 enum State {
     Open,
@@ -36,7 +37,6 @@ enum State {
     Closed
 }
 
-/// @custom:oz-upgrades-from VaultV2
 contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     using Math for uint256;
 
@@ -123,14 +123,14 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     modifier onlyOpen() {
         VaultStorage storage $ = _getVaultStorage();
 
-        require($.state == State.Open, "Not open");
+        if ($.state != State.Open) revert NotOpen();
         _;
     }
 
     modifier onlyClosing() {
         VaultStorage storage $ = _getVaultStorage();
 
-        require($.state == State.Closing, "Not Closing");
+        if ($.state != State.Closing) revert NotClosing();
         _;
     }
 
@@ -162,7 +162,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         returns (uint256)
     {
         (bytes32[] memory proof, address referral) = abi.decode(data, (bytes32[], address));
-        // todo: convert this to require(isWhitelisted(owner, proof), NotWhitelisted(owner));
         if (isWhitelisted(owner, proof) == false) {
             revert NotWhitelisted(owner);
         }
@@ -200,7 +199,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         returns (uint256)
     {
         bytes32[] memory proof = abi.decode(data, (bytes32[]));
-        // todo: convert this to require(isWhitelisted(owner, proof), NotWhitelisted(owner));
         if (isWhitelisted(owner, proof) == false) {
             revert NotWhitelisted(owner);
         }
@@ -378,8 +376,11 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         _settleRedeem();
 
         address _safe = safe();
-        uint256 safeBalance = IERC20(asset()).balanceOf(_safe);
-        require($erc7540.totalAssets <= safeBalance, "not enough liquidity to unwind");
+        uint256 safeBalance =  IERC20(asset()).balanceOf(_safe);
+
+        if ($erc7540.totalAssets > safeBalance) 
+          revert NotEnoughLiquidity();
+        
         $.state = State.Closed;
 
         IERC20(asset()).safeTransferFrom(_safe, address(this), safeBalance);
