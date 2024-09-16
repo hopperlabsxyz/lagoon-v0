@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity "0.8.25";
+pragma solidity "0.8.26";
 import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";

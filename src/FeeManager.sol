@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity "0.8.25";
+pragma solidity "0.8.26";
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "./FeeRegistry.sol";
@@ -56,7 +56,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         uint256 _decimals
     ) internal onlyInitializing {
         if (_managementRate > MAX_MANAGEMENT_RATE)
-            // todo change to require form
             revert AboveMaxRate(_managementRate, MAX_MANAGEMENT_RATE);
         if (_performanceRate > MAX_PERFORMANCE_RATE)
             revert AboveMaxRate(_performanceRate, MAX_PERFORMANCE_RATE);
