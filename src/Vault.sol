@@ -25,7 +25,6 @@ bytes32 constant VALORIZATION_ROLE = keccak256("VALORIZATION_MANAGER");
 bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
 bytes32 constant FEE_RECEIVER = keccak256("FEE_RECEIVER");
 
-error CooldownNotOver();
 error NotOpen();
 error NotClosing();
 error NotClosed();
@@ -54,7 +53,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         address wrappedNativeToken;
         uint256 managementRate;
         uint256 performanceRate;
-        uint256 cooldown;
         bool enableWhitelist;
         address[] whitelist;
     }
@@ -63,7 +61,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     struct VaultStorage {
         uint256 newTotalAssets;
         uint256 newTotalAssetsTimestamp;
-        uint256 newTotalAssetsCooldown;
         State state;
     }
 
@@ -103,7 +100,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         __Ownable_init(init.admin); // initial vault owner
 
         VaultStorage storage $ = _getVaultStorage();
-        $.newTotalAssetsCooldown = init.cooldown;
         $.newTotalAssetsTimestamp = type(uint256).max; // make sure that we update the nav for the first settle
 
         $.state = State.Open;
@@ -248,7 +244,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         if (newTotalAssetsTimestamp == type(uint256).max)
           revert NavIsMissing();
-        if (newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown > block.timestamp) revert CooldownNotOver();
 
         $erc7540.totalAssets = newTotalAssets;
         $vault.newTotalAssetsTimestamp = type(uint256).max; // we do not allow to use 2 time the same newTotalAssets in a row
@@ -365,15 +360,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
     function pendingRedeem() public view returns (uint256) {
         return balanceOf(pendingSilo());
-    }
-
-    // Sensible variables countdown update
-    function newTotalAssetsCountdown() public view returns (uint256 countdown) {
-        VaultStorage storage $ = _getVaultStorage();
-        if (
-            $.newTotalAssetsTimestamp != type(uint256).max  &&
-            $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown > block.timestamp
-          ) countdown = $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown - block.timestamp;
     }
 
     function initiateClosing() external onlyOwner onlyOpen {
