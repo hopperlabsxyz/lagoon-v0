@@ -59,7 +59,6 @@ contract testRateUpdates is BaseTest {
             managementRate: managementRate,
             performanceRate: performanceRate,
             wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
-            cooldown: 1 days,
             enableWhitelist: enableWhitelist,
             whitelist: whitelistInit
         });

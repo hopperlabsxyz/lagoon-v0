@@ -6,6 +6,7 @@ import {Vault} from "@src/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseTest} from "./Base.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {OnlyOneRequestAllowed} from "@src/ERC7540.sol";
 
 contract TestRequestRedeem is BaseTest {
     function setUp() public {
@@ -20,7 +21,11 @@ contract TestRequestRedeem is BaseTest {
 
     function test_requestRedeem() public {
         uint256 userBalance = balance(user1.addr);
-        requestRedeem(userBalance, user1.addr);
+        uint256 requestId = requestRedeem(userBalance, user1.addr);
+        assertEq(
+            vault.pendingRedeemRequest(requestId, user1.addr),
+            userBalance
+        );
         assertEq(vault.pendingRedeemRequest(0, user1.addr), userBalance);
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
     }
@@ -113,5 +118,16 @@ contract TestRequestRedeem is BaseTest {
             )
         );
         vault.requestRedeem(ownerBalance, controller, owner);
+    }
+
+    function test_requestRedeem_OnlyOneRequestAllowed() public {
+        uint256 userBalance = balance(user1.addr);
+        requestRedeem(userBalance / 2, user1.addr);
+
+        updateTotalAssets(0);
+
+        vm.prank(user1.addr);
+        vm.expectRevert(OnlyOneRequestAllowed.selector);
+        vault.requestRedeem(userBalance / 2, user1.addr, user1.addr);
     }
 }

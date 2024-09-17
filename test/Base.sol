@@ -99,13 +99,15 @@ contract BaseTest is Test, Constants {
         uint256 requestId;
         vm.prank(operator);
         uint256 value = viaEth ? amount : 0;
-        if (keccak256(data) == keccak256(abi.encode("")))
+        if (keccak256(data) == keccak256(abi.encode(""))) {
             requestId = vault.requestDeposit{value: value}(
                 amount,
                 controller,
                 owner
             );
-        else requestId = vault.requestDeposit(amount, controller, owner, data);
+        } else {
+            requestId = vault.requestDeposit(amount, controller, owner, data);
+        }
 
         assertEq(
             vault.pendingDeposit(),
@@ -219,18 +221,20 @@ contract BaseTest is Test, Constants {
             assetBalance(receiver),
             "Receiver assets balance did not increase properly"
         );
-        if (controller != receiver)
+        if (controller != receiver) {
             assertEq(
                 assetsBeforeController,
                 assetBalance(controller),
                 "Controller assets balance should remain the same after redeem"
             );
-        if (operator != receiver)
+        }
+        if (operator != receiver) {
             assertEq(
                 assetsBeforeOperator,
                 assetBalance(operator),
                 "Operator assets balance should remain the same after redeem"
             );
+        }
         return assets;
     }
 
@@ -254,18 +258,20 @@ contract BaseTest is Test, Constants {
             assetBalance(receiver),
             "Receiver assets balance did not increase properly"
         );
-        if (controller != receiver)
+        if (controller != receiver) {
             assertEq(
                 assetsBeforeController,
                 assetBalance(controller),
                 "Controller assets balance should remain the same after redeem"
             );
-        if (operator != receiver)
+        }
+        if (operator != receiver) {
             assertEq(
                 assetsBeforeOperator,
                 assetBalance(operator),
                 "Operator assets balance should remain the same after redeem"
             );
+        }
         return shares;
     }
 

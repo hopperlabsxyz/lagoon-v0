@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.25;
+pragma solidity 0.8.26;
 
 import {Script, console} from "forge-std/Script.sol";
 import {Vault} from "../src/Vault.sol";
@@ -69,7 +69,6 @@ contract LocalDeploy is Script {
             managementRate: _managementRate,
             performanceRate: _performanceRate,
             wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
-            cooldown: 1 days,
             enableWhitelist: enableWhitelist,
             whitelist: whitelistInit
         });

@@ -130,7 +130,6 @@ abstract contract Constants is Test {
             managementRate: _managementRate,
             performanceRate: _performanceRate,
             wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
-            cooldown: 1 days,
             enableWhitelist: enableWhitelist,
             whitelist: whitelist
         });
@@ -192,7 +191,6 @@ abstract contract Constants is Test {
                 managementRate: _managementRate,
                 performanceRate: _performanceRate,
                 wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
-                cooldown: 1 days,
                 enableWhitelist: enableWhitelist,
                 whitelist: whitelistInit
             });

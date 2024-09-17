@@ -6,6 +6,7 @@ import {FeeRegistry} from "./FeeRegistry.sol";
 // import {console} from "forge-std/console.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ERC7540Upgradeable} from "@src/ERC7540.sol";
+
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS = 10_000; // 100 %
 
@@ -15,6 +16,7 @@ struct Rates {
 }
 
 error AboveMaxRate(uint256 rate, uint256 maxRate);
+error CooldownNotOver();
 
 abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     using Math for uint256;
@@ -22,7 +24,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     uint256 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
     uint256 public constant MAX_PERFORMANCE_RATE = 5_000; // 50 %
     uint256 public constant MAX_PROTOCOL_RATE = 3_000; // 30 %
-    uint256 constant COOLDOWN = 1 days;
+    uint256 internal constant COOLDOWN = 1 days;
 
     /// @custom:storage-location erc7201:hopper.storage.FeeManager
     struct FeeManagerStorage {
@@ -55,12 +57,16 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         uint256 _performanceRate,
         uint256 _decimals
     ) internal onlyInitializing {
-        if (_managementRate > MAX_MANAGEMENT_RATE)
+        if (_managementRate > MAX_MANAGEMENT_RATE) {
             revert AboveMaxRate(_managementRate, MAX_MANAGEMENT_RATE);
-        if (_performanceRate > MAX_PERFORMANCE_RATE)
+        }
+        if (_performanceRate > MAX_PERFORMANCE_RATE) {
             revert AboveMaxRate(_performanceRate, MAX_PERFORMANCE_RATE);
+        }
 
         FeeManagerStorage storage $ = _getFeeManagerStorage();
+
+        $.newRatesTimestamp = block.timestamp;
 
         $.feeRegistry = FeeRegistry(_registry);
         $.highWaterMark = 10 ** _decimals;
@@ -73,6 +79,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
     function updateRates(Rates memory newRates) external onlyOwner {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
+        if (block.timestamp < $.newRatesTimestamp) revert CooldownNotOver();
         if (newRates.managementRate > MAX_MANAGEMENT_RATE)
             revert AboveMaxRate(newRates.managementRate, MAX_MANAGEMENT_RATE);
         if (newRates.performanceRate > MAX_PERFORMANCE_RATE)
