@@ -19,7 +19,6 @@ contract Deploy is Script {
     address SAFE = vm.envAddress("SAFE");
     address PROXY_ADMIN = vm.envAddress("PROXY_ADMIN");
     address FEE_RECEIVER = vm.envAddress("FEE_RECEIVER");
-    address USER = vm.envAddress("USER");
 
     string VAULT_NAME = vm.envString("VAULT_NAME");
     string VAULT_SYMBOL = vm.envString("VAULT_SYMBOL");
@@ -27,11 +26,11 @@ contract Deploy is Script {
     IERC20 underlying = IERC20(USDC_ARBITRUM);
 
     address valorization = SAFE;
-    address[] whitelist = [USER];
+    address[] whitelist = new address[](0);
 
     address admin = DAO;
     address whitelistManager = DAO;
-    address valorizator = DAO;
+    address valorizator = SAFE;
     uint256 _managementRate = 0;
     uint256 _performanceRate = 2_000;
     uint256 protocolFee = 100;
