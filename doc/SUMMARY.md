@@ -1,17 +1,46 @@
 # Table of contents
 
-* [Welcome](README.md)
+* [Introduction](README.md)
 
-## Getting Started
+## Architecture
 
-* [Quickstart](getting-started/quickstart.md)
-* [Publish your docs](getting-started/publish-your-docs.md)
+* [High-Level Overview](architecture/editor.md)
+* [Roles & Permissions](architecture/markdown.md)
+* [Infrastructure Stack](architecture/images-and-media.md)
 
-## Basics
+## Deployment Guide
 
-* [Editor](basics/editor.md)
-* [Markdown](basics/markdown.md)
-* [Images & media](basics/images-and-media.md)
-* [Interactive blocks](basics/interactive-blocks.md)
-* [OpenAPI](basics/openapi.md)
-* [Integrations](basics/integrations.md)
+* [How to Create Vault](deployment-guide/how-to-create-vault.md)
+* [Deployment Scripts](deployment-guide/deployment-scripts.md)
+* [Upgrading Contracts](deployment-guide/upgrading-contracts.md)
+
+## Vault Usage
+
+* [Fees & Economics](vault-usage/fees-and-economics.md)
+* [Setting Roles Modifier](vault-usage/setting-roles-modifier.md)
+* [Managing a Vault](vault-usage/managing-a-vault.md)
+* [Settling NAV](vault-usage/settling-nav.md)
+* [Depositing and Redeeming Assets](vault-usage/depositing-and-redeeming-assets.md)
+
+## Smart Contracts
+
+* [Contract Overview](smart-contracts/contract-overview.md)
+* [Key Data Structures](smart-contracts/key-data-structures.md)
+* [Inheritance & Libraries](smart-contracts/inheritance-and-libraries.md)
+
+## Contribute Development
+
+* [Prerequisites](contribute-development/quickstart.md)
+* [Installation](contribute-development/publish-your-docs.md)
+* [Configuring Env Variables](contribute-development/configuring-env-variables.md)
+* [Network Deployments](contribute-development/network-deployments.md)
+* [Testing](contribute-development/testing.md)
+
+## FAQ
+
+* [Common Questions](faq/common-questions.md)
+* [Troubleshooting](faq/troubleshooting.md)
+
+***
+
+* [License](license.md)
