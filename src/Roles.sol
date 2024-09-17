@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
+
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {FeeRegistry} from "./FeeRegistry.sol";
 
@@ -7,7 +8,7 @@ error OnlySafe();
 error OnlyWhitelistManager();
 error OnlyValorizationManager();
 
-contract Roles is Ownable2StepUpgradeable {
+contract RolesUpgradeable is Ownable2StepUpgradeable {
     struct RolesStorage {
         address whitelistManager;
         address feeReceiver;

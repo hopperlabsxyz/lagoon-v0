@@ -111,4 +111,15 @@ contract TestFeeRegistry is BaseTest {
             "Unexpected customRate(address)"
         );
     }
+
+    function test_updateProtocolFeeReceiver() public {
+        vm.prank(dao.addr);
+        feeRegistry.updateProtocolFeeReceiver(address(0x42));
+        assertEq(feeRegistry.protocolFeeReceiver(), address(0x42));
+    }
+
+    function test_updateProtocolFeeReceiver_revertIfNotOwner() public {
+        vm.expectRevert();
+        feeRegistry.updateProtocolFeeReceiver(address(0x42));
+    }
 }

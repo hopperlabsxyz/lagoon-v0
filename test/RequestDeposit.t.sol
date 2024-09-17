@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {Vault} from "@src/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseTest} from "./Base.sol";
-import {CantDepositNativeToken} from "@src/ERC7540.sol";
+import {CantDepositNativeToken, OnlyOneRequestAllowed, ERC7540InvalidOperator} from "@src/ERC7540.sol";
 
 contract TestRequestDeposit is BaseTest {
     function setUp() public {
@@ -18,7 +18,11 @@ contract TestRequestDeposit is BaseTest {
 
     function test_requestDeposit() public {
         uint256 userBalance = assetBalance(user1.addr);
-        requestDeposit(userBalance, user1.addr);
+        uint256 requestId = requestDeposit(userBalance, user1.addr);
+        assertEq(
+            vault.pendingDepositRequest(requestId, user1.addr),
+            userBalance
+        );
         assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance);
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
     }
@@ -57,14 +61,37 @@ contract TestRequestDeposit is BaseTest {
 
     function test_requestDeposit_withClaimableBalance() public {
         uint256 userBalance = assetBalance(user1.addr);
-        requestDeposit(userBalance / 2, user1.addr);
+
+        uint256 requestId_1 = requestDeposit(userBalance / 2, user1.addr);
+
         updateAndSettle(0);
+
+        assertEq(requestId_1 + 2, vault.depositId(), "wrong deposit id");
+        assertEq(
+            vault.lastDepositRequestId_debug(user1.addr), // keep track of the last deposit id of the user, only one requestId is allowed by settle period by user
+            requestId_1,
+            "wrong internal lastDepositRequestId"
+        );
+        assertEq(
+            vault.lastDepositNavIdSettle_debug(),
+            requestId_1,
+            "wrong internal lastDepositNavIdSettle"
+        );
+
         assertEq(
             vault.maxDeposit(user1.addr),
             userBalance / 2,
             "wrong claimable deposit value"
         );
+
+        assertEq(
+            vault.balanceOf(address(vault)),
+            userBalance / 2,
+            "wrong amount of claimable shares"
+        );
+
         requestDeposit(userBalance / 2, user1.addr);
+
         assertEq(
             vault.maxDeposit(user1.addr),
             0,
@@ -75,11 +102,27 @@ contract TestRequestDeposit is BaseTest {
             userBalance / 2,
             "wrong pending deposit value"
         );
+
+        // we automatically claim for the user if he has claimable shares
         assertEq(
             vault.balanceOf(user1.addr),
             userBalance / 2,
             "wrong shares balance"
         );
+    }
+
+    // @dev Once one of the request of the user has been taken into a NAV
+    //      he has to wait for settlement before being able to request again
+    function test_only_one_request_allowed_per_settle_id() public {
+        uint256 userBalance = assetBalance(user1.addr);
+
+        requestDeposit(userBalance / 2, user1.addr);
+
+        updateTotalAssets(0);
+
+        vm.prank(user1.addr);
+        vm.expectRevert(OnlyOneRequestAllowed.selector);
+        vault.requestDeposit(userBalance / 2, user1.addr, user1.addr);
     }
 
     function test_requestDeposit_withClaimableBalance_with_eth() public {
@@ -164,5 +207,32 @@ contract TestRequestDeposit is BaseTest {
         vm.startPrank(operator);
         // vm.expectRevert();
         vault.requestDeposit(ownerBalance, controller, owner);
+    }
+
+    function test_requestDeposit_revertIfNotOperator() public {
+        vm.prank(user2.addr);
+        vm.expectRevert(ERC7540InvalidOperator.selector);
+        vault.requestDeposit(42, user1.addr, user1.addr);
+    }
+
+    function test_requestDeposit_ShouldBeAbleToDepositAgainWhenIndeterminationIsRaidedAtSettlement()
+        public
+    {
+        vm.prank(user1.addr);
+        vault.requestDeposit(42, user1.addr, user1.addr);
+
+        vm.prank(user1.addr);
+        vault.requestDeposit(42, user1.addr, user1.addr);
+
+        updateTotalAssets(0);
+
+        vm.prank(user1.addr);
+        vm.expectRevert(OnlyOneRequestAllowed.selector);
+        vault.requestDeposit(42, user1.addr, user1.addr);
+
+        settle();
+
+        vm.prank(user1.addr);
+        vault.requestDeposit(42, user1.addr, user1.addr);
     }
 }
