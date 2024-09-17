@@ -38,15 +38,12 @@ contract LocalDeploy is Script {
     uint256 _managementRate = 0;
     uint256 _performanceRate = 0;
     uint256 protocolFee = 0;
-    uint256 cooldown = 1 hours;
     bool enableWhitelist = true;
 
     string network = vm.envString("NETWORK");
 
     address immutable WRAPPED_NATIVE_TOKEN =
         vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
-
-    address[] whitelistInit = new address[](0);
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -70,7 +67,7 @@ contract LocalDeploy is Script {
             performanceRate: _performanceRate,
             wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
             enableWhitelist: enableWhitelist,
-            whitelist: whitelistInit
+            whitelist: whitelist
         });
 
         TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
