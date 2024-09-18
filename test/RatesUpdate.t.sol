@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import {Vault, ASSET_MANAGER_ROLE, FEE_RECEIVER, VALORIZATION_ROLE, HOPPER_ROLE} from "@src/Vault.sol";
+import {Vault} from "@src/Vault.sol";
 import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
@@ -52,7 +52,7 @@ contract testRateUpdates is BaseTest {
             symbol: vaultSymbol,
             safe: safe.addr,
             whitelistManager: whitelistManager.addr,
-            valorization: valorizator.addr,
+            totalAssetsManager: totalAssetsManager.addr,
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
             feeRegistry: address(feeRegistry),
