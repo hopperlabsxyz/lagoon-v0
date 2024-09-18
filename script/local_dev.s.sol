@@ -67,6 +67,7 @@ contract LocalDeploy is Script {
             performanceRate: _performanceRate,
             wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
             enableWhitelist: enableWhitelist,
+            rateUpdateCooldown: 1 days,
             whitelist: whitelist
         });
 
