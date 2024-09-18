@@ -24,15 +24,15 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     uint256 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
     uint256 public constant MAX_PERFORMANCE_RATE = 5_000; // 50 %
     uint256 public constant MAX_PROTOCOL_RATE = 3_000; // 30 %
-    uint256 internal constant COOLDOWN = 1 days;
 
     /// @custom:storage-location erc7201:hopper.storage.FeeManager
     struct FeeManagerStorage {
-        Rates rates;
-        Rates oldRates;
         uint256 newRatesTimestamp;
         uint256 lastFeeTime;
         uint256 highWaterMark;
+        uint256 cooldown;
+        Rates rates;
+        Rates oldRates;
         FeeRegistry feeRegistry;
     }
 
@@ -55,7 +55,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         address _registry,
         uint256 _managementRate,
         uint256 _performanceRate,
-        uint256 _decimals
+        uint256 _decimals,
+        uint256 _cooldown
     ) internal onlyInitializing {
         if (_managementRate > MAX_MANAGEMENT_RATE) {
             revert AboveMaxRate(_managementRate, MAX_MANAGEMENT_RATE);
@@ -67,6 +68,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         $.newRatesTimestamp = block.timestamp;
+
+        $.cooldown = _cooldown;
 
         $.feeRegistry = FeeRegistry(_registry);
         $.highWaterMark = 10 ** _decimals;
@@ -85,7 +88,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         if (newRates.performanceRate > MAX_PERFORMANCE_RATE)
             revert AboveMaxRate(newRates.performanceRate, MAX_PERFORMANCE_RATE);
 
-        $.newRatesTimestamp = block.timestamp + COOLDOWN;
+        $.newRatesTimestamp = block.timestamp + $.cooldown;
         $.oldRates = $.rates;
         $.rates = newRates;
     }

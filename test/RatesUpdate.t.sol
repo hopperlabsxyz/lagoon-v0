@@ -59,6 +59,7 @@ contract testRateUpdates is BaseTest {
             managementRate: managementRate,
             performanceRate: performanceRate,
             wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
+            rateUpdateCooldown: rateUpdateCooldown,
             enableWhitelist: enableWhitelist,
             whitelist: whitelistInit
         });
