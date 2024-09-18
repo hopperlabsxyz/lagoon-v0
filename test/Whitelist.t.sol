@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.25;
+pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 import {Vault} from "@src/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {NotWhitelisted, WhitelistUpdated} from "@src/Whitelistable.sol";
 import {BaseTest} from "./Base.sol";
+import {OnlyWhitelistManager} from "@src/Roles.sol";
 
 contract TestWhitelist is BaseTest {
     function withWhitelistSetUp() public {
@@ -28,15 +29,21 @@ contract TestWhitelist is BaseTest {
         dealAndApprove(user1.addr);
     }
 
-    function test_requestDeposit_ShouldFailWhenControllerNotWhitelisted() public {
+    function test_requestDeposit_ShouldFailWhenControllerNotWhitelisted()
+        public
+    {
         withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
         vm.startPrank(user1.addr);
-        vm.expectRevert(abi.encodeWithSelector(NotWhitelisted.selector, user1.addr));
+        vm.expectRevert(
+            abi.encodeWithSelector(NotWhitelisted.selector, user1.addr)
+        );
         vault.requestDeposit(userBalance, user1.addr, user1.addr);
     }
 
-    function test_requestDeposit_ShouldNotFailWhenControllerNotWhitelistedandOperatorAndOwnerAre() public {
+    function test_requestDeposit_ShouldNotFailWhenControllerNotWhitelistedandOperatorAndOwnerAre()
+        public
+    {
         withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
         whitelist(user1.addr);
@@ -57,12 +64,15 @@ contract TestWhitelist is BaseTest {
         requestDeposit(userBalance, controller, operator, owner);
     }
 
-    function test_transfer_WhenReceiverNotWhitelistedAfterDeactivateOfWhitelisting() public {
+    function test_transfer_WhenReceiverNotWhitelistedAfterDeactivateOfWhitelisting()
+        public
+    {
         withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
         whitelist(user1.addr);
         requestDeposit(userBalance, user1.addr);
-        settle();
+
+        updateAndSettle(0);
 
         deposit(userBalance, user1.addr);
         address receiver = user2.addr;
@@ -79,7 +89,9 @@ contract TestWhitelist is BaseTest {
         uint256 userBalance = assetBalance(user1.addr);
         whitelist(user1.addr);
         requestDeposit(userBalance, user1.addr);
-        settle();
+
+        updateAndSettle(0);
+
         deposit(userBalance, user1.addr);
         uint256 shares = vault.balanceOf(user1.addr);
         address receiver = user2.addr;
@@ -119,15 +131,27 @@ contract TestWhitelist is BaseTest {
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user2.addr, true);
         whitelist(users);
-        assertEq(vault.isWhitelisted(user1.addr, new bytes32[](0)), true, "user1 is not whitelisted");
+        assertEq(
+            vault.isWhitelisted(user1.addr, new bytes32[](0)),
+            true,
+            "user1 is not whitelisted"
+        );
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user1.addr, false);
         unwhitelist(users[0]);
-        assertEq(vault.isWhitelisted(user1.addr, new bytes32[](0)), false, "user1 is still whitelisted");
+        assertEq(
+            vault.isWhitelisted(user1.addr, new bytes32[](0)),
+            false,
+            "user1 is still whitelisted"
+        );
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user2.addr, false);
         unwhitelist(users[1]);
-        assertEq(vault.isWhitelisted(user2.addr, new bytes32[](0)), false, "user2 is still whitelisted");
+        assertEq(
+            vault.isWhitelisted(user2.addr, new bytes32[](0)),
+            false,
+            "user2 is still whitelisted"
+        );
     }
 
     function test_unwhitelistList() public {
@@ -145,9 +169,17 @@ contract TestWhitelist is BaseTest {
 
         whitelist(users);
 
-        assertEq(vault.isWhitelisted(user1.addr, new bytes32[](0)), true, "user1 is not whitelisted");
+        assertEq(
+            vault.isWhitelisted(user1.addr, new bytes32[](0)),
+            true,
+            "user1 is not whitelisted"
+        );
 
-        assertEq(vault.isWhitelisted(user2.addr, new bytes32[](0)), true, "user2 is not whitelisted");
+        assertEq(
+            vault.isWhitelisted(user2.addr, new bytes32[](0)),
+            true,
+            "user2 is not whitelisted"
+        );
 
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user1.addr, false);
@@ -157,12 +189,40 @@ contract TestWhitelist is BaseTest {
 
         unwhitelist(users);
 
-        assertEq(vault.isWhitelisted(user1.addr, new bytes32[](0)), false, "user1 is still whitelisted");
-        assertEq(vault.isWhitelisted(user2.addr, new bytes32[](0)), false, "user2 is still whitelisted");
+        assertEq(
+            vault.isWhitelisted(user1.addr, new bytes32[](0)),
+            false,
+            "user1 is still whitelisted"
+        );
+        assertEq(
+            vault.isWhitelisted(user2.addr, new bytes32[](0)),
+            false,
+            "user2 is still whitelisted"
+        );
     }
 
     function test_noWhitelist() public {
         withoutWhitelistSetUp();
         requestDeposit(1, user1.addr);
+    }
+
+    function test_addToWhitelist_revert() public {
+        withWhitelistSetUp();
+
+        vm.expectRevert(OnlyWhitelistManager.selector);
+        vault.addToWhitelist(address(0x42));
+
+        vm.expectRevert(OnlyWhitelistManager.selector);
+        vault.addToWhitelist(new address[](5));
+    }
+
+    function test_revokeFromWhitelist_revert() public {
+        withWhitelistSetUp();
+
+        vm.expectRevert(OnlyWhitelistManager.selector);
+        vault.revokeFromWhitelist(address(0x42));
+
+        vm.expectRevert(OnlyWhitelistManager.selector);
+        vault.revokeFromWhitelist(new address[](5));
     }
 }

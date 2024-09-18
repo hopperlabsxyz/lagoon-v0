@@ -1,36 +1,22 @@
 // SPDX-License-Identifier: MIT
-pragma solidity "0.8.25";
+pragma solidity "0.8.26";
 
-// import "forge-std/Test.sol";
-import {ERC7540Upgradeable, EpochData} from "./ERC7540.sol";
-import {AccessControlEnumerableUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
-import {
-    AccessControlUpgradeable,
-    IAccessControl
-} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {ERC20BurnableUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
-import {ERC20PermitUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
-import {ERC20PausableUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
-import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {Whitelistable, NotWhitelisted, WHITELISTED} from "./Whitelistable.sol";
+import {WhitelistableUpgradeable, NotWhitelisted} from "./Whitelistable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FeeManager} from "./FeeManager.sol";
-import {WhitelistableStorage} from "./Whitelistable.sol";
-import {Roles} from "./Roles.sol";
+// import {WhitelistableStorage} from "./Whitelistable.sol";
+import {RolesUpgradeable} from "./Roles.sol";
 // import {console} from "forge-std/console.sol";
 
 using Math for uint256;
 using SafeERC20 for IERC20;
 
 event Referral(address indexed referral, address indexed owner, uint256 indexed requestId, uint256 assets);
-
 event StateUpdated(State state);
+event TotalAssetsUpdated(uint256 totalAssets);
+event UpdateTotalAssets(uint256 totalAssets);
 
 uint256 constant BPS_DIVIDER = 10_000;
 
@@ -39,10 +25,11 @@ bytes32 constant VALORIZATION_ROLE = keccak256("VALORIZATION_MANAGER");
 bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
 bytes32 constant FEE_RECEIVER = keccak256("FEE_RECEIVER");
 
-error CooldownNotOver();
 error NotOpen();
 error NotClosing();
 error NotClosed();
+error NavIsMissing();
+error NotEnoughLiquidity();
 
 enum State {
     Open,
@@ -50,8 +37,7 @@ enum State {
     Closed
 }
 
-/// @custom:oz-upgrades-from VaultV2
-contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
+contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     using Math for uint256;
 
     struct InitStruct {
@@ -67,7 +53,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         address wrappedNativeToken;
         uint256 managementRate;
         uint256 performanceRate;
-        uint256 cooldown;
         bool enableWhitelist;
         address[] whitelist;
     }
@@ -76,7 +61,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     struct VaultStorage {
         uint256 newTotalAssets;
         uint256 newTotalAssetsTimestamp;
-        uint256 newTotalAssetsCooldown;
         State state;
     }
 
@@ -105,7 +89,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         __ERC7540_init(init.underlying, init.wrappedNativeToken);
         __Whitelistable_init(init.enableWhitelist);
         __Roles_init(
-            Roles.RolesStorage({
+            RolesUpgradeable.RolesStorage({
                 whitelistManager: init.whitelistManager,
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
@@ -116,7 +100,7 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         __Ownable_init(init.admin); // initial vault owner
 
         VaultStorage storage $ = _getVaultStorage();
-        $.newTotalAssetsCooldown = init.cooldown;
+        $.newTotalAssetsTimestamp = type(uint256).max; // make sure that we update the nav for the first settle
 
         $.state = State.Open;
         emit StateUpdated(State.Open);
@@ -139,14 +123,14 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     modifier onlyOpen() {
         VaultStorage storage $ = _getVaultStorage();
 
-        require($.state == State.Open, "Not open");
+        if ($.state != State.Open) revert NotOpen();
         _;
     }
 
     modifier onlyClosing() {
         VaultStorage storage $ = _getVaultStorage();
 
-        require($.state == State.Closing, "Not Closing");
+        if ($.state != State.Closing) revert NotClosing();
         _;
     }
 
@@ -178,7 +162,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         returns (uint256)
     {
         (bytes32[] memory proof, address referral) = abi.decode(data, (bytes32[], address));
-        // todo: convert this to require(isWhitelisted(owner, proof), NotWhitelisted(owner));
         if (isWhitelisted(owner, proof) == false) {
             revert NotWhitelisted(owner);
         }
@@ -216,7 +199,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         returns (uint256)
     {
         bytes32[] memory proof = abi.decode(data, (bytes32[]));
-        // todo: convert this to require(isWhitelisted(owner, proof), NotWhitelisted(owner));
         if (isWhitelisted(owner, proof) == false) {
             revert NotWhitelisted(owner);
         }
@@ -225,10 +207,25 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
     function updateTotalAssets(uint256 _newTotalAssets) public onlyValorizationManager {
         VaultStorage storage $ = _getVaultStorage();
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+
+        $erc7540.navs[$erc7540.depositNavId].settleId = $erc7540.depositSettleId;
+        $erc7540.navs[$erc7540.redeemNavId].settleId = $erc7540.redeemSettleId;
+
+        address _pendingSilo = pendingSilo();
+        uint256 pendingAssets = IERC20(asset()).balanceOf(_pendingSilo);
+        uint256 pendingShares = balanceOf(_pendingSilo);
+
+        if (pendingAssets != 0) $erc7540.depositNavId += 2;
+        if (pendingShares != 0) $erc7540.redeemNavId += 2;
+
         $.newTotalAssets = _newTotalAssets;
         $.newTotalAssetsTimestamp = block.timestamp;
+
+        emit UpdateTotalAssets(_newTotalAssets);
     }
 
+    // It should not be possible to call settleDeposit without at least one new nav
     function settleDeposit() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees();
@@ -240,10 +237,16 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
-        if ($vault.newTotalAssetsTimestamp + $vault.newTotalAssetsCooldown > block.timestamp) revert CooldownNotOver();
+        uint256 newTotalAssets = $vault.newTotalAssets;
+        uint256 newTotalAssetsTimestamp = $vault.newTotalAssetsTimestamp;
 
-        $erc7540.totalAssets = $vault.newTotalAssets;
+        if (newTotalAssetsTimestamp == type(uint256).max)
+          revert NavIsMissing();
+
+        $erc7540.totalAssets = newTotalAssets;
         $vault.newTotalAssetsTimestamp = type(uint256).max; // we do not allow to use 2 time the same newTotalAssets in a row
+
+        emit TotalAssetsUpdated(newTotalAssets);
     }
 
     function _takeFees() internal {
@@ -263,33 +266,45 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         uint256 _pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
         _setHighWaterMark(_pricePerShare); // when fees are taken done being taken, we update highWaterMark
 
-        FeeManagerStorage storage $feeManagerStorage = _getFeeManagerStorage();
-        $feeManagerStorage.lastFeeTime = block.timestamp;
+        _getFeeManagerStorage().lastFeeTime = block.timestamp;
     }
 
     function _settleDeposit() internal {
-        uint256 pendingAssets = IERC20(asset()).balanceOf(pendingSilo());
-        if (pendingAssets == 0) return;
+        address _asset = asset();
+        address _pendingSilo = pendingSilo();
+
+        uint256 pendingAssets = IERC20(_asset).balanceOf(_pendingSilo);
+        if (pendingAssets == 0)
+          return;
+
+        uint256 shares = _convertToShares(pendingAssets, Math.Rounding.Floor);
 
         // Then save the deposit parameters
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
-        uint256 _totalAssets = totalAssets();
-        uint256 depositId = $erc7540.depositId;
-        EpochData storage epoch = $erc7540.epochs[depositId];
-        epoch.totalAssets = _totalAssets;
-        epoch.totalSupply = totalSupply();
 
-        uint256 shares = _convertToShares(pendingAssets, Math.Rounding.Floor);
+        uint256 _totalAssets = totalAssets();
+        uint256 depositSettleId = $erc7540.depositSettleId;
+
+        SettleData storage settleData = $erc7540.settles[depositSettleId];
+
+        settleData.totalAssets = _totalAssets;
+        settleData.totalSupply = totalSupply();
+
         _mint(address(this), shares);
+
         _totalAssets += pendingAssets;
         $erc7540.totalAssets = _totalAssets;
 
-        address _safe = safe();
-        IERC20(asset()).safeTransferFrom(pendingSilo(), _safe, pendingAssets);
-        $erc7540.depositId += 2;
+        $erc7540.depositSettleId = depositSettleId + 2;
+        $erc7540.lastDepositNavIdSettle = $erc7540.depositNavId - 2;
+
+        IERC20(_asset).safeTransferFrom(_pendingSilo, safe(), pendingAssets);
+
+        // change this event maybe
         emit Deposit(_msgSender(), address(this), pendingAssets, shares);
     }
 
+    // It should not be possible to call settleRedeem without at least one new nav
     function settleRedeem() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees();
@@ -297,27 +312,39 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
     }
 
     function _settleRedeem() internal {
-        uint256 pendingShares = balanceOf(pendingSilo());
-        uint256 assetsToWithdraw = _convertToAssets(pendingShares, Math.Rounding.Floor);
         address _safe = safe();
-        uint256 assetsInTheSafe = IERC20(asset()).balanceOf(_safe);
+        address _asset = asset();
+        address _pendingSilo = pendingSilo();
+
+        uint256 pendingShares = balanceOf(_pendingSilo);
+        uint256 assetsToWithdraw = _convertToAssets(pendingShares, Math.Rounding.Floor);
+
+
+        uint256 assetsInTheSafe = IERC20(_asset).balanceOf(_safe);
         if (assetsToWithdraw == 0 || assetsToWithdraw > assetsInTheSafe) return;
 
-        // first we save epochs data
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
-        uint256 redeemId = $erc7540.redeemId;
-        EpochData storage epoch = $erc7540.epochs[redeemId];
+
         uint256 _totalAssets = totalAssets();
-        epoch.totalAssets = _totalAssets;
-        epoch.totalSupply = totalSupply();
+        uint256 redeemSettleId = $erc7540.redeemSettleId;
 
-        // then we proceed to redeem the shares
-        _burn(pendingSilo(), pendingShares);
-        $erc7540.totalAssets = _totalAssets - assetsToWithdraw;
+        SettleData storage settleData = $erc7540.settles[redeemSettleId];
 
-        IERC20(asset()).safeTransferFrom(_safe, address(this), assetsToWithdraw);
-        $erc7540.redeemId += 2;
-        emit Withdraw(_msgSender(), address(this), pendingSilo(), assetsToWithdraw, pendingShares);
+        settleData.totalAssets = _totalAssets;
+        settleData.totalSupply = totalSupply();
+
+        _burn(_pendingSilo, pendingShares);
+
+        _totalAssets -= assetsToWithdraw;
+        $erc7540.totalAssets = _totalAssets;
+
+        $erc7540.redeemSettleId = redeemSettleId + 2;
+        $erc7540.lastRedeemNavIdSettle = $erc7540.redeemNavId - 2;
+
+        IERC20(_asset).safeTransferFrom(_safe, address(this), assetsToWithdraw);
+
+        // change this event maybe
+        emit Withdraw(_msgSender(), address(this), _pendingSilo, assetsToWithdraw, pendingShares);
     }
 
     /////////////////
@@ -331,27 +358,6 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
 
     function pendingRedeem() public view returns (uint256) {
         return balanceOf(pendingSilo());
-    }
-
-    // Sensible variables countdown update
-    function newTotalAssetsCountdown() public view returns (uint256) {
-        VaultStorage storage $ = _getVaultStorage();
-        if ($.newTotalAssetsTimestamp == type(uint256).max) {
-            return 0;
-        }
-        if ($.newTotalAssetsTimestamp + $.newTotalAssetsCooldown > block.timestamp) {
-            return $.newTotalAssetsTimestamp + $.newTotalAssetsCooldown - block.timestamp;
-        }
-        return 0;
-    }
-
-    function updateNewTotalAssetsCountdown( //todo delete for prod
-    uint256 _newTotalAssetsCooldown)
-        public
-        onlyOwner
-    {
-        VaultStorage storage $ = _getVaultStorage();
-        $.newTotalAssetsCooldown = _newTotalAssetsCooldown;
     }
 
     function initiateClosing() external onlyOwner onlyOpen {
@@ -370,11 +376,14 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         _settleRedeem();
 
         address _safe = safe();
-        uint256 safeBalance = IERC20(asset()).balanceOf(_safe);
-        require($erc7540.totalAssets <= safeBalance, "not enough liquidity to unwind");
-        IERC20(asset()).safeTransferFrom(_safe, address(this), safeBalance);
+        uint256 safeBalance =  IERC20(asset()).balanceOf(_safe);
 
+        if ($erc7540.totalAssets > safeBalance) 
+          revert NotEnoughLiquidity();
+        
         $.state = State.Closed;
+
+        IERC20(asset()).safeTransferFrom(_safe, address(this), safeBalance);
         emit StateUpdated(State.Closed);
     }
 
@@ -400,18 +409,20 @@ contract Vault is ERC7540Upgradeable, Whitelistable, FeeManager {
         }
     }
 
+    // @dev override ERC4626 synchronous withdraw; called when vault is closed
     function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
         internal
         virtual
         override
     {
-        if (caller != owner && !isOperator(owner, caller)) {
+        if (caller != owner && !isOperator(owner, caller))
             _spendAllowance(owner, caller, shares);
-        }
+
+        _getERC7540Storage().totalAssets -= assets;
 
         _burn(owner, shares);
+
         SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
-        _getERC7540Storage().totalAssets -= assets;
 
         emit Withdraw(caller, receiver, owner, assets, shares);
     }

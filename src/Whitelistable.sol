@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity "0.8.25";
+pragma solidity "0.8.26";
 
-import {Roles} from "./Roles.sol";
+import {RolesUpgradeable} from "./Roles.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {IWhitelistModule} from "./interfaces/IWhitelistModule.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+// import {console} from "forge-std/console.sol";
 
 // errors
 error NotWhitelisted(address account);
@@ -12,24 +13,28 @@ error MerkleTreeMode();
 
 // events
 event RootUpdated(bytes32 indexed root);
-
 event WhitelistUpdated(address indexed account, bool authorized);
-
-/// @custom:storage-location erc7201:hopper.storage.Whitelistable
-struct WhitelistableStorage {
-    bytes32 root;
-    mapping(address => bool) isWhitelisted;
-    bool isActivated;
-}
 
 bytes32 constant WHITELISTED = keccak256("WHITELISTED");
 
-contract Whitelistable is Roles {
+contract WhitelistableUpgradeable is RolesUpgradeable {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant whitelistableStorage = 0x083cc98ab296d1a1f01854b5f7a2f47df4425a56ba7b35f7faa3a336067e4800;
 
-    function _getWhitelistableStorage() internal pure returns (WhitelistableStorage storage $) {
+    /// @custom:storage-location erc7201:hopper.storage.Whitelistable
+    struct WhitelistableStorage {
+      bytes32 root;
+      mapping(address => bool) isWhitelisted;
+      bool isActivated;
+    }
+
+
+    function _getWhitelistableStorage()
+        internal
+        pure
+        returns (WhitelistableStorage storage $)
+    {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := whitelistableStorage
@@ -83,7 +88,7 @@ contract Whitelistable is Roles {
     function addToWhitelist(address account) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
-        require($.root == 0 /*, MerkleTreeMode() */ );
+        if ($.root != 0) revert MerkleTreeMode();
 
         $.isWhitelisted[account] = true;
         emit WhitelistUpdated(account, true);
@@ -93,7 +98,7 @@ contract Whitelistable is Roles {
     function addToWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
-        require($.root == 0 /*, MerkleTreeMode() */ );
+        if ($.root != 0) revert MerkleTreeMode();
 
         for (uint256 i = 0; i < accounts.length; i++) {
             $.isWhitelisted[accounts[i]] = true;
@@ -105,7 +110,7 @@ contract Whitelistable is Roles {
     function revokeFromWhitelist(address account) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
-        require($.root == 0 /*, MerkleTreeMode() */ );
+        if ($.root != 0) revert MerkleTreeMode();
 
         $.isWhitelisted[account] = false;
         emit WhitelistUpdated(account, false);
@@ -115,7 +120,7 @@ contract Whitelistable is Roles {
     function revokeFromWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
-        require($.root == 0 /*, MerkleTreeMode() */ );
+        if ($.root != 0) revert MerkleTreeMode();
 
         for (uint256 i = 0; i < accounts.length; i++) {
             $.isWhitelisted[accounts[i]] = false;
