@@ -28,8 +28,8 @@ contract TestMint is BaseTest {
         assertEq(vault.safe(), safe.addr);
     }
 
-    function test_valorizationManager() public view {
-        assertEq(vault.valorizationManager(), valorizator.addr);
+    function test_totalAssetsManager() public view {
+        assertEq(vault.totalAssetsManager(), totalAssetsManager.addr);
     }
 
     function test_feeRegistry() public view {

@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {Vault, NavIsMissing} from "@src/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseTest} from "./Base.sol";
-import {OnlyValorizationManager, OnlySafe} from "@src/Roles.sol";
+import {OnlyTotalAssetsManager, OnlySafe} from "@src/Roles.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 using Math for uint256;
@@ -218,22 +218,22 @@ contract TestSettle is BaseTest {
         vault.settleRedeem();
     }
 
-    function test_updateTotalAssets_revertIfNotValorizationManager() public {
-        vm.expectRevert(OnlyValorizationManager.selector);
+    function test_updateTotalAssets_revertIfNotTotalAssetsManager() public {
+        vm.expectRevert(OnlyTotalAssetsManager.selector);
         vault.updateTotalAssets(0);
     }
 
-    function test_settleDeposit_revertIfNotValorizationManager() public {
+    function test_settleDeposit_revertIfNotTotalAssetsManager() public {
         vm.expectRevert(OnlySafe.selector);
         vault.settleDeposit();
     }
 
-    function test_settleRedeem_revertIfNotValorizationManager() public {
+    function test_settleRedeem_revertIfNotTotalAssetsManager() public {
         vm.expectRevert(OnlySafe.selector);
         vault.settleRedeem();
     }
 
-    function test_close_revertIfNotValorizationManager() public {
+    function test_close_revertIfNotTotalAssetsManager() public {
         vm.expectRevert(OnlySafe.selector);
         vault.close();
     }

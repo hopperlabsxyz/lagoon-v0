@@ -25,12 +25,11 @@ contract Deploy is Script {
 
     IERC20 underlying = IERC20(USDC_ARBITRUM);
 
-    address valorization = SAFE;
     address[] whitelist = new address[](0);
 
     address admin = DAO;
     address whitelistManager = DAO;
-    address valorizator = SAFE;
+    address totalAssetsManager = SAFE;
     uint256 _managementRate = 0;
     uint256 _performanceRate = 2_000;
     uint256 protocolFee = 100;
@@ -50,7 +49,7 @@ contract Deploy is Script {
             symbol: VAULT_SYMBOL,
             safe: SAFE,
             whitelistManager: whitelistManager,
-            valorization: valorizator,
+            totalAssetsManager: totalAssetsManager,
             admin: admin,
             feeReceiver: FEE_RECEIVER,
             feeRegistry: address(feeRegistry),
