@@ -9,6 +9,13 @@ error OnlyWhitelistManager();
 error OnlyTotalAssetsManager();
 
 contract RolesUpgradeable is Ownable2StepUpgradeable {
+    /// @notice Stores the various roles responsible of managing the vault.
+    /// @param whitelistManager The address responsible of managing the whitelist.
+    /// @param feeReceiver The address that will receive the fees generated.
+    /// @param safe Every lagoon vault is associated with a Safe smart contract. This address will receive the assets of the vault and can settle deposits and redeems.
+    /// @param feeRegistry The address of the FeeRegistry contract.
+    /// @param totalAssetsManager. This address is responsible of updating the totalAssets value of the vault.
+    /// @param owner The address of the owner of the contract. Not visible in the struct.
     struct RolesStorage {
         address whitelistManager;
         address feeReceiver;
@@ -84,6 +91,12 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         address _whitelistManager
     ) external onlyOwner {
         _getRolesStorage().whitelistManager = _whitelistManager;
+    }
+
+    function updateTotalAssetsManager(
+        address _totalAssetsManager
+    ) external onlyOwner {
+        _getRolesStorage().totalAssetsManager = _totalAssetsManager;
     }
 
     function updateFeeReceiver(address _feeReceiver) external onlyOwner {
