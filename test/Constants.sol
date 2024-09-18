@@ -37,6 +37,7 @@ abstract contract Constants is Test {
     FeeRegistry feeRegistry;
     string vaultName = "vault_";
     string vaultSymbol = "hop_vault_";
+    uint256 rateUpdateCooldown = 1 days;
 
     //Underlying
     ERC20 immutable underlying =
@@ -131,6 +132,7 @@ abstract contract Constants is Test {
             performanceRate: _performanceRate,
             wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
             enableWhitelist: enableWhitelist,
+            rateUpdateCooldown: rateUpdateCooldown,
             whitelist: whitelist
         });
 
@@ -191,6 +193,7 @@ abstract contract Constants is Test {
                 managementRate: _managementRate,
                 performanceRate: _performanceRate,
                 wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
+                rateUpdateCooldown: rateUpdateCooldown,
                 enableWhitelist: enableWhitelist,
                 whitelist: whitelistInit
             });

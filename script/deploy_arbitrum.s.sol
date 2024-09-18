@@ -57,6 +57,7 @@ contract Deploy is Script {
             managementRate: _managementRate,
             performanceRate: _performanceRate,
             wrappedNativeToken: WETH_ARBITRUM,
+            rateUpdateCooldown: 1 days,
             enableWhitelist: enableWhitelist,
             whitelist: whitelist
         });
