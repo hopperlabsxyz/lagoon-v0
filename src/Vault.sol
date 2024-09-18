@@ -201,7 +201,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         return super.requestRedeem(shares, controller, owner);
     }
 
-    function updateTotalAssets(uint256 _newTotalAssets) public onlyTotalAssetsManager {
+    function updateTotalAssets(uint256 _newTotalAssets) public onlyTotalAssetsManager whenNotPaused {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 

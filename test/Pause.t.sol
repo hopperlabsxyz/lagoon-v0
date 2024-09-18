@@ -111,9 +111,69 @@ contract TestPause is BaseTest {
         vault.withdraw(10, user1.addr, user1.addr);
     }
 
-    function test_updateTotalAssets_whenPaused_shouldFail() public {
-        // vm.prank(vault.t());
+    function test_withdraw_whenPausedAndVaultClosed_shouldFail() public {
+        vm.prank(vault.owner());
+        vault.unpause();
+
+        vm.startPrank(user1.addr);
+        vault.deposit(vault.maxDeposit(user1.addr), user1.addr);
+        vault.requestRedeem(10, user1.addr, user1.addr);
+        vm.stopPrank();
+        updateAndSettle(vault.totalAssets());
+
+        updateTotalAssets(vault.totalAssets());
+
+        dealAmountAndApprove(vault.safe(), vault.totalAssets());
+        vm.prank(vault.owner());
+        vault.initiateClosing();
+        vm.prank(vault.safe());
+
+        vault.close();
+
+        vm.prank(vault.owner());
+        vault.pause();
+
+        vm.prank(user1.addr);
         vm.expectRevert(Pausable.EnforcedPause.selector);
-        // vault.updateTotalAssets();
+        vault.withdraw(10, user1.addr, user1.addr);
+    }
+
+    function test_updateTotalAssets_whenPaused_shouldFail() public {
+        uint256 _totalAssets = vault.totalAssets();
+        vm.prank(vault.totalAssetsManager());
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.updateTotalAssets(_totalAssets);
+    }
+
+    function test_settleDeposit_whenPaused_shouldFail() public {
+        vm.prank(vault.owner());
+        vault.unpause();
+
+        uint256 _totalAssets = vault.totalAssets();
+        vm.prank(vault.totalAssetsManager());
+        vault.updateTotalAssets(_totalAssets);
+
+        vm.prank(vault.owner());
+        vault.pause();
+
+        vm.prank(vault.safe());
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.settleDeposit();
+    }
+
+    function test_settleRedeem_whenPaused_shouldFail() public {
+        vm.prank(vault.owner());
+        vault.unpause();
+
+        uint256 _totalAssets = vault.totalAssets();
+        vm.prank(vault.totalAssetsManager());
+        vault.updateTotalAssets(_totalAssets);
+
+        vm.prank(vault.owner());
+        vault.pause();
+
+        vm.prank(vault.safe());
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.settleRedeem();
     }
 }
