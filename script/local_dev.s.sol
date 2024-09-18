@@ -29,12 +29,11 @@ contract LocalDeploy is Script {
 
     IERC20 underlying = IERC20(USDC_MAINNET);
 
-    address valorization = SAFE;
     address[] whitelist = [USER0, USER1, USER2, USER3];
 
     address admin = DAO;
     address whitelistManager = DAO;
-    address valorizator = DAO;
+    address totalAssetsManager = DAO;
     uint256 _managementRate = 0;
     uint256 _performanceRate = 0;
     uint256 protocolFee = 0;
@@ -59,7 +58,7 @@ contract LocalDeploy is Script {
             symbol: VAULT_SYMBOL,
             safe: SAFE,
             whitelistManager: whitelistManager,
-            valorization: valorizator,
+            totalAssetsManager: totalAssetsManager,
             admin: admin,
             feeReceiver: FEE_RECEIVER,
             feeRegistry: address(feeRegistry),

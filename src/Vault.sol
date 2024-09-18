@@ -20,11 +20,6 @@ event UpdateTotalAssets(uint256 totalAssets);
 
 uint256 constant BPS_DIVIDER = 10_000;
 
-bytes32 constant ASSET_MANAGER_ROLE = keccak256("ASSET_MANAGER");
-bytes32 constant VALORIZATION_ROLE = keccak256("VALORIZATION_MANAGER");
-bytes32 constant HOPPER_ROLE = keccak256("HOPPER");
-bytes32 constant FEE_RECEIVER = keccak256("FEE_RECEIVER");
-
 error NotOpen();
 error NotClosing();
 error NotClosed();
@@ -46,7 +41,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         string symbol;
         address safe;
         address whitelistManager;
-        address valorization;
+        address totalAssetsManager;
         address admin;
         address feeReceiver;
         address feeRegistry;
@@ -95,7 +90,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
                 feeRegistry: init.feeRegistry,
-                valorizationManager: init.valorization
+                totalAssetsManager: init.totalAssetsManager
             })
         );
         __Ownable_init(init.admin); // initial vault owner
@@ -112,7 +107,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
             $whitelistStorage.isWhitelisted[protocolFeeReceiver()] = true;
             $whitelistStorage.isWhitelisted[init.safe] = true;
             $whitelistStorage.isWhitelisted[init.whitelistManager] = true;
-            $whitelistStorage.isWhitelisted[init.valorization] = true; // todo remove ??
             $whitelistStorage.isWhitelisted[init.admin] = true;
             $whitelistStorage.isWhitelisted[pendingSilo()] = true;
             for (uint256 i = 0; i < init.whitelist.length; i++) {
@@ -207,7 +201,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         return super.requestRedeem(shares, controller, owner);
     }
 
-    function updateTotalAssets(uint256 _newTotalAssets) public onlyValorizationManager {
+    function updateTotalAssets(uint256 _newTotalAssets) public onlyTotalAssetsManager {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
