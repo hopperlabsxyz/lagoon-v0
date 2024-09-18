@@ -43,6 +43,10 @@ contract TestPause is BaseTest {
         vm.prank(user1.addr);
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vault.requestDeposit(amount, user1.addr, user1.addr);
+
+        vm.prank(user1.addr);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.requestDeposit(amount, user1.addr, user1.addr, abi.encode(""));
         // assertTrue(vault.isOperator(user1.addr));
     }
 
@@ -83,7 +87,10 @@ contract TestPause is BaseTest {
         vm.prank(user1.addr);
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vault.requestRedeem(2, user1.addr, user1.addr);
-        // assertTrue(vault.isOperator(user1.addr));
+
+        vm.prank(user1.addr);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.requestRedeem(2, user1.addr, user1.addr, abi.encode(""));
     }
 
     function test_withdraw_whenPaused_shouldFail() public {
@@ -102,5 +109,11 @@ contract TestPause is BaseTest {
         vm.prank(user1.addr);
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vault.withdraw(10, user1.addr, user1.addr);
+    }
+
+    function test_updateTotalAssets_whenPaused_shouldFail() public {
+        // vm.prank(vault.t());
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.updateTotalAssets();
     }
 }

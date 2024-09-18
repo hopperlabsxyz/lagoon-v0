@@ -188,12 +188,12 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         return _requestRedeem(shares, controller, owner, data);
     }
 
-    // @notice Requests the redemption of tokens, subject to whitelist validation.
-    // @param shares The number of tokens to redeem.
-    // @param controller The address of the controller involved in the redemption request.
-    // @param owner The address of the token owner requesting redemption.
-    // @param data ABI-encoded Merkle proof (bytes32[]) used to validate the controller's whitelist status.
-    // @return The id of the redeem request.
+    /// @notice Requests the redemption of tokens, subject to whitelist validation.
+    /// @param shares The number of tokens to redeem.
+    /// @param controller The address of the controller involved in the redemption request.
+    /// @param owner The address of the token owner requesting redemption.
+    /// @param data ABI-encoded Merkle proof (bytes32[]) used to validate the controller's whitelist status.
+    /// @return The id of the redeem request.
     function _requestRedeem(uint256 shares, address controller, address owner, bytes memory data)
         internal
         onlyOpen
