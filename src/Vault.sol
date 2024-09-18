@@ -197,6 +197,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     function _requestRedeem(uint256 shares, address controller, address owner, bytes memory data)
         internal
         onlyOpen
+        whenNotPaused
         returns (uint256)
     {
         bytes32[] memory proof = abi.decode(data, (bytes32[]));
@@ -234,7 +235,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         _settleRedeem(); // if it is possible to settleRedeem, we should do so
     }
 
-    function _updateTotalAssets() internal {
+    function _updateTotalAssets() internal whenNotPaused {
         VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
@@ -257,11 +258,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         if (managerShares > 0) {
             _mint(feeReceiver(), managerShares);
-            if (
-                protocolShares > 0 // they can't be protocolShares without managerShares
-            ) {
-                _mint(protocolFeeReceiver(), protocolShares);
-            }
+            if (protocolShares > 0) // they can't be protocolShares without managerShares
+               _mint(protocolFeeReceiver(), protocolShares);
         }
 
         uint256 _pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
@@ -388,7 +386,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit StateUpdated(State.Closed);
     }
 
-    function withdraw(uint256 assets, address receiver, address controller) public override returns (uint256 shares) {
+    function withdraw(uint256 assets, address receiver, address controller) public override whenNotPaused
+     returns (uint256 shares) {
         VaultStorage storage $ = _getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
@@ -399,6 +398,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         }
     }
 
+    /// @dev _withdraw has the whenNotPaused modifier via _burn and _update. 
+    /// @dev _redeem has the whenNotPaused modifier.
     function redeem(uint256 shares, address receiver, address controller) public override returns (uint256 assets) {
         VaultStorage storage $ = _getVaultStorage();
 
@@ -430,5 +431,13 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
     function state() external view returns (State) {
         return _getVaultStorage().state;
+    }
+
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
     }
 }

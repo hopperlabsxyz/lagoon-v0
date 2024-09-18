@@ -148,7 +148,7 @@ abstract contract ERC7540Upgradeable is
     function setOperator(
         address operator,
         bool approved
-    ) external returns (bool success) {
+    ) external whenNotPaused returns (bool success) {
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
         $.isOperator[msgSender][operator] = approved;
@@ -227,7 +227,14 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address controller,
         address owner
-    ) public payable virtual onlyOperator(owner) returns (uint256 _depositId) {
+    )
+        public
+        payable
+        virtual
+        onlyOperator(owner)
+        whenNotPaused
+        returns (uint256 _depositId)
+    {
         uint256 claimable = claimableDepositRequest(0, controller);
         if (claimable > 0) _deposit(claimable, controller, controller);
 
@@ -308,6 +315,7 @@ abstract contract ERC7540Upgradeable is
         return _deposit(assets, receiver, _msgSender());
     }
 
+    /// @dev if paused will revert thanks to _update()
     function deposit(
         uint256 assets,
         address receiver,
@@ -369,12 +377,12 @@ abstract contract ERC7540Upgradeable is
         emit Deposit(controller, receiver, assets, shares);
     }
 
-    function cancelRequestDeposit() external {
+    function cancelRequestDeposit() external whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
         uint256 requestId = $.lastDepositRequestId[msgSender];
         if (requestId <= $.lastDepositNavIdSettle)
-            revert("can't cancel claimable request");
+            revert("can't cancel claimable request"); //todo revert error
         if (requestId != $.depositNavId) revert RequestNotCancelable();
 
         uint256 request = $.navs[requestId].depositRequest[msgSender];
@@ -385,9 +393,8 @@ abstract contract ERC7540Upgradeable is
     }
 
     // ## EIP7540 Redeem flow ##
-    /**
-     * @dev if paused will revert thanks to _update()
-     */
+
+    /// @dev if paused will revert thanks to _update()
     function requestRedeem(
         uint256 shares,
         address controller,
@@ -448,6 +455,7 @@ abstract contract ERC7540Upgradeable is
         return claimableRedeemRequest(0, controller);
     }
 
+    /// @dev if paused will revert thanks to _update()
     function redeem(
         uint256 shares,
         address receiver,
@@ -460,7 +468,7 @@ abstract contract ERC7540Upgradeable is
         uint256 shares,
         address receiver,
         address controller
-    ) internal onlyOperator(controller) returns (uint256 assets) {
+    ) internal onlyOperator(controller) whenNotPaused returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
@@ -481,6 +489,7 @@ abstract contract ERC7540Upgradeable is
         return _withdraw(assets, receiver, controller);
     }
 
+    // todo rmv this and use withdraw
     function _withdraw(
         uint256 assets,
         address receiver,
