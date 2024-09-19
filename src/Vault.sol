@@ -56,7 +56,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @custom:storage-location erc7201:hopper.storage.vault
     struct VaultStorage {
         uint256 newTotalAssets;
-        uint256 newTotalAssetsTimestamp;
         State state;
     }
 
@@ -96,7 +95,9 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         __Ownable_init(init.admin); // initial vault owner
 
         VaultStorage storage $ = _getVaultStorage();
-        $.newTotalAssetsTimestamp = type(uint256).max; // make sure that we update the nav for the first settle
+
+        $.newTotalAssets = type(uint256).max;
+
 
         $.state = State.Open;
         emit StateUpdated(State.Open);
@@ -220,7 +221,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         if (pendingShares != 0) $erc7540.redeemNavId += 2;
 
         $.newTotalAssets = _newTotalAssets;
-        $.newTotalAssetsTimestamp = block.timestamp;
 
         emit UpdateTotalAssets(_newTotalAssets);
     }
@@ -239,14 +239,12 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         uint256 newTotalAssets = $vault.newTotalAssets;
-        uint256 newTotalAssetsTimestamp = $vault.newTotalAssetsTimestamp;
 
-        if (newTotalAssetsTimestamp == type(uint256).max)
+        if (newTotalAssets == type(uint256).max)
           revert NavIsMissing();
 
         $erc7540.totalAssets = newTotalAssets;
-        $vault.newTotalAssetsTimestamp = type(uint256).max; // we do not allow to use 2 time the same newTotalAssets in a row
-
+        $vault.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
         emit TotalAssetsUpdated(newTotalAssets);
     }
 
@@ -287,10 +285,10 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         settleData.totalAssets = _totalAssets;
         settleData.totalSupply = totalSupply();
-
         _mint(address(this), shares);
 
         _totalAssets += pendingAssets;
+
         $erc7540.totalAssets = _totalAssets;
 
         $erc7540.depositSettleId = depositSettleId + 2;
