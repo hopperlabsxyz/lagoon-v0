@@ -145,6 +145,7 @@ abstract contract ERC7540Upgradeable is
         return $.isOperator[controller][operator];
     }
 
+    /// @dev should not be usable when contract is paused
     function setOperator(
         address operator,
         bool approved
@@ -223,6 +224,8 @@ abstract contract ERC7540Upgradeable is
     }
 
     // ## EIP7540 Deposit Flow ##
+
+    /// @dev should not be usable when contract is paused
     function requestDeposit(
         uint256 assets,
         address controller,
@@ -308,6 +311,7 @@ abstract contract ERC7540Upgradeable is
         return claimableDepositRequest(0, controller);
     }
 
+    /// @dev should not be usable when contract is paused
     function deposit(
         uint256 assets,
         address receiver
@@ -315,7 +319,7 @@ abstract contract ERC7540Upgradeable is
         return _deposit(assets, receiver, _msgSender());
     }
 
-    /// @dev if paused will revert thanks to _update()
+    /// @dev should not be usable when contract is paused
     function deposit(
         uint256 assets,
         address receiver,
@@ -343,6 +347,7 @@ abstract contract ERC7540Upgradeable is
         emit Deposit(controller, receiver, assets, shares);
     }
 
+    /// @dev should not be usable when contract is paused
     function mint(
         uint256 shares,
         address receiver
@@ -350,6 +355,7 @@ abstract contract ERC7540Upgradeable is
         return _mint(shares, receiver, _msgSender());
     }
 
+    /// @dev should not be usable when contract is paused
     function mint(
         uint256 shares,
         address receiver,
@@ -377,6 +383,7 @@ abstract contract ERC7540Upgradeable is
         emit Deposit(controller, receiver, assets, shares);
     }
 
+    /// @dev should not be usable when contract is paused
     function cancelRequestDeposit() external whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
@@ -394,7 +401,7 @@ abstract contract ERC7540Upgradeable is
 
     // ## EIP7540 Redeem flow ##
 
-    /// @dev if paused will revert thanks to _update()
+    /// @dev should not be usable when contract is paused
     function requestRedeem(
         uint256 shares,
         address controller,
@@ -455,7 +462,7 @@ abstract contract ERC7540Upgradeable is
         return claimableRedeemRequest(0, controller);
     }
 
-    /// @dev if paused will revert thanks to _update()
+    /// @dev should not be usable when contract is paused
     function redeem(
         uint256 shares,
         address receiver,
@@ -481,6 +488,7 @@ abstract contract ERC7540Upgradeable is
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
     }
 
+    /// @dev should not be usable when contract is paused
     function withdraw(
         uint256 assets,
         address receiver,
@@ -489,7 +497,6 @@ abstract contract ERC7540Upgradeable is
         return _withdraw(assets, receiver, controller);
     }
 
-    // todo rmv this and use withdraw
     function _withdraw(
         uint256 assets,
         address receiver,

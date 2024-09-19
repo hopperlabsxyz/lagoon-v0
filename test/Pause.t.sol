@@ -36,7 +36,6 @@ contract TestPause is BaseTest {
         vm.prank(user1.addr);
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vault.setOperator(user1.addr, true);
-        // assertTrue(vault.isOperator(user1.addr));
     }
 
     function test_requestDeposit_whenPaused_shouldFail() public {
@@ -47,14 +46,16 @@ contract TestPause is BaseTest {
         vm.prank(user1.addr);
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vault.requestDeposit(amount, user1.addr, user1.addr, abi.encode(""));
-        // assertTrue(vault.isOperator(user1.addr));
     }
 
     function test_deposit_whenPaused_shouldFail() public {
         vm.assertNotEq(vault.maxDeposit(user1.addr), 0);
+
         vm.startPrank(user1.addr);
+
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vault.deposit(1, user1.addr);
+
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vault.deposit(1, user1.addr, user1.addr);
     }
@@ -62,8 +63,10 @@ contract TestPause is BaseTest {
     function test_mint_whenPaused_shouldFail() public {
         vm.assertNotEq(vault.maxMint(user1.addr), 0);
         vm.startPrank(user1.addr);
+
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vault.mint(1, user1.addr);
+
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vault.mint(1, user1.addr, user1.addr);
     }
@@ -101,6 +104,7 @@ contract TestPause is BaseTest {
         vault.deposit(vault.maxDeposit(user1.addr), user1.addr);
         vault.requestRedeem(10, user1.addr, user1.addr);
         vm.stopPrank();
+
         updateAndSettle(vault.totalAssets());
 
         vm.prank(vault.owner());
@@ -118,16 +122,17 @@ contract TestPause is BaseTest {
         vm.startPrank(user1.addr);
         vault.deposit(vault.maxDeposit(user1.addr), user1.addr);
         vault.requestRedeem(10, user1.addr, user1.addr);
+
         vm.stopPrank();
         updateAndSettle(vault.totalAssets());
 
         updateTotalAssets(vault.totalAssets());
 
-        dealAmountAndApprove(vault.safe(), vault.totalAssets());
         vm.prank(vault.owner());
         vault.initiateClosing();
-        vm.prank(vault.safe());
 
+        dealAmountAndApprove(vault.safe(), vault.totalAssets());
+        vm.prank(vault.safe());
         vault.close();
 
         vm.prank(vault.owner());
@@ -140,6 +145,7 @@ contract TestPause is BaseTest {
 
     function test_updateTotalAssets_whenPaused_shouldFail() public {
         uint256 _totalAssets = vault.totalAssets();
+
         vm.prank(vault.totalAssetsManager());
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vault.updateTotalAssets(_totalAssets);
