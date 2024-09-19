@@ -26,6 +26,13 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     uint256 public constant MAX_PROTOCOL_RATE = 3_000; // 30 %
 
     /// @custom:storage-location erc7201:hopper.storage.FeeManager
+    /// @param newRatesTimestamp the timestamp at which the new rates will be applied
+    /// @param lastFeeTime the timestamp of the last fee calculation, it is used to compute management fees
+    /// @param highWaterMark the highest price per share ever reached, performance fees are taken when the price per share is above this value
+    /// @param cooldown the time to wait before applying new rates
+    /// @param rates the current fee rates
+    /// @param oldRates the previous fee rates, they are used during the cooldown period when new rates are set
+    /// @param feeRegistry the fee registry contract, it is used to read the protocol rate
     struct FeeManagerStorage {
         uint256 newRatesTimestamp;
         uint256 lastFeeTime;
@@ -80,6 +87,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         $.lastFeeTime = block.timestamp;
     }
 
+    /// @notice update the fee rates, the new rates will be applied after the cooldown period
+    /// @param newRates the new fee rates
     function updateRates(Rates memory newRates) external onlyOwner {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         if (block.timestamp < $.newRatesTimestamp) revert CooldownNotOver();
@@ -93,6 +102,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         $.rates = newRates;
     }
 
+    /// @notice the current fee rates
     function feeRates() public view returns (Rates memory) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
@@ -100,16 +110,22 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         return $.oldRates;
     }
 
+    /// @notice the time of the last fee calculation
     function lastFeeTime() public view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         return $.lastFeeTime;
     }
 
+    /// @notice value of the high water mark, the highest price per share ever reached
     function highWaterMark() public view returns (uint256) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         return $.highWaterMark;
     }
 
+    /// @dev Update the high water mark only if the new value is greater than the current one
+    /// @dev The high water mark is the highest price per share ever reached
+    /// @param _newHighWaterMark the new high water mark
+    /// @return the new high water mark
     function _setHighWaterMark(
         uint256 _newHighWaterMark
     ) internal returns (uint256) {
@@ -125,6 +141,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         return _highWaterMark;
     }
 
+    /// @dev Read the protocol rate from the fee registry
+    /// @dev if the value is above the MAX_PROTOCOL_RATE, return the MAX_PROTOCOL_RATE
     function _protocolRate() internal view returns (uint256 protocolRate) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
@@ -133,15 +151,22 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         return protocolRate;
     }
 
+    /// @dev Calculate the management fee
+    /// @param assets the total assets under management
+    /// @param annualRate the management rate, expressed in BPS and corresponding to the annual
+    /// @param timeElapsed the time elapsed since the last fee calculation in seconds
     function _calculateManagementFee(
         uint256 assets,
-        uint256 rate,
+        uint256 annualRate,
         uint256 timeElapsed
     ) internal pure returns (uint256 managementFee) {
-        uint256 annualFee = assets.mulDiv(rate, BPS);
+        uint256 annualFee = assets.mulDiv(annualRate, BPS);
         managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
     }
 
+    /// @dev Calculate the performance fee
+    /// @dev The performance is calculated as the difference between the current price per share and the high water mark
+    /// @dev The performance fee is calculated as the product of the performance and the performance rate
     function _calculatePerformanceFee(
         uint256 _rate,
         uint256 _totalSupply,
@@ -162,6 +187,10 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         }
     }
 
+    /// @dev Calculate and return the manager and protocol shares to be minted as fees
+    /// @dev total fees are the sum of the management and performance fees
+    /// @dev manager shares are the fees that go to the manager, it is the difference between the total fees and the protocol fees
+    /// @dev protocol shares are the fees that go to the protocol
     function _calculateFees()
         internal
         view
