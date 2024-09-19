@@ -63,7 +63,7 @@ abstract contract ERC7540Upgradeable is
         mapping(address user => uint256 navId) lastRedeemRequestId;
         mapping(address controller => mapping(address operator => bool)) isOperator;
         Silo pendingSilo;
-        IWETH9 wrappedTativeToken;
+        IWETH9 wrappedNativeToken;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
@@ -95,7 +95,7 @@ abstract contract ERC7540Upgradeable is
         $.redeemSettleId = 2;
 
         $.pendingSilo = new Silo(underlying);
-        $.wrappedTativeToken = IWETH9(wrappedNativeToken);
+        $.wrappedNativeToken = IWETH9(wrappedNativeToken);
     }
 
     modifier onlyOperator(address controller) {
@@ -254,10 +254,10 @@ abstract contract ERC7540Upgradeable is
         // Shoudn't we move native token wrapping outside the ERC7540?
         if (msg.value != 0) {
             // if user sends eth and the underlying is wETH we will wrap it for him
-            if (asset() == address($.wrappedTativeToken)) {
+            if (asset() == address($.wrappedNativeToken)) {
                 //todo remove this security
-                IWETH9($.wrappedTativeToken).deposit{value: msg.value}();
-                IWETH9($.wrappedTativeToken).transfer(
+                IWETH9($.wrappedNativeToken).deposit{value: msg.value}();
+                IWETH9($.wrappedNativeToken).transfer(
                     address($.pendingSilo),
                     msg.value
                 );
