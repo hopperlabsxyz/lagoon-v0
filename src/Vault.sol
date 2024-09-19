@@ -56,7 +56,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @custom:storage-location erc7201:hopper.storage.vault
     struct VaultStorage {
         uint256 newTotalAssets;
-        // uint256 newTotalAssetsTimestamp;
         State state;
     }
 
