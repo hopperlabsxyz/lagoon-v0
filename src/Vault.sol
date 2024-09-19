@@ -129,6 +129,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         _;
     }
 
+    /// @dev should not be usable when contract is paused
     function requestDeposit(uint256 assets, address controller, address owner)
         public
         payable
@@ -138,6 +139,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         return _requestDeposit(assets, controller, owner, abi.encode(""));
     }
 
+    /// @dev should not be usable when contract is paused
     function requestDeposit(uint256 assets, address controller, address owner, bytes calldata data)
         public
         payable
@@ -167,6 +169,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         return requestId;
     }
 
+    /// @dev should not be usable when contract is paused
     function requestRedeem(uint256 shares, address controller, address owner)
         public
         override(ERC7540Upgradeable)
@@ -182,15 +185,16 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         return _requestRedeem(shares, controller, owner, data);
     }
 
-    // @notice Requests the redemption of tokens, subject to whitelist validation.
-    // @param shares The number of tokens to redeem.
-    // @param controller The address of the controller involved in the redemption request.
-    // @param owner The address of the token owner requesting redemption.
-    // @param data ABI-encoded Merkle proof (bytes32[]) used to validate the controller's whitelist status.
-    // @return The id of the redeem request.
+    /// @notice Requests the redemption of tokens, subject to whitelist validation.
+    /// @param shares The number of tokens to redeem.
+    /// @param controller The address of the controller involved in the redemption request.
+    /// @param owner The address of the token owner requesting redemption.
+    /// @param data ABI-encoded Merkle proof (bytes32[]) used to validate the controller's whitelist status.
+    /// @return The id of the redeem request.
     function _requestRedeem(uint256 shares, address controller, address owner, bytes memory data)
         internal
         onlyOpen
+        whenNotPaused
         returns (uint256)
     {
         bytes32[] memory proof = abi.decode(data, (bytes32[]));
@@ -200,7 +204,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         return super.requestRedeem(shares, controller, owner);
     }
 
-    function updateTotalAssets(uint256 _newTotalAssets) public onlyTotalAssetsManager {
+    /// @dev should not be usable when contract is paused
+    function updateTotalAssets(uint256 _newTotalAssets) public onlyTotalAssetsManager whenNotPaused {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
@@ -220,7 +225,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit UpdateTotalAssets(_newTotalAssets);
     }
 
-    // It should not be possible to call settleDeposit without at least one new nav
+    /// It should not be possible to call settleDeposit without at least one new nav
+    /// @dev should not be usable when contract is paused
     function settleDeposit() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees();
@@ -228,7 +234,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         _settleRedeem(); // if it is possible to settleRedeem, we should do so
     }
 
-    function _updateTotalAssets() internal {
+    function _updateTotalAssets() internal whenNotPaused {
         VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
@@ -251,11 +257,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         if (managerShares > 0) {
             _mint(feeReceiver(), managerShares);
-            if (
-                protocolShares > 0 // they can't be protocolShares without managerShares
-            ) {
-                _mint(protocolFeeReceiver(), protocolShares);
-            }
+            if (protocolShares > 0) // they can't be protocolShares without managerShares
+               _mint(protocolFeeReceiver(), protocolShares);
         }
 
         uint256 _pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
@@ -300,6 +303,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     // It should not be possible to call settleRedeem without at least one new nav
+    /// @dev should not be usable when contract is paused
     function settleRedeem() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees();
@@ -382,7 +386,9 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit StateUpdated(State.Closed);
     }
 
-    function withdraw(uint256 assets, address receiver, address controller) public override returns (uint256 shares) {
+    /// @dev should not be usable when contract is paused
+    function withdraw(uint256 assets, address receiver, address controller) public override whenNotPaused
+     returns (uint256 shares) {
         VaultStorage storage $ = _getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
@@ -393,6 +399,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         }
     }
 
+    /// @dev should not be usable when contract is paused
     function redeem(uint256 shares, address receiver, address controller) public override returns (uint256 assets) {
         VaultStorage storage $ = _getVaultStorage();
 
@@ -404,7 +411,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         }
     }
 
-    // @dev override ERC4626 synchronous withdraw; called when vault is closed
+    /// @dev override ERC4626 synchronous withdraw; called when vault is closed
     function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
         internal
         virtual
@@ -424,5 +431,16 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
     function state() external view returns (State) {
         return _getVaultStorage().state;
+    }
+
+    /// @notice Halts core operations of the vault. Can only be called by the owner.
+    /// @notice Core operations include deposit, redeem, withdraw, any type of request, settles deposit and redeem and totalAssets update.
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    /// @notice Resumes core operations of the vault. Can only be called by the owner.
+    function unpause() public onlyOwner {
+        _unpause();
     }
 }

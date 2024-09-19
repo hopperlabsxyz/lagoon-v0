@@ -1,0 +1,185 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.26;
+
+import "forge-std/Test.sol";
+import {Vault} from "@src/Vault.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+
+import {BaseTest} from "./Base.sol";
+
+contract TestPause is BaseTest {
+    uint256 amount = 200 * 10 ** underlying.decimals();
+
+    function setUp() public {
+        setUpVault(0, 0, 0);
+
+        dealAmountAndApproveAndWhitelist(user1.addr, amount);
+        requestDeposit(amount / 2, user1.addr);
+        updateAndSettle(0);
+        vm.prank(vault.owner());
+        vault.pause();
+    }
+
+    function test_pauseShouldPause() public view {
+        assertTrue(vault.paused());
+    }
+
+    function test_unpauseShouldUnpause() public {
+        vm.prank(vault.owner());
+
+        vault.unpause();
+        assertFalse(vault.paused());
+    }
+
+    function test_setOperator_whenPaused_shouldFail() public {
+        vm.prank(user1.addr);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.setOperator(user1.addr, true);
+    }
+
+    function test_requestDeposit_whenPaused_shouldFail() public {
+        vm.prank(user1.addr);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.requestDeposit(amount, user1.addr, user1.addr);
+
+        vm.prank(user1.addr);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.requestDeposit(amount, user1.addr, user1.addr, abi.encode(""));
+    }
+
+    function test_deposit_whenPaused_shouldFail() public {
+        vm.assertNotEq(vault.maxDeposit(user1.addr), 0);
+
+        vm.startPrank(user1.addr);
+
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.deposit(1, user1.addr);
+
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.deposit(1, user1.addr, user1.addr);
+    }
+
+    function test_mint_whenPaused_shouldFail() public {
+        vm.assertNotEq(vault.maxMint(user1.addr), 0);
+        vm.startPrank(user1.addr);
+
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.mint(1, user1.addr);
+
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.mint(1, user1.addr, user1.addr);
+    }
+
+    function test_cancelRequestDeposit_whenPaused_shouldFail() public {
+        vm.prank(vault.owner());
+        vault.unpause();
+
+        vm.prank(user1.addr);
+        vault.requestDeposit(10, user1.addr, user1.addr);
+
+        vm.prank(vault.owner());
+        vault.pause();
+
+        vm.prank(user1.addr);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.cancelRequestDeposit();
+    }
+
+    function test_requestRedeem_whenPaused_shouldFail() public {
+        vm.prank(user1.addr);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.requestRedeem(2, user1.addr, user1.addr);
+
+        vm.prank(user1.addr);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.requestRedeem(2, user1.addr, user1.addr, abi.encode(""));
+    }
+
+    function test_withdraw_whenPaused_shouldFail() public {
+        vm.prank(vault.owner());
+        vault.unpause();
+
+        vm.startPrank(user1.addr);
+        vault.deposit(vault.maxDeposit(user1.addr), user1.addr);
+        vault.requestRedeem(10, user1.addr, user1.addr);
+        vm.stopPrank();
+
+        updateAndSettle(vault.totalAssets());
+
+        vm.prank(vault.owner());
+        vault.pause();
+
+        vm.prank(user1.addr);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.withdraw(10, user1.addr, user1.addr);
+    }
+
+    function test_withdraw_whenPausedAndVaultClosed_shouldFail() public {
+        vm.prank(vault.owner());
+        vault.unpause();
+
+        vm.startPrank(user1.addr);
+        vault.deposit(vault.maxDeposit(user1.addr), user1.addr);
+        vault.requestRedeem(10, user1.addr, user1.addr);
+
+        vm.stopPrank();
+        updateAndSettle(vault.totalAssets());
+
+        updateTotalAssets(vault.totalAssets());
+
+        vm.prank(vault.owner());
+        vault.initiateClosing();
+
+        dealAmountAndApprove(vault.safe(), vault.totalAssets());
+        vm.prank(vault.safe());
+        vault.close();
+
+        vm.prank(vault.owner());
+        vault.pause();
+
+        vm.prank(user1.addr);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.withdraw(10, user1.addr, user1.addr);
+    }
+
+    function test_updateTotalAssets_whenPaused_shouldFail() public {
+        uint256 _totalAssets = vault.totalAssets();
+
+        vm.prank(vault.totalAssetsManager());
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.updateTotalAssets(_totalAssets);
+    }
+
+    function test_settleDeposit_whenPaused_shouldFail() public {
+        vm.prank(vault.owner());
+        vault.unpause();
+
+        uint256 _totalAssets = vault.totalAssets();
+        vm.prank(vault.totalAssetsManager());
+        vault.updateTotalAssets(_totalAssets);
+
+        vm.prank(vault.owner());
+        vault.pause();
+
+        vm.prank(vault.safe());
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.settleDeposit();
+    }
+
+    function test_settleRedeem_whenPaused_shouldFail() public {
+        vm.prank(vault.owner());
+        vault.unpause();
+
+        uint256 _totalAssets = vault.totalAssets();
+        vm.prank(vault.totalAssetsManager());
+        vault.updateTotalAssets(_totalAssets);
+
+        vm.prank(vault.owner());
+        vault.pause();
+
+        vm.prank(vault.safe());
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.settleRedeem();
+    }
+}
