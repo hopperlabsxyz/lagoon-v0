@@ -73,9 +73,9 @@ contract TestRequestDeposit is BaseTest {
             "wrong internal lastDepositRequestId"
         );
         assertEq(
-            vault.lastDepositNavIdSettle_debug(),
+            vault.lastDepositTotalAssetsIdSettled_debug(),
             requestId_1,
-            "wrong internal lastDepositNavIdSettle"
+            "wrong internal lastDepositTotalAssetsIdSettle"
         );
 
         assertEq(
@@ -111,14 +111,14 @@ contract TestRequestDeposit is BaseTest {
         );
     }
 
-    // @dev Once one of the request of the user has been taken into a NAV
+    // @dev Once one of the request of the user has been taken into a TotalAssets
     //      he has to wait for settlement before being able to request again
     function test_only_one_request_allowed_per_settle_id() public {
         uint256 userBalance = assetBalance(user1.addr);
 
         requestDeposit(userBalance / 2, user1.addr);
 
-        updateTotalAssets(0);
+        updateNewTotalAssets(0);
 
         vm.prank(user1.addr);
         vm.expectRevert(OnlyOneRequestAllowed.selector);
@@ -224,7 +224,7 @@ contract TestRequestDeposit is BaseTest {
         vm.prank(user1.addr);
         vault.requestDeposit(42, user1.addr, user1.addr);
 
-        updateTotalAssets(0);
+        updateNewTotalAssets(0);
 
         vm.prank(user1.addr);
         vm.expectRevert(OnlyOneRequestAllowed.selector);

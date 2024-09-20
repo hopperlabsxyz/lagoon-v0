@@ -192,7 +192,7 @@ contract testRateUpdates is BaseTest {
             0,
             "fee receiver should have 0 shares, first settle"
         );
-        updateTotalAssets(2000);
+        updateNewTotalAssets(2000);
         vm.warp(block.timestamp + 1 days);
         // owner updates rates
         Rates memory newRates = Rates({
