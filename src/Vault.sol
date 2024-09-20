@@ -210,8 +210,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
-        $erc7540.totalAssetsIds[$erc7540.depositTotalAssetsId].settleId = $erc7540.depositSettleId;
-        $erc7540.totalAssetsIds[$erc7540.redeemTotalAssetsId].settleId = $erc7540.redeemSettleId;
+        $erc7540.epochDatas[$erc7540.depositTotalAssetsId].settleId = $erc7540.depositSettleId;
+        $erc7540.epochDatas[$erc7540.redeemTotalAssetsId].settleId = $erc7540.redeemSettleId;
 
         address _pendingSilo = pendingSilo();
         uint256 pendingAssets = IERC20(asset()).balanceOf(_pendingSilo);

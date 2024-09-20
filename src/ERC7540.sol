@@ -31,7 +31,7 @@ error RequestIdNotClaimable();
 
 error CantDepositNativeToken();
 
-struct NavData {
+struct EpochData {
     uint256 settleId;
     mapping(address => uint256) depositRequest;
     mapping(address => uint256) redeemRequest;
@@ -57,7 +57,7 @@ abstract contract ERC7540Upgradeable is
         uint256 redeemSettleId;
         uint256 lastRedeemTotalAssetsIdSettled;
         uint256 lastDepositTotalAssetsIdSettled;
-        mapping(uint256 totalAssetsId => NavData) totalAssetsIds;
+        mapping(uint256 totalAssetsId => EpochData) epochDatas;
         mapping(uint256 settleId => SettleData) settles;
         mapping(address user => uint256 totalAssetsId) lastDepositRequestId;
         mapping(address user => uint256 totalAssetsId) lastRedeemRequestId;
@@ -249,7 +249,7 @@ abstract contract ERC7540Upgradeable is
                 revert OnlyOneRequestAllowed();
             $.lastDepositRequestId[controller] = _depositId;
         }
-        $.totalAssetsIds[_depositId].depositRequest[controller] += assets;
+        $.epochDatas[_depositId].depositRequest[controller] += assets;
 
         // Shoudn't we move native token wrapping outside the ERC7540?
         if (msg.value != 0) {
@@ -289,7 +289,7 @@ abstract contract ERC7540Upgradeable is
 
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
         if (requestId > $.lastDepositTotalAssetsIdSettled)
-            return $.totalAssetsIds[requestId].depositRequest[controller];
+            return $.epochDatas[requestId].depositRequest[controller];
     }
 
     // todo: Pass this function as external
@@ -301,7 +301,7 @@ abstract contract ERC7540Upgradeable is
 
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
         if (requestId <= $.lastDepositTotalAssetsIdSettled)
-            return $.totalAssetsIds[requestId].depositRequest[controller];
+            return $.epochDatas[requestId].depositRequest[controller];
     }
 
     // todo: replace with the implementation of claimableDepositRequest
@@ -339,7 +339,7 @@ abstract contract ERC7540Upgradeable is
         if (requestId > $.lastDepositTotalAssetsIdSettled)
             revert RequestIdNotClaimable();
 
-        $.totalAssetsIds[requestId].depositRequest[controller] -= assets;
+        $.epochDatas[requestId].depositRequest[controller] -= assets;
         shares = convertToShares(assets, requestId);
 
         _update(address(this), receiver, shares);
@@ -377,7 +377,7 @@ abstract contract ERC7540Upgradeable is
 
         assets = convertToAssets(shares, requestId);
 
-        $.totalAssetsIds[requestId].depositRequest[controller] -= assets;
+        $.epochDatas[requestId].depositRequest[controller] -= assets;
         _update(address(this), receiver, shares);
 
         emit Deposit(controller, receiver, assets, shares);
@@ -392,9 +392,9 @@ abstract contract ERC7540Upgradeable is
             revert("can't cancel claimable request"); //todo revert error
         if (requestId != $.depositTotalAssetsId) revert RequestNotCancelable();
 
-        uint256 request = $.totalAssetsIds[requestId].depositRequest[msgSender];
+        uint256 request = $.epochDatas[requestId].depositRequest[msgSender];
         if (request != 0) {
-            $.totalAssetsIds[requestId].depositRequest[msgSender] = 0;
+            $.epochDatas[requestId].depositRequest[msgSender] = 0;
             IERC20(asset()).safeTransferFrom(pendingSilo(), msgSender, request);
         }
     }
@@ -422,7 +422,7 @@ abstract contract ERC7540Upgradeable is
                 revert OnlyOneRequestAllowed();
             $.lastRedeemRequestId[controller] = _redeemId;
         }
-        $.totalAssetsIds[_redeemId].redeemRequest[controller] += shares;
+        $.epochDatas[_redeemId].redeemRequest[controller] += shares;
 
         _update(owner, address($.pendingSilo), shares);
 
@@ -439,7 +439,7 @@ abstract contract ERC7540Upgradeable is
             requestId = $.lastRedeemRequestId[controller];
         }
         if (requestId > $.lastRedeemTotalAssetsIdSettled) {
-            return $.totalAssetsIds[requestId].redeemRequest[controller];
+            return $.epochDatas[requestId].redeemRequest[controller];
         }
     }
 
@@ -452,7 +452,7 @@ abstract contract ERC7540Upgradeable is
         if (requestId == 0) requestId = $.lastRedeemRequestId[controller];
 
         if (requestId <= $.lastRedeemTotalAssetsIdSettled) {
-            return $.totalAssetsIds[requestId].redeemRequest[controller];
+            return $.epochDatas[requestId].redeemRequest[controller];
         }
     }
 
@@ -482,7 +482,7 @@ abstract contract ERC7540Upgradeable is
         if (requestId > $.lastRedeemTotalAssetsIdSettled)
             revert RequestIdNotClaimable();
 
-        $.totalAssetsIds[requestId].redeemRequest[controller] -= shares;
+        $.epochDatas[requestId].redeemRequest[controller] -= shares;
         assets = convertToAssets(shares, requestId);
         IERC20(asset()).safeTransfer(receiver, assets);
 
@@ -510,7 +510,7 @@ abstract contract ERC7540Upgradeable is
             revert RequestIdNotClaimable();
 
         shares = convertToShares(assets, requestId);
-        $.totalAssetsIds[requestId].redeemRequest[controller] -= shares;
+        $.epochDatas[requestId].redeemRequest[controller] -= shares;
         IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
@@ -532,11 +532,11 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 _totalAssets = $
-            .settles[$.totalAssetsIds[requestId].settleId]
+            .settles[$.epochDatas[requestId].settleId]
             .totalAssets + 1;
 
         uint256 _totalSupply = $
-            .settles[$.totalAssetsIds[requestId].settleId]
+            .settles[$.epochDatas[requestId].settleId]
             .totalSupply + 10 ** _decimalsOffset();
 
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
@@ -557,11 +557,11 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 _totalAssets = $
-            .settles[$.totalAssetsIds[requestId].settleId]
+            .settles[$.epochDatas[requestId].settleId]
             .totalAssets + 1;
 
         uint256 _totalSupply = $
-            .settles[$.totalAssetsIds[requestId].settleId]
+            .settles[$.epochDatas[requestId].settleId]
             .totalSupply + 10 ** _decimalsOffset();
 
         return shares.mulDiv(_totalAssets, _totalSupply, rounding);
