@@ -149,7 +149,7 @@ contract TestFeeManager is BaseTest {
         uint256 user2Profit = (user2AssetAfter - user2AssetBefore) -
             user2InitialDeposit;
 
-        // Valo at nav update
+        // Valo at totalAssets update
         // 0.5$       => pps = 0.5
         // 1.0$       => pps = 1.0 (we start taking fees)
         // 2.0$       => pps = 2.0 (fees = (2$ - 1$) * 0.2 = 0.2$ && profit = 0.8$)
@@ -164,7 +164,7 @@ contract TestFeeManager is BaseTest {
             "user1 expected profit is wrong"
         );
 
-        // Valo at nav update
+        // Valo at totalAssets update
         // 1M$       => pps = 0.5
         // 2M$       => pps = 1.0 (we start taking fees, user2 benefits a freeride between 0.5 and 1.0 pps)
         // 4M$       => pps = 2.0 (fees = (4$ - 2$) * 0.2 = 0.2M$ && profit = 2.6$)
@@ -299,7 +299,7 @@ contract TestFeeManager is BaseTest {
         uint256 user2Profit = (user2AssetAfter - user2AssetBefore) -
             user2InitialDeposit;
 
-        // Valo at nav update
+        // Valo at totalAssets update
         // 0.5$       => pps = 0.5
         // 1.0$       => pps = 1.0 (no fees taken since we are back to the intial price per share)
         uint256 expectedUser1Profit = 0;
@@ -311,7 +311,7 @@ contract TestFeeManager is BaseTest {
             "user1 expected profit is wrong"
         );
 
-        // Valo at nav update
+        // Valo at totalAssets update
         // 1M$       => pps = 0.5
         // 2M$       => pps = 1.0 (user2 makes 1M profit without paying any fees)
         uint256 freeride = user2InitialDeposit;

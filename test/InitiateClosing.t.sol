@@ -64,7 +64,7 @@ contract TestInitiateClosing is BaseTest {
         // user2:
         //    - 25k assets claimable
         //    - 25k shares holding
-        updateTotalAssets(vault.totalAssets());
+        updateNewTotalAssets(vault.totalAssets());
 
         vm.warp(block.timestamp + 1 days);
     }
@@ -240,7 +240,7 @@ contract TestInitiateClosing is BaseTest {
             "wrong shares balance"
         );
         // user 2 here has 50_000 underlying, 25_000 claimableRedeem and 25_000 shares
-        updateTotalAssets(vault.totalAssets());
+        updateNewTotalAssets(vault.totalAssets());
         vm.warp(block.timestamp + 1 days);
         vm.prank(safe.addr);
         vault.close();
@@ -322,7 +322,7 @@ contract TestInitiateClosing is BaseTest {
             "wrong shares balance"
         );
         // user 2 here has 50_000 underlying, 25_000 claimableRedeem and 25_000 shares
-        updateTotalAssets(vault.totalAssets() * multi);
+        updateNewTotalAssets(vault.totalAssets() * multi);
         vm.warp(block.timestamp + 1 days);
         deal(vault.asset(), safe.addr, vault.totalAssets() * multi);
         vm.prank(safe.addr);

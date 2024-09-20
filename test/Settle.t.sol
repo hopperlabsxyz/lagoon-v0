@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import {Vault, NavIsMissing} from "@src/Vault.sol";
+import {Vault, NewTotalAssetsMissing} from "@src/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseTest} from "./Base.sol";
 import {OnlyTotalAssetsManager, OnlySafe} from "@src/Roles.sol";
@@ -85,26 +85,26 @@ contract TestSettle is BaseTest {
     }
 
     function test_settleDepositAfterUpdate() public {
-        updateTotalAssets(1);
+        updateNewTotalAssets(1);
 
         vm.prank(vault.safe());
         vault.settleDeposit();
     }
 
     function test_settleRedeemAfterUpdate() public {
-        updateTotalAssets(1);
+        updateNewTotalAssets(1);
 
         vm.prank(vault.safe());
         vault.settleRedeem();
     }
 
     function test_settleDepositThenRedeemAfterUpdate() public {
-        updateTotalAssets(1);
+        updateNewTotalAssets(1);
 
         vm.prank(vault.safe());
         vault.settleDeposit();
 
-        updateTotalAssets(1);
+        updateNewTotalAssets(1);
 
         vm.prank(vault.safe());
         vault.settleRedeem();
@@ -120,31 +120,31 @@ contract TestSettle is BaseTest {
         requestDeposit(user1Assets / 2, user1.addr);
 
         vm.prank(vault.safe());
-        vm.expectRevert(NavIsMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleDeposit();
 
-        updateTotalAssets(0);
+        updateNewTotalAssets(0);
         vm.warp(block.timestamp + 1 days);
         vm.prank(vault.safe());
         vault.settleDeposit();
 
         vm.prank(vault.safe());
-        vm.expectRevert(NavIsMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleDeposit();
 
         uint256 expectedDepositId = vault.depositId();
 
-        updateTotalAssets(0);
+        updateNewTotalAssets(0);
         vm.warp(block.timestamp + 1 days);
         assertEq(vault.depositId(), expectedDepositId, "wrong depositId 1");
 
-        updateTotalAssets(0);
+        updateNewTotalAssets(0);
         vm.warp(block.timestamp + 1 days);
         assertEq(vault.depositId(), expectedDepositId, "wrong depositId 2");
 
         uint256 userRequestId = requestDeposit(user1Assets / 2, user1.addr);
 
-        updateTotalAssets(0);
+        updateNewTotalAssets(0);
         vm.warp(block.timestamp + 1 days);
 
         assertEq(userRequestId, expectedDepositId, "wrong userRequestId");
@@ -154,7 +154,7 @@ contract TestSettle is BaseTest {
         vault.settleDeposit();
 
         vm.prank(vault.safe());
-        vm.expectRevert(NavIsMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleDeposit();
     }
 
@@ -175,36 +175,36 @@ contract TestSettle is BaseTest {
         requestRedeem(user1Shares / 2, user1.addr);
 
         vm.prank(vault.safe());
-        vm.expectRevert(NavIsMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleRedeem();
 
-        updateTotalAssets(user1Assets / 2);
+        updateNewTotalAssets(user1Assets / 2);
 
         vm.warp(block.timestamp + 1 days);
         vm.prank(vault.safe());
         vault.settleRedeem();
 
         vm.prank(vault.safe());
-        vm.expectRevert(NavIsMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleRedeem();
 
         vm.prank(vault.safe());
-        vm.expectRevert(NavIsMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleDeposit();
 
         uint256 expectedRedeemId = vault.redeemId();
 
-        updateTotalAssets(0);
+        updateNewTotalAssets(0);
         vm.warp(block.timestamp + 1 days);
         assertEq(vault.redeemId(), expectedRedeemId, "wrong redeemId 1");
 
-        updateTotalAssets(0);
+        updateNewTotalAssets(0);
         vm.warp(block.timestamp + 1 days);
         assertEq(vault.redeemId(), expectedRedeemId, "wrong redeemId 2");
 
         uint256 userRequestId = requestRedeem(user1Shares / 2, user1.addr);
 
-        updateTotalAssets(0);
+        updateNewTotalAssets(0);
         vm.warp(block.timestamp + 1 days);
 
         assertEq(userRequestId, expectedRedeemId, "wrong userRequestId");
@@ -214,13 +214,13 @@ contract TestSettle is BaseTest {
         vault.settleRedeem();
 
         vm.prank(vault.safe());
-        vm.expectRevert(NavIsMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleRedeem();
     }
 
-    function test_updateTotalAssets_revertIfNotTotalAssetsManager() public {
+    function test_updateNewTotalAssets_revertIfNotTotalAssetsManager() public {
         vm.expectRevert(OnlyTotalAssetsManager.selector);
-        vault.updateTotalAssets(0);
+        vault.updateNewTotalAssets(0);
     }
 
     function test_settleDeposit_revertIfNotTotalAssetsManager() public {
@@ -239,7 +239,7 @@ contract TestSettle is BaseTest {
     }
 
     // function test_settleAfterUpdate_TooLate() public {
-    //     updateTotalAssets(1);
+    //     updateNewTotalAssets(1);
     //     vm.warp(block.timestamp + 3 days);
     //     vm.startPrank(vault.valorizationRole());
     //     vm.expectRevert();
