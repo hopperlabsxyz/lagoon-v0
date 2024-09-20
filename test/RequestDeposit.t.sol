@@ -2,10 +2,10 @@
 pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import {Vault} from "@src/Vault.sol";
+import {Vault} from "@src/vault/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseTest} from "./Base.sol";
-import {CantDepositNativeToken, OnlyOneRequestAllowed, ERC7540InvalidOperator} from "@src/ERC7540.sol";
+import {CantDepositNativeToken, OnlyOneRequestAllowed, ERC7540InvalidOperator} from "@src/vault/ERC7540.sol";
 
 contract TestRequestDeposit is BaseTest {
     function setUp() public {

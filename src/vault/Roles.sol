@@ -2,7 +2,7 @@
 pragma solidity "0.8.26";
 
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import {FeeRegistry} from "./FeeRegistry.sol";
+import {FeeRegistry} from "../protocol/FeeRegistry.sol";
 
 error OnlySafe();
 error OnlyWhitelistManager();

@@ -2,14 +2,14 @@
 pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import {Vault} from "@src/Vault.sol";
+import {Vault} from "@src/vault/Vault.sol";
 import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
-import {FeeManager, AboveMaxRate} from "@src/FeeManager.sol";
-import {Rates} from "@src/FeeManager.sol";
+import {FeeManager, AboveMaxRate} from "@src/vault/FeeManager.sol";
+import {Rates} from "@src/vault/FeeManager.sol";
 import {VaultHelper} from "./VaultHelper.sol";
-import {FeeRegistry} from "@src/FeeRegistry.sol";
+import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 
 contract testRateUpdates is BaseTest {
     uint256 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
