@@ -10,6 +10,7 @@ error OnlyTotalAssetsManager();
 
 /// @title RolesUpgradeable
 /// @dev This contract is used to define the various roles needed for a vault to operate.
+/// @dev It also defines the modifiers used to check functions' caller.
 contract RolesUpgradeable is Ownable2StepUpgradeable {
     /// @notice Stores the various roles responsible of managing the vault.
     /// @param whitelistManager The address responsible of managing the whitelist.
