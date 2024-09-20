@@ -55,8 +55,8 @@ abstract contract ERC7540Upgradeable is
         uint256 redeemTotalAssetsId;
         uint256 depositSettleId;
         uint256 redeemSettleId;
-        uint256 lastRedeemTotalAssetsIdSettle;
-        uint256 lastDepositTotalAssetsIdSettle;
+        uint256 lastRedeemTotalAssetsIdSettled;
+        uint256 lastDepositTotalAssetsIdSettled;
         mapping(uint256 totalAssetsId => NavData) totalAssetsIds;
         mapping(uint256 settleId => SettleData) settles;
         mapping(address user => uint256 totalAssetsId) lastDepositRequestId;
@@ -288,7 +288,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
-        if (requestId > $.lastDepositTotalAssetsIdSettle)
+        if (requestId > $.lastDepositTotalAssetsIdSettled)
             return $.totalAssetsIds[requestId].depositRequest[controller];
     }
 
@@ -300,7 +300,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
-        if (requestId <= $.lastDepositTotalAssetsIdSettle)
+        if (requestId <= $.lastDepositTotalAssetsIdSettled)
             return $.totalAssetsIds[requestId].depositRequest[controller];
     }
 
@@ -336,7 +336,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
-        if (requestId > $.lastDepositTotalAssetsIdSettle)
+        if (requestId > $.lastDepositTotalAssetsIdSettled)
             revert RequestIdNotClaimable();
 
         $.totalAssetsIds[requestId].depositRequest[controller] -= assets;
@@ -372,7 +372,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
-        if (requestId > $.lastDepositTotalAssetsIdSettle)
+        if (requestId > $.lastDepositTotalAssetsIdSettled)
             revert RequestIdNotClaimable();
 
         assets = convertToAssets(shares, requestId);
@@ -388,7 +388,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
         uint256 requestId = $.lastDepositRequestId[msgSender];
-        if (requestId <= $.lastDepositTotalAssetsIdSettle)
+        if (requestId <= $.lastDepositTotalAssetsIdSettled)
             revert("can't cancel claimable request"); //todo revert error
         if (requestId != $.depositTotalAssetsId) revert RequestNotCancelable();
 
@@ -438,7 +438,7 @@ abstract contract ERC7540Upgradeable is
         if (requestId == 0) {
             requestId = $.lastRedeemRequestId[controller];
         }
-        if (requestId > $.lastRedeemTotalAssetsIdSettle) {
+        if (requestId > $.lastRedeemTotalAssetsIdSettled) {
             return $.totalAssetsIds[requestId].redeemRequest[controller];
         }
     }
@@ -451,7 +451,7 @@ abstract contract ERC7540Upgradeable is
 
         if (requestId == 0) requestId = $.lastRedeemRequestId[controller];
 
-        if (requestId <= $.lastRedeemTotalAssetsIdSettle) {
+        if (requestId <= $.lastRedeemTotalAssetsIdSettled) {
             return $.totalAssetsIds[requestId].redeemRequest[controller];
         }
     }
@@ -479,7 +479,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
-        if (requestId > $.lastRedeemTotalAssetsIdSettle)
+        if (requestId > $.lastRedeemTotalAssetsIdSettled)
             revert RequestIdNotClaimable();
 
         $.totalAssetsIds[requestId].redeemRequest[controller] -= shares;
@@ -506,7 +506,7 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
-        if (requestId > $.lastRedeemTotalAssetsIdSettle)
+        if (requestId > $.lastRedeemTotalAssetsIdSettled)
             revert RequestIdNotClaimable();
 
         shares = convertToShares(assets, requestId);

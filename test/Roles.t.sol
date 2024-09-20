@@ -51,14 +51,14 @@ contract TestMint is BaseTest {
         assertEq(vault.feeReceiver(), address(0x42));
     }
 
-    function test_updateTotalAssetsManager() public {
+    function test_updateNewTotalAssetsManager() public {
         vm.prank(vault.owner());
         vault.updateTotalAssetsManager(address(0x42));
 
         assertEq(vault.totalAssetsManager(), address(0x42));
     }
 
-    function test_updateTotalAssetsManager_notOwner() public {
+    function test_updateNewTotalAssetsManager_notOwner() public {
         vm.expectRevert(
             abi.encodeWithSelector(
                 OwnableUpgradeable.OwnableUnauthorizedAccount.selector,

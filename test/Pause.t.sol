@@ -126,7 +126,7 @@ contract TestPause is BaseTest {
         vm.stopPrank();
         updateAndSettle(vault.totalAssets());
 
-        updateTotalAssets(vault.totalAssets());
+        updateNewTotalAssets(vault.totalAssets());
 
         vm.prank(vault.owner());
         vault.initiateClosing();
@@ -143,7 +143,7 @@ contract TestPause is BaseTest {
         vault.withdraw(10, user1.addr, user1.addr);
     }
 
-    function test_updateTotalAssets_whenPaused_shouldFail() public {
+    function test_updateNewTotalAssets_whenPaused_shouldFail() public {
         uint256 _totalAssets = vault.totalAssets();
 
         vm.prank(vault.totalAssetsManager());

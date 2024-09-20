@@ -124,7 +124,7 @@ contract TestRequestRedeem is BaseTest {
         uint256 userBalance = balance(user1.addr);
         requestRedeem(userBalance / 2, user1.addr);
 
-        updateTotalAssets(0);
+        updateNewTotalAssets(0);
 
         vm.prank(user1.addr);
         vm.expectRevert(OnlyOneRequestAllowed.selector);

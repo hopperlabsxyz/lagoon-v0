@@ -292,7 +292,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         $erc7540.totalAssets = _totalAssets;
 
         $erc7540.depositSettleId = depositSettleId + 2;
-        $erc7540.lastDepositTotalAssetsIdSettle = $erc7540.depositTotalAssetsId - 2;
+        $erc7540.lastDepositTotalAssetsIdSettled = $erc7540.depositTotalAssetsId - 2;
 
         IERC20(_asset).safeTransferFrom(_pendingSilo, safe(), pendingAssets);
 
@@ -335,7 +335,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         $erc7540.totalAssets = _totalAssets;
 
         $erc7540.redeemSettleId = redeemSettleId + 2;
-        $erc7540.lastRedeemTotalAssetsIdSettle = $erc7540.redeemTotalAssetsId - 2;
+        $erc7540.lastRedeemTotalAssetsIdSettled = $erc7540.redeemTotalAssetsId - 2;
 
         IERC20(_asset).safeTransferFrom(_safe, address(this), assetsToWithdraw);
 

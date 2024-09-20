@@ -275,7 +275,7 @@ contract BaseTest is Test, Constants {
         return shares;
     }
 
-    function updateTotalAssets(uint256 newTotalAssets) internal {
+    function updateNewTotalAssets(uint256 newTotalAssets) internal {
         vm.prank(vault.totalAssetsManager());
         vault.updateNewTotalAssets(newTotalAssets);
     }
@@ -288,7 +288,7 @@ contract BaseTest is Test, Constants {
     }
 
     function updateAndSettle(uint256 newTotalAssets) internal {
-        updateTotalAssets(newTotalAssets);
+        updateNewTotalAssets(newTotalAssets);
         vm.warp(block.timestamp + 1 days);
         settle();
     }
