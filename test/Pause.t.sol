@@ -148,7 +148,7 @@ contract TestPause is BaseTest {
 
         vm.prank(vault.totalAssetsManager());
         vm.expectRevert(Pausable.EnforcedPause.selector);
-        vault.updateTotalAssets(_totalAssets);
+        vault.updateNewTotalAssets(_totalAssets);
     }
 
     function test_settleDeposit_whenPaused_shouldFail() public {
@@ -157,7 +157,7 @@ contract TestPause is BaseTest {
 
         uint256 _totalAssets = vault.totalAssets();
         vm.prank(vault.totalAssetsManager());
-        vault.updateTotalAssets(_totalAssets);
+        vault.updateNewTotalAssets(_totalAssets);
 
         vm.prank(vault.owner());
         vault.pause();
@@ -173,7 +173,7 @@ contract TestPause is BaseTest {
 
         uint256 _totalAssets = vault.totalAssets();
         vm.prank(vault.totalAssetsManager());
-        vault.updateTotalAssets(_totalAssets);
+        vault.updateNewTotalAssets(_totalAssets);
 
         vm.prank(vault.owner());
         vault.pause();

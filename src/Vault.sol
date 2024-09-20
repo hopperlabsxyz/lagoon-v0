@@ -23,7 +23,7 @@ uint256 constant BPS_DIVIDER = 10_000;
 error NotOpen();
 error NotClosing();
 error NotClosed();
-error NavIsMissing();
+error NewTotalAssetsMissing();
 error NotEnoughLiquidity();
 
 enum State {
@@ -206,26 +206,26 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev should not be usable when contract is paused
-    function updateTotalAssets(uint256 _newTotalAssets) public onlyTotalAssetsManager whenNotPaused {
+    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyTotalAssetsManager whenNotPaused {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
-        $erc7540.navs[$erc7540.depositNavId].settleId = $erc7540.depositSettleId;
-        $erc7540.navs[$erc7540.redeemNavId].settleId = $erc7540.redeemSettleId;
+        $erc7540.totalAssetsIds[$erc7540.depositTotalAssetsId].settleId = $erc7540.depositSettleId;
+        $erc7540.totalAssetsIds[$erc7540.redeemTotalAssetsId].settleId = $erc7540.redeemSettleId;
 
         address _pendingSilo = pendingSilo();
         uint256 pendingAssets = IERC20(asset()).balanceOf(_pendingSilo);
         uint256 pendingShares = balanceOf(_pendingSilo);
 
-        if (pendingAssets != 0) $erc7540.depositNavId += 2;
-        if (pendingShares != 0) $erc7540.redeemNavId += 2;
+        if (pendingAssets != 0) $erc7540.depositTotalAssetsId += 2;
+        if (pendingShares != 0) $erc7540.redeemTotalAssetsId += 2;
 
         $.newTotalAssets = _newTotalAssets;
 
         emit UpdateTotalAssets(_newTotalAssets);
     }
 
-    /// It should not be possible to call settleDeposit without at least one new nav
+    /// It should not be possible to call settleDeposit without a newTotalAssets value
     /// @dev should not be usable when contract is paused
     function settleDeposit() public override onlySafe onlyOpen {
         _updateTotalAssets();
@@ -240,8 +240,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         uint256 newTotalAssets = $vault.newTotalAssets;
 
-        if (newTotalAssets == type(uint256).max)
-          revert NavIsMissing();
+        if (newTotalAssets == type(uint256).max) // it means newTotalAssets has not been updated
+          revert NewTotalAssetsMissing();
 
         $erc7540.totalAssets = newTotalAssets;
         $vault.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
@@ -292,7 +292,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         $erc7540.totalAssets = _totalAssets;
 
         $erc7540.depositSettleId = depositSettleId + 2;
-        $erc7540.lastDepositNavIdSettle = $erc7540.depositNavId - 2;
+        $erc7540.lastDepositTotalAssetsIdSettle = $erc7540.depositTotalAssetsId - 2;
 
         IERC20(_asset).safeTransferFrom(_pendingSilo, safe(), pendingAssets);
 
@@ -300,7 +300,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit Deposit(_msgSender(), address(this), pendingAssets, shares);
     }
 
-    // It should not be possible to call settleRedeem without at least one new nav
     /// @dev should not be usable when contract is paused
     function settleRedeem() public override onlySafe onlyOpen {
         _updateTotalAssets();
@@ -336,7 +335,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         $erc7540.totalAssets = _totalAssets;
 
         $erc7540.redeemSettleId = redeemSettleId + 2;
-        $erc7540.lastRedeemNavIdSettle = $erc7540.redeemNavId - 2;
+        $erc7540.lastRedeemTotalAssetsIdSettle = $erc7540.redeemTotalAssetsId - 2;
 
         IERC20(_asset).safeTransferFrom(_safe, address(this), assetsToWithdraw);
 

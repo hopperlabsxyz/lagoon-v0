@@ -13,7 +13,7 @@ contract VaultHelper is Vault {
 
     function totalSupply(uint256 epochId) public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        return $.settles[$.navs[epochId].settleId].totalSupply;
+        return $.settles[$.totalAssetsIds[epochId].settleId].totalSupply;
     }
 
     // function previousEpochTotalSupply() public view returns (uint256) {
@@ -23,7 +23,7 @@ contract VaultHelper is Vault {
 
     function totalAssets(uint256 epochId) public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        return $.settles[$.navs[epochId].settleId].totalAssets;
+        return $.settles[$.totalAssetsIds[epochId].settleId].totalAssets;
     }
 
     function newTotalAssets() public view returns (uint256) {
@@ -50,7 +50,7 @@ contract VaultHelper is Vault {
     }
 
     function lastDepositNavIdSettle_debug() public view returns (uint256) {
-        return _getERC7540Storage().lastDepositNavIdSettle;
+        return _getERC7540Storage().lastDepositTotalAssetsIdSettle;
     }
 
     function lastDepositRequestId_debug(
