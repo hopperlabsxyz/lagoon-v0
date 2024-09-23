@@ -12,14 +12,14 @@ import {VaultHelper} from "./VaultHelper.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 
 contract testRateUpdates is BaseTest {
-    uint256 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
-    uint256 public constant MAX_PERFORMANCE_RATE = 5_000; // 50 %
-    uint256 public constant MAX_PROTOCOL_RATE = 3_000; // 30 %
+    uint16 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
+    uint16 public constant MAX_PERFORMANCE_RATE = 5_000; // 50 %
+    uint16 public constant MAX_PROTOCOL_RATE = 3_000; // 30 %
 
     function test_ratesShouldMatchValuesAtInit() public {
-        uint256 protocolRate = 100;
-        uint256 managementRate = 200;
-        uint256 performanceRate = 2000;
+        uint16 protocolRate = 100;
+        uint16 managementRate = 200;
+        uint16 performanceRate = 2000;
         setUpVault(protocolRate, managementRate, performanceRate);
         assertEq(vault.protocolRate(), protocolRate, "protocolRate");
         assertEq(
@@ -35,9 +35,9 @@ contract testRateUpdates is BaseTest {
     }
 
     function test_ratesShouldRevertAtInitWhenToHigh() public {
-        uint256 protocolRate = MAX_PROTOCOL_RATE + 1;
-        uint256 managementRate = MAX_MANAGEMENT_RATE + 1;
-        uint256 performanceRate = MAX_PERFORMANCE_RATE + 1;
+        uint16 protocolRate = MAX_PROTOCOL_RATE + 1;
+        uint16 managementRate = MAX_MANAGEMENT_RATE + 1;
+        uint16 performanceRate = MAX_PERFORMANCE_RATE + 1;
 
         feeRegistry = new FeeRegistry();
         feeRegistry.initialize(dao.addr, dao.addr);

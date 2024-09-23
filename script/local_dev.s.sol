@@ -34,9 +34,8 @@ contract LocalDeploy is Script {
     address admin = DAO;
     address whitelistManager = DAO;
     address navManager = DAO;
-    uint256 _managementRate = 0;
-    uint256 _performanceRate = 0;
-    uint256 protocolFee = 0;
+    uint16 _managementRate = 0;
+    uint16 _performanceRate = 0;
     bool enableWhitelist = true;
 
     string network = vm.envString("NETWORK");

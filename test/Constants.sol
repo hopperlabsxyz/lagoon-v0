@@ -114,8 +114,8 @@ abstract contract Constants is Test {
         ERC20 _underlying,
         string memory _vaultName,
         string memory _vaultSymbol,
-        uint256 _managementRate,
-        uint256 _performanceRate,
+        uint16 _managementRate,
+        uint16 _performanceRate,
         address[] memory whitelist
     ) internal returns (VaultHelper) {
         Vault.InitStruct memory v = Vault.InitStruct({
@@ -149,9 +149,9 @@ abstract contract Constants is Test {
     }
 
     function setUpVault(
-        uint256 _protocolRate,
-        uint256 _managementRate,
-        uint256 _performanceRate
+        uint16 _protocolRate,
+        uint16 _managementRate,
+        uint16 _performanceRate
     ) internal {
         bool proxy = vm.envBool("PROXY");
 

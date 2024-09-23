@@ -30,9 +30,8 @@ contract Deploy is Script {
     address admin = DAO;
     address whitelistManager = DAO;
     address navManager = SAFE;
-    uint256 _managementRate = 0;
-    uint256 _performanceRate = 2_000;
-    uint256 protocolFee = 100;
+    uint16 _managementRate = 0;
+    uint16 _performanceRate = 2_000;
     bool enableWhitelist = true;
 
     function run() external {
