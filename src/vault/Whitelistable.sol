@@ -13,8 +13,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract WhitelistableUpgradeable is RolesUpgradeable {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant whitelistableStorage =
-        0x083cc98ab296d1a1f01854b5f7a2f47df4425a56ba7b35f7faa3a336067e4800;
+    bytes32 private constant whitelistableStorage = 0x083cc98ab296d1a1f01854b5f7a2f47df4425a56ba7b35f7faa3a336067e4800;
 
     /// @custom:storage-location erc7201:hopper.storage.Whitelistable
     struct WhitelistableStorage {
@@ -23,11 +22,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
         bool isActivated;
     }
 
-    function _getWhitelistableStorage()
-        internal
-        pure
-        returns (WhitelistableStorage storage $)
-    {
+    function _getWhitelistableStorage() internal pure returns (WhitelistableStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := whitelistableStorage
@@ -57,10 +52,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
     // @param account The address of the account to check
     // @param data The Merkle proof data, required when the root hash is set
     // @return bool True if the account is whitelisted, false otherwise
-    function isWhitelisted(
-        address account,
-        bytes32[] memory proof
-    ) public view returns (bool) {
+    function isWhitelisted(address account, bytes32[] memory proof) public view returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         if ($.isActivated == false) {
             return true;
@@ -91,9 +83,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
     }
 
     // @notice Adds multiple accounts to the whitelist
-    function addToWhitelist(
-        address[] memory accounts
-    ) external onlyWhitelistManager {
+    function addToWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
         if ($.root != 0) revert MerkleTreeMode();
@@ -105,9 +95,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
     }
 
     // @notice Removes an account from the whitelist
-    function revokeFromWhitelist(
-        address account
-    ) external onlyWhitelistManager {
+    function revokeFromWhitelist(address account) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
         if ($.root != 0) revert MerkleTreeMode();
@@ -117,9 +105,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
     }
 
     // @notice Removes multiple accounts from the whitelist
-    function revokeFromWhitelist(
-        address[] memory accounts
-    ) external onlyWhitelistManager {
+    function revokeFromWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
         if ($.root != 0) revert MerkleTreeMode();

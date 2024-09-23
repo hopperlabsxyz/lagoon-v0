@@ -35,8 +35,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Roles")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant rolesStorage =
-        0x7c302ed2c673c3d6b4551cf74a01ee649f887e14fd20d13dbca1b6099534d900;
+    bytes32 private constant rolesStorage = 0x7c302ed2c673c3d6b4551cf74a01ee649f887e14fd20d13dbca1b6099534d900;
 
     /// @dev Returns the storage struct of the roles.
     function _getRolesStorage() internal pure returns (RolesStorage storage $) {
@@ -56,16 +55,18 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
     /// @dev Modifier to check if the caller is the whitelist manager.
     modifier onlyWhitelistManager() {
         address _whitelistManager = _getRolesStorage().whitelistManager;
-        if (_whitelistManager != _msgSender())
+        if (_whitelistManager != _msgSender()) {
             revert OnlyWhitelistManager(_whitelistManager);
+        }
         _;
     }
 
     /// @dev Modifier to check if the caller is the total assets manager.
     modifier onlyTotalAssetsManager() {
         address _totalAssetsManager = _getRolesStorage().totalAssetsManager;
-        if (_totalAssetsManager != _msgSender())
+        if (_totalAssetsManager != _msgSender()) {
             revert OnlyTotalAssetsManager(_totalAssetsManager);
+        }
         _;
     }
 
@@ -81,8 +82,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
 
     /// @notice Returns the address of protocol fee receiver.
     function protocolFeeReceiver() public view returns (address) {
-        return
-            FeeRegistry(_getRolesStorage().feeRegistry).protocolFeeReceiver();
+        return FeeRegistry(_getRolesStorage().feeRegistry).protocolFeeReceiver();
     }
 
     /// @notice Returns the address of the safe associated with the vault.
@@ -103,18 +103,14 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
     /// @notice Updates the address of the whitelist manager.
     /// @param _whitelistManager The new address of the whitelist manager.
     /// @dev Only the owner can call this function.
-    function updateWhitelistManager(
-        address _whitelistManager
-    ) external onlyOwner {
+    function updateWhitelistManager(address _whitelistManager) external onlyOwner {
         _getRolesStorage().whitelistManager = _whitelistManager;
     }
 
     /// @notice Updates the address of the total assets manager.
     /// @param _totalAssetsManager The new address of the total assets manager.
     /// @dev Only the owner can call this function.
-    function updateTotalAssetsManager(
-        address _totalAssetsManager
-    ) external onlyOwner {
+    function updateTotalAssetsManager(address _totalAssetsManager) external onlyOwner {
         _getRolesStorage().totalAssetsManager = _totalAssetsManager;
     }
 

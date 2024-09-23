@@ -37,9 +37,7 @@ contract TestCancelRequest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_cancelRequestDeposit_revertsWhenNewTotalAssetsHasBeenUpdated()
-        public
-    {
+    function test_cancelRequestDeposit_revertsWhenNewTotalAssetsHasBeenUpdated() public {
         uint256 assetsBeforeRequest = assetBalance(user1.addr);
 
         uint256 requestId = requestDeposit(assetsBeforeRequest / 2, user1.addr);
@@ -47,9 +45,7 @@ contract TestCancelRequest is BaseTest {
         updateNewTotalAssets(0);
 
         vm.prank(user1.addr);
-        vm.expectRevert(
-            abi.encodeWithSelector(RequestNotCancelable.selector, requestId)
-        );
+        vm.expectRevert(abi.encodeWithSelector(RequestNotCancelable.selector, requestId));
         vault.cancelRequestDeposit();
     }
 }

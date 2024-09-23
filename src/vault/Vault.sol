@@ -42,8 +42,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant vaultStorage =
-        0x0e6b3200a60a991c539f47dddaca04a18eb4bcf2b53906fb44751d827f001400;
+    bytes32 private constant vaultStorage = 0x0e6b3200a60a991c539f47dddaca04a18eb4bcf2b53906fb44751d827f001400;
 
     function _getVaultStorage() internal pure returns (VaultStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
@@ -63,11 +62,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         __ERC20_init(init.name, init.symbol);
         __ERC20Pausable_init();
         __FeeManager_init(
-            init.feeRegistry,
-            init.managementRate,
-            init.performanceRate,
-            decimals(),
-            init.rateUpdateCooldown
+            init.feeRegistry, init.managementRate, init.performanceRate, decimals(), init.rateUpdateCooldown
         );
         __ERC7540_init(init.underlying, init.wrappedNativeToken);
         __Whitelistable_init(init.enableWhitelist);
@@ -90,8 +85,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit StateUpdated(State.Open);
 
         if (init.enableWhitelist) {
-            WhitelistableStorage
-                storage $whitelistStorage = _getWhitelistableStorage();
+            WhitelistableStorage storage $whitelistStorage = _getWhitelistableStorage();
             $whitelistStorage.isWhitelisted[init.feeReceiver] = true;
             $whitelistStorage.isWhitelisted[protocolFeeReceiver()] = true;
             $whitelistStorage.isWhitelisted[init.safe] = true;
@@ -117,21 +111,21 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev should not be usable when contract is paused
-    function requestDeposit(
-        uint256 assets,
-        address controller,
-        address owner
-    ) public payable override(ERC7540Upgradeable) returns (uint256 requestId) {
+    function requestDeposit(uint256 assets, address controller, address owner)
+        public
+        payable
+        override(ERC7540Upgradeable)
+        returns (uint256 requestId)
+    {
         return _requestDeposit(assets, controller, owner, abi.encode(""));
     }
 
     /// @dev should not be usable when contract is paused
-    function requestDeposit(
-        uint256 assets,
-        address controller,
-        address owner,
-        bytes calldata data
-    ) public payable returns (uint256 requestId) {
+    function requestDeposit(uint256 assets, address controller, address owner, bytes calldata data)
+        public
+        payable
+        returns (uint256 requestId)
+    {
         return _requestDeposit(assets, controller, owner, data);
     }
 
@@ -141,16 +135,11 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     // @param owner The address of the owner for whom the deposit is requested.
     // @param data ABI-encoded data expected to contain a Merkle proof (bytes32[]) and a referral address (address).
     // @return The id of the deposit request.
-    function _requestDeposit(
-        uint256 assets,
-        address controller,
-        address owner,
-        bytes memory data
-    ) internal returns (uint256) {
-        (bytes32[] memory proof, address referral) = abi.decode(
-            data,
-            (bytes32[], address)
-        );
+    function _requestDeposit(uint256 assets, address controller, address owner, bytes memory data)
+        internal
+        returns (uint256)
+    {
+        (bytes32[] memory proof, address referral) = abi.decode(data, (bytes32[], address));
         if (isWhitelisted(owner, proof) == false) {
             revert NotWhitelisted();
         }
@@ -162,20 +151,18 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev should not be usable when contract is paused
-    function requestRedeem(
-        uint256 shares,
-        address controller,
-        address owner
-    ) public override(ERC7540Upgradeable) returns (uint256 requestId) {
+    function requestRedeem(uint256 shares, address controller, address owner)
+        public
+        override(ERC7540Upgradeable)
+        returns (uint256 requestId)
+    {
         return _requestRedeem(shares, controller, owner, abi.encode(""));
     }
 
-    function requestRedeem(
-        uint256 shares,
-        address controller,
-        address owner,
-        bytes calldata data
-    ) external returns (uint256 requestId) {
+    function requestRedeem(uint256 shares, address controller, address owner, bytes calldata data)
+        external
+        returns (uint256 requestId)
+    {
         return _requestRedeem(shares, controller, owner, data);
     }
 
@@ -185,12 +172,12 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @param owner The address of the token owner requesting redemption.
     /// @param data ABI-encoded Merkle proof (bytes32[]) used to validate the controller's whitelist status.
     /// @return The id of the redeem request.
-    function _requestRedeem(
-        uint256 shares,
-        address controller,
-        address owner,
-        bytes memory data
-    ) internal onlyOpen whenNotPaused returns (uint256) {
+    function _requestRedeem(uint256 shares, address controller, address owner, bytes memory data)
+        internal
+        onlyOpen
+        whenNotPaused
+        returns (uint256)
+    {
         bytes32[] memory proof = abi.decode(data, (bytes32[]));
         if (isWhitelisted(owner, proof) == false) {
             revert NotWhitelisted();
@@ -199,16 +186,12 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev should not be usable when contract is paused
-    function updateNewTotalAssets(
-        uint256 _newTotalAssets
-    ) public onlyTotalAssetsManager whenNotPaused {
+    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyTotalAssetsManager whenNotPaused {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
-        $erc7540.epochDatas[$erc7540.depositTotalAssetsId].settleId = $erc7540
-            .depositSettleId;
-        $erc7540.epochDatas[$erc7540.redeemTotalAssetsId].settleId = $erc7540
-            .redeemSettleId;
+        $erc7540.epochDatas[$erc7540.depositTotalAssetsId].settleId = $erc7540.depositSettleId;
+        $erc7540.epochDatas[$erc7540.redeemTotalAssetsId].settleId = $erc7540.redeemSettleId;
 
         address _pendingSilo = pendingSilo();
         uint256 pendingAssets = IERC20(asset()).balanceOf(_pendingSilo);
@@ -260,10 +243,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
             }
         }
 
-        uint256 _pricePerShare = _convertToAssets(
-            10 ** decimals(),
-            Math.Rounding.Floor
-        );
+        uint256 _pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
         _setHighWaterMark(_pricePerShare); // when fees are taken done being taken, we update highWaterMark
 
         _getFeeManagerStorage().lastFeeTime = block.timestamp;
@@ -295,9 +275,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         $erc7540.totalAssets = _totalAssets;
 
         $erc7540.depositSettleId = depositSettleId + 2;
-        $erc7540.lastDepositTotalAssetsIdSettled =
-            $erc7540.depositTotalAssetsId -
-            2;
+        $erc7540.lastDepositTotalAssetsIdSettled = $erc7540.depositTotalAssetsId - 2;
 
         IERC20(_asset).safeTransferFrom(_pendingSilo, safe(), pendingAssets);
 
@@ -318,10 +296,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         address _pendingSilo = pendingSilo();
 
         uint256 pendingShares = balanceOf(_pendingSilo);
-        uint256 assetsToWithdraw = _convertToAssets(
-            pendingShares,
-            Math.Rounding.Floor
-        );
+        uint256 assetsToWithdraw = _convertToAssets(pendingShares, Math.Rounding.Floor);
 
         uint256 assetsInTheSafe = IERC20(_asset).balanceOf(_safe);
         if (assetsToWithdraw == 0 || assetsToWithdraw > assetsInTheSafe) return;
@@ -342,20 +317,12 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         $erc7540.totalAssets = _totalAssets;
 
         $erc7540.redeemSettleId = redeemSettleId + 2;
-        $erc7540.lastRedeemTotalAssetsIdSettled =
-            $erc7540.redeemTotalAssetsId -
-            2;
+        $erc7540.lastRedeemTotalAssetsIdSettled = $erc7540.redeemTotalAssetsId - 2;
 
         IERC20(_asset).safeTransferFrom(_safe, address(this), assetsToWithdraw);
 
         // change this event maybe
-        emit Withdraw(
-            _msgSender(),
-            address(this),
-            _pendingSilo,
-            assetsToWithdraw,
-            pendingShares
-        );
+        emit Withdraw(_msgSender(), address(this), _pendingSilo, assetsToWithdraw, pendingShares);
     }
 
     /////////////////
@@ -389,8 +356,9 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         address _safe = safe();
         uint256 safeBalance = IERC20(asset()).balanceOf(_safe);
 
-        if (_totalAssets > safeBalance)
+        if (_totalAssets > safeBalance) {
             revert NotEnoughLiquidity(safeBalance, _totalAssets);
+        }
 
         $.state = State.Closed;
 
@@ -399,17 +367,15 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev should not be usable when contract is paused
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) public override whenNotPaused returns (uint256 shares) {
+    function withdraw(uint256 assets, address receiver, address controller)
+        public
+        override
+        whenNotPaused
+        returns (uint256 shares)
+    {
         VaultStorage storage $ = _getVaultStorage();
 
-        if (
-            $.state == State.Closed &&
-            claimableRedeemRequest(0, controller) == 0
-        ) {
+        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             shares = _convertToShares(assets, Math.Rounding.Ceil);
             _withdraw(_msgSender(), receiver, controller, assets, shares);
         } else {
@@ -418,17 +384,10 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev should not be usable when contract is paused
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address controller
-    ) public override returns (uint256 assets) {
+    function redeem(uint256 shares, address receiver, address controller) public override returns (uint256 assets) {
         VaultStorage storage $ = _getVaultStorage();
 
-        if (
-            $.state == State.Closed &&
-            claimableRedeemRequest(0, controller) == 0
-        ) {
+        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             assets = _convertToAssets(shares, Math.Rounding.Floor);
             _withdraw(_msgSender(), receiver, controller, assets, shares);
         } else {
@@ -437,13 +396,11 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev override ERC4626 synchronous withdraw; called when vault is closed
-    function _withdraw(
-        address caller,
-        address receiver,
-        address owner,
-        uint256 assets,
-        uint256 shares
-    ) internal virtual override {
+    function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
+        internal
+        virtual
+        override
+    {
         if (caller != owner && !isOperator(owner, caller)) {
             _spendAllowance(owner, caller, shares);
         }
