@@ -54,16 +54,16 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
         return _getWhitelistableStorage().isActivated;
     }
 
-    // @notice Deactivates the whitelist
+    /// @notice Deactivates the whitelist
     function deactivateWhitelist() public onlyOwner {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         $.isActivated = false;
     }
 
-    // @notice Checks if an account is whitelisted
-    // @param account The address of the account to check
-    // @param data The Merkle proof data, required when the root hash is set
-    // @return bool True if the account is whitelisted, false otherwise
+    /// @notice Checks if an account is whitelisted
+    /// @param account The address of the account to check
+    /// @param proof The Merkle proof data, required when the root hash is set
+    /// @return True if the account is whitelisted, false otherwise
     function isWhitelisted(address account, bytes32[] memory proof) public view returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         if ($.isActivated == false) {
@@ -76,7 +76,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
         return MerkleProof.verify(proof, $.root, leaf);
     }
 
-    // @notice Updates the Merkle tree root hash
+    /// @notice Updates the Merkle tree root hash
     function setRoot(bytes32 root) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
@@ -84,7 +84,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
         emit RootUpdated(root);
     }
 
-    // @notice Adds an account to the whitelist
+    /// @notice Adds an account to the whitelist
     function addToWhitelist(address account) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
@@ -94,7 +94,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
         emit WhitelistUpdated(account, true);
     }
 
-    // @notice Adds multiple accounts to the whitelist
+    /// @notice Adds multiple accounts to the whitelist
     function addToWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
@@ -106,7 +106,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
         }
     }
 
-    // @notice Removes an account from the whitelist
+    /// @notice Removes an account from the whitelist
     function revokeFromWhitelist(address account) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
@@ -116,7 +116,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
         emit WhitelistUpdated(account, false);
     }
 
-    // @notice Removes multiple accounts from the whitelist
+    /// @notice Removes multiple accounts from the whitelist
     function revokeFromWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
