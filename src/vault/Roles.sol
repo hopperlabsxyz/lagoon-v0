@@ -27,6 +27,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         address navManager;
     }
 
+    // solhint-disable-next-line func-name-mixedcase
     function __Roles_init(RolesStorage memory roles) internal onlyInitializing {
         RolesStorage storage $ = _getRolesStorage();
         $.whitelistManager = roles.whitelistManager;

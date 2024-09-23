@@ -83,6 +83,7 @@ abstract contract ERC7540Upgradeable is
         }
     }
 
+    // solhint-disable-next-line func-name-mixedcase
     function __ERC7540_init(
         IERC20 underlying,
         address wrappedNativeToken

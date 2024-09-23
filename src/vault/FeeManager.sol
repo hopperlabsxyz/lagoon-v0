@@ -53,11 +53,13 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         pure
         returns (FeeManagerStorage storage $)
     {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := feeManagerStorage
         }
     }
 
+    // solhint-disable-next-line func-name-mixedcase
     function __FeeManager_init(
         address _registry,
         uint256 _managementRate,
