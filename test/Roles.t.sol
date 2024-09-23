@@ -29,8 +29,8 @@ contract TestMint is BaseTest {
         assertEq(vault.safe(), safe.addr);
     }
 
-    function test_totalAssetsManager() public view {
-        assertEq(vault.totalAssetsManager(), totalAssetsManager.addr);
+    function test_navManager() public view {
+        assertEq(vault.navManager(), navManager.addr);
     }
 
     function test_feeRegistry() public view {
@@ -55,7 +55,7 @@ contract TestMint is BaseTest {
         vm.prank(vault.owner());
         vault.updateTotalAssetsManager(address(0x42));
 
-        assertEq(vault.totalAssetsManager(), address(0x42));
+        assertEq(vault.navManager(), address(0x42));
     }
 
     function test_updateNewTotalAssetsManager_notOwner() public {

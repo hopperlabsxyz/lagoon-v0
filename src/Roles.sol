@@ -6,7 +6,7 @@ import {FeeRegistry} from "./FeeRegistry.sol";
 
 error OnlySafe();
 error OnlyWhitelistManager();
-error OnlyTotalAssetsManager();
+error OnlyNAVManager();
 
 contract RolesUpgradeable is Ownable2StepUpgradeable {
     /// @notice Stores the various roles responsible of managing the vault.
@@ -14,14 +14,14 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
     /// @param feeReceiver The address that will receive the fees generated.
     /// @param safe Every lagoon vault is associated with a Safe smart contract. This address will receive the assets of the vault and can settle deposits and redeems.
     /// @param feeRegistry The address of the FeeRegistry contract.
-    /// @param totalAssetsManager. This address is responsible of updating the totalAssets value of the vault.
+    /// @param navManager. This address is responsible of updating the totalAssets value of the vault.
     /// @param owner The address of the owner of the contract. Not visible in the struct.
     struct RolesStorage {
         address whitelistManager;
         address feeReceiver;
         address safe;
         address feeRegistry;
-        address totalAssetsManager;
+        address navManager;
     }
 
     function __Roles_init(RolesStorage memory roles) internal onlyInitializing {
@@ -30,7 +30,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         $.feeReceiver = roles.feeReceiver;
         $.safe = roles.safe;
         $.feeRegistry = roles.feeRegistry;
-        $.totalAssetsManager = roles.totalAssetsManager;
+        $.navManager = roles.navManager;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Roles")) - 1)) & ~bytes32(uint256(0xff))
@@ -56,9 +56,9 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         _;
     }
 
-    modifier onlyTotalAssetsManager() {
-        if (_getRolesStorage().totalAssetsManager != _msgSender())
-            revert OnlyTotalAssetsManager();
+    modifier onlyNAVManager() {
+        if (_getRolesStorage().navManager != _msgSender())
+            revert OnlyNAVManager();
         _;
     }
 
@@ -79,8 +79,8 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         return _getRolesStorage().safe;
     }
 
-    function totalAssetsManager() public view returns (address) {
-        return _getRolesStorage().totalAssetsManager;
+    function navManager() public view returns (address) {
+        return _getRolesStorage().navManager;
     }
 
     function feeRegistry() public view returns (address) {
@@ -93,10 +93,8 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         _getRolesStorage().whitelistManager = _whitelistManager;
     }
 
-    function updateTotalAssetsManager(
-        address _totalAssetsManager
-    ) external onlyOwner {
-        _getRolesStorage().totalAssetsManager = _totalAssetsManager;
+    function updateTotalAssetsManager(address _navManager) external onlyOwner {
+        _getRolesStorage().navManager = _navManager;
     }
 
     function updateFeeReceiver(address _feeReceiver) external onlyOwner {

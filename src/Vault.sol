@@ -41,7 +41,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         string symbol;
         address safe;
         address whitelistManager;
-        address totalAssetsManager;
+        address navManager;
         address admin;
         address feeReceiver;
         address feeRegistry;
@@ -89,7 +89,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
                 feeRegistry: init.feeRegistry,
-                totalAssetsManager: init.totalAssetsManager
+                navManager: init.navManager
             })
         );
         __Ownable_init(init.admin); // initial vault owner
@@ -206,7 +206,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev should not be usable when contract is paused
-    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyTotalAssetsManager whenNotPaused {
+    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyNAVManager whenNotPaused {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
@@ -225,7 +225,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit UpdateTotalAssets(_newTotalAssets);
     }
 
-    /// It should not be possible to call settleDeposit without a newTotalAssets value
     /// @dev should not be usable when contract is paused
     function settleDeposit() public override onlySafe onlyOpen {
         _updateTotalAssets();
