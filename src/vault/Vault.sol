@@ -41,7 +41,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         string symbol;
         address safe;
         address whitelistManager;
-        address totalAssetsManager;
+        address navManager;
         address admin;
         address feeReceiver;
         address feeRegistry;
@@ -83,7 +83,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
                 feeRegistry: init.feeRegistry,
-                totalAssetsManager: init.totalAssetsManager
+                navManager: init.navManager
             })
         );
         __Ownable_init(init.admin); // initial vault owner
@@ -200,26 +200,25 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev should not be usable when contract is paused
-    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyTotalAssetsManager whenNotPaused {
+    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyNAVManager whenNotPaused {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
-        $erc7540.epochDatas[$erc7540.depositTotalAssetsId].settleId = $erc7540.depositSettleId;
-        $erc7540.epochDatas[$erc7540.redeemTotalAssetsId].settleId = $erc7540.redeemSettleId;
+        $erc7540.epochs[$erc7540.depositEpochId].settleId = $erc7540.depositSettleId;
+        $erc7540.epochs[$erc7540.redeemEpochId].settleId = $erc7540.redeemSettleId;
 
         address _pendingSilo = pendingSilo();
         uint256 pendingAssets = IERC20(asset()).balanceOf(_pendingSilo);
         uint256 pendingShares = balanceOf(_pendingSilo);
 
-        if (pendingAssets != 0) $erc7540.depositTotalAssetsId += 2;
-        if (pendingShares != 0) $erc7540.redeemTotalAssetsId += 2;
+        if (pendingAssets != 0) $erc7540.depositEpochId += 2;
+        if (pendingShares != 0) $erc7540.redeemEpochId += 2;
 
         $.newTotalAssets = _newTotalAssets;
 
         emit UpdateTotalAssets(_newTotalAssets);
     }
 
-    /// It should not be possible to call settleDeposit without a newTotalAssets value
     /// @dev should not be usable when contract is paused
     function settleDeposit() public override onlySafe onlyOpen {
         _updateTotalAssets();
@@ -286,7 +285,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         $erc7540.totalAssets = _totalAssets;
 
         $erc7540.depositSettleId = depositSettleId + 2;
-        $erc7540.lastDepositTotalAssetsIdSettled = $erc7540.depositTotalAssetsId - 2;
+        $erc7540.lastDepositEpochIdSettled = $erc7540.depositEpochId - 2;
 
         IERC20(_asset).safeTransferFrom(_pendingSilo, safe(), pendingAssets);
 
@@ -329,7 +328,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         $erc7540.totalAssets = _totalAssets;
 
         $erc7540.redeemSettleId = redeemSettleId + 2;
-        $erc7540.lastRedeemTotalAssetsIdSettled = $erc7540.redeemTotalAssetsId - 2;
+        $erc7540.lastRedeemEpochIdSettled = $erc7540.redeemEpochId - 2;
 
         IERC20(_asset).safeTransferFrom(_safe, address(this), assetsToWithdraw);
 

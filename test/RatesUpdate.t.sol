@@ -52,7 +52,7 @@ contract testRateUpdates is BaseTest {
             symbol: vaultSymbol,
             safe: safe.addr,
             whitelistManager: whitelistManager.addr,
-            totalAssetsManager: totalAssetsManager.addr,
+            navManager: navManager.addr,
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
             feeRegistry: address(feeRegistry),

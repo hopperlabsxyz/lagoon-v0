@@ -6,7 +6,7 @@ import {FeeRegistry} from "../protocol/FeeRegistry.sol";
 
 error OnlySafe();
 error OnlyWhitelistManager();
-error OnlyTotalAssetsManager();
+error OnlyNAVManager();
 
 /// @title RolesUpgradeable
 /// @dev This contract is used to define the various roles needed for a vault to operate.
@@ -15,16 +15,16 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
     /// @notice Stores the various roles responsible of managing the vault.
     /// @param whitelistManager The address responsible of managing the whitelist.
     /// @param feeReceiver The address that will receive the fees generated.
-    /// @param safe Every lagoon vault is admitted to be associated with a (gnosis) Safe smart wallet. This address will receive the assets of the vault and can call settle functions.
-    /// @param feeRegistry The address of the FeeRegistry contract. It can't be changed.
-    /// @param totalAssetsManager. This address is responsible of updating the newtotalAssets value of the vault.
-    /// @param owner The address of the owner of the contract. It considered as the admin.It is not visible in the struct. It can change the others roles and itself. Initiate the fund closing. Disable the whitelist.
+    /// @param safe Every lagoon vault is associated with a Safe smart contract. This address will receive the assets of the vault and can settle deposits and redeems.
+    /// @param feeRegistry The address of the FeeRegistry contract.
+    /// @param navManager. This address is responsible of updating the newTotalAssets value of the vault.
+    /// @param owner The address of the owner of the contract. It considered as the admin. It is not visible in the struct. It can change the others roles and itself. Initiate the fund closing. Disable the whitelist.
     struct RolesStorage {
         address whitelistManager;
         address feeReceiver;
         address safe;
         address feeRegistry;
-        address totalAssetsManager;
+        address navManager;
     }
 
     // solhint-disable-next-line func-name-mixedcase
@@ -34,7 +34,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         $.feeReceiver = roles.feeReceiver;
         $.safe = roles.safe;
         $.feeRegistry = roles.feeRegistry;
-        $.totalAssetsManager = roles.totalAssetsManager;
+        $.navManager = roles.navManager;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Roles")) - 1)) & ~bytes32(uint256(0xff))
@@ -64,9 +64,9 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
     }
 
     /// @dev Modifier to check if the caller is the total assets manager.
-    modifier onlyTotalAssetsManager() {
-        if (_getRolesStorage().totalAssetsManager != _msgSender())
-            revert OnlyTotalAssetsManager();
+    modifier onlyNAVManager() {
+        if (_getRolesStorage().navManager != _msgSender())
+            revert OnlyNAVManager();
         _;
     }
 
@@ -91,9 +91,9 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         return _getRolesStorage().safe;
     }
 
-    /// @notice Returns the address of the total assets manager.
-    function totalAssetsManager() public view returns (address) {
-        return _getRolesStorage().totalAssetsManager;
+    /// @notice Returns the address of the NAV manager.
+    function navManager() public view returns (address) {
+        return _getRolesStorage().navManager;
     }
 
     /// @notice Returns the address of the fee registry.
@@ -110,13 +110,11 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         _getRolesStorage().whitelistManager = _whitelistManager;
     }
 
-    /// @notice Updates the address of the total assets manager.
-    /// @param _totalAssetsManager The new address of the total assets manager.
+    /// @notice Updates the address of the nav manager.
+    /// @param _navManager The new address of the nav manager.
     /// @dev Only the owner can call this function.
-    function updateTotalAssetsManager(
-        address _totalAssetsManager
-    ) external onlyOwner {
-        _getRolesStorage().totalAssetsManager = _totalAssetsManager;
+    function updateTotalAssetsManager(address _navManager) external onlyOwner {
+        _getRolesStorage().navManager = _navManager;
     }
 
     /// @notice Updates the address of the fee receiver.

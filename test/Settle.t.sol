@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {Vault, NewTotalAssetsMissing} from "@src/vault/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseTest} from "./Base.sol";
-import {OnlyTotalAssetsManager, OnlySafe} from "@src/vault/Roles.sol";
+import {OnlyNAVManager, OnlySafe} from "@src/vault/Roles.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 using Math for uint256;
@@ -219,7 +219,7 @@ contract TestSettle is BaseTest {
     }
 
     function test_updateNewTotalAssets_revertIfNotTotalAssetsManager() public {
-        vm.expectRevert(OnlyTotalAssetsManager.selector);
+        vm.expectRevert(OnlyNAVManager.selector);
         vault.updateNewTotalAssets(0);
     }
 

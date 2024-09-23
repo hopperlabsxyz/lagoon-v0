@@ -73,7 +73,7 @@ contract TestRequestDeposit is BaseTest {
             "wrong internal lastDepositRequestId"
         );
         assertEq(
-            vault.lastDepositTotalAssetsIdSettled_debug(),
+            vault.lastDepositEpochIdSettled_debug(),
             requestId_1,
             "wrong internal lastDepositTotalAssetsIdSettle"
         );
