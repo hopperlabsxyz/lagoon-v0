@@ -149,12 +149,12 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         return _requestDeposit(assets, controller, owner, data);
     }
 
-    // @notice Requests a deposit of assets, subject to whitelist validation.
-    // @param assets The amount of assets to deposit.
-    // @param controller The address of the controller involved in the deposit request.
-    // @param owner The address of the owner for whom the deposit is requested.
-    // @param data ABI-encoded data expected to contain a Merkle proof (bytes32[]) and a referral address (address).
-    // @return The id of the deposit request.
+    /// @notice Requests a deposit of assets, subject to whitelist validation.
+    /// @param assets The amount of assets to deposit.
+    /// @param controller The address of the controller involved in the deposit request.
+    /// @param owner The address of the owner for whom the deposit is requested.
+    /// @param data ABI-encoded data expected to contain a Merkle proof (bytes32[]) and a referral address (address).
+    /// @return The id of the deposit request.
     function _requestDeposit(uint256 assets, address controller, address owner, bytes memory data)
         internal
         returns (uint256)
