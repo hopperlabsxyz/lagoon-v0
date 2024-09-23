@@ -9,12 +9,16 @@ import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/acces
 /// for specific vaults, and manage the address that receives these protocol fees.
 /// Protocol fees represents a fraction (which is the rate) of the fees taken by the asset manager of the vault
 contract FeeRegistry is Ownable2StepUpgradeable {
+    struct CustomRate {
+        bool isActivated;
+        uint16 rate;
+    }
+
     /// @custom:storage-location erc7201:hopper.storage.FeeRegistry
     struct FeeRegistryStorage {
         uint256 protocolRate;
         address protocolFeeReceiver;
-        mapping(address => bool) isCustomRate;
-        mapping(address => uint256) customRate;
+        mapping(address => CustomRate) customRate;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -63,33 +67,31 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     /// @notice Sets a custom fee rate for a specific vault.
     /// @param vault The address of the vault.
     /// @param rate The custom fee rate for the vault.
-    function setCustomRate(address vault, uint256 rate) external onlyOwner {
-        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
-        $.customRate[vault] = rate;
-        $.isCustomRate[vault] = true;
+    function setCustomRate(address vault, uint16 rate) external onlyOwner {
+        _getFeeRegistryStorage().customRate[vault] = CustomRate({
+            isActivated: true,
+            rate: rate
+        });
     }
 
     /// @notice Cancels the custom fee rate for a specific vault.
     /// @param vault The address of the vault.
     function cancelCustomRate(address vault) external onlyOwner {
-        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
-        $.isCustomRate[vault] = false;
+        _getFeeRegistryStorage().customRate[vault].isActivated = false;
     }
 
     /// @notice Checks if a custom fee rate is set for a specific vault.
     /// @param vault The address of the vault.
     /// @return True if the vault has a custom fee rate, false otherwise.
     function isCustomRate(address vault) external view returns (bool) {
-        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
-        return $.isCustomRate[vault];
+        return _getFeeRegistryStorage().customRate[vault].isActivated;
     }
 
     /// @notice Returns the custom fee rate for a specific vault.
     /// @param vault The address of the vault.
     /// @return The custom fee rate for the vault.
     function customRate(address vault) external view returns (uint256) {
-        FeeRegistryStorage storage $ = _getFeeRegistryStorage();
-        return $.customRate[vault];
+        return _getFeeRegistryStorage().customRate[vault].rate;
     }
 
     /// @notice Returns the address of the protocol fee receiver.
@@ -117,8 +119,8 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     /// @return rate The protocol fee rate for the vault, considering custom rates.
     function _protocolRate(address vault) internal view returns (uint256 rate) {
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
-        if ($.isCustomRate[vault]) {
-            return $.customRate[vault];
+        if ($.customRate[vault].isActivated) {
+            return uint256($.customRate[vault].rate);
         }
         return $.protocolRate;
     }
