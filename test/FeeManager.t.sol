@@ -336,8 +336,8 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_updateRates_revertIfManagementRateAboveMaxRates() public {
-        uint256 MAX_MANAGEMENT_RATE = vault.MAX_MANAGEMENT_RATE();
-        uint256 MAX_PERFORMANCE_RATE = vault.MAX_PERFORMANCE_RATE();
+        uint16 MAX_MANAGEMENT_RATE = vault.MAX_MANAGEMENT_RATE();
+        uint16 MAX_PERFORMANCE_RATE = vault.MAX_PERFORMANCE_RATE();
 
         Rates memory newRates = Rates({
             managementRate: MAX_MANAGEMENT_RATE + 1,
@@ -371,8 +371,8 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_updateRates_revertIfPerformanceRateAboveMaxRates() public {
-        uint256 MAX_MANAGEMENT_RATE = vault.MAX_MANAGEMENT_RATE();
-        uint256 MAX_PERFORMANCE_RATE = vault.MAX_PERFORMANCE_RATE();
+        uint16 MAX_MANAGEMENT_RATE = vault.MAX_MANAGEMENT_RATE();
+        uint16 MAX_PERFORMANCE_RATE = vault.MAX_PERFORMANCE_RATE();
 
         Rates memory newRates = Rates({
             managementRate: MAX_MANAGEMENT_RATE - 1,

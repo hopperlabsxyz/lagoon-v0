@@ -46,8 +46,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         address feeReceiver;
         address feeRegistry;
         address wrappedNativeToken;
-        uint256 managementRate;
-        uint256 performanceRate;
+        uint16 managementRate;
+        uint16 performanceRate;
         uint256 rateUpdateCooldown;
         bool enableWhitelist;
         address[] whitelist;
