@@ -4,7 +4,8 @@ pragma solidity 0.8.26;
 import "forge-std/Test.sol";
 import {Vault} from "@src/vault/Vault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {NotWhitelisted, WhitelistUpdated} from "@src/vault/Whitelistable.sol";
+import {WhitelistUpdated} from "@src/vault/Events.sol";
+import {NotWhitelisted} from "@src/vault/Errors.sol";
 import {BaseTest} from "./Base.sol";
 import {OnlyWhitelistManager} from "@src/vault/Roles.sol";
 

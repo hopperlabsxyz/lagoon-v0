@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {Vault} from "@src/vault/Vault.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {NotWhitelisted, MerkleTreeMode} from "@src/vault/Whitelistable.sol";
+import {NotWhitelisted, MerkleTreeMode} from "@src/vault/Errors.sol";
 import {BaseTest} from "./Base.sol";
 
 bytes32 constant defaultRoot = 0x2d4a4a77812b41a135553e347ceecc3525a5a32e1bc0f2291bc10d186a847c23;

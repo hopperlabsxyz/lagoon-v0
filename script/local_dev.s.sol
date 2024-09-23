@@ -41,8 +41,7 @@ contract LocalDeploy is Script {
 
     string network = vm.envString("NETWORK");
 
-    address immutable WRAPPED_NATIVE_TOKEN =
-        vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
+    address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -72,11 +71,7 @@ contract LocalDeploy is Script {
 
         TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
             payable(
-                Upgrades.deployTransparentProxy(
-                    "Vault.sol:Vault",
-                    PROXY_ADMIN,
-                    abi.encodeCall(Vault.initialize, v)
-                )
+                Upgrades.deployTransparentProxy("Vault.sol:Vault", PROXY_ADMIN, abi.encodeCall(Vault.initialize, v))
             )
         );
 

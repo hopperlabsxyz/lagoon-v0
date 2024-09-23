@@ -63,11 +63,7 @@ contract Deploy is Script {
 
         TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
             payable(
-                Upgrades.deployTransparentProxy(
-                    "Vault.sol:Vault",
-                    PROXY_ADMIN,
-                    abi.encodeCall(Vault.initialize, v)
-                )
+                Upgrades.deployTransparentProxy("Vault.sol:Vault", PROXY_ADMIN, abi.encodeCall(Vault.initialize, v))
             )
         );
 

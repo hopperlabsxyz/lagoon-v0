@@ -21,10 +21,7 @@ contract TestSilo is BaseTest {
     }
 
     function test_vaultHasInfiniteApprovalOnPendingSilo() public view {
-        uint256 allowance = underlying.allowance(
-            vault.pendingSilo(),
-            address(vault)
-        );
+        uint256 allowance = underlying.allowance(vault.pendingSilo(), address(vault));
         assertEq(allowance, type(uint256).max);
     }
 }

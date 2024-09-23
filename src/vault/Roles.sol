@@ -2,11 +2,8 @@
 pragma solidity "0.8.26";
 
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {OnlySafe, OnlyWhitelistManager, OnlyTotalAssetsManager} from "./Errors.sol";
 import {FeeRegistry} from "../protocol/FeeRegistry.sol";
-
-error OnlySafe();
-error OnlyWhitelistManager();
-error OnlyTotalAssetsManager();
 
 /// @title RolesUpgradeable
 /// @dev This contract is used to define the various roles needed for a vault to operate.
@@ -57,15 +54,17 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
 
     /// @dev Modifier to check if the caller is the whitelist manager.
     modifier onlyWhitelistManager() {
-        if (_getRolesStorage().whitelistManager != _msgSender())
+        if (_getRolesStorage().whitelistManager != _msgSender()) {
             revert OnlyWhitelistManager();
+        }
         _;
     }
 
     /// @dev Modifier to check if the caller is the total assets manager.
     modifier onlyTotalAssetsManager() {
-        if (_getRolesStorage().totalAssetsManager != _msgSender())
+        if (_getRolesStorage().totalAssetsManager != _msgSender()) {
             revert OnlyTotalAssetsManager();
+        }
         _;
     }
 

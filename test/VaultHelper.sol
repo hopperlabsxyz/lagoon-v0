@@ -49,17 +49,11 @@ contract VaultHelper is Vault {
         return _protocolRate();
     }
 
-    function lastDepositTotalAssetsIdSettled_debug()
-        public
-        view
-        returns (uint256)
-    {
+    function lastDepositTotalAssetsIdSettled_debug() public view returns (uint256) {
         return _getERC7540Storage().lastDepositTotalAssetsIdSettled;
     }
 
-    function lastDepositRequestId_debug(
-        address controller
-    ) public view returns (uint256) {
+    function lastDepositRequestId_debug(address controller) public view returns (uint256) {
         return _getERC7540Storage().lastDepositRequestId[controller];
     }
 }

@@ -2,21 +2,19 @@
 pragma solidity "0.8.26";
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {AboveMaxRate, CooldownNotOver} from "./Errors.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
-// import {console} from "forge-std/console.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ERC7540Upgradeable} from "@src/vault/ERC7540.sol";
+// import {console} from "forge-std/console.sol";
 
 uint256 constant ONE_YEAR = 365 days;
-uint256 constant BPS = 10_000; // 100 %
+uint256 constant BPS_DIVIDER = 10_000; // 100 %
 
 struct Rates {
     uint256 managementRate;
     uint256 performanceRate;
 }
-
-error AboveMaxRate(uint256 rate, uint256 maxRate);
-error CooldownNotOver();
 
 abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     using Math for uint256;
@@ -92,10 +90,12 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     function updateRates(Rates memory newRates) external onlyOwner {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         if (block.timestamp < $.newRatesTimestamp) revert CooldownNotOver();
-        if (newRates.managementRate > MAX_MANAGEMENT_RATE)
+        if (newRates.managementRate > MAX_MANAGEMENT_RATE) {
             revert AboveMaxRate(newRates.managementRate, MAX_MANAGEMENT_RATE);
-        if (newRates.performanceRate > MAX_PERFORMANCE_RATE)
+        }
+        if (newRates.performanceRate > MAX_PERFORMANCE_RATE) {
             revert AboveMaxRate(newRates.performanceRate, MAX_PERFORMANCE_RATE);
+        }
 
         $.newRatesTimestamp = block.timestamp + $.cooldown;
         $.oldRates = $.rates;
@@ -160,7 +160,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         uint256 annualRate,
         uint256 timeElapsed
     ) internal pure returns (uint256 managementFee) {
-        uint256 annualFee = assets.mulDiv(annualRate, BPS);
+        uint256 annualFee = assets.mulDiv(annualRate, BPS_DIVIDER);
         managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
     }
 
@@ -183,7 +183,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
                 _totalSupply,
                 10 ** _decimals
             );
-            performanceFee = profit.mulDiv(_rate, BPS);
+            performanceFee = profit.mulDiv(_rate, BPS_DIVIDER);
         }
     }
 
@@ -237,7 +237,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
         protocolShares = totalShares.mulDiv(
             _protocolRate(),
-            BPS,
+            BPS_DIVIDER,
             Math.Rounding.Ceil
         );
         managerShares = totalShares - protocolShares;

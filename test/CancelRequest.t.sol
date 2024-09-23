@@ -37,9 +37,7 @@ contract TestCancelRequest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_cancelRequestDeposit_revertsWhenNewTotalAssetsHasBeenUpdated()
-        public
-    {
+    function test_cancelRequestDeposit_revertsWhenNewTotalAssetsHasBeenUpdated() public {
         uint256 assetsBeforeRequest = assetBalance(user1.addr);
 
         requestDeposit(assetsBeforeRequest / 2, user1.addr);

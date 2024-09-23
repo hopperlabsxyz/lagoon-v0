@@ -3,6 +3,7 @@ pragma solidity "0.8.26";
 
 import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
+import {ERC7540PreviewDepositDisabled, ERC7540PreviewMintDisabled, ERC7540PreviewRedeemDisabled, ERC7540PreviewWithdrawDisabled, OnlyOneRequestAllowed, RequestNotCancelable, ERC7540InvalidOperator, ZeroPendingDeposit, ZeroPendingRedeem, RequestIdNotClaimable, CantDepositNativeToken} from "./Errors.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -16,21 +17,6 @@ import {IWETH9} from "./interfaces/IWETH9.sol";
 
 using SafeERC20 for IERC20;
 using Math for uint256;
-
-error ERC7540PreviewDepositDisabled();
-error ERC7540PreviewMintDisabled();
-error ERC7540PreviewRedeemDisabled();
-error ERC7540PreviewWithdrawDisabled();
-error OnlyOneRequestAllowed();
-error RequestNotCancelable();
-
-error ERC7540InvalidOperator();
-error ZeroPendingDeposit();
-error ZeroPendingRedeem();
-
-error RequestIdNotClaimable();
-
-error CantDepositNativeToken();
 
 struct EpochData {
     uint256 settleId;
@@ -246,8 +232,9 @@ abstract contract ERC7540Upgradeable is
 
         _depositId = $.depositTotalAssetsId;
         if ($.lastDepositRequestId[controller] != _depositId) {
-            if (pendingDepositRequest(0, controller) > 0)
+            if (pendingDepositRequest(0, controller) > 0) {
                 revert OnlyOneRequestAllowed();
+            }
             $.lastDepositRequestId[controller] = _depositId;
         }
         $.epochDatas[_depositId].depositRequest[controller] += assets;
@@ -289,8 +276,9 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
-        if (requestId > $.lastDepositTotalAssetsIdSettled)
+        if (requestId > $.lastDepositTotalAssetsIdSettled) {
             return $.epochDatas[requestId].depositRequest[controller];
+        }
     }
 
     // todo: Pass this function as external
@@ -301,8 +289,9 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
-        if (requestId <= $.lastDepositTotalAssetsIdSettled)
+        if (requestId <= $.lastDepositTotalAssetsIdSettled) {
             return $.epochDatas[requestId].depositRequest[controller];
+        }
     }
 
     // todo: replace with the implementation of claimableDepositRequest
@@ -337,8 +326,9 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
-        if (requestId > $.lastDepositTotalAssetsIdSettled)
+        if (requestId > $.lastDepositTotalAssetsIdSettled) {
             revert RequestIdNotClaimable();
+        }
 
         $.epochDatas[requestId].depositRequest[controller] -= assets;
         shares = convertToShares(assets, requestId);
@@ -373,8 +363,9 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastDepositRequestId[controller];
-        if (requestId > $.lastDepositTotalAssetsIdSettled)
+        if (requestId > $.lastDepositTotalAssetsIdSettled) {
             revert RequestIdNotClaimable();
+        }
 
         assets = convertToAssets(shares, requestId);
 
@@ -389,8 +380,9 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
         uint256 requestId = $.lastDepositRequestId[msgSender];
-        if (requestId <= $.lastDepositTotalAssetsIdSettled)
-            revert("can't cancel claimable request"); //todo revert error
+        if (requestId <= $.lastDepositTotalAssetsIdSettled) {
+            revert("can't cancel claimable request");
+        } //todo revert error
         if (requestId != $.depositTotalAssetsId) revert RequestNotCancelable();
 
         uint256 request = $.epochDatas[requestId].depositRequest[msgSender];
@@ -419,8 +411,9 @@ abstract contract ERC7540Upgradeable is
 
         _redeemId = $.redeemTotalAssetsId;
         if ($.lastRedeemRequestId[controller] != _redeemId) {
-            if (pendingRedeemRequest(0, controller) > 0)
+            if (pendingRedeemRequest(0, controller) > 0) {
                 revert OnlyOneRequestAllowed();
+            }
             $.lastRedeemRequestId[controller] = _redeemId;
         }
         $.epochDatas[_redeemId].redeemRequest[controller] += shares;
@@ -480,8 +473,9 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
-        if (requestId > $.lastRedeemTotalAssetsIdSettled)
+        if (requestId > $.lastRedeemTotalAssetsIdSettled) {
             revert RequestIdNotClaimable();
+        }
 
         $.epochDatas[requestId].redeemRequest[controller] -= shares;
         assets = convertToAssets(shares, requestId);
@@ -507,8 +501,9 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 requestId = $.lastRedeemRequestId[controller];
-        if (requestId > $.lastRedeemTotalAssetsIdSettled)
+        if (requestId > $.lastRedeemTotalAssetsIdSettled) {
             revert RequestIdNotClaimable();
+        }
 
         shares = convertToShares(assets, requestId);
         $.epochDatas[requestId].redeemRequest[controller] -= shares;

@@ -59,12 +59,7 @@ contract TestMint is BaseTest {
     }
 
     function test_updateNewTotalAssetsManager_notOwner() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                OwnableUpgradeable.OwnableUnauthorizedAccount.selector,
-                address(this)
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
         vault.updateTotalAssetsManager(address(0x42));
     }
 }
