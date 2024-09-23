@@ -3,8 +3,6 @@ pragma solidity "0.8.26";
 
 import {RolesUpgradeable} from "./Roles.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {IWhitelistModule} from "./interfaces/IWhitelistModule.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 // import {console} from "forge-std/console.sol";
 
 // errors
@@ -41,6 +39,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
         }
     }
 
+    // solhint-disable-next-line func-name-mixedcase
     function __Whitelistable_init(bool isActivated) internal onlyInitializing {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         $.isActivated = isActivated;

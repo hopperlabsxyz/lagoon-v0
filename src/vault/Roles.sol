@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {FeeRegistry} from "../protocol/FeeRegistry.sol";
 
 error OnlySafe();
@@ -27,6 +27,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         address totalAssetsManager;
     }
 
+    // solhint-disable-next-line func-name-mixedcase
     function __Roles_init(RolesStorage memory roles) internal onlyInitializing {
         RolesStorage storage $ = _getRolesStorage();
         $.whitelistManager = roles.whitelistManager;
