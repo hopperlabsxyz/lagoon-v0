@@ -48,23 +48,24 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
 
     /// @dev Modifier to check if the caller is the safe.
     modifier onlySafe() {
-        if (_getRolesStorage().safe != _msgSender()) revert OnlySafe();
+        address _safe = _getRolesStorage().safe;
+        if (_safe != _msgSender()) revert OnlySafe(_safe);
         _;
     }
 
     /// @dev Modifier to check if the caller is the whitelist manager.
     modifier onlyWhitelistManager() {
-        if (_getRolesStorage().whitelistManager != _msgSender()) {
-            revert OnlyWhitelistManager();
-        }
+        address _whitelistManager = _getRolesStorage().whitelistManager;
+        if (_whitelistManager != _msgSender())
+            revert OnlyWhitelistManager(_whitelistManager);
         _;
     }
 
     /// @dev Modifier to check if the caller is the total assets manager.
     modifier onlyTotalAssetsManager() {
-        if (_getRolesStorage().totalAssetsManager != _msgSender()) {
-            revert OnlyTotalAssetsManager();
-        }
+        address _totalAssetsManager = _getRolesStorage().totalAssetsManager;
+        if (_totalAssetsManager != _msgSender())
+            revert OnlyTotalAssetsManager(_totalAssetsManager);
         _;
     }
 

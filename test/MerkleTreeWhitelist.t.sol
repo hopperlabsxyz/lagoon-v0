@@ -135,9 +135,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
 
         uint256 userBalance = assetBalance(user1.addr);
         vm.startPrank(user1.addr);
-        vm.expectRevert(
-            abi.encodeWithSelector(NotWhitelisted.selector, user1.addr)
-        );
+        vm.expectRevert(NotWhitelisted.selector);
 
         vault.requestDeposit(
             userBalance,
@@ -334,9 +332,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
         vault.transfer(user2.addr, userBalance);
 
         vm.prank(user2.addr);
-        vm.expectRevert(
-            abi.encodeWithSelector(NotWhitelisted.selector, user2.addr)
-        );
+        vm.expectRevert(NotWhitelisted.selector);
         vault.requestRedeem(userBalance, user2.addr, user2.addr);
     }
 

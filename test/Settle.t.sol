@@ -63,8 +63,11 @@ contract TestSettle is BaseTest {
 
         // totalAssets when settle-redeem:
         uint256 totalAssetsWhenRedeem = totalAssetsWhenDeposit + user2Assets;
-        uint256 user2Shares =
-            user2Assets.mulDiv(totalSupplyWhenDeposit + 1, totalAssetsWhenDeposit + 1, Math.Rounding.Floor);
+        uint256 user2Shares = user2Assets.mulDiv(
+            totalSupplyWhenDeposit + 1,
+            totalAssetsWhenDeposit + 1,
+            Math.Rounding.Floor
+        );
         uint256 totalSupplyWhenRedeem = totalSupplyWhenDeposit + user2Shares;
         redeem(user1Shares, user1.addr);
         deposit(user2Assets, user2.addr);
@@ -72,7 +75,12 @@ contract TestSettle is BaseTest {
         // user1 assets: user1Assets + user1Shares.muldiv(75*1e6 + 1, 50e1e6 + 1, Math.Round.floor)
         assertEq(
             user1NewAssets,
-            user1Assets + user1Shares.mulDiv(totalAssetsWhenRedeem, totalSupplyWhenRedeem, Math.Rounding.Floor)
+            user1Assets +
+                user1Shares.mulDiv(
+                    totalAssetsWhenRedeem,
+                    totalSupplyWhenRedeem,
+                    Math.Rounding.Floor
+                )
         );
     }
 
@@ -211,22 +219,33 @@ contract TestSettle is BaseTest {
     }
 
     function test_updateNewTotalAssets_revertIfNotTotalAssetsManager() public {
-        vm.expectRevert(OnlyTotalAssetsManager.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                OnlyTotalAssetsManager.selector,
+                vault.totalAssetsManager()
+            )
+        );
         vault.updateNewTotalAssets(0);
     }
 
     function test_settleDeposit_revertIfNotTotalAssetsManager() public {
-        vm.expectRevert(OnlySafe.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(OnlySafe.selector, vault.safe())
+        );
         vault.settleDeposit();
     }
 
     function test_settleRedeem_revertIfNotTotalAssetsManager() public {
-        vm.expectRevert(OnlySafe.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(OnlySafe.selector, vault.safe())
+        );
         vault.settleRedeem();
     }
 
     function test_close_revertIfNotTotalAssetsManager() public {
-        vm.expectRevert(OnlySafe.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(OnlySafe.selector, vault.safe())
+        );
         vault.close();
     }
 

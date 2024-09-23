@@ -48,7 +48,10 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), pricePerShare());
     }
 
-    function test_feeReceiverAndDaoHaveNoVaultSharesAtVaultCreation() public view {
+    function test_feeReceiverAndDaoHaveNoVaultSharesAtVaultCreation()
+        public
+        view
+    {
         assertEq(vault.balanceOf(vault.feeReceiver()), 0);
         assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0);
     }
@@ -90,10 +93,20 @@ contract TestFeeManager is BaseTest {
         // no fees should be charged to user 1 because the pps
         // have decreased from 1 to ~0.5 and therefore do not exceed the highWaterMark of 1pps
         assertEq(
-            pricePerShare(), 5 * 10 ** (vault.underlyingDecimals() - 1), "price per share didn't decreased as expected"
+            pricePerShare(),
+            5 * 10 ** (vault.underlyingDecimals() - 1),
+            "price per share didn't decreased as expected"
         );
-        assertEq(vault.balanceOf(vault.feeReceiver()), 0, "feeReceiver received unexpected fee shares");
-        assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0, "protocol received unexpected fee shares");
+        assertEq(
+            vault.balanceOf(vault.feeReceiver()),
+            0,
+            "feeReceiver received unexpected fee shares"
+        );
+        assertEq(
+            vault.balanceOf(vault.protocolFeeReceiver()),
+            0,
+            "protocol received unexpected fee shares"
+        );
 
         // ------------ Settle ------------ //
         newTotalAssets = 4_000_002 * 10 ** vault.underlyingDecimals(); // vault valo made a x4 for user2; and x2 for user1
@@ -108,7 +121,9 @@ contract TestFeeManager is BaseTest {
         );
 
         assertEq(
-            vault.highWaterMark(), pricePerShare(), "Highwater mark hasn't been raised at expected price per share"
+            vault.highWaterMark(),
+            pricePerShare(),
+            "Highwater mark hasn't been raised at expected price per share"
         );
 
         uint256 user1ShareBalance = vault.balanceOf(user1.addr);
@@ -129,25 +144,41 @@ contract TestFeeManager is BaseTest {
         assetBalance(user1.addr);
         assetBalance(user2.addr);
 
-        uint256 user1Profit = (user1AssetAfter - user1AssetBefore) - user1InitialDeposit;
-        uint256 user2Profit = (user2AssetAfter - user2AssetBefore) - user2InitialDeposit;
+        uint256 user1Profit = (user1AssetAfter - user1AssetBefore) -
+            user1InitialDeposit;
+        uint256 user2Profit = (user2AssetAfter - user2AssetBefore) -
+            user2InitialDeposit;
 
         // Valo at totalAssets update
         // 0.5$       => pps = 0.5
         // 1.0$       => pps = 1.0 (we start taking fees)
         // 2.0$       => pps = 2.0 (fees = (2$ - 1$) * 0.2 = 0.2$ && profit = 0.8$)
-        uint256 expectedUser1Profit = user1InitialDeposit - (user1InitialDeposit * 20) / 100;
+        uint256 expectedUser1Profit = user1InitialDeposit -
+            (user1InitialDeposit * 20) /
+            100;
 
-        assertApproxEqAbs(user1Profit, expectedUser1Profit, 5, "user1 expected profit is wrong");
+        assertApproxEqAbs(
+            user1Profit,
+            expectedUser1Profit,
+            5,
+            "user1 expected profit is wrong"
+        );
 
         // Valo at totalAssets update
         // 1M$       => pps = 0.5
         // 2M$       => pps = 1.0 (we start taking fees, user2 benefits a freeride between 0.5 and 1.0 pps)
         // 4M$       => pps = 2.0 (fees = (4$ - 2$) * 0.2 = 0.2M$ && profit = 2.6$)
         uint256 freeride = user2InitialDeposit;
-        uint256 expectedUser2Profit = (2 * user2InitialDeposit + freeride) - (2 * user2InitialDeposit * 20) / 100;
+        uint256 expectedUser2Profit = (2 * user2InitialDeposit + freeride) -
+            (2 * user2InitialDeposit * 20) /
+            100;
 
-        assertApproxEqAbs(user2Profit, expectedUser2Profit, 5, "user2 expected profit is wrong");
+        assertApproxEqAbs(
+            user2Profit,
+            expectedUser2Profit,
+            5,
+            "user2 expected profit is wrong"
+        );
         uint256 expectedTotalFees = 400_000_200_000;
 
         address feeReceiver = vault.feeReceiver();
@@ -162,7 +193,10 @@ contract TestFeeManager is BaseTest {
         // ------------ Settle ------------ //
         updateAndSettle(vault.totalAssets());
 
-        uint256 feeReceiverAssetAfter = redeem(feeReceiverShareBalance, feeReceiver);
+        uint256 feeReceiverAssetAfter = redeem(
+            feeReceiverShareBalance,
+            feeReceiver
+        );
         uint256 daoAssetAfter = redeem(daoShareBalance, dao);
 
         uint256 totalFees = feeReceiverAssetAfter + daoAssetAfter;
@@ -207,10 +241,20 @@ contract TestFeeManager is BaseTest {
         // no fees should be charged to user 1 because the pps
         // have decreased from 1 to ~0.5 and therefore do not exceed the highWaterMark of 1pps
         assertEq(
-            pricePerShare(), 5 * 10 ** (vault.underlyingDecimals() - 1), "price per share didn't decreased as expected"
+            pricePerShare(),
+            5 * 10 ** (vault.underlyingDecimals() - 1),
+            "price per share didn't decreased as expected"
         );
-        assertEq(vault.balanceOf(vault.feeReceiver()), 0, "feeReceiver received unexpected fee shares");
-        assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0, "protocol received unexpected fee shares");
+        assertEq(
+            vault.balanceOf(vault.feeReceiver()),
+            0,
+            "feeReceiver received unexpected fee shares"
+        );
+        assertEq(
+            vault.balanceOf(vault.protocolFeeReceiver()),
+            0,
+            "protocol received unexpected fee shares"
+        );
 
         // ------------ Settle ------------ //
 
@@ -227,7 +271,9 @@ contract TestFeeManager is BaseTest {
         );
 
         assertEq(
-            vault.highWaterMark(), pricePerShare(), "Highwater mark hasn't been raised at expected price per share"
+            vault.highWaterMark(),
+            pricePerShare(),
+            "Highwater mark hasn't been raised at expected price per share"
         );
 
         uint256 user1ShareBalance = vault.balanceOf(user1.addr);
@@ -248,45 +294,79 @@ contract TestFeeManager is BaseTest {
         assetBalance(user1.addr);
         assetBalance(user2.addr);
 
-        uint256 user1Profit = (user1AssetAfter - user1AssetBefore) - user1InitialDeposit;
-        uint256 user2Profit = (user2AssetAfter - user2AssetBefore) - user2InitialDeposit;
+        uint256 user1Profit = (user1AssetAfter - user1AssetBefore) -
+            user1InitialDeposit;
+        uint256 user2Profit = (user2AssetAfter - user2AssetBefore) -
+            user2InitialDeposit;
 
         // Valo at totalAssets update
         // 0.5$       => pps = 0.5
         // 1.0$       => pps = 1.0 (no fees taken since we are back to the intial price per share)
         uint256 expectedUser1Profit = 0;
 
-        assertApproxEqAbs(user1Profit, expectedUser1Profit, 5, "user1 expected profit is wrong");
+        assertApproxEqAbs(
+            user1Profit,
+            expectedUser1Profit,
+            5,
+            "user1 expected profit is wrong"
+        );
 
         // Valo at totalAssets update
         // 1M$       => pps = 0.5
         // 2M$       => pps = 1.0 (user2 makes 1M profit without paying any fees)
         uint256 freeride = user2InitialDeposit;
 
-        assertApproxEqAbs(user2Profit, freeride, 5, "user2 expected profit is wrong");
+        assertApproxEqAbs(
+            user2Profit,
+            freeride,
+            5,
+            "user2 expected profit is wrong"
+        );
 
-        assertEq(vault.balanceOf(vault.feeReceiver()), 0, "feeReceiver received unexpected fee shares");
-        assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0, "protocol received unexpected fee shares");
+        assertEq(
+            vault.balanceOf(vault.feeReceiver()),
+            0,
+            "feeReceiver received unexpected fee shares"
+        );
+        assertEq(
+            vault.balanceOf(vault.protocolFeeReceiver()),
+            0,
+            "protocol received unexpected fee shares"
+        );
     }
 
     function test_updateRates_revertIfManagementRateAboveMaxRates() public {
         uint256 MAX_MANAGEMENT_RATE = vault.MAX_MANAGEMENT_RATE();
         uint256 MAX_PERFORMANCE_RATE = vault.MAX_PERFORMANCE_RATE();
 
-        Rates memory newRates =
-            Rates({managementRate: MAX_MANAGEMENT_RATE + 1, performanceRate: MAX_PERFORMANCE_RATE - 1});
+        Rates memory newRates = Rates({
+            managementRate: MAX_MANAGEMENT_RATE + 1,
+            performanceRate: MAX_PERFORMANCE_RATE - 1
+        });
 
         Rates memory ratesBefore = vault.feeRates();
 
         vm.prank(vault.owner());
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE + 1, MAX_MANAGEMENT_RATE));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AboveMaxRate.selector,
+                MAX_MANAGEMENT_RATE + 1,
+                MAX_MANAGEMENT_RATE
+            )
+        );
         vault.updateRates(newRates);
 
         Rates memory ratesAfter = vault.feeRates();
 
-        assertEq(ratesAfter.managementRate, ratesBefore.managementRate, "managementRate before and after are different");
         assertEq(
-            ratesAfter.performanceRate, ratesBefore.performanceRate, "performanceRate before and after are different"
+            ratesAfter.managementRate,
+            ratesBefore.managementRate,
+            "managementRate before and after are different"
+        );
+        assertEq(
+            ratesAfter.performanceRate,
+            ratesBefore.performanceRate,
+            "performanceRate before and after are different"
         );
     }
 
@@ -294,31 +374,50 @@ contract TestFeeManager is BaseTest {
         uint256 MAX_MANAGEMENT_RATE = vault.MAX_MANAGEMENT_RATE();
         uint256 MAX_PERFORMANCE_RATE = vault.MAX_PERFORMANCE_RATE();
 
-        Rates memory newRates =
-            Rates({managementRate: MAX_MANAGEMENT_RATE - 1, performanceRate: MAX_PERFORMANCE_RATE + 1});
+        Rates memory newRates = Rates({
+            managementRate: MAX_MANAGEMENT_RATE - 1,
+            performanceRate: MAX_PERFORMANCE_RATE + 1
+        });
 
         Rates memory ratesBefore = vault.feeRates();
 
         vm.prank(vault.owner());
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE + 1, MAX_PERFORMANCE_RATE));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AboveMaxRate.selector,
+                MAX_PERFORMANCE_RATE + 1,
+                MAX_PERFORMANCE_RATE
+            )
+        );
         vault.updateRates(newRates);
 
         Rates memory ratesAfter = vault.feeRates();
 
-        assertEq(ratesAfter.managementRate, ratesBefore.managementRate, "managementRate before and after are different");
         assertEq(
-            ratesAfter.performanceRate, ratesBefore.performanceRate, "performanceRate before and after are different"
+            ratesAfter.managementRate,
+            ratesBefore.managementRate,
+            "managementRate before and after are different"
+        );
+        assertEq(
+            ratesAfter.performanceRate,
+            ratesBefore.performanceRate,
+            "performanceRate before and after are different"
         );
     }
 
     function test_updateRates_revertIfCoolDownNotOver() public {
-        Rates memory newRates = Rates({managementRate: 42, performanceRate: 42});
+        Rates memory newRates = Rates({
+            managementRate: 42,
+            performanceRate: 42
+        });
 
         vm.prank(vault.owner());
         vault.updateRates(newRates);
 
         vm.prank(vault.owner());
-        vm.expectRevert(CooldownNotOver.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(CooldownNotOver.selector, 1 days)
+        );
         vault.updateRates(newRates);
 
         vm.warp(block.timestamp + 1 days);

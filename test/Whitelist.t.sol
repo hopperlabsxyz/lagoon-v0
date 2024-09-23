@@ -36,9 +36,7 @@ contract TestWhitelist is BaseTest {
         withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
         vm.startPrank(user1.addr);
-        vm.expectRevert(
-            abi.encodeWithSelector(NotWhitelisted.selector, user1.addr)
-        );
+        vm.expectRevert(NotWhitelisted.selector);
         vault.requestDeposit(userBalance, user1.addr, user1.addr);
     }
 
@@ -210,20 +208,40 @@ contract TestWhitelist is BaseTest {
     function test_addToWhitelist_revert() public {
         withWhitelistSetUp();
 
-        vm.expectRevert(OnlyWhitelistManager.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                OnlyWhitelistManager.selector,
+                vault.whitelistManager()
+            )
+        );
         vault.addToWhitelist(address(0x42));
 
-        vm.expectRevert(OnlyWhitelistManager.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                OnlyWhitelistManager.selector,
+                vault.whitelistManager()
+            )
+        );
         vault.addToWhitelist(new address[](5));
     }
 
     function test_revokeFromWhitelist_revert() public {
         withWhitelistSetUp();
 
-        vm.expectRevert(OnlyWhitelistManager.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                OnlyWhitelistManager.selector,
+                vault.whitelistManager()
+            )
+        );
         vault.revokeFromWhitelist(address(0x42));
 
-        vm.expectRevert(OnlyWhitelistManager.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                OnlyWhitelistManager.selector,
+                vault.whitelistManager()
+            )
+        );
         vault.revokeFromWhitelist(new address[](5));
     }
 }

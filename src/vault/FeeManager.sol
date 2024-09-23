@@ -89,7 +89,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     /// @param newRates the new fee rates
     function updateRates(Rates memory newRates) external onlyOwner {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if (block.timestamp < $.newRatesTimestamp) revert CooldownNotOver();
+        if (block.timestamp < $.newRatesTimestamp)
+            revert CooldownNotOver($.newRatesTimestamp - block.timestamp);
         if (newRates.managementRate > MAX_MANAGEMENT_RATE) {
             revert AboveMaxRate(newRates.managementRate, MAX_MANAGEMENT_RATE);
         }

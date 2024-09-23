@@ -380,10 +380,8 @@ abstract contract ERC7540Upgradeable is
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
         uint256 requestId = $.lastDepositRequestId[msgSender];
-        if (requestId <= $.lastDepositTotalAssetsIdSettled) {
-            revert("can't cancel claimable request");
-        } //todo revert error
-        if (requestId != $.depositTotalAssetsId) revert RequestNotCancelable();
+        if (requestId != $.depositTotalAssetsId)
+            revert RequestNotCancelable(requestId);
 
         uint256 request = $.epochDatas[requestId].depositRequest[msgSender];
         if (request != 0) {
