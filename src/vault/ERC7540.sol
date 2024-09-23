@@ -33,7 +33,7 @@ error RequestIdNotClaimable();
 error CantDepositNativeToken();
 
 struct EpochData {
-    uint256 settleId;
+    uint40 settleId;
     mapping(address => uint256) depositRequest;
     mapping(address => uint256) redeemRequest;
 }
@@ -52,16 +52,16 @@ abstract contract ERC7540Upgradeable is
     /// @custom:storage-location erc7201:hopper.storage.ERC7540
     struct ERC7540Storage {
         uint256 totalAssets;
-        uint256 depositEpochId;
-        uint256 redeemEpochId;
-        uint256 depositSettleId;
-        uint256 redeemSettleId;
-        uint256 lastRedeemEpochIdSettled;
-        uint256 lastDepositEpochIdSettled;
-        mapping(uint256 epochId => EpochData) epochs;
-        mapping(uint256 settleId => SettleData) settles;
-        mapping(address user => uint256 epochId) lastDepositRequestId;
-        mapping(address user => uint256 epochId) lastRedeemRequestId;
+        uint40 depositEpochId;
+        uint40 depositSettleId;
+        uint40 lastDepositEpochIdSettled;
+        uint40 redeemEpochId;
+        uint40 redeemSettleId;
+        uint40 lastRedeemEpochIdSettled;
+        mapping(uint40 epochId => EpochData) epochs;
+        mapping(uint40 settleId => SettleData) settles;
+        mapping(address user => uint40 epochId) lastDepositRequestId;
+        mapping(address user => uint40 epochId) lastRedeemRequestId;
         mapping(address controller => mapping(address operator => bool)) isOperator;
         Silo pendingSilo;
         IWETH9 wrappedNativeToken;
@@ -238,14 +238,14 @@ abstract contract ERC7540Upgradeable is
         virtual
         onlyOperator(owner)
         whenNotPaused
-        returns (uint256 _depositId)
+        returns (uint256)
     {
         uint256 claimable = claimableDepositRequest(0, controller);
         if (claimable > 0) _deposit(claimable, controller, controller);
 
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        _depositId = $.depositEpochId;
+        uint40 _depositId = $.depositEpochId;
         if ($.lastDepositRequestId[controller] != _depositId) {
             if (pendingDepositRequest(0, controller) > 0)
                 revert OnlyOneRequestAllowed();
@@ -281,6 +281,7 @@ abstract contract ERC7540Upgradeable is
             _msgSender(),
             assets
         );
+        return _depositId;
     }
 
     function pendingDepositRequest(
@@ -291,7 +292,7 @@ abstract contract ERC7540Upgradeable is
 
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
         if (requestId > $.lastDepositEpochIdSettled)
-            return $.epochs[requestId].depositRequest[controller];
+            return $.epochs[uint40(requestId)].depositRequest[controller];
     }
 
     // todo: Pass this function as external
@@ -303,7 +304,7 @@ abstract contract ERC7540Upgradeable is
 
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
         if (requestId <= $.lastDepositEpochIdSettled)
-            return $.epochs[requestId].depositRequest[controller];
+            return $.epochs[uint40(requestId)].depositRequest[controller];
     }
 
     // todo: replace with the implementation of claimableDepositRequest
@@ -337,7 +338,7 @@ abstract contract ERC7540Upgradeable is
     ) internal virtual returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        uint256 requestId = $.lastDepositRequestId[controller];
+        uint40 requestId = $.lastDepositRequestId[controller];
         if (requestId > $.lastDepositEpochIdSettled)
             revert RequestIdNotClaimable();
 
@@ -373,7 +374,7 @@ abstract contract ERC7540Upgradeable is
     ) internal virtual returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        uint256 requestId = $.lastDepositRequestId[controller];
+        uint40 requestId = $.lastDepositRequestId[controller];
         if (requestId > $.lastDepositEpochIdSettled)
             revert RequestIdNotClaimable();
 
@@ -389,7 +390,7 @@ abstract contract ERC7540Upgradeable is
     function cancelRequestDeposit() external whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
-        uint256 requestId = $.lastDepositRequestId[msgSender];
+        uint40 requestId = $.lastDepositRequestId[msgSender];
         if (requestId <= $.lastDepositEpochIdSettled)
             revert("can't cancel claimable request"); //todo revert error
         if (requestId != $.depositEpochId) revert RequestNotCancelable();
@@ -408,7 +409,7 @@ abstract contract ERC7540Upgradeable is
         uint256 shares,
         address controller,
         address owner
-    ) public virtual returns (uint256 _redeemId) {
+    ) public virtual returns (uint256) {
         if (_msgSender() != owner && !isOperator(owner, _msgSender())) {
             _spendAllowance(owner, _msgSender(), shares);
         }
@@ -418,7 +419,7 @@ abstract contract ERC7540Upgradeable is
 
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        _redeemId = $.redeemEpochId;
+        uint40 _redeemId = $.redeemEpochId;
         if ($.lastRedeemRequestId[controller] != _redeemId) {
             if (pendingRedeemRequest(0, controller) > 0)
                 revert OnlyOneRequestAllowed();
@@ -429,6 +430,7 @@ abstract contract ERC7540Upgradeable is
         _update(owner, address($.pendingSilo), shares);
 
         emit RedeemRequest(controller, owner, _redeemId, _msgSender(), shares);
+        return _redeemId;
     }
 
     function pendingRedeemRequest(
@@ -441,7 +443,7 @@ abstract contract ERC7540Upgradeable is
             requestId = $.lastRedeemRequestId[controller];
         }
         if (requestId > $.lastRedeemEpochIdSettled) {
-            return $.epochs[requestId].redeemRequest[controller];
+            return $.epochs[uint40(requestId)].redeemRequest[controller];
         }
     }
 
@@ -454,7 +456,7 @@ abstract contract ERC7540Upgradeable is
         if (requestId == 0) requestId = $.lastRedeemRequestId[controller];
 
         if (requestId <= $.lastRedeemEpochIdSettled) {
-            return $.epochs[requestId].redeemRequest[controller];
+            return $.epochs[uint40(requestId)].redeemRequest[controller];
         }
     }
 
@@ -480,7 +482,7 @@ abstract contract ERC7540Upgradeable is
     ) internal onlyOperator(controller) whenNotPaused returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        uint256 requestId = $.lastRedeemRequestId[controller];
+        uint40 requestId = $.lastRedeemRequestId[controller];
         if (requestId > $.lastRedeemEpochIdSettled)
             revert RequestIdNotClaimable();
 
@@ -507,7 +509,7 @@ abstract contract ERC7540Upgradeable is
     ) internal onlyOperator(controller) returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        uint256 requestId = $.lastRedeemRequestId[controller];
+        uint40 requestId = $.lastRedeemRequestId[controller];
         if (requestId > $.lastRedeemEpochIdSettled)
             revert RequestIdNotClaimable();
 
@@ -523,12 +525,12 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         uint256 requestId
     ) public view returns (uint256) {
-        return _convertToShares(assets, requestId, Math.Rounding.Floor);
+        return _convertToShares(assets, uint40(requestId), Math.Rounding.Floor);
     }
 
     function _convertToShares(
         uint256 assets,
-        uint256 requestId,
+        uint40 requestId,
         Math.Rounding rounding
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
@@ -548,12 +550,12 @@ abstract contract ERC7540Upgradeable is
         uint256 shares,
         uint256 requestId
     ) public view returns (uint256) {
-        return _convertToAssets(shares, requestId, Math.Rounding.Floor);
+        return _convertToAssets(shares, uint40(requestId), Math.Rounding.Floor);
     }
 
     function _convertToAssets(
         uint256 shares,
-        uint256 requestId,
+        uint40 requestId,
         Math.Rounding rounding
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();

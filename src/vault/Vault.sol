@@ -272,7 +272,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         uint256 _totalAssets = totalAssets();
-        uint256 depositSettleId = $erc7540.depositSettleId;
+        uint40 depositSettleId = $erc7540.depositSettleId;
 
         SettleData storage settleData = $erc7540.settles[depositSettleId];
 
@@ -315,7 +315,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         uint256 _totalAssets = totalAssets();
-        uint256 redeemSettleId = $erc7540.redeemSettleId;
+        uint40 redeemSettleId = $erc7540.redeemSettleId;
 
         SettleData storage settleData = $erc7540.settles[redeemSettleId];
 
