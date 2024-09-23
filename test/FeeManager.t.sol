@@ -2,11 +2,11 @@
 pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import {Vault} from "@src/Vault.sol";
+import {Vault} from "@src/vault/Vault.sol";
 import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
-import {FeeManager, Rates, AboveMaxRate, CooldownNotOver} from "@src/FeeManager.sol";
+import {FeeManager, Rates, AboveMaxRate, CooldownNotOver} from "@src/vault/FeeManager.sol";
 
 contract TestFeeManager is BaseTest {
     using Math for uint256;

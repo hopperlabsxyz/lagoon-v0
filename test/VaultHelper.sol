@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import "../src/Vault.sol";
-import "../src/ERC7540.sol";
+import "../src/vault/Vault.sol";
+import "../src/vault/ERC7540.sol";
 
 contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor

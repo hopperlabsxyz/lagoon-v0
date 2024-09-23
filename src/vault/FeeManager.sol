@@ -2,10 +2,10 @@
 pragma solidity "0.8.26";
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {FeeRegistry} from "./FeeRegistry.sol";
+import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 // import {console} from "forge-std/console.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import {ERC7540Upgradeable} from "@src/ERC7540.sol";
+import {ERC7540Upgradeable} from "@src/vault/ERC7540.sol";
 
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS = 10_000; // 100 %

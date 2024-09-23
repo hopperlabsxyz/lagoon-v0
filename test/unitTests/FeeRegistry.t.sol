@@ -6,7 +6,7 @@ import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "../Base.sol";
 import {VmSafe} from "forge-std/Vm.sol";
-import {FeeRegistry} from "@src/FeeRegistry.sol";
+import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 
 contract TestFeeRegistry is BaseTest {
     address mockVault = address(0x1);
