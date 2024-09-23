@@ -70,12 +70,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         }
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    // solhint-disable-next-line ignoreConstructors
-    constructor() {
-        // if (disable) _disableInitializers();
-    }
-
     function initialize(InitStruct memory init) public virtual initializer {
         __ERC4626_init(init.underlying);
         __ERC20_init(init.name, init.symbol);

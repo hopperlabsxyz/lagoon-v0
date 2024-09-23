@@ -39,6 +39,7 @@ contract FeeRegistry is Ownable2StepUpgradeable {
         pure
         returns (FeeRegistryStorage storage $)
     {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := feeRegistryStorage
         }
