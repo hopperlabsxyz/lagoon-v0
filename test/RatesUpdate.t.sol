@@ -13,14 +13,14 @@ import {Vault} from "@src/vault/Vault.sol";
 import "forge-std/Test.sol";
 
 contract testRateUpdates is BaseTest {
-    uint256 public constant MAX_MANAGEMENT_RATE = 1000; // 10 %
-    uint256 public constant MAX_PERFORMANCE_RATE = 5000; // 50 %
-    uint256 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
+    uint16 public constant MAX_MANAGEMENT_RATE = 1000; // 10 %
+    uint16 public constant MAX_PERFORMANCE_RATE = 5000; // 50 %
+    uint16 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
 
     function test_ratesShouldMatchValuesAtInit() public {
-        uint256 protocolRate = 100;
-        uint256 managementRate = 200;
-        uint256 performanceRate = 2000;
+        uint16 protocolRate = 100;
+        uint16 managementRate = 200;
+        uint16 performanceRate = 2000;
         setUpVault(protocolRate, managementRate, performanceRate);
         assertEq(vault.protocolRate(), protocolRate, "protocolRate");
         assertEq(vault.feeRates().performanceRate, performanceRate, "performanceRate");
@@ -28,9 +28,9 @@ contract testRateUpdates is BaseTest {
     }
 
     function test_ratesShouldRevertAtInitWhenToHigh() public {
-        uint256 protocolRate = MAX_PROTOCOL_RATE + 1;
-        uint256 managementRate = MAX_MANAGEMENT_RATE + 1;
-        uint256 performanceRate = MAX_PERFORMANCE_RATE + 1;
+        uint16 protocolRate = MAX_PROTOCOL_RATE + 1;
+        uint16 managementRate = MAX_MANAGEMENT_RATE + 1;
+        uint16 performanceRate = MAX_PERFORMANCE_RATE + 1;
 
         feeRegistry = new FeeRegistry();
         feeRegistry.initialize(dao.addr, dao.addr);
@@ -45,7 +45,7 @@ contract testRateUpdates is BaseTest {
             symbol: vaultSymbol,
             safe: safe.addr,
             whitelistManager: whitelistManager.addr,
-            totalAssetsManager: totalAssetsManager.addr,
+            navManager: navManager.addr,
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
             feeRegistry: address(feeRegistry),
@@ -56,13 +56,13 @@ contract testRateUpdates is BaseTest {
             enableWhitelist: enableWhitelist,
             whitelist: whitelistInit
         });
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, managementRate, MAX_MANAGEMENT_RATE));
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
 
         vault.initialize(v);
 
         v.managementRate = MAX_MANAGEMENT_RATE;
 
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, performanceRate, MAX_PERFORMANCE_RATE));
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE));
 
         vault.initialize(v);
         v.performanceRate = MAX_PERFORMANCE_RATE;
@@ -76,14 +76,14 @@ contract testRateUpdates is BaseTest {
 
         Rates memory newRates = Rates({managementRate: MAX_MANAGEMENT_RATE + 1, performanceRate: 0});
         vm.startPrank(vault.owner());
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE + 1, MAX_MANAGEMENT_RATE));
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
         vault.updateRates(newRates);
 
         newRates.managementRate = 0;
         newRates.performanceRate = MAX_PERFORMANCE_RATE + 1;
 
         vm.startPrank(vault.owner());
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE + 1, MAX_PERFORMANCE_RATE));
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE));
         vault.updateRates(newRates);
     }
 

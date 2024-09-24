@@ -55,7 +55,7 @@ abstract contract Constants is Test {
     VmSafe.Wallet user10 = vm.createWallet("user10");
     VmSafe.Wallet owner = vm.createWallet("owner");
     VmSafe.Wallet safe = vm.createWallet("safe");
-    VmSafe.Wallet totalAssetsManager = vm.createWallet("totalAssetsManager");
+    VmSafe.Wallet navManager = vm.createWallet("navManager");
     VmSafe.Wallet admin = vm.createWallet("admin");
     VmSafe.Wallet feeReceiver = vm.createWallet("feeReceiver");
     VmSafe.Wallet dao = vm.createWallet("dao");
@@ -103,8 +103,8 @@ abstract contract Constants is Test {
         ERC20 _underlying,
         string memory _vaultName,
         string memory _vaultSymbol,
-        uint256 _managementRate,
-        uint256 _performanceRate,
+        uint16 _managementRate,
+        uint16 _performanceRate,
         address[] memory whitelist
     ) internal returns (VaultHelper) {
         Vault.InitStruct memory v = Vault.InitStruct({
@@ -113,7 +113,7 @@ abstract contract Constants is Test {
             symbol: _vaultSymbol,
             safe: safe.addr,
             whitelistManager: whitelistManager.addr,
-            totalAssetsManager: totalAssetsManager.addr,
+            navManager: navManager.addr,
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
             feeRegistry: address(feeRegistry),
@@ -131,7 +131,7 @@ abstract contract Constants is Test {
         return VaultHelper(address(proxy));
     }
 
-    function setUpVault(uint256 _protocolRate, uint256 _managementRate, uint256 _performanceRate) internal {
+    function setUpVault(uint16 _protocolRate, uint16 _managementRate, uint16 _performanceRate) internal {
         bool proxy = vm.envBool("PROXY");
 
         feeRegistry = new FeeRegistry();
@@ -158,7 +158,7 @@ abstract contract Constants is Test {
                 symbol: vaultSymbol,
                 safe: safe.addr,
                 whitelistManager: whitelistManager.addr,
-                totalAssetsManager: totalAssetsManager.addr,
+                navManager: navManager.addr,
                 admin: admin.addr,
                 feeReceiver: feeReceiver.addr,
                 feeRegistry: address(feeRegistry),
@@ -177,7 +177,7 @@ abstract contract Constants is Test {
         // console.log(dao.addr);
         // console.log(assetManager.addr);
         // console.log(whitelistManager.addr);
-        // console.log(totalAssetsManager.addr);
+        // console.log(navManager.addr);
         // console.log(admin.addr);
         // console.log(vault.pendingSilo());
         // console.log(address(0));

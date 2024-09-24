@@ -62,13 +62,11 @@ contract TestRequestDeposit is BaseTest {
         assertEq(requestId_1 + 2, vault.depositId(), "wrong deposit id");
         assertEq(
             vault.lastDepositRequestId_debug(user1.addr), // keep track of the last deposit id of the user, only one
-                // requestId is allowed by settle period by user
+            // requestId is allowed by settle period by user
             requestId_1,
             "wrong internal lastDepositRequestId"
         );
-        assertEq(
-            vault.lastDepositTotalAssetsIdSettled_debug(), requestId_1, "wrong internal lastDepositTotalAssetsIdSettle"
-        );
+        assertEq(vault.lastDepositEpochIdSettled_debug(), requestId_1, "wrong internal lastDepositTotalAssetsIdSettle");
 
         assertEq(vault.maxDeposit(user1.addr), userBalance / 2, "wrong claimable deposit value");
 

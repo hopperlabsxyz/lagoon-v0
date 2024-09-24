@@ -4,14 +4,14 @@ pragma solidity "0.8.26";
 import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
 
 import {State} from "./Enums.sol";
-import {NewTotalAssetsMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
+import {NewNAVMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
 import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./Events.sol";
-import {WhitelistableUpgradeable} from "./Whitelistable.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {FeeManager} from "./FeeManager.sol";
 import {RolesUpgradeable} from "./Roles.sol";
+import {WhitelistableUpgradeable} from "./Whitelistable.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // import {console} from "forge-std/console.sol";
 
 using SafeERC20 for IERC20;
@@ -23,13 +23,13 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         string symbol;
         address safe;
         address whitelistManager;
-        address totalAssetsManager;
+        address navManager;
         address admin;
         address feeReceiver;
         address feeRegistry;
         address wrappedNativeToken;
-        uint256 managementRate;
-        uint256 performanceRate;
+        uint16 managementRate;
+        uint16 performanceRate;
         uint256 rateUpdateCooldown;
         bool enableWhitelist;
         address[] whitelist;
@@ -52,12 +52,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         }
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    // solhint-disable-next-line ignoreConstructors
-    constructor() {
-        // if (disable) _disableInitializers();
-    }
-
     function initialize(InitStruct memory init) public virtual initializer {
         __ERC4626_init(init.underlying);
         __ERC20_init(init.name, init.symbol);
@@ -73,7 +67,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
                 feeRegistry: init.feeRegistry,
-                totalAssetsManager: init.totalAssetsManager
+                navManager: init.navManager
             })
         );
         __Ownable_init(init.admin); // initial vault owner
@@ -130,12 +124,12 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         return _requestDeposit(assets, controller, owner, data);
     }
 
-    // @notice Requests a deposit of assets, subject to whitelist validation.
-    // @param assets The amount of assets to deposit.
-    // @param controller The address of the controller involved in the deposit request.
-    // @param owner The address of the owner for whom the deposit is requested.
-    // @param data ABI-encoded data expected to contain a Merkle proof (bytes32[]) and a referral address (address).
-    // @return The id of the deposit request.
+    /// @notice Requests a deposit of assets, subject to whitelist validation.
+    /// @param assets The amount of assets to deposit.
+    /// @param controller The address of the controller involved in the deposit request.
+    /// @param owner The address of the owner for whom the deposit is requested.
+    /// @param data ABI-encoded data expected to contain a Merkle proof (bytes32[]) and a referral address (address).
+    /// @return The id of the deposit request.
     function _requestDeposit(
         uint256 assets,
         address controller,
@@ -191,26 +185,25 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev should not be usable when contract is paused
-    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyTotalAssetsManager whenNotPaused {
+    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyNAVManager whenNotPaused {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
-        $erc7540.epochDatas[$erc7540.depositTotalAssetsId].settleId = $erc7540.depositSettleId;
-        $erc7540.epochDatas[$erc7540.redeemTotalAssetsId].settleId = $erc7540.redeemSettleId;
+        $erc7540.epochs[$erc7540.depositEpochId].settleId = $erc7540.depositSettleId;
+        $erc7540.epochs[$erc7540.redeemEpochId].settleId = $erc7540.redeemSettleId;
 
         address _pendingSilo = pendingSilo();
         uint256 pendingAssets = IERC20(asset()).balanceOf(_pendingSilo);
         uint256 pendingShares = balanceOf(_pendingSilo);
 
-        if (pendingAssets != 0) $erc7540.depositTotalAssetsId += 2;
-        if (pendingShares != 0) $erc7540.redeemTotalAssetsId += 2;
+        if (pendingAssets != 0) $erc7540.depositEpochId += 2;
+        if (pendingShares != 0) $erc7540.redeemEpochId += 2;
 
         $.newTotalAssets = _newTotalAssets;
 
         emit UpdateTotalAssets(_newTotalAssets);
     }
 
-    /// It should not be possible to call settleDeposit without a newTotalAssets value
     /// @dev should not be usable when contract is paused
     function settleDeposit() public override onlySafe onlyOpen {
         _updateTotalAssets();
@@ -225,9 +218,10 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         uint256 newTotalAssets = $vault.newTotalAssets;
 
-        if (newTotalAssets == type(uint256).max) {
-            // it means newTotalAssets has not been updated
-            revert NewTotalAssetsMissing();
+        if (
+            newTotalAssets == type(uint256).max // it means newTotalAssets has not been updated
+        ) {
+            revert NewNAVMissing();
         }
 
         $erc7540.totalAssets = newTotalAssets;
@@ -242,8 +236,9 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         if (managerShares > 0) {
             _mint(feeReceiver(), managerShares);
-            if (protocolShares > 0) {
-                // they can't be protocolShares without managerShares
+            if (
+                protocolShares > 0 // they can't be protocolShares without managerShares
+            ) {
                 _mint(protocolFeeReceiver(), protocolShares);
             }
         }
@@ -267,7 +262,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         uint256 _totalAssets = totalAssets();
-        uint256 depositSettleId = $erc7540.depositSettleId;
+        uint40 depositSettleId = $erc7540.depositSettleId;
 
         SettleData storage settleData = $erc7540.settles[depositSettleId];
 
@@ -280,7 +275,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         $erc7540.totalAssets = _totalAssets;
 
         $erc7540.depositSettleId = depositSettleId + 2;
-        $erc7540.lastDepositTotalAssetsIdSettled = $erc7540.depositTotalAssetsId - 2;
+        $erc7540.lastDepositEpochIdSettled = $erc7540.depositEpochId - 2;
 
         IERC20(_asset).safeTransferFrom(_pendingSilo, safe(), pendingAssets);
 
@@ -309,7 +304,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         uint256 _totalAssets = totalAssets();
-        uint256 redeemSettleId = $erc7540.redeemSettleId;
+        uint40 redeemSettleId = $erc7540.redeemSettleId;
 
         SettleData storage settleData = $erc7540.settles[redeemSettleId];
 
@@ -322,7 +317,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         $erc7540.totalAssets = _totalAssets;
 
         $erc7540.redeemSettleId = redeemSettleId + 2;
-        $erc7540.lastRedeemTotalAssetsIdSettled = $erc7540.redeemTotalAssetsId - 2;
+        $erc7540.lastRedeemEpochIdSettled = $erc7540.redeemEpochId - 2;
 
         IERC20(_asset).safeTransferFrom(_safe, address(this), assetsToWithdraw);
 

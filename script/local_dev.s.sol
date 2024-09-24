@@ -35,10 +35,9 @@ contract LocalDeploy is Script {
 
     address admin = DAO;
     address whitelistManager = DAO;
-    address totalAssetsManager = DAO;
-    uint256 _managementRate = 0;
-    uint256 _performanceRate = 0;
-    uint256 protocolFee = 0;
+    address navManager = DAO;
+    uint16 _managementRate = 0;
+    uint16 _performanceRate = 0;
     bool enableWhitelist = true;
 
     string network = vm.envString("NETWORK");
@@ -59,7 +58,7 @@ contract LocalDeploy is Script {
             symbol: VAULT_SYMBOL,
             safe: SAFE,
             whitelistManager: whitelistManager,
-            totalAssetsManager: totalAssetsManager,
+            navManager: navManager,
             admin: admin,
             feeReceiver: FEE_RECEIVER,
             feeRegistry: address(feeRegistry),

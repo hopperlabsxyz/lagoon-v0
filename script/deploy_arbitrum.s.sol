@@ -31,10 +31,9 @@ contract Deploy is Script {
 
     address admin = DAO;
     address whitelistManager = DAO;
-    address totalAssetsManager = SAFE;
-    uint256 _managementRate = 0;
-    uint256 _performanceRate = 2000;
-    uint256 protocolFee = 100;
+    address navManager = SAFE;
+    uint16 _managementRate = 0;
+    uint16 _performanceRate = 2000;
     bool enableWhitelist = true;
 
     function run() external {
@@ -51,7 +50,7 @@ contract Deploy is Script {
             symbol: VAULT_SYMBOL,
             safe: SAFE,
             whitelistManager: whitelistManager,
-            totalAssetsManager: totalAssetsManager,
+            navManager: navManager,
             admin: admin,
             feeReceiver: FEE_RECEIVER,
             feeRegistry: address(feeRegistry),

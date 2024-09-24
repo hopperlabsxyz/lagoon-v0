@@ -13,16 +13,16 @@ uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS_DIVIDER = 10_000; // 100 %
 
 struct Rates {
-    uint256 managementRate;
-    uint256 performanceRate;
+    uint16 managementRate;
+    uint16 performanceRate;
 }
 
 abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     using Math for uint256;
 
-    uint256 public constant MAX_MANAGEMENT_RATE = 1000; // 10 %
-    uint256 public constant MAX_PERFORMANCE_RATE = 5000; // 50 %
-    uint256 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
+    uint16 public constant MAX_MANAGEMENT_RATE = 1000; // 10 %
+    uint16 public constant MAX_PERFORMANCE_RATE = 5000; // 50 %
+    uint16 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
 
     /// @custom:storage-location erc7201:hopper.storage.FeeManager
     /// @param newRatesTimestamp the timestamp at which the new rates will be applied
@@ -34,13 +34,13 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     /// @param oldRates the previous fee rates, they are used during the cooldown period when new rates are set
     /// @param feeRegistry the fee registry contract, it is used to read the protocol rate
     struct FeeManagerStorage {
+        FeeRegistry feeRegistry;
         uint256 newRatesTimestamp;
         uint256 lastFeeTime;
         uint256 highWaterMark;
         uint256 cooldown;
         Rates rates;
         Rates oldRates;
-        FeeRegistry feeRegistry;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
@@ -48,23 +48,25 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     bytes32 private constant feeManagerStorage = 0xa5292f7ccd85acc1b3080c01f5da9af7799f2c26826bd4d79081d6511780bd00;
 
     function _getFeeManagerStorage() internal pure returns (FeeManagerStorage storage $) {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := feeManagerStorage
         }
     }
 
+    // solhint-disable-next-line func-name-mixedcase
     function __FeeManager_init(
         address _registry,
-        uint256 _managementRate,
-        uint256 _performanceRate,
+        uint16 _managementRate,
+        uint16 _performanceRate,
         uint256 _decimals,
         uint256 _cooldown
     ) internal onlyInitializing {
         if (_managementRate > MAX_MANAGEMENT_RATE) {
-            revert AboveMaxRate(_managementRate, MAX_MANAGEMENT_RATE);
+            revert AboveMaxRate(MAX_MANAGEMENT_RATE);
         }
         if (_performanceRate > MAX_PERFORMANCE_RATE) {
-            revert AboveMaxRate(_performanceRate, MAX_PERFORMANCE_RATE);
+            revert AboveMaxRate(MAX_PERFORMANCE_RATE);
         }
 
         FeeManagerStorage storage $ = _getFeeManagerStorage();
@@ -90,10 +92,10 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
             revert CooldownNotOver($.newRatesTimestamp - block.timestamp);
         }
         if (newRates.managementRate > MAX_MANAGEMENT_RATE) {
-            revert AboveMaxRate(newRates.managementRate, MAX_MANAGEMENT_RATE);
+            revert AboveMaxRate(MAX_MANAGEMENT_RATE);
         }
         if (newRates.performanceRate > MAX_PERFORMANCE_RATE) {
-            revert AboveMaxRate(newRates.performanceRate, MAX_PERFORMANCE_RATE);
+            revert AboveMaxRate(MAX_PERFORMANCE_RATE);
         }
 
         $.newRatesTimestamp = block.timestamp + $.cooldown;
@@ -111,14 +113,12 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
     /// @notice the time of the last fee calculation
     function lastFeeTime() public view returns (uint256) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        return $.lastFeeTime;
+        return _getFeeManagerStorage().lastFeeTime;
     }
 
     /// @notice value of the high water mark, the highest price per share ever reached
     function highWaterMark() public view returns (uint256) {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-        return $.highWaterMark;
+        return _getFeeManagerStorage().highWaterMark;
     }
 
     /// @dev Update the high water mark only if the new value is greater than the current one
