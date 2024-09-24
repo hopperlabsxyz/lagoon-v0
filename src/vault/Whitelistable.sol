@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import {NotWhitelisted} from "./Errors.sol";
 import {WhitelistUpdated} from "./Events.sol";
 import {RolesUpgradeable} from "./Roles.sol";
 
@@ -24,11 +23,6 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
             $.slot := whitelistableStorage
         }
     }
-
-    // modifier onlyWhitelisted(address account) {
-    //     require(isWhitelisted(account), NotWhitelisted);
-    //     _;
-    // }
 
     // solhint-disable-next-line func-name-mixedcase
     function __Whitelistable_init(bool isActivated) internal onlyInitializing {
