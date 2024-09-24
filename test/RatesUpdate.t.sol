@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "forge-std/Test.sol";
-import {Vault} from "@src/vault/Vault.sol";
-import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
-import {FeeManager, AboveMaxRate} from "@src/vault/FeeManager.sol";
-import {Rates} from "@src/vault/FeeManager.sol";
+
 import {VaultHelper} from "./VaultHelper.sol";
+import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+import {AboveMaxRate, FeeManager} from "@src/vault/FeeManager.sol";
+import {Rates} from "@src/vault/FeeManager.sol";
+import {Vault} from "@src/vault/Vault.sol";
+import "forge-std/Test.sol";
 
 contract testRateUpdates is BaseTest {
-    uint256 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
-    uint256 public constant MAX_PERFORMANCE_RATE = 5_000; // 50 %
-    uint256 public constant MAX_PROTOCOL_RATE = 3_000; // 30 %
+    uint256 public constant MAX_MANAGEMENT_RATE = 1000; // 10 %
+    uint256 public constant MAX_PERFORMANCE_RATE = 5000; // 50 %
+    uint256 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
 
     function test_ratesShouldMatchValuesAtInit() public {
         uint256 protocolRate = 100;
@@ -71,7 +72,7 @@ contract testRateUpdates is BaseTest {
     }
 
     function test_updateRatesOverMaxPerformanceRateShouldRevert() public {
-        setUpVault(100, 200, 2_000);
+        setUpVault(100, 200, 2000);
 
         Rates memory newRates = Rates({managementRate: MAX_MANAGEMENT_RATE + 1, performanceRate: 0});
         vm.startPrank(vault.owner());

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import {RolesUpgradeable} from "./Roles.sol";
-import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {IWhitelistModule} from "./interfaces/IWhitelistModule.sol";
-import {WhitelistUpdated, RootUpdated} from "./Events.sol";
 import {MerkleTreeMode} from "./Errors.sol";
+import {RootUpdated, WhitelistUpdated} from "./Events.sol";
+import {RolesUpgradeable} from "./Roles.sol";
+import {IWhitelistModule} from "./interfaces/IWhitelistModule.sol";
+
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 // import {console} from "forge-std/console.sol";
 

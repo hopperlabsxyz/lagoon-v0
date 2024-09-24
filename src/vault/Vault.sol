@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import {NotOpen, NotClosing, NewTotalAssetsMissing, NotEnoughLiquidity, NotWhitelisted} from "./Errors.sol";
 import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {WhitelistableUpgradeable} from "./Whitelistable.sol";
-import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {StateUpdated, Referral, UpdateTotalAssets, TotalAssetsUpdated} from "./Events.sol";
+
 import {State} from "./Enums.sol";
+import {NewTotalAssetsMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
+import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./Events.sol";
+import {WhitelistableUpgradeable} from "./Whitelistable.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {FeeManager} from "./FeeManager.sol";
 import {RolesUpgradeable} from "./Roles.sol";
@@ -111,21 +112,21 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev should not be usable when contract is paused
-    function requestDeposit(uint256 assets, address controller, address owner)
-        public
-        payable
-        override(ERC7540Upgradeable)
-        returns (uint256 requestId)
-    {
+    function requestDeposit(
+        uint256 assets,
+        address controller,
+        address owner
+    ) public payable override(ERC7540Upgradeable) returns (uint256 requestId) {
         return _requestDeposit(assets, controller, owner, abi.encode(""));
     }
 
     /// @dev should not be usable when contract is paused
-    function requestDeposit(uint256 assets, address controller, address owner, bytes calldata data)
-        public
-        payable
-        returns (uint256 requestId)
-    {
+    function requestDeposit(
+        uint256 assets,
+        address controller,
+        address owner,
+        bytes calldata data
+    ) public payable returns (uint256 requestId) {
         return _requestDeposit(assets, controller, owner, data);
     }
 
@@ -135,10 +136,12 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     // @param owner The address of the owner for whom the deposit is requested.
     // @param data ABI-encoded data expected to contain a Merkle proof (bytes32[]) and a referral address (address).
     // @return The id of the deposit request.
-    function _requestDeposit(uint256 assets, address controller, address owner, bytes memory data)
-        internal
-        returns (uint256)
-    {
+    function _requestDeposit(
+        uint256 assets,
+        address controller,
+        address owner,
+        bytes memory data
+    ) internal returns (uint256) {
         (bytes32[] memory proof, address referral) = abi.decode(data, (bytes32[], address));
         if (isWhitelisted(owner, proof) == false) {
             revert NotWhitelisted();
@@ -151,18 +154,20 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev should not be usable when contract is paused
-    function requestRedeem(uint256 shares, address controller, address owner)
-        public
-        override(ERC7540Upgradeable)
-        returns (uint256 requestId)
-    {
+    function requestRedeem(
+        uint256 shares,
+        address controller,
+        address owner
+    ) public override(ERC7540Upgradeable) returns (uint256 requestId) {
         return _requestRedeem(shares, controller, owner, abi.encode(""));
     }
 
-    function requestRedeem(uint256 shares, address controller, address owner, bytes calldata data)
-        external
-        returns (uint256 requestId)
-    {
+    function requestRedeem(
+        uint256 shares,
+        address controller,
+        address owner,
+        bytes calldata data
+    ) external returns (uint256 requestId) {
         return _requestRedeem(shares, controller, owner, data);
     }
 
@@ -172,12 +177,12 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @param owner The address of the token owner requesting redemption.
     /// @param data ABI-encoded Merkle proof (bytes32[]) used to validate the controller's whitelist status.
     /// @return The id of the redeem request.
-    function _requestRedeem(uint256 shares, address controller, address owner, bytes memory data)
-        internal
-        onlyOpen
-        whenNotPaused
-        returns (uint256)
-    {
+    function _requestRedeem(
+        uint256 shares,
+        address controller,
+        address owner,
+        bytes memory data
+    ) internal onlyOpen whenNotPaused returns (uint256) {
         bytes32[] memory proof = abi.decode(data, (bytes32[]));
         if (isWhitelisted(owner, proof) == false) {
             revert NotWhitelisted();
@@ -367,12 +372,11 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev should not be usable when contract is paused
-    function withdraw(uint256 assets, address receiver, address controller)
-        public
-        override
-        whenNotPaused
-        returns (uint256 shares)
-    {
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) public override whenNotPaused returns (uint256 shares) {
         VaultStorage storage $ = _getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
@@ -396,11 +400,13 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev override ERC4626 synchronous withdraw; called when vault is closed
-    function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
-        internal
-        virtual
-        override
-    {
+    function _withdraw(
+        address caller,
+        address receiver,
+        address owner,
+        uint256 assets,
+        uint256 shares
+    ) internal virtual override {
         if (caller != owner && !isOperator(owner, caller)) {
             _spendAllowance(owner, caller, shares);
         }
@@ -419,7 +425,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @notice Halts core operations of the vault. Can only be called by the owner.
-    /// @notice Core operations include deposit, redeem, withdraw, any type of request, settles deposit and redeem and totalAssets update.
+    /// @notice Core operations include deposit, redeem, withdraw, any type of request, settles deposit and redeem and
+    /// totalAssets update.
     function pause() public onlyOwner {
         _pause();
     }

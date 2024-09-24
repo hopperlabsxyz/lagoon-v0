@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "forge-std/Test.sol";
-import {Vault} from "@src/vault/Vault.sol";
-import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseTest} from "./Base.sol";
-import {CantDepositNativeToken, OnlyOneRequestAllowed, ERC7540InvalidOperator} from "@src/vault/ERC7540.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {CantDepositNativeToken, ERC7540InvalidOperator, OnlyOneRequestAllowed} from "@src/vault/ERC7540.sol";
+import {Vault} from "@src/vault/Vault.sol";
+import "forge-std/Test.sol";
 
 contract TestRequestDeposit is BaseTest {
     function setUp() public {
@@ -61,7 +61,8 @@ contract TestRequestDeposit is BaseTest {
 
         assertEq(requestId_1 + 2, vault.depositId(), "wrong deposit id");
         assertEq(
-            vault.lastDepositRequestId_debug(user1.addr), // keep track of the last deposit id of the user, only one requestId is allowed by settle period by user
+            vault.lastDepositRequestId_debug(user1.addr), // keep track of the last deposit id of the user, only one
+                // requestId is allowed by settle period by user
             requestId_1,
             "wrong internal lastDepositRequestId"
         );

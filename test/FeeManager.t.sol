@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "forge-std/Test.sol";
-import {Vault} from "@src/vault/Vault.sol";
-import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
-import {FeeManager, Rates, AboveMaxRate, CooldownNotOver} from "@src/vault/FeeManager.sol";
+import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {AboveMaxRate, CooldownNotOver, FeeManager, Rates} from "@src/vault/FeeManager.sol";
+import {Vault} from "@src/vault/Vault.sol";
+import "forge-std/Test.sol";
 
 contract TestFeeManager is BaseTest {
     using Math for uint256;
@@ -25,10 +25,10 @@ contract TestFeeManager is BaseTest {
         // 20% performance fee
         // 0% management fee
         // 10%  protocol fee
-        setUpVault(1_000, 0, 2_000);
+        setUpVault(1000, 0, 2000);
 
         _1 = 1 * 10 ** vault.underlyingDecimals();
-        _1K = 1_000 * 10 ** vault.underlyingDecimals();
+        _1K = 1000 * 10 ** vault.underlyingDecimals();
         _10K = 10_000 * 10 ** vault.underlyingDecimals();
         _100K = 100_000 * 10 ** vault.underlyingDecimals();
         _1M = 1_000_000 * 10 ** vault.underlyingDecimals();
@@ -96,7 +96,8 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0, "protocol received unexpected fee shares");
 
         // ------------ Settle ------------ //
-        newTotalAssets = 4_000_002 * 10 ** vault.underlyingDecimals(); // vault valo made a x4 for user2; and x2 for user1
+        newTotalAssets = 4_000_002 * 10 ** vault.underlyingDecimals(); // vault valo made a x4 for user2; and x2 for
+            // user1
         updateAndSettle(newTotalAssets);
 
         // We expect the price per share to do be equal to: 2 - 20% = 1.8
@@ -215,7 +216,8 @@ contract TestFeeManager is BaseTest {
         // ------------ Settle ------------ //
 
         // user2 get x2 without paying performance fees
-        newTotalAssets = 2_000_001 * 10 ** vault.underlyingDecimals(); // vault valo made a x2 for user2; and x1 for user1
+        newTotalAssets = 2_000_001 * 10 ** vault.underlyingDecimals(); // vault valo made a x2 for user2; and x1 for
+            // user1
         updateAndSettle(newTotalAssets);
 
         // We expect the price per share to do be equal to: 2 - 20% = 1.8

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import {OnlySafe, OnlyWhitelistManager, OnlyTotalAssetsManager} from "./Errors.sol";
 import {FeeRegistry} from "../protocol/FeeRegistry.sol";
+import {OnlySafe, OnlyTotalAssetsManager, OnlyWhitelistManager} from "./Errors.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 /// @title RolesUpgradeable
 /// @dev This contract is used to define the various roles needed for a vault to operate.
@@ -12,10 +12,12 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
     /// @notice Stores the various roles responsible of managing the vault.
     /// @param whitelistManager The address responsible of managing the whitelist.
     /// @param feeReceiver The address that will receive the fees generated.
-    /// @param safe Every lagoon vault is admitted to be associated with a (gnosis) Safe smart wallet. This address will receive the assets of the vault and can call settle functions.
+    /// @param safe Every lagoon vault is admitted to be associated with a (gnosis) Safe smart wallet. This address will
+    /// receive the assets of the vault and can call settle functions.
     /// @param feeRegistry The address of the FeeRegistry contract. It can't be changed.
     /// @param totalAssetsManager. This address is responsible of updating the newtotalAssets value of the vault.
-    /// @param owner The address of the owner of the contract. It considered as the admin.It is not visible in the struct. It can change the others roles and itself. Initiate the fund closing. Disable the whitelist.
+    /// @param owner The address of the owner of the contract. It considered as the admin.It is not visible in the
+    /// struct. It can change the others roles and itself. Initiate the fund closing. Disable the whitelist.
     struct RolesStorage {
         address whitelistManager;
         address feeReceiver;

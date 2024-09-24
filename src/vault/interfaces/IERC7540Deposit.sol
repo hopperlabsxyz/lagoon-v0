@@ -15,10 +15,11 @@ interface IERC7540Deposit is IERC7540 {
         address indexed controller, address indexed owner, uint256 indexed requestId, address sender, uint256 assets
     );
 
-    function requestDeposit(uint256 assets, address controller, address owner)
-        external
-        payable
-        returns (uint256 requestId);
+    function requestDeposit(
+        uint256 assets,
+        address controller,
+        address owner
+    ) external payable returns (uint256 requestId);
 
     function deposit(uint256 assets, address receiver, address controller) external returns (uint256 shares);
 

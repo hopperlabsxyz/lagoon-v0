@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AboveMaxRate, CooldownNotOver} from "./Errors.sol";
-import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 import {ERC7540Upgradeable} from "@src/vault/ERC7540.sol";
 // import {console} from "forge-std/console.sol";
 
@@ -19,14 +20,15 @@ struct Rates {
 abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     using Math for uint256;
 
-    uint256 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
-    uint256 public constant MAX_PERFORMANCE_RATE = 5_000; // 50 %
-    uint256 public constant MAX_PROTOCOL_RATE = 3_000; // 30 %
+    uint256 public constant MAX_MANAGEMENT_RATE = 1000; // 10 %
+    uint256 public constant MAX_PERFORMANCE_RATE = 5000; // 50 %
+    uint256 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
 
     /// @custom:storage-location erc7201:hopper.storage.FeeManager
     /// @param newRatesTimestamp the timestamp at which the new rates will be applied
     /// @param lastFeeTime the timestamp of the last fee calculation, it is used to compute management fees
-    /// @param highWaterMark the highest price per share ever reached, performance fees are taken when the price per share is above this value
+    /// @param highWaterMark the highest price per share ever reached, performance fees are taken when the price per
+    /// share is above this value
     /// @param cooldown the time to wait before applying new rates
     /// @param rates the current fee rates
     /// @param oldRates the previous fee rates, they are used during the cooldown period when new rates are set
@@ -150,11 +152,11 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     /// @param assets the total assets under management
     /// @param annualRate the management rate, expressed in BPS and corresponding to the annual
     /// @param timeElapsed the time elapsed since the last fee calculation in seconds
-    function _calculateManagementFee(uint256 assets, uint256 annualRate, uint256 timeElapsed)
-        internal
-        pure
-        returns (uint256 managementFee)
-    {
+    function _calculateManagementFee(
+        uint256 assets,
+        uint256 annualRate,
+        uint256 timeElapsed
+    ) internal pure returns (uint256 managementFee) {
         uint256 annualFee = assets.mulDiv(annualRate, BPS_DIVIDER);
         managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
     }
@@ -181,7 +183,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
     /// @dev Calculate and return the manager and protocol shares to be minted as fees
     /// @dev total fees are the sum of the management and performance fees
-    /// @dev manager shares are the fees that go to the manager, it is the difference between the total fees and the protocol fees
+    /// @dev manager shares are the fees that go to the manager, it is the difference between the total fees and the
+    /// protocol fees
     /// @dev protocol shares are the fees that go to the protocol
     function _calculateFees() internal view returns (uint256 managerShares, uint256 protocolShares) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();

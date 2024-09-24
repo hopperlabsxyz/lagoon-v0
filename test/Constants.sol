@@ -1,17 +1,21 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import {Test} from "forge-std/Test.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {VaultHelper} from "./VaultHelper.sol";
-import {Vault} from "@src/vault/Vault.sol";
-import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
-import {VmSafe} from "forge-std/Vm.sol";
-import {Upgrades, Options} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
-import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+
+import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
+
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
-import "forge-std/console.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+import {Vault} from "@src/vault/Vault.sol";
+import {Test} from "forge-std/Test.sol";
+
+import {VmSafe} from "forge-std/Vm.sol";
+import "forge-std/console.sol";
 
 abstract contract Constants is Test {
     // ERC20 tokens

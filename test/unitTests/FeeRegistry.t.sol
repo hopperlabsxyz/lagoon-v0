@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "forge-std/Test.sol";
-import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "../Base.sol";
-import {VmSafe} from "forge-std/Vm.sol";
+import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+import "forge-std/Test.sol";
+import {VmSafe} from "forge-std/Vm.sol";
 
 contract TestFeeRegistry is BaseTest {
     address mockVault = address(0x1);

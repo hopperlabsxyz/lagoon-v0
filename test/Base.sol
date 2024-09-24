@@ -2,10 +2,11 @@
 pragma solidity 0.8.26;
 
 import {Constants} from "./Constants.sol";
-import {Vault} from "@src/vault/Vault.sol";
+
+import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Rates} from "@src/vault/FeeManager.sol";
+import {Vault} from "@src/vault/Vault.sol";
 import {VmSafe} from "forge-std/Vm.sol";
-import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 import "forge-std/Test.sol";
 
@@ -15,25 +16,32 @@ contract BaseTest is Test, Constants {
         return vault.requestDeposit(amount, controller, owner);
     }
 
-    function requestDeposit(uint256 amount, address controller, address owner, bytes memory data)
-        internal
-        returns (uint256)
-    {
+    function requestDeposit(
+        uint256 amount,
+        address controller,
+        address owner,
+        bytes memory data
+    ) internal returns (uint256) {
         vm.prank(owner);
         return vault.requestDeposit(amount, controller, owner, data);
     }
 
-    function requestDeposit(uint256 amount, address controller, address owner, address operator)
-        internal
-        returns (uint256)
-    {
+    function requestDeposit(
+        uint256 amount,
+        address controller,
+        address owner,
+        address operator
+    ) internal returns (uint256) {
         return _requestDeposit(amount, controller, owner, operator, abi.encode(""), false);
     }
 
-    function requestDeposit(uint256 amount, address controller, address owner, address operator, bytes memory data)
-        internal
-        returns (uint256)
-    {
+    function requestDeposit(
+        uint256 amount,
+        address controller,
+        address owner,
+        address operator,
+        bytes memory data
+    ) internal returns (uint256) {
         return _requestDeposit(amount, controller, owner, operator, data, false);
     }
 
@@ -82,10 +90,12 @@ contract BaseTest is Test, Constants {
         return requestId;
     }
 
-    function deposit(uint256 amount, address controller, address operator, address receiver)
-        internal
-        returns (uint256)
-    {
+    function deposit(
+        uint256 amount,
+        address controller,
+        address operator,
+        address receiver
+    ) internal returns (uint256) {
         vm.prank(operator);
         return vault.deposit(amount, receiver, controller);
     }
@@ -110,10 +120,12 @@ contract BaseTest is Test, Constants {
         return requestRedeem(amount, controller, owner, operator);
     }
 
-    function requestRedeem(uint256 amount, address controller, address owner, address operator)
-        internal
-        returns (uint256)
-    {
+    function requestRedeem(
+        uint256 amount,
+        address controller,
+        address owner,
+        address operator
+    ) internal returns (uint256) {
         uint256 requestRedeemBefore = vault.pendingRedeem();
         uint256 redeemId = vault.redeemId();
         vm.prank(operator);
@@ -131,10 +143,12 @@ contract BaseTest is Test, Constants {
         return redeem(amount, user, user, user);
     }
 
-    function redeem(uint256 amount, address controller, address operator, address receiver)
-        internal
-        returns (uint256)
-    {
+    function redeem(
+        uint256 amount,
+        address controller,
+        address operator,
+        address receiver
+    ) internal returns (uint256) {
         uint256 assetsBeforeReceiver = assetBalance(receiver);
         uint256 assetsBeforeController = assetBalance(controller);
         uint256 assetsBeforeOperator = assetBalance(operator);
@@ -164,10 +178,12 @@ contract BaseTest is Test, Constants {
         return withdraw(amount, user, user, user);
     }
 
-    function withdraw(uint256 amount, address controller, address operator, address receiver)
-        internal
-        returns (uint256)
-    {
+    function withdraw(
+        uint256 amount,
+        address controller,
+        address operator,
+        address receiver
+    ) internal returns (uint256) {
         uint256 assetsBeforeReceiver = assetBalance(receiver);
         uint256 assetsBeforeController = assetBalance(controller);
         uint256 assetsBeforeOperator = assetBalance(operator);
@@ -212,7 +228,7 @@ contract BaseTest is Test, Constants {
     }
 
     function dealAndApproveAndWhitelist(address user) public {
-        dealAmountAndApprove(user, 100000);
+        dealAmountAndApprove(user, 100_000);
         whitelist(user);
     }
 

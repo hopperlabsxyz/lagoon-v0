@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "forge-std/Test.sol";
-import {Vault, State, NotOpen, NotClosing, NotEnoughLiquidity} from "@src/vault/Vault.sol";
-import {ERC7540InvalidOperator} from "@src/vault/ERC7540.sol";
-import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {BaseTest} from "./Base.sol";
+import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ERC7540InvalidOperator} from "@src/vault/ERC7540.sol";
+import {NotClosing, NotEnoughLiquidity, NotOpen, State, Vault} from "@src/vault/Vault.sol";
+import "forge-std/Test.sol";
 
 contract TestInitiateClosing is BaseTest {
     uint256 user1AssetsBeginning = 0;
@@ -247,9 +247,11 @@ contract TestInitiateClosing is BaseTest {
         assertEq(vault.totalAssets() / 10 ** vault.underlyingDecimals(), 150_000, "wrong total assets");
 
         uint256 firstRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
-        assertEq(firstRedeem / 10 ** vault.underlyingDecimals(), (25_000 / 2), "did not received expected assets"); // no profit here because settle associated with this request did not bring any profits
+        assertEq(firstRedeem / 10 ** vault.underlyingDecimals(), (25_000 / 2), "did not received expected assets"); // no
+            // profit here because settle associated with this request did not bring any profits
         uint256 secondRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
-        assertEq(secondRedeem, (25_000 / 2) * 10 ** vault.underlyingDecimals(), "did not received expected assets 2"); // same here
+        assertEq(secondRedeem, (25_000 / 2) * 10 ** vault.underlyingDecimals(), "did not received expected assets 2"); // same
+            // here
         uint256 thirdRedeem = redeem(25_000 * 10 ** vault.decimals(), user2.addr);
         assertApproxEqAbs(
             thirdRedeem, 25_000 * 10 ** vault.underlyingDecimals() * multi, 1, "did not received expected assets 3"
