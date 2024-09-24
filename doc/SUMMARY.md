@@ -22,7 +22,7 @@
 * [Fees & Economics](vault-usage/fees-and-economics.md)
 * [Setting Roles Modifier](vault-usage/setting-roles-modifier.md)
 * [Managing a Vault](vault-usage/managing-a-vault.md)
-* [Updating NAV](vault-usage/settling-nav.md)
+* [Updating the NAV](vault-usage/updating-the-nav.md)
 * [Depositing and Redeeming Assets](vault-usage/depositing-and-redeeming-assets.md)
 
 ## Smart Contracts
@@ -39,6 +39,10 @@
 * [Configuring Env Variables](contribute-development/configuring-env-variables.md)
 * [Network Deployments](contribute-development/network-deployments.md)
 * [Testing](contribute-development/testing.md)
+
+***
+
+* [Glossary](glossary.md)
 
 ## FAQ
 
