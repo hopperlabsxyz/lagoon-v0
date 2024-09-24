@@ -15,7 +15,7 @@ contract TestWhitelist is BaseTest {
         whitelistInit.push(user5.addr);
         setUpVault(0, 0, 0);
         for (uint256 i; i < whitelistInit.length; i++) {
-            assertTrue(vault.isWhitelisted(whitelistInit[i], new bytes32[](0)));
+            assertTrue(vault.isWhitelisted(whitelistInit[i]));
         }
         dealAndApprove(user1.addr);
     }
@@ -26,7 +26,7 @@ contract TestWhitelist is BaseTest {
         setUpVault(0, 0, 0);
         for (uint256 i; i < whitelistInit.length; i++) {
             // By default, if whitelist is disabled all user are whitelisted
-            assertTrue(vault.isWhitelisted(whitelistInit[i], new bytes32[](0)));
+            assertTrue(vault.isWhitelisted(whitelistInit[i]));
         }
         dealAndApprove(user1.addr);
     }
@@ -99,7 +99,7 @@ contract TestWhitelist is BaseTest {
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user1.addr, true);
         whitelist(user1.addr);
-        assertEq(vault.isWhitelisted(user1.addr, new bytes32[](0)), true);
+        assertEq(vault.isWhitelisted(user1.addr), true);
     }
 
     function test_whitelistList() public {
@@ -112,7 +112,7 @@ contract TestWhitelist is BaseTest {
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user2.addr, true);
         whitelist(users);
-        assertEq(vault.isWhitelisted(user1.addr, new bytes32[](0)), true);
+        assertEq(vault.isWhitelisted(user1.addr), true);
     }
 
     function test_unwhitelist() public {
@@ -125,15 +125,15 @@ contract TestWhitelist is BaseTest {
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user2.addr, true);
         whitelist(users);
-        assertEq(vault.isWhitelisted(user1.addr, new bytes32[](0)), true, "user1 is not whitelisted");
+        assertEq(vault.isWhitelisted(user1.addr), true, "user1 is not whitelisted");
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user1.addr, false);
         unwhitelist(users[0]);
-        assertEq(vault.isWhitelisted(user1.addr, new bytes32[](0)), false, "user1 is still whitelisted");
+        assertEq(vault.isWhitelisted(user1.addr), false, "user1 is still whitelisted");
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user2.addr, false);
         unwhitelist(users[1]);
-        assertEq(vault.isWhitelisted(user2.addr, new bytes32[](0)), false, "user2 is still whitelisted");
+        assertEq(vault.isWhitelisted(user2.addr), false, "user2 is still whitelisted");
     }
 
     function test_unwhitelistList() public {
@@ -151,9 +151,9 @@ contract TestWhitelist is BaseTest {
 
         whitelist(users);
 
-        assertEq(vault.isWhitelisted(user1.addr, new bytes32[](0)), true, "user1 is not whitelisted");
+        assertEq(vault.isWhitelisted(user1.addr), true, "user1 is not whitelisted");
 
-        assertEq(vault.isWhitelisted(user2.addr, new bytes32[](0)), true, "user2 is not whitelisted");
+        assertEq(vault.isWhitelisted(user2.addr), true, "user2 is not whitelisted");
 
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user1.addr, false);
@@ -163,8 +163,8 @@ contract TestWhitelist is BaseTest {
 
         unwhitelist(users);
 
-        assertEq(vault.isWhitelisted(user1.addr, new bytes32[](0)), false, "user1 is still whitelisted");
-        assertEq(vault.isWhitelisted(user2.addr, new bytes32[](0)), false, "user2 is still whitelisted");
+        assertEq(vault.isWhitelisted(user1.addr), false, "user1 is still whitelisted");
+        assertEq(vault.isWhitelisted(user2.addr), false, "user2 is still whitelisted");
     }
 
     function test_noWhitelist() public {

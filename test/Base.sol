@@ -20,19 +20,9 @@ contract BaseTest is Test, Constants {
         uint256 amount,
         address controller,
         address owner,
-        bytes memory data
-    ) internal returns (uint256) {
-        vm.prank(owner);
-        return vault.requestDeposit(amount, controller, owner, data);
-    }
-
-    function requestDeposit(
-        uint256 amount,
-        address controller,
-        address owner,
         address operator
     ) internal returns (uint256) {
-        return _requestDeposit(amount, controller, owner, operator, abi.encode(""), false);
+        return _requestDeposit(amount, controller, owner, operator, address(0), false);
     }
 
     function requestDeposit(
@@ -40,9 +30,9 @@ contract BaseTest is Test, Constants {
         address controller,
         address owner,
         address operator,
-        bytes memory data
+        address referral
     ) internal returns (uint256) {
-        return _requestDeposit(amount, controller, owner, operator, data, false);
+        return _requestDeposit(amount, controller, owner, operator, referral, false);
     }
 
     function requestDeposit(uint256 amount, address user) internal returns (uint256) {
@@ -50,11 +40,7 @@ contract BaseTest is Test, Constants {
     }
 
     function requestDeposit(uint256 amount, address user, bool viaEth) internal returns (uint256) {
-        return _requestDeposit(amount, user, user, user, abi.encode(""), viaEth);
-    }
-
-    function requestDeposit(uint256 amount, address user, bytes memory data) internal returns (uint256) {
-        return _requestDeposit(amount, user, user, user, data, false);
+        return _requestDeposit(amount, user, user, user, address(0), viaEth);
     }
 
     function _requestDeposit(
@@ -62,7 +48,7 @@ contract BaseTest is Test, Constants {
         address controller,
         address owner,
         address operator,
-        bytes memory data,
+        address referral,
         bool viaEth
     ) internal returns (uint256) {
         uint256 requestDepBefore = vault.pendingDeposit();
@@ -73,10 +59,10 @@ contract BaseTest is Test, Constants {
         uint256 requestId;
         vm.prank(operator);
         uint256 value = viaEth ? amount : 0;
-        if (keccak256(data) == keccak256(abi.encode(""))) {
+        if (referral == address(0)) {
             requestId = vault.requestDeposit{value: value}(amount, controller, owner);
         } else {
-            requestId = vault.requestDeposit(amount, controller, owner, data);
+            requestId = vault.requestDeposit{value: value}(amount, controller, owner, referral);
         }
 
         assertEq(vault.pendingDeposit(), requestDepBefore + amount, "pendingDeposit value did not increase properly");
