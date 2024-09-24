@@ -101,8 +101,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
             $whitelistStorage.isWhitelisted[init.feeReceiver] = true;
             $whitelistStorage.isWhitelisted[protocolFeeReceiver()] = true;
             $whitelistStorage.isWhitelisted[init.safe] = true;
-            $whitelistStorage.isWhitelisted[init.whitelistManager] = true;
-            $whitelistStorage.isWhitelisted[init.admin] = true;
             $whitelistStorage.isWhitelisted[pendingSilo()] = true;
             for (uint256 i = 0; i < init.whitelist.length; i++) {
                 $whitelistStorage.isWhitelisted[init.whitelist[i]] = true;
@@ -122,7 +120,9 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         _;
     }
 
-    /// @dev should not be usable when contract is paused
+    /// @param assets The amount of assets to deposit.
+    /// @param controller The address of the controller involved in the deposit request.
+    /// @param owner The address of the owner for whom the deposit is requested.
     function requestDeposit(
         uint256 assets,
         address controller,
@@ -131,7 +131,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         return _requestDeposit(assets, controller, owner);
     }
 
-    /// @dev should not be usable when contract is paused
     /// @param assets The amount of assets to deposit.
     /// @param controller The address of the controller involved in the deposit request.
     /// @param owner The address of the owner for whom the deposit is requested.
