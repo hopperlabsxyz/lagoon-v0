@@ -19,7 +19,7 @@
 * [Fees & Economics](vault-usage/fees-and-economics.md)
 * [Setting Roles Modifier](vault-usage/setting-roles-modifier.md)
 * [Managing a Vault](vault-usage/managing-a-vault.md)
-* [Updating NAV](vault-usage/updating-nav.md)
+* [Updating NAV](vault-usage/settling-nav.md)
 * [Depositing and Redeeming Assets](vault-usage/depositing-and-redeeming-assets.md)
 
 ## Smart Contracts
@@ -27,6 +27,7 @@
 * [Contract Overview](smart-contracts/contract-overview.md)
 * [Key Data Structures](smart-contracts/key-data-structures.md)
 * [Inheritance & Libraries](smart-contracts/inheritance-and-libraries.md)
+* [Roles and Capabilities](smart-contracts/roles-and-capabilities.md)
 
 ## Contribute Development
 
