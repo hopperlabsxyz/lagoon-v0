@@ -19,7 +19,7 @@
 * [Fees & Economics](vault-usage/fees-and-economics.md)
 * [Setting Roles Modifier](vault-usage/setting-roles-modifier.md)
 * [Managing a Vault](vault-usage/managing-a-vault.md)
-* [Settling NAV](vault-usage/settling-nav.md)
+* [Updating NAV](vault-usage/updating-nav.md)
 * [Depositing and Redeeming Assets](vault-usage/depositing-and-redeeming-assets.md)
 
 ## Smart Contracts
