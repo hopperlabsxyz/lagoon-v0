@@ -125,10 +125,10 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         address owner,
         address referral
     ) public payable returns (uint256 requestId) {
+        requestId = _requestDeposit(assets, controller, owner);
         if (address(referral) != address(0)) {
-            emit Referral(referral, owner, _getERC7540Storage().depositEpochId, assets);
+            emit Referral(referral, owner, requestId, assets);
         }
-        return _requestDeposit(assets, controller, owner);
     }
 
     /// @notice Requests a deposit of assets, subject to whitelist validation.
