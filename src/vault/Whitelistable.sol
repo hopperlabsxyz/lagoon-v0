@@ -11,6 +11,7 @@ error MerkleTreeMode();
 
 // events
 event RootUpdated(bytes32 indexed root);
+
 event WhitelistUpdated(address indexed account, bool authorized);
 
 bytes32 constant WHITELISTED = keccak256("WHITELISTED");
@@ -22,17 +23,12 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
 
     /// @custom:storage-location erc7201:hopper.storage.Whitelistable
     struct WhitelistableStorage {
-      bytes32 root;
-      mapping(address => bool) isWhitelisted;
-      bool isActivated;
+        bytes32 root;
+        mapping(address => bool) isWhitelisted;
+        bool isActivated;
     }
 
-
-    function _getWhitelistableStorage()
-        internal
-        pure
-        returns (WhitelistableStorage storage $)
-    {
+    function _getWhitelistableStorage() internal pure returns (WhitelistableStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := whitelistableStorage

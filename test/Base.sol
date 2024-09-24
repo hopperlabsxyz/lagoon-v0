@@ -2,19 +2,16 @@
 pragma solidity 0.8.26;
 
 import {Constants} from "./Constants.sol";
-import {Vault} from "@src/vault/Vault.sol";
+
+import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Rates} from "@src/vault/FeeManager.sol";
+import {Vault} from "@src/vault/Vault.sol";
 import {VmSafe} from "forge-std/Vm.sol";
-import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 import "forge-std/Test.sol";
 
 contract BaseTest is Test, Constants {
-    function requestDeposit(
-        uint256 amount,
-        address controller,
-        address owner
-    ) internal returns (uint256) {
+    function requestDeposit(uint256 amount, address controller, address owner) internal returns (uint256) {
         vm.prank(owner);
         return vault.requestDeposit(amount, controller, owner);
     }
@@ -35,15 +32,7 @@ contract BaseTest is Test, Constants {
         address owner,
         address operator
     ) internal returns (uint256) {
-        return
-            _requestDeposit(
-                amount,
-                controller,
-                owner,
-                operator,
-                abi.encode(""),
-                false
-            );
+        return _requestDeposit(amount, controller, owner, operator, abi.encode(""), false);
     }
 
     function requestDeposit(
@@ -53,31 +42,18 @@ contract BaseTest is Test, Constants {
         address operator,
         bytes memory data
     ) internal returns (uint256) {
-        return
-            _requestDeposit(amount, controller, owner, operator, data, false);
+        return _requestDeposit(amount, controller, owner, operator, data, false);
     }
 
-    function requestDeposit(
-        uint256 amount,
-        address user
-    ) internal returns (uint256) {
+    function requestDeposit(uint256 amount, address user) internal returns (uint256) {
         return requestDeposit(amount, user, user, user);
     }
 
-    function requestDeposit(
-        uint256 amount,
-        address user,
-        bool viaEth
-    ) internal returns (uint256) {
-        return
-            _requestDeposit(amount, user, user, user, abi.encode(""), viaEth);
+    function requestDeposit(uint256 amount, address user, bool viaEth) internal returns (uint256) {
+        return _requestDeposit(amount, user, user, user, abi.encode(""), viaEth);
     }
 
-    function requestDeposit(
-        uint256 amount,
-        address user,
-        bytes memory data
-    ) internal returns (uint256) {
+    function requestDeposit(uint256 amount, address user, bytes memory data) internal returns (uint256) {
         return _requestDeposit(amount, user, user, user, data, false);
     }
 
@@ -90,9 +66,7 @@ contract BaseTest is Test, Constants {
         bool viaEth
     ) internal returns (uint256) {
         uint256 requestDepBefore = vault.pendingDeposit();
-        uint256 pendingSiloAssetBalance = assetBalance(
-            address(vault.pendingSilo())
-        );
+        uint256 pendingSiloAssetBalance = assetBalance(address(vault.pendingSilo()));
         uint256 vaultAssetBalance = assetBalance(address(vault));
 
         uint256 depositId = vault.depositId();
@@ -100,35 +74,19 @@ contract BaseTest is Test, Constants {
         vm.prank(operator);
         uint256 value = viaEth ? amount : 0;
         if (keccak256(data) == keccak256(abi.encode(""))) {
-            requestId = vault.requestDeposit{value: value}(
-                amount,
-                controller,
-                owner
-            );
+            requestId = vault.requestDeposit{value: value}(amount, controller, owner);
         } else {
             requestId = vault.requestDeposit(amount, controller, owner, data);
         }
 
-        assertEq(
-            vault.pendingDeposit(),
-            requestDepBefore + amount,
-            "pendingDeposit value did not increase properly"
-        );
+        assertEq(vault.pendingDeposit(), requestDepBefore + amount, "pendingDeposit value did not increase properly");
         assertEq(
             assetBalance(address(vault.pendingSilo())),
             pendingSiloAssetBalance + amount,
             "pending silo asset balance did not increase properly"
         );
-        assertEq(
-            assetBalance(address(vault)),
-            vaultAssetBalance,
-            "vault asset balance should not increase"
-        );
-        assertEq(
-            depositId,
-            requestId,
-            "requestId should be equal to current depositId"
-        );
+        assertEq(assetBalance(address(vault)), vaultAssetBalance, "vault asset balance should not increase");
+        assertEq(depositId, requestId, "requestId should be equal to current depositId");
         return requestId;
     }
 
@@ -147,12 +105,7 @@ contract BaseTest is Test, Constants {
         return vault.deposit(amount, user);
     }
 
-    function mint(
-        uint256 amount,
-        address controller,
-        address operator,
-        address receiver
-    ) internal returns (uint256) {
+    function mint(uint256 amount, address controller, address operator, address receiver) internal returns (uint256) {
         vm.prank(operator);
         return vault.mint(amount, receiver, controller);
     }
@@ -162,11 +115,7 @@ contract BaseTest is Test, Constants {
         return vault.mint(amount, user);
     }
 
-    function requestRedeem(
-        uint256 amount,
-        address controller,
-        address owner
-    ) internal returns (uint256) {
+    function requestRedeem(uint256 amount, address controller, address owner) internal returns (uint256) {
         address operator = owner;
         return requestRedeem(amount, controller, owner, operator);
     }
@@ -181,23 +130,12 @@ contract BaseTest is Test, Constants {
         uint256 redeemId = vault.redeemId();
         vm.prank(operator);
         uint256 requestId = vault.requestRedeem(amount, controller, owner);
-        assertEq(
-            vault.pendingRedeem(),
-            requestRedeemBefore + amount,
-            "pendingRedeem value did not increase properly"
-        );
-        assertEq(
-            redeemId,
-            requestId,
-            "requestId should be equal to current redeemId"
-        );
+        assertEq(vault.pendingRedeem(), requestRedeemBefore + amount, "pendingRedeem value did not increase properly");
+        assertEq(redeemId, requestId, "requestId should be equal to current redeemId");
         return redeemId;
     }
 
-    function requestRedeem(
-        uint256 amount,
-        address user
-    ) internal returns (uint256) {
+    function requestRedeem(uint256 amount, address user) internal returns (uint256) {
         return requestRedeem(amount, user, user, user);
     }
 
@@ -217,9 +155,7 @@ contract BaseTest is Test, Constants {
         vm.prank(operator);
         uint256 assets = vault.redeem(amount, receiver, controller);
         assertEq(
-            assetsBeforeReceiver + assets,
-            assetBalance(receiver),
-            "Receiver assets balance did not increase properly"
+            assetsBeforeReceiver + assets, assetBalance(receiver), "Receiver assets balance did not increase properly"
         );
         if (controller != receiver) {
             assertEq(
@@ -254,9 +190,7 @@ contract BaseTest is Test, Constants {
         vm.prank(operator);
         uint256 shares = vault.withdraw(amount, receiver, controller);
         assertEq(
-            assetsBeforeReceiver + amount,
-            assetBalance(receiver),
-            "Receiver assets balance did not increase properly"
+            assetsBeforeReceiver + amount, assetBalance(receiver), "Receiver assets balance did not increase properly"
         );
         if (controller != receiver) {
             assertEq(
@@ -294,14 +228,11 @@ contract BaseTest is Test, Constants {
     }
 
     function dealAndApproveAndWhitelist(address user) public {
-        dealAmountAndApprove(user, 100000);
+        dealAmountAndApprove(user, 100_000);
         whitelist(user);
     }
 
-    function dealAmountAndApproveAndWhitelist(
-        address user,
-        uint256 amount
-    ) public {
+    function dealAmountAndApproveAndWhitelist(address user, uint256 amount) public {
         dealAmountAndApprove(user, amount);
         whitelist(user);
     }
@@ -313,11 +244,7 @@ contract BaseTest is Test, Constants {
     function dealAmountAndApprove(address user, uint256 amount) public {
         address asset = vault.asset();
         deal(user, type(uint256).max);
-        deal(
-            vault.asset(),
-            user,
-            amount * 10 ** IERC20Metadata(asset).decimals()
-        );
+        deal(vault.asset(), user, amount * 10 ** IERC20Metadata(asset).decimals());
         vm.prank(user);
         IERC4626(asset).approve(address(vault), UINT256_MAX);
     }

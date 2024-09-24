@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
-import {Script, console} from "forge-std/Script.sol";
 import {Vault} from "../src/vault/Vault.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Upgrades, Options} from "openzeppelin-foundry-upgrades/Upgrades.sol";
-import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
-import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+import {Script, console} from "forge-std/Script.sol";
+
 import {DefenderOptions} from "openzeppelin-foundry-upgrades/Options.sol";
+import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 contract Deploy is Script {
     address USDC_ARBITRUM = vm.envAddress("USDC_ARBITRUM");
@@ -31,7 +33,7 @@ contract Deploy is Script {
     address whitelistManager = DAO;
     address navManager = SAFE;
     uint16 _managementRate = 0;
-    uint16 _performanceRate = 2_000;
+    uint16 _performanceRate = 2000;
     bool enableWhitelist = true;
 
     function run() external {
@@ -62,11 +64,7 @@ contract Deploy is Script {
 
         TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
             payable(
-                Upgrades.deployTransparentProxy(
-                    "Vault.sol:Vault",
-                    PROXY_ADMIN,
-                    abi.encodeCall(Vault.initialize, v)
-                )
+                Upgrades.deployTransparentProxy("Vault.sol:Vault", PROXY_ADMIN, abi.encodeCall(Vault.initialize, v))
             )
         );
 
@@ -75,8 +73,12 @@ contract Deploy is Script {
         vm.stopBroadcast();
 
         // Mainnet
-        // source .env && forge clean && forge script script/mainnet_deploy.s.sol:MAINNET_DeployAmphor --ffi --chain-id 1 --optimizer-runs 10000 --verifier-url ${VERIFIER_URL} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify #--broadcast
+        // source .env && forge clean && forge script script/mainnet_deploy.s.sol:MAINNET_DeployAmphor --ffi --chain-id
+        // 1 --optimizer-runs 10000 --verifier-url ${VERIFIER_URL} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify
+        // #--broadcast
         // Sepolia
-        // source .env && forge clean && forge script script/mainnet_deploy.s.sol:MAINNET_DeployAmphor --ffi --chain-id 534351 --optimizer-runs 10000 --verifier-url ${VERIFIER_URL_SEPOLIA} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify #--broadcast
+        // source .env && forge clean && forge script script/mainnet_deploy.s.sol:MAINNET_DeployAmphor --ffi --chain-id
+        // 534351 --optimizer-runs 10000 --verifier-url ${VERIFIER_URL_SEPOLIA} --etherscan-api-key ${ETHERSCAN_API_KEY}
+        // --verify #--broadcast
     }
 }

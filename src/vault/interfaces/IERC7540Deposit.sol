@@ -12,11 +12,7 @@ interface IERC7540Deposit is IERC7540 {
      *
      */
     event DepositRequest(
-        address indexed controller,
-        address indexed owner,
-        uint256 indexed requestId,
-        address sender,
-        uint256 assets
+        address indexed controller, address indexed owner, uint256 indexed requestId, address sender, uint256 assets
     );
 
     function requestDeposit(
@@ -25,25 +21,11 @@ interface IERC7540Deposit is IERC7540 {
         address owner
     ) external payable returns (uint256 requestId);
 
-    function deposit(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) external returns (uint256 shares);
+    function deposit(uint256 assets, address receiver, address controller) external returns (uint256 shares);
 
-    function mint(
-        uint256 shares,
-        address receiver,
-        address controller
-    ) external returns (uint256 assets);
+    function mint(uint256 shares, address receiver, address controller) external returns (uint256 assets);
 
-    function pendingDepositRequest(
-        uint256 requestId,
-        address controller
-    ) external view returns (uint256 assets);
+    function pendingDepositRequest(uint256 requestId, address controller) external view returns (uint256 assets);
 
-    function claimableDepositRequest(
-        uint256 requestId,
-        address controller
-    ) external view returns (uint256 assets);
+    function claimableDepositRequest(uint256 requestId, address controller) external view returns (uint256 assets);
 }

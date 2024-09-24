@@ -23,26 +23,18 @@ contract FeeRegistry is Ownable2StepUpgradeable {
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeRegistry")) - 1)) & ~bytes32(uint256(0xff));
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant feeRegistryStorage =
-        0xfae567c932a2d69f96a50330b7967af6689561bf72e1f4ad815fc97800b3f300;
+    bytes32 private constant feeRegistryStorage = 0xfae567c932a2d69f96a50330b7967af6689561bf72e1f4ad815fc97800b3f300;
 
     /// @notice Initializes the owner and protocol fee receiver.
     /// @param initialOwner The contract protocol address.
     /// @param _protocolFeeReceiver The protocol fee receiver.
-    function initialize(
-        address initialOwner,
-        address _protocolFeeReceiver
-    ) public initializer {
+    function initialize(address initialOwner, address _protocolFeeReceiver) public initializer {
         __Ownable_init(initialOwner);
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
         $.protocolFeeReceiver = _protocolFeeReceiver;
     }
 
-    function _getFeeRegistryStorage()
-        internal
-        pure
-        returns (FeeRegistryStorage storage $)
-    {
+    function _getFeeRegistryStorage() internal pure returns (FeeRegistryStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := feeRegistryStorage
@@ -51,9 +43,7 @@ contract FeeRegistry is Ownable2StepUpgradeable {
 
     /// @notice Updates the address of the protocol fee receiver.
     /// @param _protocolFeeReceiver The new protocol fee receiver address.
-    function updateProtocolFeeReceiver(
-        address _protocolFeeReceiver
-    ) external onlyOwner {
+    function updateProtocolFeeReceiver(address _protocolFeeReceiver) external onlyOwner {
         _getFeeRegistryStorage().protocolFeeReceiver = _protocolFeeReceiver;
     }
 
@@ -68,10 +58,7 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     /// @param vault The address of the vault.
     /// @param rate The custom fee rate for the vault.
     function setCustomRate(address vault, uint16 rate) external onlyOwner {
-        _getFeeRegistryStorage().customRate[vault] = CustomRate({
-            isActivated: true,
-            rate: rate
-        });
+        _getFeeRegistryStorage().customRate[vault] = CustomRate({isActivated: true, rate: rate});
     }
 
     /// @notice Cancels the custom fee rate for a specific vault.
