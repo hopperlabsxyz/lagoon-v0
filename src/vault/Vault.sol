@@ -111,36 +111,34 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         address controller,
         address owner
     ) public payable override(ERC7540Upgradeable) returns (uint256 requestId) {
-        return _requestDeposit(assets, controller, owner, address(0));
+        return _requestDeposit(assets, controller, owner);
     }
 
     /// @dev should not be usable when contract is paused
+    /// @param assets The amount of assets to deposit.
+    /// @param controller The address of the controller involved in the deposit request.
+    /// @param owner The address of the owner for whom the deposit is requested.
+    /// @param referral The address who referred the deposit.
     function requestDeposit(
         uint256 assets,
         address controller,
         address owner,
         address referral
     ) public payable returns (uint256 requestId) {
-        return _requestDeposit(assets, controller, owner, referral);
+        if (address(referral) != address(0)) {
+            emit Referral(referral, owner, _getERC7540Storage().depositEpochId, assets);
+        }
+        return _requestDeposit(assets, controller, owner);
     }
 
     /// @notice Requests a deposit of assets, subject to whitelist validation.
     /// @param assets The amount of assets to deposit.
     /// @param controller The address of the controller involved in the deposit request.
     /// @param owner The address of the owner for whom the deposit is requested.
-    /// @param referral The address who referred the deposit.
     /// @return The id of the deposit request.
-    function _requestDeposit(
-        uint256 assets,
-        address controller,
-        address owner,
-        address referral
-    ) internal returns (uint256) {
+    function _requestDeposit(uint256 assets, address controller, address owner) internal returns (uint256) {
         uint256 requestId = super.requestDeposit(assets, controller, owner);
         if (!isWhitelisted(owner)) revert NotWhitelisted();
-        if (address(referral) != address(0)) {
-            emit Referral(referral, owner, requestId, assets);
-        }
         return requestId;
     }
 
