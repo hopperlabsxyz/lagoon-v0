@@ -192,8 +192,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit UpdateTotalAssets(_newTotalAssets);
     }
 
-    /// @notice Settles the deposit requests. After this users start farming and
-    /// can claim their shares. If possible it also settles the redeem requests.
+    /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
+    /// If possible, it also settles redeem requests.
     function settleDeposit() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees(feeReceiver(), protocolFeeReceiver());
