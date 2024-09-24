@@ -111,7 +111,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         address controller,
         address owner
     ) public payable override(ERC7540Upgradeable) returns (uint256 requestId) {
-        return _requestDeposit(assets, controller, owner, abi.encode(""));
+        return _requestDeposit(assets, controller, owner, address(0));
     }
 
     /// @dev should not be usable when contract is paused
@@ -119,68 +119,42 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         uint256 assets,
         address controller,
         address owner,
-        bytes calldata data
+        address referral
     ) public payable returns (uint256 requestId) {
-        return _requestDeposit(assets, controller, owner, data);
+        return _requestDeposit(assets, controller, owner, referral);
     }
 
     /// @notice Requests a deposit of assets, subject to whitelist validation.
     /// @param assets The amount of assets to deposit.
     /// @param controller The address of the controller involved in the deposit request.
     /// @param owner The address of the owner for whom the deposit is requested.
-    /// @param data ABI-encoded data expected to contain a Merkle proof (bytes32[]) and a referral address (address).
+    /// @param referral The address who referred the deposit.
     /// @return The id of the deposit request.
     function _requestDeposit(
         uint256 assets,
         address controller,
         address owner,
-        bytes memory data
+        address referral
     ) internal returns (uint256) {
-        (bytes32[] memory proof, address referral) = abi.decode(data, (bytes32[], address));
-        if (isWhitelisted(owner, proof) == false) {
-            revert NotWhitelisted();
-        }
         uint256 requestId = super.requestDeposit(assets, controller, owner);
+        if (!isWhitelisted(owner)) revert NotWhitelisted();
         if (address(referral) != address(0)) {
             emit Referral(referral, owner, requestId, assets);
         }
         return requestId;
     }
 
-    /// @dev should not be usable when contract is paused
-    function requestRedeem(
-        uint256 shares,
-        address controller,
-        address owner
-    ) public override(ERC7540Upgradeable) returns (uint256 requestId) {
-        return _requestRedeem(shares, controller, owner, abi.encode(""));
-    }
-
-    function requestRedeem(
-        uint256 shares,
-        address controller,
-        address owner,
-        bytes calldata data
-    ) external returns (uint256 requestId) {
-        return _requestRedeem(shares, controller, owner, data);
-    }
-
     /// @notice Requests the redemption of tokens, subject to whitelist validation.
     /// @param shares The number of tokens to redeem.
     /// @param controller The address of the controller involved in the redemption request.
     /// @param owner The address of the token owner requesting redemption.
-    /// @param data ABI-encoded Merkle proof (bytes32[]) used to validate the controller's whitelist status.
-    /// @return The id of the redeem request.
-    function _requestRedeem(
+    /// @return requestId The id of the redeem request.
+    function requestRedeem(
         uint256 shares,
         address controller,
-        address owner,
-        bytes memory data
-    ) internal onlyOpen whenNotPaused returns (uint256) {
-        bytes32[] memory proof = abi.decode(data, (bytes32[]));
-        if (isWhitelisted(owner, proof) == false) {
-            revert NotWhitelisted();
-        }
+        address owner
+    ) public override(ERC7540Upgradeable) onlyOpen whenNotPaused returns (uint256 requestId) {
+        if (!isWhitelisted(owner)) revert NotWhitelisted();
         return super.requestRedeem(shares, controller, owner);
     }
 

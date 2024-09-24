@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import {MerkleTreeMode} from "./Errors.sol";
-import {RootUpdated, WhitelistUpdated} from "./Events.sol";
+import {NotWhitelisted} from "./Errors.sol";
+import {WhitelistUpdated} from "./Events.sol";
 import {RolesUpgradeable} from "./Roles.sol";
-import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 // import {console} from "forge-std/console.sol";
 
@@ -15,7 +14,6 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
 
     /// @custom:storage-location erc7201:hopper.storage.Whitelistable
     struct WhitelistableStorage {
-        bytes32 root;
         mapping(address => bool) isWhitelisted;
         bool isActivated;
     }
@@ -27,14 +25,15 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
         }
     }
 
+    // modifier onlyWhitelisted(address account) {
+    //     require(isWhitelisted(account), NotWhitelisted);
+    //     _;
+    // }
+
     // solhint-disable-next-line func-name-mixedcase
     function __Whitelistable_init(bool isActivated) internal onlyInitializing {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         $.isActivated = isActivated;
-    }
-
-    function getRoot() public view returns (bytes32) {
-        return _getWhitelistableStorage().root;
     }
 
     function isWhitelistActivated() public view returns (bool) {
@@ -49,33 +48,15 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
 
     /// @notice Checks if an account is whitelisted
     /// @param account The address of the account to check
-    /// @param proof The Merkle proof data, required when the root hash is set
     /// @return True if the account is whitelisted, false otherwise
-    function isWhitelisted(address account, bytes32[] memory proof) public view returns (bool) {
+    function isWhitelisted(address account) public view returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-        if ($.isActivated == false) {
-            return true;
-        }
-        if ($.root == 0) {
-            return $.isWhitelisted[account];
-        }
-        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(account))));
-        return MerkleProof.verify(proof, $.root, leaf);
-    }
-
-    /// @notice Updates the Merkle tree root hash
-    function setRoot(bytes32 root) external onlyWhitelistManager {
-        WhitelistableStorage storage $ = _getWhitelistableStorage();
-
-        $.root = root;
-        emit RootUpdated(root);
+        return $.isActivated ? $.isWhitelisted[account] : true;
     }
 
     /// @notice Adds an account to the whitelist
     function addToWhitelist(address account) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-
-        if ($.root != 0) revert MerkleTreeMode();
 
         $.isWhitelisted[account] = true;
         emit WhitelistUpdated(account, true);
@@ -84,8 +65,6 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
     /// @notice Adds multiple accounts to the whitelist
     function addToWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-
-        if ($.root != 0) revert MerkleTreeMode();
 
         for (uint256 i = 0; i < accounts.length; i++) {
             $.isWhitelisted[accounts[i]] = true;
@@ -97,8 +76,6 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
     function revokeFromWhitelist(address account) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
-        if ($.root != 0) revert MerkleTreeMode();
-
         $.isWhitelisted[account] = false;
         emit WhitelistUpdated(account, false);
     }
@@ -106,8 +83,6 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
     /// @notice Removes multiple accounts from the whitelist
     function revokeFromWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-
-        if ($.root != 0) revert MerkleTreeMode();
 
         for (uint256 i = 0; i < accounts.length; i++) {
             $.isWhitelisted[accounts[i]] = false;

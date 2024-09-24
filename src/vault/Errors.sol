@@ -51,9 +51,6 @@ error RequestIdNotClaimable();
 /// @notice Indicates that depositing a native token is not allowed.
 error CantDepositNativeToken();
 
-/// @notice Indicates that the caller is not whitelisted.
-error NotWhitelisted();
-
 // ********************* FEE MANAGER ********************* //
 
 /// @notice Indicates that the provided rate exceeds the maximum allowed rate.
@@ -80,5 +77,5 @@ error OnlyNAVManager(address navManager);
 
 // ********************* WHITELISTABLE ********************* //
 
-/// @notice Indicates that Merkle Tree mode is activated.
-error MerkleTreeMode();
+/// @notice Indicates that the caller is not whitelisted.
+error NotWhitelisted();

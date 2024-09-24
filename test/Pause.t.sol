@@ -45,7 +45,7 @@ contract TestPause is BaseTest {
 
         vm.prank(user1.addr);
         vm.expectRevert(Pausable.EnforcedPause.selector);
-        vault.requestDeposit(amount, user1.addr, user1.addr, abi.encode(""));
+        vault.requestDeposit(amount, user1.addr, user1.addr);
     }
 
     function test_deposit_whenPaused_shouldFail() public {
@@ -93,7 +93,7 @@ contract TestPause is BaseTest {
 
         vm.prank(user1.addr);
         vm.expectRevert(Pausable.EnforcedPause.selector);
-        vault.requestRedeem(2, user1.addr, user1.addr, abi.encode(""));
+        vault.requestRedeem(2, user1.addr, user1.addr);
     }
 
     function test_withdraw_whenPaused_shouldFail() public {
