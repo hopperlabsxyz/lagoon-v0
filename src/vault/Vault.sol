@@ -310,8 +310,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     function initiateClosing() external onlyOwner onlyOpen {
-        VaultStorage storage $ = _getVaultStorage();
-        $.state = State.Closing;
+        _getVaultStorage().state = State.Closing;
         emit StateUpdated(State.Closing);
     }
 

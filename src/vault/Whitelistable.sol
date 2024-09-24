@@ -26,8 +26,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
 
     // solhint-disable-next-line func-name-mixedcase
     function __Whitelistable_init(bool isActivated) internal onlyInitializing {
-        WhitelistableStorage storage $ = _getWhitelistableStorage();
-        $.isActivated = isActivated;
+        _getWhitelistableStorage().isActivated = isActivated;
     }
 
     function isWhitelistActivated() public view returns (bool) {
@@ -36,8 +35,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
 
     /// @notice Deactivates the whitelist
     function deactivateWhitelist() public onlyOwner {
-        WhitelistableStorage storage $ = _getWhitelistableStorage();
-        $.isActivated = false;
+        _getWhitelistableStorage().isActivated = false;
     }
 
     /// @notice Checks if an account is whitelisted
@@ -50,9 +48,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
 
     /// @notice Adds an account to the whitelist
     function addToWhitelist(address account) external onlyWhitelistManager {
-        WhitelistableStorage storage $ = _getWhitelistableStorage();
-
-        $.isWhitelisted[account] = true;
+        _getWhitelistableStorage().isWhitelisted[account] = true;
         emit WhitelistUpdated(account, true);
     }
 
@@ -68,9 +64,7 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
 
     /// @notice Removes an account from the whitelist
     function revokeFromWhitelist(address account) external onlyWhitelistManager {
-        WhitelistableStorage storage $ = _getWhitelistableStorage();
-
-        $.isWhitelisted[account] = false;
+        _getWhitelistableStorage().isWhitelisted[account] = false;
         emit WhitelistUpdated(account, false);
     }
 

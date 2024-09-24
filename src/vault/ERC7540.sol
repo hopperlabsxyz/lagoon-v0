@@ -128,15 +128,13 @@ abstract contract ERC7540Upgradeable is
 
     // ## EIP7540 ##
     function isOperator(address controller, address operator) public view returns (bool) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        return $.isOperator[controller][operator];
+        return _getERC7540Storage().isOperator[controller][operator];
     }
 
     /// @dev should not be usable when contract is paused
     function setOperator(address operator, bool approved) external whenNotPaused returns (bool success) {
-        ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
-        $.isOperator[msgSender][operator] = approved;
+        _getERC7540Storage().isOperator[msgSender][operator] = approved;
         emit OperatorSet(msgSender, operator, approved);
         return true;
     }
@@ -470,18 +468,15 @@ abstract contract ERC7540Upgradeable is
     }
 
     function pendingSilo() public view returns (address) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        return address($.pendingSilo);
+        return address(_getERC7540Storage().pendingSilo);
     }
 
     function redeemId() public view returns (uint256) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        return $.redeemEpochId;
+        return _getERC7540Storage().redeemEpochId;
     }
 
     function depositId() public view returns (uint256) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        return $.depositEpochId;
+        return _getERC7540Storage().depositEpochId;
     }
 
     function settleDeposit() public virtual;
