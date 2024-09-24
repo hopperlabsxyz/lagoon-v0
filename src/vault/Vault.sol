@@ -17,6 +17,21 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 using SafeERC20 for IERC20;
 
 contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
+    /// @param underlying The address of the underlying asset.
+    /// @param name The name of the vault and by extension the ERC20 token.
+    /// @param symbol The symbol of the vault and by extension the ERC20 token.
+    /// @param safe The address of the safe smart contract.
+    /// @param whitelistManager The address of the whitelist manager.
+    /// @param navManager The address of the NAV manager.
+    /// @param admin The address of the owner of the vault.
+    /// @param feeReceiver The address of the fee receiver.
+    /// @param feeRegistry The address of the fee registry.
+    /// @param wrappedNativeToken The address of the wrapped native token.
+    /// @param managementRate The management fee rate.
+    /// @param performanceRate The performance fee rate.
+    /// @param rateUpdateCooldown The cooldown period for updating the fee rates.
+    /// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
+    /// @param whitelist An array of addresses to be whitelisted.
     struct InitStruct {
         IERC20 underlying;
         string name;
@@ -36,6 +51,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @custom:storage-location erc7201:hopper.storage.vault
+    /// @param newTotalAssets The new total assets of the vault. It is used to update the totalAssets variable.
+    /// @param state The state of the vault. It can be Open, Closing, or Closed.
     struct VaultStorage {
         uint256 newTotalAssets;
         State state;
@@ -84,8 +101,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
             $whitelistStorage.isWhitelisted[init.feeReceiver] = true;
             $whitelistStorage.isWhitelisted[protocolFeeReceiver()] = true;
             $whitelistStorage.isWhitelisted[init.safe] = true;
-            $whitelistStorage.isWhitelisted[init.whitelistManager] = true;
-            $whitelistStorage.isWhitelisted[init.admin] = true;
             $whitelistStorage.isWhitelisted[pendingSilo()] = true;
             for (uint256 i = 0; i < init.whitelist.length; i++) {
                 $whitelistStorage.isWhitelisted[init.whitelist[i]] = true;
@@ -105,7 +120,9 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         _;
     }
 
-    /// @dev should not be usable when contract is paused
+    /// @param assets The amount of assets to deposit.
+    /// @param controller The address of the controller involved in the deposit request.
+    /// @param owner The address of the owner for whom the deposit is requested.
     function requestDeposit(
         uint256 assets,
         address controller,
@@ -114,7 +131,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         return _requestDeposit(assets, controller, owner);
     }
 
-    /// @dev should not be usable when contract is paused
     /// @param assets The amount of assets to deposit.
     /// @param controller The address of the controller involved in the deposit request.
     /// @param owner The address of the owner for whom the deposit is requested.
