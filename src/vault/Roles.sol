@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {FeeRegistry} from "../protocol/FeeRegistry.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 error OnlySafe();
 error OnlyWhitelistManager();
@@ -15,10 +15,12 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
     /// @notice Stores the various roles responsible of managing the vault.
     /// @param whitelistManager The address responsible of managing the whitelist.
     /// @param feeReceiver The address that will receive the fees generated.
-    /// @param safe Every lagoon vault is associated with a Safe smart contract. This address will receive the assets of the vault and can settle deposits and redeems.
+    /// @param safe Every lagoon vault is associated with a Safe smart contract. This address will receive the assets of
+    /// the vault and can settle deposits and redeems.
     /// @param feeRegistry The address of the FeeRegistry contract.
     /// @param navManager. This address is responsible of updating the newTotalAssets value of the vault.
-    /// @param owner The address of the owner of the contract. It considered as the admin. It is not visible in the struct. It can change the others roles and itself. Initiate the fund closing. Disable the whitelist.
+    /// @param owner The address of the owner of the contract. It considered as the admin. It is not visible in the
+    /// struct. It can change the others roles and itself. Initiate the fund closing. Disable the whitelist.
     struct RolesStorage {
         address whitelistManager;
         address feeReceiver;
@@ -39,8 +41,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Roles")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant rolesStorage =
-        0x7c302ed2c673c3d6b4551cf74a01ee649f887e14fd20d13dbca1b6099534d900;
+    bytes32 private constant rolesStorage = 0x7c302ed2c673c3d6b4551cf74a01ee649f887e14fd20d13dbca1b6099534d900;
 
     /// @dev Returns the storage struct of the roles.
     function _getRolesStorage() internal pure returns (RolesStorage storage $) {
@@ -58,15 +59,17 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
 
     /// @dev Modifier to check if the caller is the whitelist manager.
     modifier onlyWhitelistManager() {
-        if (_getRolesStorage().whitelistManager != _msgSender())
+        if (_getRolesStorage().whitelistManager != _msgSender()) {
             revert OnlyWhitelistManager();
+        }
         _;
     }
 
     /// @dev Modifier to check if the caller is the total assets manager.
     modifier onlyNAVManager() {
-        if (_getRolesStorage().navManager != _msgSender())
+        if (_getRolesStorage().navManager != _msgSender()) {
             revert OnlyNAVManager();
+        }
         _;
     }
 
@@ -82,8 +85,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
 
     /// @notice Returns the address of protocol fee receiver.
     function protocolFeeReceiver() public view returns (address) {
-        return
-            FeeRegistry(_getRolesStorage().feeRegistry).protocolFeeReceiver();
+        return FeeRegistry(_getRolesStorage().feeRegistry).protocolFeeReceiver();
     }
 
     /// @notice Returns the address of the safe associated with the vault.
@@ -104,9 +106,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
     /// @notice Updates the address of the whitelist manager.
     /// @param _whitelistManager The new address of the whitelist manager.
     /// @dev Only the owner can call this function.
-    function updateWhitelistManager(
-        address _whitelistManager
-    ) external onlyOwner {
+    function updateWhitelistManager(address _whitelistManager) external onlyOwner {
         _getRolesStorage().whitelistManager = _whitelistManager;
     }
 

@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "forge-std/Test.sol";
-import {Vault} from "@src/vault/Vault.sol";
-import {IERC4626, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseTest} from "./Base.sol";
-import {FeeManager, AboveMaxRate} from "@src/vault/FeeManager.sol";
-import {Rates} from "@src/vault/FeeManager.sol";
+
 import {VaultHelper} from "./VaultHelper.sol";
+import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+import {AboveMaxRate, FeeManager} from "@src/vault/FeeManager.sol";
+import {Rates} from "@src/vault/FeeManager.sol";
+import {Vault} from "@src/vault/Vault.sol";
+import "forge-std/Test.sol";
 
 contract testRateUpdates is BaseTest {
-    uint16 public constant MAX_MANAGEMENT_RATE = 1_000; // 10 %
-    uint16 public constant MAX_PERFORMANCE_RATE = 5_000; // 50 %
-    uint16 public constant MAX_PROTOCOL_RATE = 3_000; // 30 %
+    uint16 public constant MAX_MANAGEMENT_RATE = 1000; // 10 %
+    uint16 public constant MAX_PERFORMANCE_RATE = 5000; // 50 %
+    uint16 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
 
     function test_ratesShouldMatchValuesAtInit() public {
         uint16 protocolRate = 100;
@@ -22,16 +23,8 @@ contract testRateUpdates is BaseTest {
         uint16 performanceRate = 2000;
         setUpVault(protocolRate, managementRate, performanceRate);
         assertEq(vault.protocolRate(), protocolRate, "protocolRate");
-        assertEq(
-            vault.feeRates().performanceRate,
-            performanceRate,
-            "performanceRate"
-        );
-        assertEq(
-            vault.feeRates().managementRate,
-            managementRate,
-            "managementRate"
-        );
+        assertEq(vault.feeRates().performanceRate, performanceRate, "performanceRate");
+        assertEq(vault.feeRates().managementRate, managementRate, "managementRate");
     }
 
     function test_ratesShouldRevertAtInitWhenToHigh() public {
@@ -63,159 +56,80 @@ contract testRateUpdates is BaseTest {
             enableWhitelist: enableWhitelist,
             whitelist: whitelistInit
         });
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                AboveMaxRate.selector,
-                managementRate,
-                MAX_MANAGEMENT_RATE
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, managementRate, MAX_MANAGEMENT_RATE));
 
         vault.initialize(v);
 
         v.managementRate = MAX_MANAGEMENT_RATE;
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                AboveMaxRate.selector,
-                performanceRate,
-                MAX_PERFORMANCE_RATE
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, performanceRate, MAX_PERFORMANCE_RATE));
 
         vault.initialize(v);
         v.performanceRate = MAX_PERFORMANCE_RATE;
 
         vault.initialize(v);
-        assertEq(
-            vault.protocolRate(),
-            MAX_PROTOCOL_RATE,
-            "protocol rate should be MAX_PROTOCOL_RATE"
-        );
+        assertEq(vault.protocolRate(), MAX_PROTOCOL_RATE, "protocol rate should be MAX_PROTOCOL_RATE");
     }
 
     function test_updateRatesOverMaxPerformanceRateShouldRevert() public {
-        setUpVault(100, 200, 2_000);
+        setUpVault(100, 200, 2000);
 
-        Rates memory newRates = Rates({
-            managementRate: MAX_MANAGEMENT_RATE + 1,
-            performanceRate: 0
-        });
+        Rates memory newRates = Rates({managementRate: MAX_MANAGEMENT_RATE + 1, performanceRate: 0});
         vm.startPrank(vault.owner());
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                AboveMaxRate.selector,
-                MAX_MANAGEMENT_RATE + 1,
-                MAX_MANAGEMENT_RATE
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE + 1, MAX_MANAGEMENT_RATE));
         vault.updateRates(newRates);
 
         newRates.managementRate = 0;
         newRates.performanceRate = MAX_PERFORMANCE_RATE + 1;
 
         vm.startPrank(vault.owner());
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                AboveMaxRate.selector,
-                MAX_PERFORMANCE_RATE + 1,
-                MAX_PERFORMANCE_RATE
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE + 1, MAX_PERFORMANCE_RATE));
         vault.updateRates(newRates);
     }
 
     function test_updateRatesShouldBeApplyed24HoursAfter() public {
         setUpVault(100, 200, 200);
 
-        Rates memory newRates = Rates({
-            managementRate: MAX_MANAGEMENT_RATE,
-            performanceRate: MAX_PERFORMANCE_RATE
-        });
+        Rates memory newRates = Rates({managementRate: MAX_MANAGEMENT_RATE, performanceRate: MAX_PERFORMANCE_RATE});
         assertNotEq(200, MAX_MANAGEMENT_RATE);
         assertNotEq(200, MAX_PERFORMANCE_RATE);
         vm.startPrank(vault.owner());
         vault.updateRates(newRates);
 
-        assertEq(
-            200,
-            vault.feeRates().performanceRate,
-            "performance rate after update"
-        );
-        assertEq(
-            200,
-            vault.feeRates().managementRate,
-            "management rate after update"
-        );
+        assertEq(200, vault.feeRates().performanceRate, "performance rate after update");
+        assertEq(200, vault.feeRates().managementRate, "management rate after update");
 
         vm.warp(block.timestamp + 1 days - 1);
-        assertEq(
-            200,
-            vault.feeRates().performanceRate,
-            "performance rate after 1st warp"
-        );
-        assertEq(
-            200,
-            vault.feeRates().managementRate,
-            "management rate after 1st warp"
-        );
+        assertEq(200, vault.feeRates().performanceRate, "performance rate after 1st warp");
+        assertEq(200, vault.feeRates().managementRate, "management rate after 1st warp");
 
         vm.warp(block.timestamp + 1 days);
 
-        assertEq(
-            MAX_PERFORMANCE_RATE,
-            vault.feeRates().performanceRate,
-            "performance rate after 2nd warp"
-        );
-        assertEq(
-            MAX_MANAGEMENT_RATE,
-            vault.feeRates().managementRate,
-            "management rate after 2nd warp"
-        );
+        assertEq(MAX_PERFORMANCE_RATE, vault.feeRates().performanceRate, "performance rate after 2nd warp");
+        assertEq(MAX_MANAGEMENT_RATE, vault.feeRates().managementRate, "management rate after 2nd warp");
     }
 
-    function test_updateRatesShouldBeApplyed24HoursAfter_VerifyThroughASettle()
-        public
-    {
+    function test_updateRatesShouldBeApplyed24HoursAfter_VerifyThroughASettle() public {
         setUpVault(100, 0, 0); // no fees will be taken
         address feeReceiver = vault.feeReceiver();
-        assertEq(
-            vault.balanceOf(feeReceiver),
-            0,
-            "fee receiver should have 0 shares, init"
-        );
+        assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, init");
         dealAmountAndApproveAndWhitelist(user1.addr, 1000);
         requestDeposit(1000, user1.addr);
         updateAndSettle(0);
-        assertEq(
-            vault.balanceOf(feeReceiver),
-            0,
-            "fee receiver should have 0 shares, first settle"
-        );
+        assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, first settle");
         updateNewTotalAssets(2000);
         vm.warp(block.timestamp + 1 days);
         // owner updates rates
-        Rates memory newRates = Rates({
-            managementRate: MAX_MANAGEMENT_RATE,
-            performanceRate: MAX_PERFORMANCE_RATE
-        });
+        Rates memory newRates = Rates({managementRate: MAX_MANAGEMENT_RATE, performanceRate: MAX_PERFORMANCE_RATE});
 
         vm.startPrank(vault.owner());
 
         vault.updateRates(newRates);
         vm.stopPrank();
         settle();
-        assertEq(
-            vault.balanceOf(feeReceiver),
-            0,
-            "fee receiver should have 0 shares, 2nd settle"
-        );
+        assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, 2nd settle");
 
         updateAndSettle(4000); // +100%
-        assertNotEq(
-            vault.balanceOf(feeReceiver),
-            0,
-            "fee receiver should have shares"
-        );
+        assertNotEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have shares");
     }
 }

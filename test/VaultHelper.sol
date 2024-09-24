@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import "../src/vault/Vault.sol";
 import "../src/vault/ERC7540.sol";
+import "../src/vault/Vault.sol";
 
 contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -53,9 +53,7 @@ contract VaultHelper is Vault {
         return _getERC7540Storage().lastDepositEpochIdSettled;
     }
 
-    function lastDepositRequestId_debug(
-        address controller
-    ) public view returns (uint256) {
+    function lastDepositRequestId_debug(address controller) public view returns (uint256) {
         return _getERC7540Storage().lastDepositRequestId[controller];
     }
 }

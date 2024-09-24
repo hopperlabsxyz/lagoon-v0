@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC7575} from "./IERC7575.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 interface IERC7540 is IERC7575, IERC165 {
     event OperatorSet(address indexed controller, address indexed operator, bool approved);

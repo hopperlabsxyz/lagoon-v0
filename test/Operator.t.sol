@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "forge-std/Test.sol";
-import {Vault} from "@src/vault/Vault.sol";
-import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseTest} from "./Base.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Vault} from "@src/vault/Vault.sol";
+import "forge-std/Test.sol";
 
 contract TestOperator is BaseTest {
     function setUp() public {
@@ -22,10 +22,7 @@ contract TestOperator is BaseTest {
         vm.prank(user1.addr);
         vault.setOperator(user2.addr, true);
         assertFalse(isOpBefore, "isOperator should be false");
-        assertTrue(
-            vault.isOperator(user1.addr, user2.addr),
-            "isOperator should be true"
-        );
+        assertTrue(vault.isOperator(user1.addr, user2.addr), "isOperator should be true");
     }
 
     function test_addOperatorwhenOpIsAlreadyOp() public {
@@ -35,10 +32,7 @@ contract TestOperator is BaseTest {
         assertTrue(isOpBefore, "isOperator should be true");
         vm.prank(user1.addr);
         vault.setOperator(user2.addr, true);
-        assertTrue(
-            vault.isOperator(user1.addr, user2.addr),
-            "isOperator should be true"
-        );
+        assertTrue(vault.isOperator(user1.addr, user2.addr), "isOperator should be true");
     }
 
     function test_rmvOperator() public {
@@ -48,10 +42,7 @@ contract TestOperator is BaseTest {
         assertTrue(isOpBefore, "isOperator should be true");
         vm.prank(user1.addr);
         vault.setOperator(user2.addr, false);
-        assertFalse(
-            vault.isOperator(user1.addr, user2.addr),
-            "isOperator should be false"
-        );
+        assertFalse(vault.isOperator(user1.addr, user2.addr), "isOperator should be false");
     }
 
     function test_rmvOperatorWhenAddressIsNotOperator() public {
@@ -59,9 +50,6 @@ contract TestOperator is BaseTest {
         assertFalse(isOpBefore, "isOperator should be false");
         vm.prank(user1.addr);
         vault.setOperator(user2.addr, false);
-        assertFalse(
-            vault.isOperator(user1.addr, user2.addr),
-            "isOperator should be false"
-        );
+        assertFalse(vault.isOperator(user1.addr, user2.addr), "isOperator should be false");
     }
 }
