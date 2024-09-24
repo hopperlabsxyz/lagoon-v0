@@ -13,6 +13,16 @@ fs_permissions = [{ access = "read", path = "./"}] # Read access is needed for M
 
 solc_version = "0.8.26"
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 [fmt]
-# line_width = 120
+line_width = 120
+single_line_statement_blocks = "preserve"
+multiline_func_header = "params_first"
+sort_imports = true
+override_spacing = false
+int_types = "long"
+quote_style = "double"
+number_underscore = "thousands"
+wrap_comments = true
+ignore = []
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
