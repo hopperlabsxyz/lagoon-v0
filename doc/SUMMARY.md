@@ -1,6 +1,9 @@
 # Table of contents
 
-* [Introduction](README.md)
+## Lagoon Protocol
+
+* [Overview](README.md)
+* [Core Features](lagoon-protocol/core-features.md)
 
 ## Architecture
 
