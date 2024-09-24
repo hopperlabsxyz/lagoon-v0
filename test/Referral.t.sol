@@ -3,10 +3,9 @@ pragma solidity 0.8.26;
 
 import {BaseTest} from "./Base.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {NotWhitelisted} from "@src/vault/Errors.sol";
+import {Referral} from "@src/vault/Events.sol";
 import {Vault} from "@src/vault/Vault.sol";
-
-import {Referral} from "@src/vault/Vault.sol";
-import {NotWhitelisted} from "@src/vault/Whitelistable.sol";
 import "forge-std/Test.sol";
 
 contract TestReferral is BaseTest {

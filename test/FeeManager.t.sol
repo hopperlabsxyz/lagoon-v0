@@ -97,7 +97,7 @@ contract TestFeeManager is BaseTest {
 
         // ------------ Settle ------------ //
         newTotalAssets = 4_000_002 * 10 ** vault.underlyingDecimals(); // vault valo made a x4 for user2; and x2 for
-            // user1
+        // user1
         updateAndSettle(newTotalAssets);
 
         // We expect the price per share to do be equal to: 2 - 20% = 1.8
@@ -217,7 +217,7 @@ contract TestFeeManager is BaseTest {
 
         // user2 get x2 without paying performance fees
         newTotalAssets = 2_000_001 * 10 ** vault.underlyingDecimals(); // vault valo made a x2 for user2; and x1 for
-            // user1
+        // user1
         updateAndSettle(newTotalAssets);
 
         // We expect the price per share to do be equal to: 2 - 20% = 1.8
@@ -281,7 +281,7 @@ contract TestFeeManager is BaseTest {
         Rates memory ratesBefore = vault.feeRates();
 
         vm.prank(vault.owner());
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE + 1, MAX_MANAGEMENT_RATE));
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
         vault.updateRates(newRates);
 
         Rates memory ratesAfter = vault.feeRates();
@@ -302,7 +302,7 @@ contract TestFeeManager is BaseTest {
         Rates memory ratesBefore = vault.feeRates();
 
         vm.prank(vault.owner());
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE + 1, MAX_PERFORMANCE_RATE));
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE));
         vault.updateRates(newRates);
 
         Rates memory ratesAfter = vault.feeRates();
@@ -320,7 +320,7 @@ contract TestFeeManager is BaseTest {
         vault.updateRates(newRates);
 
         vm.prank(vault.owner());
-        vm.expectRevert(CooldownNotOver.selector);
+        vm.expectRevert(abi.encodeWithSelector(CooldownNotOver.selector, 1 days));
         vault.updateRates(newRates);
 
         vm.warp(block.timestamp + 1 days);

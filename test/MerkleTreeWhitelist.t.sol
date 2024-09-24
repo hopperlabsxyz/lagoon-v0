@@ -4,9 +4,8 @@ pragma solidity 0.8.26;
 import {BaseTest} from "./Base.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import {MerkleTreeMode, NotWhitelisted} from "@src/vault/Errors.sol";
 import {Vault} from "@src/vault/Vault.sol";
-
-import {MerkleTreeMode, NotWhitelisted} from "@src/vault/Whitelistable.sol";
 import "forge-std/Test.sol";
 
 bytes32 constant defaultRoot = 0x2d4a4a77812b41a135553e347ceecc3525a5a32e1bc0f2291bc10d186a847c23;
@@ -112,7 +111,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
 
         uint256 userBalance = assetBalance(user1.addr);
         vm.startPrank(user1.addr);
-        vm.expectRevert(abi.encodeWithSelector(NotWhitelisted.selector, user1.addr));
+        vm.expectRevert(NotWhitelisted.selector);
 
         vault.requestDeposit(userBalance, user1.addr, user1.addr, abi.encode(proof.proof));
     }
@@ -275,7 +274,7 @@ contract TestMerkleTreeWhitelist is BaseTest {
         vault.transfer(user2.addr, userBalance);
 
         vm.prank(user2.addr);
-        vm.expectRevert(abi.encodeWithSelector(NotWhitelisted.selector, user2.addr));
+        vm.expectRevert(NotWhitelisted.selector);
         vault.requestRedeem(userBalance, user2.addr, user2.addr);
     }
 

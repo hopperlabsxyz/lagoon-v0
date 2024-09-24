@@ -3,42 +3,20 @@ pragma solidity "0.8.26";
 
 import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
 
+import {State} from "./Enums.sol";
+import {NewNAVMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
+import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./Events.sol";
+
 import {FeeManager} from "./FeeManager.sol";
-import {NotWhitelisted, WhitelistableUpgradeable} from "./Whitelistable.sol";
+import {RolesUpgradeable} from "./Roles.sol";
+import {WhitelistableUpgradeable} from "./Whitelistable.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-// import {WhitelistableStorage} from "./Whitelistable.sol";
-import {RolesUpgradeable} from "./Roles.sol";
 // import {console} from "forge-std/console.sol";
 
-using Math for uint256;
 using SafeERC20 for IERC20;
 
-event Referral(address indexed referral, address indexed owner, uint256 indexed requestId, uint256 assets);
-
-event StateUpdated(State state);
-
-event TotalAssetsUpdated(uint256 totalAssets);
-
-event UpdateTotalAssets(uint256 totalAssets);
-
-uint256 constant BPS_DIVIDER = 10_000;
-
-error NotOpen();
-error NotClosing();
-error NotClosed();
-error NewTotalAssetsMissing();
-error NotEnoughLiquidity();
-
-enum State {
-    Open,
-    Closing,
-    Closed
-}
-
 contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
-    using Math for uint256;
-
     struct InitStruct {
         IERC20 underlying;
         string name;
@@ -116,16 +94,14 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     modifier onlyOpen() {
-        VaultStorage storage $ = _getVaultStorage();
-
-        if ($.state != State.Open) revert NotOpen();
+        State _state = _getVaultStorage().state;
+        if (_state != State.Open) revert NotOpen(_state);
         _;
     }
 
     modifier onlyClosing() {
-        VaultStorage storage $ = _getVaultStorage();
-
-        if ($.state != State.Closing) revert NotClosing();
+        State _state = _getVaultStorage().state;
+        if (_state != State.Closing) revert NotClosing(_state);
         _;
     }
 
@@ -162,7 +138,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     ) internal returns (uint256) {
         (bytes32[] memory proof, address referral) = abi.decode(data, (bytes32[], address));
         if (isWhitelisted(owner, proof) == false) {
-            revert NotWhitelisted(owner);
+            revert NotWhitelisted();
         }
         uint256 requestId = super.requestDeposit(assets, controller, owner);
         if (address(referral) != address(0)) {
@@ -203,7 +179,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     ) internal onlyOpen whenNotPaused returns (uint256) {
         bytes32[] memory proof = abi.decode(data, (bytes32[]));
         if (isWhitelisted(owner, proof) == false) {
-            revert NotWhitelisted(owner);
+            revert NotWhitelisted();
         }
         return super.requestRedeem(shares, controller, owner);
     }
@@ -245,7 +221,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         if (
             newTotalAssets == type(uint256).max // it means newTotalAssets has not been updated
         ) {
-            revert NewTotalAssetsMissing();
+            revert NewNAVMissing();
         }
 
         $erc7540.totalAssets = newTotalAssets;
@@ -278,9 +254,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         address _pendingSilo = pendingSilo();
 
         uint256 pendingAssets = IERC20(_asset).balanceOf(_pendingSilo);
-        if (pendingAssets == 0) {
-            return;
-        }
+        if (pendingAssets == 0) return;
 
         uint256 shares = _convertToShares(pendingAssets, Math.Rounding.Floor);
 
@@ -372,7 +346,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
     function close() external onlySafe onlyClosing {
         VaultStorage storage $ = _getVaultStorage();
-        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+        uint256 _totalAssets = _getERC7540Storage().totalAssets;
 
         _updateTotalAssets();
         _takeFees();
@@ -382,8 +356,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         address _safe = safe();
         uint256 safeBalance = IERC20(asset()).balanceOf(_safe);
 
-        if ($erc7540.totalAssets > safeBalance) {
-            revert NotEnoughLiquidity();
+        if (_totalAssets > safeBalance) {
+            revert NotEnoughLiquidity(safeBalance, _totalAssets);
         }
 
         $.state = State.Closed;
@@ -436,7 +410,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         _burn(owner, shares);
 
-        SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
+        IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Withdraw(caller, receiver, owner, assets, shares);
     }

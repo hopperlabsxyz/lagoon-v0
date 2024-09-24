@@ -1,20 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
+import {MerkleTreeMode} from "./Errors.sol";
+import {RootUpdated, WhitelistUpdated} from "./Events.sol";
 import {RolesUpgradeable} from "./Roles.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+
 // import {console} from "forge-std/console.sol";
-
-// errors
-error NotWhitelisted(address account);
-error MerkleTreeMode();
-
-// events
-event RootUpdated(bytes32 indexed root);
-
-event WhitelistUpdated(address indexed account, bool authorized);
-
-bytes32 constant WHITELISTED = keccak256("WHITELISTED");
 
 contract WhitelistableUpgradeable is RolesUpgradeable {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))

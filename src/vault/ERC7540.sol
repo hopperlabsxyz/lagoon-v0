@@ -19,28 +19,21 @@ import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import {
+    CantDepositNativeToken,
+    ERC7540InvalidOperator,
+    ERC7540PreviewDepositDisabled,
+    ERC7540PreviewMintDisabled,
+    ERC7540PreviewRedeemDisabled,
+    ERC7540PreviewWithdrawDisabled,
+    OnlyOneRequestAllowed,
+    RequestIdNotClaimable,
+    RequestNotCancelable
+} from "./Errors.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-// import {ERC7540PreviewDepositDisabled, ERC7540PreviewMintDisabled, ERC7540PreviewRedeemDisabled,
-// ERC7540PreviewWithdrawDisabled, OnlyOneRequestAllowed, RequestNotCancelable, ERC7540InvalidOperator,
-// ZeroPendingDeposit, ZeroPendingRedeem, RequestIdNotClaimable, CantDepositNativeToken} from "./Errors.sol";
 
 using SafeERC20 for IERC20;
 using Math for uint256;
-
-error ERC7540PreviewDepositDisabled();
-error ERC7540PreviewMintDisabled();
-error ERC7540PreviewRedeemDisabled();
-error ERC7540PreviewWithdrawDisabled();
-error OnlyOneRequestAllowed();
-error RequestNotCancelable();
-
-error ERC7540InvalidOperator();
-error ZeroPendingDeposit();
-error ZeroPendingRedeem();
-
-error RequestIdNotClaimable();
-
-error CantDepositNativeToken();
 
 struct EpochData {
     uint40 settleId;
@@ -317,11 +310,11 @@ abstract contract ERC7540Upgradeable is
     function cancelRequestDeposit() external whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
+
         uint40 requestId = $.lastDepositRequestId[msgSender];
-        if (requestId <= $.lastDepositEpochIdSettled) {
-            revert("can't cancel claimable request");
-        } //todo revert error
-        if (requestId != $.depositEpochId) revert RequestNotCancelable();
+        if (requestId != $.depositEpochId) {
+            revert RequestNotCancelable(requestId);
+        }
 
         uint256 request = $.epochs[requestId].depositRequest[msgSender];
         if (request != 0) {

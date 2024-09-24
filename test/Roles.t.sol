@@ -53,13 +53,13 @@ contract TestMint is BaseTest {
 
     function test_updateNewTotalAssetsManager() public {
         vm.prank(vault.owner());
-        vault.updateTotalAssetsManager(address(0x42));
+        vault.updateNAVManager(address(0x42));
 
         assertEq(vault.navManager(), address(0x42));
     }
 
     function test_updateNewTotalAssetsManager_notOwner() public {
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
-        vault.updateTotalAssetsManager(address(0x42));
+        vault.updateNAVManager(address(0x42));
     }
 }

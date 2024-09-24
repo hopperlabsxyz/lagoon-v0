@@ -1,22 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
+import {AboveMaxRate, CooldownNotOver} from "./Errors.sol";
+
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
-// import {console} from "forge-std/console.sol";
-import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ERC7540Upgradeable} from "@src/vault/ERC7540.sol";
 
 uint256 constant ONE_YEAR = 365 days;
-uint256 constant BPS = 10_000; // 100 %
+uint256 constant BPS_DIVIDER = 10_000; // 100 %
 
 struct Rates {
     uint16 managementRate;
     uint16 performanceRate;
 }
-
-error AboveMaxRate(uint256 rate, uint256 maxRate);
-error CooldownNotOver();
 
 abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     using Math for uint256;
@@ -64,10 +62,10 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         uint256 _cooldown
     ) internal onlyInitializing {
         if (_managementRate > MAX_MANAGEMENT_RATE) {
-            revert AboveMaxRate(_managementRate, MAX_MANAGEMENT_RATE);
+            revert AboveMaxRate(MAX_MANAGEMENT_RATE);
         }
         if (_performanceRate > MAX_PERFORMANCE_RATE) {
-            revert AboveMaxRate(_performanceRate, MAX_PERFORMANCE_RATE);
+            revert AboveMaxRate(MAX_PERFORMANCE_RATE);
         }
 
         FeeManagerStorage storage $ = _getFeeManagerStorage();
@@ -89,12 +87,14 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     /// @param newRates the new fee rates
     function updateRates(Rates memory newRates) external onlyOwner {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if (block.timestamp < $.newRatesTimestamp) revert CooldownNotOver();
+        if (block.timestamp < $.newRatesTimestamp) {
+            revert CooldownNotOver($.newRatesTimestamp - block.timestamp);
+        }
         if (newRates.managementRate > MAX_MANAGEMENT_RATE) {
-            revert AboveMaxRate(newRates.managementRate, MAX_MANAGEMENT_RATE);
+            revert AboveMaxRate(MAX_MANAGEMENT_RATE);
         }
         if (newRates.performanceRate > MAX_PERFORMANCE_RATE) {
-            revert AboveMaxRate(newRates.performanceRate, MAX_PERFORMANCE_RATE);
+            revert AboveMaxRate(MAX_PERFORMANCE_RATE);
         }
 
         $.newRatesTimestamp = block.timestamp + $.cooldown;
@@ -156,7 +156,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         uint256 annualRate,
         uint256 timeElapsed
     ) internal pure returns (uint256 managementFee) {
-        uint256 annualFee = assets.mulDiv(annualRate, BPS);
+        uint256 annualFee = assets.mulDiv(annualRate, BPS_DIVIDER);
         managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
     }
 
@@ -176,7 +176,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
                 profitPerShare = _pricePerShare - _highWaterMark;
             }
             uint256 profit = profitPerShare.mulDiv(_totalSupply, 10 ** _decimals);
-            performanceFee = profit.mulDiv(_rate, BPS);
+            performanceFee = profit.mulDiv(_rate, BPS_DIVIDER);
         }
     }
 
@@ -209,7 +209,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
         uint256 totalShares = totalFees.mulDiv(_totalSupply + 1, (totalAssets() - totalFees) + 1, Math.Rounding.Ceil);
 
-        protocolShares = totalShares.mulDiv(_protocolRate(), BPS, Math.Rounding.Ceil);
+        protocolShares = totalShares.mulDiv(_protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
         managerShares = totalShares - protocolShares;
     }
 }

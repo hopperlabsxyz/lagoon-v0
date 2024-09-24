@@ -56,13 +56,13 @@ contract testRateUpdates is BaseTest {
             enableWhitelist: enableWhitelist,
             whitelist: whitelistInit
         });
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, managementRate, MAX_MANAGEMENT_RATE));
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
 
         vault.initialize(v);
 
         v.managementRate = MAX_MANAGEMENT_RATE;
 
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, performanceRate, MAX_PERFORMANCE_RATE));
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE));
 
         vault.initialize(v);
         v.performanceRate = MAX_PERFORMANCE_RATE;
@@ -76,14 +76,14 @@ contract testRateUpdates is BaseTest {
 
         Rates memory newRates = Rates({managementRate: MAX_MANAGEMENT_RATE + 1, performanceRate: 0});
         vm.startPrank(vault.owner());
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE + 1, MAX_MANAGEMENT_RATE));
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
         vault.updateRates(newRates);
 
         newRates.managementRate = 0;
         newRates.performanceRate = MAX_PERFORMANCE_RATE + 1;
 
         vm.startPrank(vault.owner());
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE + 1, MAX_PERFORMANCE_RATE));
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE));
         vault.updateRates(newRates);
     }
 
