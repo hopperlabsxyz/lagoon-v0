@@ -45,12 +45,6 @@ error RequestNotCancelable(uint256 requestId);
 /// @notice Indicates an invalid operator for ERC7540 operations.
 error ERC7540InvalidOperator();
 
-/// @notice Indicates that there are no pending deposits.
-error ZeroPendingDeposit();
-
-/// @notice Indicates that there are no pending redemptions.
-error ZeroPendingRedeem();
-
 /// @notice Indicates that the specified request ID is not claimable.
 error RequestIdNotClaimable();
 

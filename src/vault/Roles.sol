@@ -3,7 +3,7 @@ pragma solidity "0.8.26";
 
 import {FeeRegistry} from "../protocol/FeeRegistry.sol";
 import {OnlyNAVManager, OnlySafe, OnlyWhitelistManager} from "./Errors.sol";
-import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 /// @title RolesUpgradeable
 /// @dev This contract is used to define the various roles needed for a vault to operate.

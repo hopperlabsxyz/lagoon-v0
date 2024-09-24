@@ -28,9 +28,7 @@ import {
     ERC7540PreviewWithdrawDisabled,
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
-    RequestNotCancelable,
-    ZeroPendingDeposit,
-    ZeroPendingRedeem
+    RequestNotCancelable
 } from "./Errors.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
