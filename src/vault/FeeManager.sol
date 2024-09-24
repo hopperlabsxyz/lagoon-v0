@@ -83,6 +83,29 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         $.lastFeeTime = block.timestamp;
     }
 
+    function _takeFees(address feeReceiver, address protocolFeeReceiver) internal {
+        FeeManagerStorage storage $ = _getFeeManagerStorage();
+
+        if ($.lastFeeTime == block.timestamp) return; // this will happen when settleRedeem happens after settleDeposit
+
+        (uint256 managerShares, uint256 protocolShares) = _calculateFees();
+
+        if (managerShares > 0) {
+            _mint(feeReceiver, managerShares);
+            if (
+                protocolShares > 0 // they can't be protocolShares without managerShares
+            ) _mint(protocolFeeReceiver, protocolShares);
+        }
+
+        uint256 _pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
+
+        // we update the high water mark only if the new value is greater than the current one
+        uint256 _highWaterMark = $.highWaterMark;
+        if (_pricePerShare > _highWaterMark) $.highWaterMark = _pricePerShare;
+
+        $.lastFeeTime = block.timestamp;
+    }
+
     /// @notice update the fee rates, the new rates will be applied after the cooldown period
     /// @param newRates the new fee rates
     function updateRates(Rates memory newRates) external onlyOwner {
@@ -102,6 +125,9 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         $.rates = newRates;
     }
 
+    /// @dev Since we have a cooldown period and to avoid a double call
+    /// to update the feeRates, this function returns a different rate
+    /// following the timestamp
     /// @notice the current fee rates
     function feeRates() public view returns (Rates memory) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
@@ -147,39 +173,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         return protocolRate;
     }
 
-    /// @dev Calculate the management fee
-    /// @param assets the total assets under management
-    /// @param annualRate the management rate, expressed in BPS and corresponding to the annual
-    /// @param timeElapsed the time elapsed since the last fee calculation in seconds
-    function _calculateManagementFee(
-        uint256 assets,
-        uint256 annualRate,
-        uint256 timeElapsed
-    ) internal pure returns (uint256 managementFee) {
-        uint256 annualFee = assets.mulDiv(annualRate, BPS_DIVIDER);
-        managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
-    }
-
-    /// @dev Calculate the performance fee
-    /// @dev The performance is calculated as the difference between the current price per share and the high water mark
-    /// @dev The performance fee is calculated as the product of the performance and the performance rate
-    function _calculatePerformanceFee(
-        uint256 _rate,
-        uint256 _totalSupply,
-        uint256 _pricePerShare,
-        uint256 _highWaterMark,
-        uint256 _decimals
-    ) internal pure returns (uint256 performanceFee) {
-        if (_pricePerShare > _highWaterMark) {
-            uint256 profitPerShare;
-            unchecked {
-                profitPerShare = _pricePerShare - _highWaterMark;
-            }
-            uint256 profit = profitPerShare.mulDiv(_totalSupply, 10 ** _decimals);
-            performanceFee = profit.mulDiv(_rate, BPS_DIVIDER);
-        }
-    }
-
     /// @dev Calculate and return the manager and protocol shares to be minted as fees
     /// @dev total fees are the sum of the management and performance fees
     /// @dev manager shares are the fees that go to the manager, it is the difference between the total fees and the
@@ -211,5 +204,38 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
         protocolShares = totalShares.mulDiv(_protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
         managerShares = totalShares - protocolShares;
+    }
+
+    /// @dev Calculate the management fee
+    /// @param assets the total assets under management
+    /// @param annualRate the management rate, expressed in BPS and corresponding to the annual
+    /// @param timeElapsed the time elapsed since the last fee calculation in seconds
+    function _calculateManagementFee(
+        uint256 assets,
+        uint256 annualRate,
+        uint256 timeElapsed
+    ) internal pure returns (uint256 managementFee) {
+        uint256 annualFee = assets.mulDiv(annualRate, BPS_DIVIDER);
+        managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
+    }
+
+    /// @dev Calculate the performance fee
+    /// @dev The performance is calculated as the difference between the current price per share and the high water mark
+    /// @dev The performance fee is calculated as the product of the performance and the performance rate
+    function _calculatePerformanceFee(
+        uint256 _rate,
+        uint256 _totalSupply,
+        uint256 _pricePerShare,
+        uint256 _highWaterMark,
+        uint256 _decimals
+    ) internal pure returns (uint256 performanceFee) {
+        if (_pricePerShare > _highWaterMark) {
+            uint256 profitPerShare;
+            unchecked {
+                profitPerShare = _pricePerShare - _highWaterMark;
+            }
+            uint256 profit = profitPerShare.mulDiv(_totalSupply, 10 ** _decimals);
+            performanceFee = profit.mulDiv(_rate, BPS_DIVIDER);
+        }
     }
 }

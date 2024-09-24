@@ -131,6 +131,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         return _requestDeposit(assets, controller, owner);
     }
 
+    /// @notice Requests a deposit of assets, subject to whitelist validation.
     /// @param assets The amount of assets to deposit.
     /// @param controller The address of the controller involved in the deposit request.
     /// @param owner The address of the owner for whom the deposit is requested.
@@ -147,7 +148,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         }
     }
 
-    /// @notice Requests a deposit of assets, subject to whitelist validation.
     /// @param assets The amount of assets to deposit.
     /// @param controller The address of the controller involved in the deposit request.
     /// @param owner The address of the owner for whom the deposit is requested.
@@ -171,7 +171,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         return super.requestRedeem(shares, controller, owner);
     }
 
-    /// @dev should not be usable when contract is paused
+    /// @notice Update newTotalAssets variable in order to update totalAssets.
+    /// @param _newTotalAssets The new total assets of the vault.
     function updateNewTotalAssets(uint256 _newTotalAssets) public onlyNAVManager whenNotPaused {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
@@ -191,14 +192,20 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit UpdateTotalAssets(_newTotalAssets);
     }
 
-    /// @dev should not be usable when contract is paused
+    /// @notice Settles the deposit requests. After this users start farming and
+    /// can claim their shares. If possible it also settles the redeem requests.
     function settleDeposit() public override onlySafe onlyOpen {
         _updateTotalAssets();
-        _takeFees();
+        _takeFees(feeReceiver(), protocolFeeReceiver());
+        _setHighWaterMark(
+            _convertToAssets(10 ** decimals(), Math.Rounding.Floor) // this is the price per share
+        );
         _settleDeposit();
         _settleRedeem(); // if it is possible to settleRedeem, we should do so
     }
 
+    /// @dev Updates the totalAssets variable with the newTotalAssets variable.
+    /// @dev We set newTotalAssets to max to ensure that it is not called again.
     function _updateTotalAssets() internal whenNotPaused {
         VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
@@ -207,33 +214,11 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         if (
             newTotalAssets == type(uint256).max // it means newTotalAssets has not been updated
-        ) {
-            revert NewNAVMissing();
-        }
+        ) revert NewNAVMissing();
 
         $erc7540.totalAssets = newTotalAssets;
         $vault.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
         emit TotalAssetsUpdated(newTotalAssets);
-    }
-
-    function _takeFees() internal {
-        if (lastFeeTime() == block.timestamp) return;
-
-        (uint256 managerShares, uint256 protocolShares) = _calculateFees();
-
-        if (managerShares > 0) {
-            _mint(feeReceiver(), managerShares);
-            if (
-                protocolShares > 0 // they can't be protocolShares without managerShares
-            ) {
-                _mint(protocolFeeReceiver(), protocolShares);
-            }
-        }
-
-        uint256 _pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
-        _setHighWaterMark(_pricePerShare); // when fees are taken done being taken, we update highWaterMark
-
-        _getFeeManagerStorage().lastFeeTime = block.timestamp;
     }
 
     function _settleDeposit() internal {
@@ -273,7 +258,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @dev should not be usable when contract is paused
     function settleRedeem() public override onlySafe onlyOpen {
         _updateTotalAssets();
-        _takeFees();
+        _takeFees(feeReceiver(), protocolFeeReceiver());
+        _setHighWaterMark(_convertToAssets(10 ** decimals(), Math.Rounding.Floor));
         _settleRedeem();
     }
 
@@ -335,7 +321,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         uint256 _totalAssets = _getERC7540Storage().totalAssets;
 
         _updateTotalAssets();
-        _takeFees();
+        _takeFees(feeReceiver(), protocolFeeReceiver());
+
         _settleDeposit();
         _settleRedeem();
 
