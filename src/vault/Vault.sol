@@ -137,9 +137,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @param owner The address of the owner for whom the deposit is requested.
     /// @return The id of the deposit request.
     function _requestDeposit(uint256 assets, address controller, address owner) internal returns (uint256) {
-        uint256 requestId = super.requestDeposit(assets, controller, owner);
         if (!isWhitelisted(owner)) revert NotWhitelisted();
-        return requestId;
+        return super.requestDeposit(assets, controller, owner);
     }
 
     /// @notice Requests the redemption of tokens, subject to whitelist validation.
