@@ -2,9 +2,9 @@
 
 Lagoon Protocol is packed with powerful features designed to offer unparalleled flexibility, security, and functionality in the decentralized finance (DeFi) space. Below, we outline the core features that make Lagoon Protocol a leading solution for digital asset management and DeFi strategies.
 
-## **Customizable Hopper Vaults**
+## **Customizable Lagoon Vaults**
 
-At the heart of Lagoon Protocol are the Lagoon Vaults—smart contract-based vaults that securely hold and manage assets. Hopper Vaults are designed with rapid adaptability and flexibility in mind, allowing asset manager to configure them according to their specific needs. Key attributes include:
+At the heart of Lagoon Protocol are the Lagoon Vaults—smart contract-based vaults that securely hold and manage assets. Lagoon Vaults are designed with rapid adaptability and flexibility in mind, allowing asset manager to configure them according to their specific needs. Key attributes include:
 
 ### Scalable Asset Management
 
@@ -37,9 +37,9 @@ The permissions for authorized fund depositors can be revoked at any time by the
 
 ## **Roles-Based Access Control**
 
-Lagoon Protocol utilizes a granular roles-based access control system, powered by Zodiac Roles Modifier, to ensure that only authorized individuals can perform specific actions within the Hopper Vaults. The main roles include:
+Lagoon Protocol utilizes a granular roles-based access control system, powered by Zodiac Roles Modifier, to ensure that only authorized individuals can perform specific actions within the Lagoon Vaults. The main roles include:
 
-* **Vault Creator**: The individual or entity responsible for creating and configuring the Hopper Vault. This role has the authority to update Gnosis Safe and vault settings and assign other roles.
+* **Vault Creator**: The individual or entity responsible for creating and configuring the Lagoon Vault. This role has the authority to update Gnosis Safe and vault settings and assign other roles.
 * **Asset Manager**: Tasked with executing transactions and implementing DeFi strategies within the vault. The Asset Manager is also crucial for settle the Net Asset Value (NAV).
 * **NAV Committee**: Responsible for updating the Net Asset Value (NAV) of the Lagoon Vault, ensuring accurate valuation of the vault’s assets.
 * **Fund Depositors**: Users who deposit assets into the vault and receive shares representing their ownership stake.
@@ -82,7 +82,7 @@ Overall, the Interoperability and Cross-Chain Liquidity feature of Lagoon Protoc
 
 Security is a top priority for Lagoon Protocol. By integrating with Gnosis Safe, Lagoon Protocol ensures that all asset management activities are conducted in a secure, multi-signature environment. This setup reduces the risk of unauthorized access and provides full transparency over all transactions.
 
-* **Multi-Signature Wallets**: Hopper Vaults are protected by Gnosis Safe’s multi-signature wallets, requiring multiple approvals for transactions.
+* **Multi-Signature Wallets**: Lagoon Vaults are protected by Gnosis Safe’s multi-signature wallets, requiring multiple approvals for transactions.
 * **ERC-7450 Standard:** The ERC-7450 standard enhances the functionality and interoperability of the Lagoon Vaults, allowing for sophisticated asset management DeFi strategies due to asynchronies NAV update. This standard also facilitates smoother integrations with other DeFi protocols, making it easier to manage assets across different platforms.
 * **Audit and Monitoring Tools**: Lagoon Protocol includes advanced tools for auditing smart contracts, optimizing gas usage, and monitoring vault activities.
 
