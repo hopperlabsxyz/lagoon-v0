@@ -16,7 +16,7 @@ contract FeeRegistry is Ownable2StepUpgradeable {
 
     /// @custom:storage-location erc7201:hopper.storage.FeeRegistry
     struct FeeRegistryStorage {
-        uint256 protocolRate;
+        uint16 protocolRate;
         address protocolFeeReceiver;
         mapping(address => CustomRate) customRate;
     }
@@ -49,7 +49,7 @@ contract FeeRegistry is Ownable2StepUpgradeable {
 
     /// @notice Sets the protocol fee rate.
     /// @param rate The new protocol fee rate.
-    function setProtocolRate(uint256 rate) external onlyOwner {
+    function setProtocolRate(uint16 rate) external onlyOwner {
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
         $.protocolRate = rate;
     }
