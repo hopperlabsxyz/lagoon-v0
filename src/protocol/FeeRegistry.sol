@@ -1,15 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
+import {CustomRateCancelled, CustomRateUpdated, ProtocolFeeReceiverUpdated, ProtocolRateUpdated} from "./Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-
-event ProtocolFeeReceiverUpdated(address oldReceiver, address newReceiver);
-
-event ProtocolRateUpdated(uint256 oldRate, uint256 newRate);
-
-event CustomRateUpdated(address vault, uint16 rate);
-
-event CustomRateCancelled(address vault);
 
 /// @title FeeRegistry
 /// @notice The FeeRegistry contract manages protocol fee rates for various vaults.
