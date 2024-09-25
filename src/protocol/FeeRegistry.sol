@@ -3,6 +3,14 @@ pragma solidity "0.8.26";
 
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
+event ProtocolFeeReceiverUpdated(address oldReceiver, address newReceiver);
+
+event ProtocolRateUpdated(uint256 oldRate, uint256 newRate);
+
+event CustomRateUpdated(address vault, uint16 rate);
+
+event CustomRateCancelled(address vault);
+
 /// @title FeeRegistry
 /// @notice The FeeRegistry contract manages protocol fee rates for various vaults.
 /// It allows the contract owner (the protocol) to set a default protocol fee rate, define custom fee rates
@@ -44,37 +52,41 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     /// @notice Updates the address of the protocol fee receiver.
     /// @param _protocolFeeReceiver The new protocol fee receiver address.
     function updateProtocolFeeReceiver(address _protocolFeeReceiver) external onlyOwner {
+        emit ProtocolFeeReceiverUpdated(_getFeeRegistryStorage().protocolFeeReceiver, _protocolFeeReceiver);
         _getFeeRegistryStorage().protocolFeeReceiver = _protocolFeeReceiver;
     }
 
     /// @notice Sets the protocol fee rate.
     /// @param rate The new protocol fee rate.
-    function setProtocolRate(uint256 rate) external onlyOwner {
+    function updateProtocolRate(uint256 rate) external onlyOwner {
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
+        emit ProtocolRateUpdated($.protocolRate, rate);
         $.protocolRate = rate;
     }
 
     /// @notice Sets a custom fee rate for a specific vault.
     /// @param vault The address of the vault.
     /// @param rate The custom fee rate for the vault.
-    function setCustomRate(address vault, uint16 rate) external onlyOwner {
+    function updateCustomRate(address vault, uint16 rate) external onlyOwner {
         _getFeeRegistryStorage().customRate[vault] = CustomRate({isActivated: true, rate: rate});
+        emit CustomRateUpdated(vault, rate);
     }
 
     /// @notice Cancels the custom fee rate for a specific vault.
     /// @param vault The address of the vault.
     function cancelCustomRate(address vault) external onlyOwner {
         _getFeeRegistryStorage().customRate[vault].isActivated = false;
+        emit CustomRateCancelled(vault);
     }
 
-    /// @notice Checks if a custom fee rate is set for a specific vault.
+    /// @notice Checks if a custom fee rate is activated for a specific vault.
     /// @param vault The address of the vault.
     /// @return True if the vault has a custom fee rate, false otherwise.
     function isCustomRate(address vault) external view returns (bool) {
         return _getFeeRegistryStorage().customRate[vault].isActivated;
     }
 
-    /// @notice Returns the custom fee rate for a specific vault.
+    /// @notice Returns the custom fee rate for a specific vault only if it is activated.
     /// @param vault The address of the vault.
     /// @return The custom fee rate for the vault.
     function customRate(address vault) external view returns (uint256) {

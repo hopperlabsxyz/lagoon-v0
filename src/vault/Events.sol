@@ -2,6 +2,7 @@
 pragma solidity "0.8.26";
 
 import {State} from "./Enums.sol";
+import {Rates} from "./FeeManager.sol";
 
 // ********************* VAULT ********************* //
 
@@ -34,3 +35,36 @@ event RootUpdated(bytes32 indexed root);
 /// @param account The address of the account being updated.
 /// @param authorized Indicates whether the account is authorized (true) or not (false).
 event WhitelistUpdated(address indexed account, bool authorized);
+
+/// @notice Emitted when the whitelist is disabled.
+event WhitelistDisabled();
+
+// ********************* ROLES ********************* //
+
+/// @notice Emitted when the whitelist manager role is updated.
+/// @param oldManager The address of the old whitelist manager.
+/// @param newManager The address of the new whitelist manager.
+event WhitelistManagerUpdated(address oldManager, address newManager);
+
+/// @notice Emitted when the fee receiver role is updated.
+/// @param oldReceiver The address of the old fee receiver.
+/// @param newReceiver The address of the new fee receiver.
+event FeeReceiverUpdated(address oldReceiver, address newReceiver);
+
+/// @notice Emitted when the NAV manager role is updated.
+/// @param oldManager The address of the old NAV manager.
+/// @param newManager The address of the new NAV manager.
+event NavManagerUpdated(address oldManager, address newManager);
+
+// ********************* FEE_MANAGER ********************* //
+
+/// @notice Emitted when the rates are updated.
+/// @param oldRates The new rates.
+/// @param newRate The new rates.
+/// @param timestamp The timestamp at which the update will take effect.
+event RatesUpdated(Rates oldRates, Rates newRate, uint256 timestamp);
+
+/// @notice Emitted when the highWaterMark is updated.
+/// @param oldHighWaterMark The old highWaterMark.
+/// @param newHighWaterMark The new highWaterMark.
+event HighWaterMarkUpdated(uint256 oldHighWaterMark, uint256 newHighWaterMark);

@@ -3,6 +3,7 @@ pragma solidity "0.8.26";
 
 import {FeeRegistry} from "../protocol/FeeRegistry.sol";
 import {OnlyNAVManager, OnlySafe, OnlyWhitelistManager} from "./Errors.sol";
+import {FeeReceiverUpdated, NavManagerUpdated, WhitelistManagerUpdated} from "./Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 /// @title RolesUpgradeable
@@ -107,6 +108,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
     /// @param _whitelistManager The new address of the whitelist manager.
     /// @dev Only the owner can call this function.
     function updateWhitelistManager(address _whitelistManager) external onlyOwner {
+        emit WhitelistManagerUpdated(_getRolesStorage().whitelistManager, _whitelistManager);
         _getRolesStorage().whitelistManager = _whitelistManager;
     }
 
@@ -114,6 +116,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
     /// @param _navManager The new address of the nav manager.
     /// @dev Only the owner can call this function.
     function updateNAVManager(address _navManager) external onlyOwner {
+        emit NavManagerUpdated(_getRolesStorage().navManager, _navManager);
         _getRolesStorage().navManager = _navManager;
     }
 
@@ -121,6 +124,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
     /// @param _feeReceiver The new address of the fee receiver.
     /// @dev Only the owner can call this function.
     function updateFeeReceiver(address _feeReceiver) external onlyOwner {
+        emit FeeReceiverUpdated(_getRolesStorage().feeReceiver, _feeReceiver);
         _getRolesStorage().feeReceiver = _feeReceiver;
     }
 }

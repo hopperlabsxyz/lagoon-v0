@@ -2,7 +2,7 @@
 pragma solidity "0.8.26";
 
 import {AboveMaxRate, CooldownNotOver} from "./Errors.sol";
-
+import {HighWaterMarkUpdated, RatesUpdated} from "./Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
@@ -120,9 +120,12 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
             revert AboveMaxRate(MAX_PERFORMANCE_RATE);
         }
 
-        $.newRatesTimestamp = block.timestamp + $.cooldown;
-        $.oldRates = $.rates;
+        uint256 newRatesTimestamp = block.timestamp + $.cooldown; // caching the new timestamp
+        Rates memory currentRates = $.rates; // cache the current rates
+        $.newRatesTimestamp = newRatesTimestamp;
+        $.oldRates = currentRates;
         $.rates = newRates;
+        emit RatesUpdated(currentRates, newRates, newRatesTimestamp);
     }
 
     /// @dev Since we have a cooldown period and to avoid a double call
@@ -149,18 +152,15 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     /// @dev Update the high water mark only if the new value is greater than the current one
     /// @dev The high water mark is the highest price per share ever reached
     /// @param _newHighWaterMark the new high water mark
-    /// @return the new high water mark
-    function _setHighWaterMark(uint256 _newHighWaterMark) internal returns (uint256) {
+    function _setHighWaterMark(uint256 _newHighWaterMark) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 _highWaterMark = $.highWaterMark;
 
         if (_newHighWaterMark > _highWaterMark) {
+            emit HighWaterMarkUpdated(_highWaterMark, _newHighWaterMark);
             $.highWaterMark = _newHighWaterMark;
-            return _newHighWaterMark;
         }
-
-        return _highWaterMark;
     }
 
     /// @dev Read the protocol rate from the fee registry
