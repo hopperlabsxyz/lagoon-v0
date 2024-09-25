@@ -200,7 +200,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
         uint256 totalFees = managementFees + performanceFees;
 
-        uint256 totalShares = totalFees.mulDiv(_totalSupply + 1, (totalAssets() - totalFees) + 1, Math.Rounding.Ceil);
+        uint256 totalShares = totalFees.mulDiv(_totalSupply + 1, (_totalAssets - totalFees) + 1, Math.Rounding.Ceil);
 
         protocolShares = totalShares.mulDiv(_protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
         managerShares = totalShares - protocolShares;
