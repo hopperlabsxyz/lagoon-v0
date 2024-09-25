@@ -2,11 +2,9 @@
 pragma solidity "0.8.26";
 
 import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
-
 import {State} from "./Enums.sol";
 import {NewNAVMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
 import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./Events.sol";
-
 import {FeeManager} from "./FeeManager.sol";
 import {RolesUpgradeable} from "./Roles.sol";
 import {WhitelistableUpgradeable} from "./Whitelistable.sol";
@@ -108,12 +106,14 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         }
     }
 
+    /// @notice Reverts if the vault is not open.
     modifier onlyOpen() {
         State _state = _getVaultStorage().state;
         if (_state != State.Open) revert NotOpen(_state);
         _;
     }
 
+    /// @notice Reverts if the vault is not closing.
     modifier onlyClosing() {
         State _state = _getVaultStorage().state;
         if (_state != State.Closing) revert NotClosing(_state);

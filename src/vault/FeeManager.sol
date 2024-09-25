@@ -46,14 +46,22 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant feeManagerStorage = 0xa5292f7ccd85acc1b3080c01f5da9af7799f2c26826bd4d79081d6511780bd00;
 
-    function _getFeeManagerStorage() internal pure returns (FeeManagerStorage storage $) {
+    /// @notice Get the storage slot for the FeeManagerStorage struct
+    /// @return _feeManagerStorage the storage slot
+    function _getFeeManagerStorage() internal pure returns (FeeManagerStorage storage _feeManagerStorage) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
-            $.slot := feeManagerStorage
+            _feeManagerStorage.slot := feeManagerStorage
         }
     }
 
     // solhint-disable-next-line func-name-mixedcase
+    /// @notice Initialize the FeeManager contract
+    /// @param _registry the address of the fee registry contract
+    /// @param _managementRate the management rate, expressed in BPS
+    /// @param _performanceRate the performance rate, expressed in BPS
+    /// @param _decimals the number of decimals of the shares
+    /// @param _cooldown the time to wait before applying new rates
     function __FeeManager_init(
         address _registry,
         uint16 _managementRate,
@@ -83,6 +91,9 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         $.lastFeeTime = block.timestamp;
     }
 
+    /// @notice Take the fees by minting the manager and protocol shares
+    /// @param feeReceiver the address that will receive the manager shares
+    /// @param protocolFeeReceiver the address that will receive the protocol shares
     function _takeFees(address feeReceiver, address protocolFeeReceiver) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
@@ -165,6 +176,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
     /// @dev Read the protocol rate from the fee registry
     /// @dev if the value is above the MAX_PROTOCOL_RATE, return the MAX_PROTOCOL_RATE
+    /// @return protocolRate the protocol rate
     function _protocolRate() internal view returns (uint256 protocolRate) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
@@ -178,6 +190,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     /// @dev manager shares are the fees that go to the manager, it is the difference between the total fees and the
     /// protocol fees
     /// @dev protocol shares are the fees that go to the protocol
+    /// @return managerShares the manager shares to be minted as fees
+    /// @return protocolShares the protocol shares to be minted as fees
     function _calculateFees() internal view returns (uint256 managerShares, uint256 protocolShares) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
@@ -210,6 +224,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     /// @param assets the total assets under management
     /// @param annualRate the management rate, expressed in BPS and corresponding to the annual
     /// @param timeElapsed the time elapsed since the last fee calculation in seconds
+    /// @return managementFee the management fee express in assets
     function _calculateManagementFee(
         uint256 assets,
         uint256 annualRate,
@@ -222,6 +237,12 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     /// @dev Calculate the performance fee
     /// @dev The performance is calculated as the difference between the current price per share and the high water mark
     /// @dev The performance fee is calculated as the product of the performance and the performance rate
+    /// @param _rate the performance rate, expressed in BPS
+    /// @param _totalSupply the total supply of shares
+    /// @param _pricePerShare the current price per share
+    /// @param _highWaterMark the highest price per share ever reached
+    /// @param _decimals the number of decimals of the shares
+    /// @return performanceFee the performance fee express in assets
     function _calculatePerformanceFee(
         uint256 _rate,
         uint256 _totalSupply,
