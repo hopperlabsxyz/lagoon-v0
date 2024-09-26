@@ -114,8 +114,9 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
             revert AboveMaxRate(MAX_PERFORMANCE_RATE);
         }
 
-        uint256 newRatesTimestamp = block.timestamp + $.cooldown; // caching the new timestamp
-        Rates memory currentRates = $.rates; // cache the current rates
+        uint256 newRatesTimestamp = block.timestamp + $.cooldown;
+        Rates memory currentRates = $.rates;
+
         $.newRatesTimestamp = newRatesTimestamp;
         $.oldRates = currentRates;
         $.rates = newRates;
