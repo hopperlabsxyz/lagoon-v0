@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import {CustomRateUpdated, ProtocolFeeReceiverUpdated, ProtocolRateUpdated} from "./Events.sol";
+import {CustomRateUpdated, DefaultRateUpdated, ProtocolFeeReceiverUpdated} from "./Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 /// @title FeeRegistry
@@ -17,7 +17,7 @@ contract FeeRegistry is Ownable2StepUpgradeable {
 
     /// @custom:storage-location erc7201:hopper.storage.FeeRegistry
     struct FeeRegistryStorage {
-        uint16 protocolRate;
+        uint256 defaultRate;
         address protocolFeeReceiver;
         mapping(address => CustomRate) customRate;
     }
@@ -49,12 +49,12 @@ contract FeeRegistry is Ownable2StepUpgradeable {
         _getFeeRegistryStorage().protocolFeeReceiver = _protocolFeeReceiver;
     }
 
-    /// @notice Sets the protocol fee rate.
-    /// @param rate The new protocol fee rate.
-    function updateProtocolRate(uint16 rate) external onlyOwner {
+    /// @notice Sets the strandard protocol fee rate.
+    /// @param rate The new standard protocol fee rate.
+    function updateDefaultRate(uint256 rate) external onlyOwner {
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
-        emit ProtocolRateUpdated($.protocolRate, rate);
-        $.protocolRate = rate;
+        emit DefaultRateUpdated($.defaultRate, rate);
+        $.defaultRate = rate;
     }
 
     /// @notice Sets a custom fee rate for a specific vault.
@@ -99,8 +99,8 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     function _protocolRate(address vault) internal view returns (uint256 rate) {
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
         if ($.customRate[vault].isActivated) {
-            return uint256($.customRate[vault].rate);
+            return $.customRate[vault].rate;
         }
-        return $.protocolRate;
+        return $.defaultRate;
     }
 }

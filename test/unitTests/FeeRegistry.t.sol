@@ -23,7 +23,7 @@ contract TestFeeRegistry is BaseTest {
 
     function test_protocolRate() public {
         vm.prank(dao.addr);
-        feeRegistry.updateProtocolRate(200);
+        feeRegistry.updateDefaultRate(200);
 
         vm.prank(mockVault);
         uint256 protocolRate = feeRegistry.protocolRate();
@@ -36,7 +36,7 @@ contract TestFeeRegistry is BaseTest {
     function test_customRate() public {
         vm.startPrank(dao.addr);
 
-        feeRegistry.updateProtocolRate(300);
+        feeRegistry.updateDefaultRate(300);
         feeRegistry.updateCustomRate(mockVault, 200, true);
         vm.stopPrank();
 
@@ -51,7 +51,7 @@ contract TestFeeRegistry is BaseTest {
 
     function test_cancelCustomRate() public {
         vm.startPrank(dao.addr);
-        feeRegistry.updateProtocolRate(300);
+        feeRegistry.updateDefaultRate(300);
         feeRegistry.updateCustomRate(mockVault, 200, true);
 
         vm.stopPrank();
