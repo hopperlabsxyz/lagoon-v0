@@ -16,10 +16,11 @@ contract TestDeposit is BaseTest {
 
     function test_deposit() public {
         uint256 userBalance = assetBalance(user1.addr);
-        requestDeposit(userBalance, user1.addr);
+        uint256 requestId = requestDeposit(userBalance, user1.addr);
         updateAndSettle(0);
         assertEq(vault.maxDeposit(user1.addr), userBalance);
         uint256 shares = deposit(userBalance, user1.addr);
+        assertEq(vault.convertToShares(userBalance, requestId), shares);
         assertEq(shares, vault.balanceOf(user1.addr));
         assertEq(shares, userBalance);
     }

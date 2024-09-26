@@ -191,4 +191,20 @@ contract TestWhitelist is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(OnlyWhitelistManager.selector, vault.whitelistManager()));
         vault.revokeFromWhitelist(new address[](5));
     }
+
+    function test_requestRedeemWithoutBeingWhitelisted() public {
+        withWhitelistSetUp();
+        dealAndApprove(user5.addr);
+        uint256 userBalance = assetBalance(user5.addr);
+        requestDeposit(userBalance, user5.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user5.addr);
+        uint256 shares = vault.balanceOf(user5.addr);
+        address receiver = user1.addr;
+        vm.prank(user5.addr);
+        vault.transfer(receiver, shares);
+        vm.prank(receiver);
+        vm.expectRevert(NotWhitelisted.selector);
+        vault.requestRedeem(shares, receiver, receiver);
+    }
 }

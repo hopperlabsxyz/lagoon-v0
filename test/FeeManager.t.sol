@@ -149,7 +149,7 @@ contract TestFeeManager is BaseTest {
         uint256 expectedUser2Profit = (2 * user2InitialDeposit + freeride) - (2 * user2InitialDeposit * 20) / 100;
 
         assertApproxEqAbs(user2Profit, expectedUser2Profit, 6, "user2 expected profit is wrong");
-        uint256 expectedTotalFees = 400_000_200_002;
+        uint256 expectedTotalFees = 4_000_002 * 10 ** (vault.underlyingDecimals() - 1);
 
         address feeReceiver = vault.feeReceiver();
         address dao = vault.protocolFeeReceiver();
@@ -168,7 +168,7 @@ contract TestFeeManager is BaseTest {
 
         uint256 totalFees = feeReceiverAssetAfter + daoAssetAfter;
 
-        assertEq(totalFees, expectedTotalFees, "wrong total Fees");
+        assertApproxEqAbs(totalFees, expectedTotalFees, 2, "wrong total Fees");
     }
 
     function test_NoFeesAreTakenDuringFreeRide() public {

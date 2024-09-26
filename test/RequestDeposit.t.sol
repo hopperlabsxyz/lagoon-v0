@@ -2,6 +2,8 @@
 pragma solidity 0.8.26;
 
 import {BaseTest} from "./Base.sol";
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {CantDepositNativeToken, ERC7540InvalidOperator, OnlyOneRequestAllowed} from "@src/vault/ERC7540.sol";
 import {Vault} from "@src/vault/Vault.sol";
@@ -28,13 +30,22 @@ contract TestRequestDeposit is BaseTest {
         uint256 userBalance = 10e18;
         string memory wtoken = "WRAPPED_NATIVE_TOKEN";
         bool shouldFail = keccak256(abi.encode(underlyingName)) != keccak256(abi.encode(wtoken));
-        if (!shouldFail) {
-            requestDeposit(userBalance, user1.addr, true);
-            assertEq(assetBalance(address(vault)), 0);
-            assertEq(assetBalance(address(vault.pendingSilo())), userBalance);
-            assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance);
-            assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
+        if (shouldFail) {
+            vm.startPrank(user1.addr);
+            vm.expectRevert(CantDepositNativeToken.selector);
+            vault.requestDeposit{value: 1}(userBalance, user1.addr, user1.addr);
+            vm.stopPrank();
+
+            underlying = ERC20(WRAPPED_NATIVE_TOKEN);
+            setUpVault(0, 0, 0);
+            whitelist(user1.addr);
         }
+
+        requestDeposit(userBalance, user1.addr, true);
+        assertEq(assetBalance(address(vault)), 0);
+        assertEq(assetBalance(address(vault.pendingSilo())), userBalance);
+        assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance);
+        assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
     }
 
     function test_requestDepositTwoTimes() public {
@@ -99,8 +110,8 @@ contract TestRequestDeposit is BaseTest {
         uint256 userBalance = 10e18;
         string memory wtoken = "WRAPPED_NATIVE_TOKEN";
 
-        bool shouldFail = keccak256(abi.encode(underlyingName)) != keccak256(abi.encode(wtoken));
-        if (!shouldFail) {
+        bool shouldWork = keccak256(abi.encode(underlyingName)) == keccak256(abi.encode(wtoken));
+        if (shouldWork) {
             requestDeposit(userBalance / 2, user1.addr);
             updateAndSettle(0);
             assertEq(vault.maxDeposit(user1.addr), userBalance / 2, "wrong claimable deposit value");
