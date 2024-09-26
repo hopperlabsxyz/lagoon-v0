@@ -6,15 +6,30 @@ import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
 import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 
 import {IWETH9} from "./interfaces/IWETH9.sol";
-import {ERC20Upgradeable, IERC20, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
+import {
+    ERC20Upgradeable,
+    IERC20,
+    IERC20Metadata
+} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20PausableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import {CantDepositNativeToken, ERC7540InvalidOperator, ERC7540PreviewDepositDisabled, ERC7540PreviewMintDisabled, ERC7540PreviewRedeemDisabled, ERC7540PreviewWithdrawDisabled, OnlyOneRequestAllowed, RequestIdNotClaimable, RequestNotCancelable} from "./Errors.sol";
+import {
+    CantDepositNativeToken,
+    ERC7540InvalidOperator,
+    ERC7540PreviewDepositDisabled,
+    ERC7540PreviewMintDisabled,
+    ERC7540PreviewRedeemDisabled,
+    ERC7540PreviewWithdrawDisabled,
+    OnlyOneRequestAllowed,
+    RequestIdNotClaimable,
+    RequestNotCancelable
+} from "./Errors.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 using SafeERC20 for IERC20;
@@ -57,14 +72,9 @@ abstract contract ERC7540Upgradeable is
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant erc7540Storage =
-        0x5c74d456014b1c0eb4368d944667a568313858a3029a650ff0cb7b56f8b57a00;
+    bytes32 private constant erc7540Storage = 0x5c74d456014b1c0eb4368d944667a568313858a3029a650ff0cb7b56f8b57a00;
 
-    function _getERC7540Storage()
-        internal
-        pure
-        returns (ERC7540Storage storage $)
-    {
+    function _getERC7540Storage() internal pure returns (ERC7540Storage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := erc7540Storage
@@ -72,10 +82,7 @@ abstract contract ERC7540Upgradeable is
     }
 
     // solhint-disable-next-line func-name-mixedcase
-    function __ERC7540_init(
-        IERC20 underlying,
-        address wrappedNativeToken
-    ) internal onlyInitializing {
+    function __ERC7540_init(IERC20 underlying, address wrappedNativeToken) internal onlyInitializing {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         $.depositEpochId = 1;
@@ -89,21 +96,14 @@ abstract contract ERC7540Upgradeable is
     }
 
     modifier onlyOperator(address controller) {
-        if (
-            controller != _msgSender() && !isOperator(controller, _msgSender())
-        ) {
+        if (controller != _msgSender() && !isOperator(controller, _msgSender())) {
             revert ERC7540InvalidOperator();
         }
         _;
     }
 
     // ## Overrides ##
-    function totalAssets()
-        public
-        view
-        override(IERC4626, ERC4626Upgradeable)
-        returns (uint256)
-    {
+    function totalAssets() public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
         return $.totalAssets;
     }
@@ -127,18 +127,12 @@ abstract contract ERC7540Upgradeable is
     }
 
     // ## EIP7540 ##
-    function isOperator(
-        address controller,
-        address operator
-    ) public view returns (bool) {
+    function isOperator(address controller, address operator) public view returns (bool) {
         return _getERC7540Storage().isOperator[controller][operator];
     }
 
     /// @dev should not be usable when contract is paused
-    function setOperator(
-        address operator,
-        bool approved
-    ) external whenNotPaused returns (bool success) {
+    function setOperator(address operator, bool approved) external whenNotPaused returns (bool success) {
         address msgSender = _msgSender();
         _getERC7540Storage().isOperator[msgSender][operator] = approved;
         emit OperatorSet(msgSender, operator, approved);
@@ -151,62 +145,31 @@ abstract contract ERC7540Upgradeable is
     }
 
     // ## EIP165 ##
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual returns (bool) {
-        return
-            interfaceId == 0x2f0a18c5 || // IERC7575
-            interfaceId == 0xf815c03d || // IERC7575 shares
-            interfaceId == 0xce3bbe50 || // IERC7540Deposit
-            interfaceId == 0x620ee8e4 || // IERC7540Redeem
-            interfaceId == 0xe3bc4e65 || // IERC7540
-            interfaceId == type(IERC165).interfaceId;
+    function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
+        return interfaceId == 0x2f0a18c5 // IERC7575
+            || interfaceId == 0xf815c03d // IERC7575 shares
+            || interfaceId == 0xce3bbe50 // IERC7540Deposit
+            || interfaceId == 0x620ee8e4 // IERC7540Redeem
+            || interfaceId == 0xe3bc4e65 // IERC7540
+            || interfaceId == type(IERC165).interfaceId;
     }
 
-    function previewDeposit(
-        uint256
-    )
-        public
-        pure
-        override(ERC4626Upgradeable, IERC4626)
-        returns (uint256 shares)
-    {
+    function previewDeposit(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256 shares) {
         shares;
         if (true) revert ERC7540PreviewDepositDisabled();
     }
 
-    function previewMint(
-        uint256
-    )
-        public
-        pure
-        override(ERC4626Upgradeable, IERC4626)
-        returns (uint256 assets)
-    {
+    function previewMint(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256 assets) {
         assets;
         if (true) revert ERC7540PreviewMintDisabled();
     }
 
-    function previewRedeem(
-        uint256
-    )
-        public
-        pure
-        override(ERC4626Upgradeable, IERC4626)
-        returns (uint256 assets)
-    {
+    function previewRedeem(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256 assets) {
         assets;
         if (true) revert ERC7540PreviewRedeemDisabled();
     }
 
-    function previewWithdraw(
-        uint256
-    )
-        public
-        pure
-        override(ERC4626Upgradeable, IERC4626)
-        returns (uint256 shares)
-    {
+    function previewWithdraw(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256 shares) {
         shares;
         if (true) revert ERC7540PreviewWithdrawDisabled();
     }
@@ -239,35 +202,19 @@ abstract contract ERC7540Upgradeable is
             if (asset() == address($.wrappedNativeToken)) {
                 //todo remove this security
                 IWETH9($.wrappedNativeToken).deposit{value: msg.value}();
-                IWETH9($.wrappedNativeToken).transfer(
-                    address($.pendingSilo),
-                    msg.value
-                );
+                IWETH9($.wrappedNativeToken).transfer(address($.pendingSilo), msg.value);
             } else {
                 revert CantDepositNativeToken();
             }
         } else {
-            IERC20(asset()).safeTransferFrom(
-                owner,
-                address($.pendingSilo),
-                assets
-            );
+            IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
         }
 
-        emit DepositRequest(
-            controller,
-            owner,
-            _depositId,
-            _msgSender(),
-            assets
-        );
+        emit DepositRequest(controller, owner, _depositId, _msgSender(), assets);
         return _depositId;
     }
 
-    function pendingDepositRequest(
-        uint256 requestId,
-        address controller
-    ) public view returns (uint256 assets) {
+    function pendingDepositRequest(uint256 requestId, address controller) public view returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
@@ -277,10 +224,7 @@ abstract contract ERC7540Upgradeable is
     }
 
     // todo: Pass this function as external
-    function claimableDepositRequest(
-        uint256 requestId,
-        address controller
-    ) public view returns (uint256 assets) {
+    function claimableDepositRequest(uint256 requestId, address controller) public view returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
@@ -290,9 +234,7 @@ abstract contract ERC7540Upgradeable is
     }
 
     // todo: replace with the implementation of claimableDepositRequest
-    function maxDeposit(
-        address controller
-    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+    function maxDeposit(address controller) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         return claimableDepositRequest(0, controller);
     }
 
@@ -313,11 +255,7 @@ abstract contract ERC7540Upgradeable is
         return _deposit(assets, receiver, controller);
     }
 
-    function _deposit(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) internal virtual returns (uint256 shares) {
+    function _deposit(uint256 assets, address receiver, address controller) internal virtual returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastDepositRequestId[controller];
@@ -350,11 +288,7 @@ abstract contract ERC7540Upgradeable is
         return _mint(shares, receiver, controller);
     }
 
-    function _mint(
-        uint256 shares,
-        address receiver,
-        address controller
-    ) internal virtual returns (uint256 assets) {
+    function _mint(uint256 shares, address receiver, address controller) internal virtual returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastDepositRequestId[controller];
@@ -390,11 +324,7 @@ abstract contract ERC7540Upgradeable is
     // ## EIP7540 Redeem flow ##
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
-    function requestRedeem(
-        uint256 shares,
-        address controller,
-        address owner
-    ) public virtual returns (uint256) {
+    function requestRedeem(uint256 shares, address controller, address owner) public virtual returns (uint256) {
         if (_msgSender() != owner && !isOperator(owner, _msgSender())) {
             _spendAllowance(owner, _msgSender(), shares);
         }
@@ -419,10 +349,7 @@ abstract contract ERC7540Upgradeable is
         return _redeemId;
     }
 
-    function pendingRedeemRequest(
-        uint256 requestId,
-        address controller
-    ) public view returns (uint256 shares) {
+    function pendingRedeemRequest(uint256 requestId, address controller) public view returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) {
@@ -433,10 +360,7 @@ abstract contract ERC7540Upgradeable is
         }
     }
 
-    function claimableRedeemRequest(
-        uint256 requestId,
-        address controller
-    ) public view returns (uint256 shares) {
+    function claimableRedeemRequest(uint256 requestId, address controller) public view returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) requestId = $.lastRedeemRequestId[controller];
@@ -446,9 +370,7 @@ abstract contract ERC7540Upgradeable is
         }
     }
 
-    function maxRedeem(
-        address controller
-    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+    function maxRedeem(address controller) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         return claimableRedeemRequest(0, controller);
     }
 
@@ -509,10 +431,7 @@ abstract contract ERC7540Upgradeable is
     }
 
     // ## Conversion functions ##
-    function convertToShares(
-        uint256 assets,
-        uint256 requestId
-    ) public view returns (uint256) {
+    function convertToShares(uint256 assets, uint256 requestId) public view returns (uint256) {
         return _convertToShares(assets, uint40(requestId), Math.Rounding.Floor);
     }
 
@@ -523,21 +442,14 @@ abstract contract ERC7540Upgradeable is
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        uint256 _totalAssets = $
-            .settles[$.epochs[requestId].settleId]
-            .totalAssets + 1;
+        uint256 _totalAssets = $.settles[$.epochs[requestId].settleId].totalAssets + 1;
 
-        uint256 _totalSupply = $
-            .settles[$.epochs[requestId].settleId]
-            .totalSupply + 10 ** _decimalsOffset();
+        uint256 _totalSupply = $.settles[$.epochs[requestId].settleId].totalSupply + 10 ** _decimalsOffset();
 
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
     }
 
-    function convertToAssets(
-        uint256 shares,
-        uint256 requestId
-    ) public view returns (uint256) {
+    function convertToAssets(uint256 shares, uint256 requestId) public view returns (uint256) {
         return _convertToAssets(shares, uint40(requestId), Math.Rounding.Floor);
     }
 
@@ -548,13 +460,9 @@ abstract contract ERC7540Upgradeable is
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        uint256 _totalAssets = $
-            .settles[$.epochs[requestId].settleId]
-            .totalAssets + 1;
+        uint256 _totalAssets = $.settles[$.epochs[requestId].settleId].totalAssets + 1;
 
-        uint256 _totalSupply = $
-            .settles[$.epochs[requestId].settleId]
-            .totalSupply + 10 ** _decimalsOffset();
+        uint256 _totalSupply = $.settles[$.epochs[requestId].settleId].totalSupply + 10 ** _decimalsOffset();
 
         return shares.mulDiv(_totalAssets, _totalSupply, rounding);
     }

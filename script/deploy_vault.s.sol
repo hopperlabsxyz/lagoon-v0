@@ -63,9 +63,7 @@ contract DeployVault is Script {
         TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
             payable(
                 Upgrades.deployTransparentProxy(
-                    "Vault.sol:Vault",
-                    PROXY_ADMIN,
-                    abi.encodeWithSelector(Vault.initialize.selector, v)
+                    "Vault.sol:Vault", PROXY_ADMIN, abi.encodeWithSelector(Vault.initialize.selector, v)
                 )
             )
         );

@@ -37,11 +37,7 @@ contract DeployProtocol is Script {
                 Upgrades.deployTransparentProxy(
                     "FeeRegistry.sol:FeeRegistry",
                     PROXY_ADMIN,
-                    abi.encodeWithSelector(
-                        FeeRegistry.initialize.selector,
-                        DAO,
-                        DAO
-                    )
+                    abi.encodeWithSelector(FeeRegistry.initialize.selector, DAO, DAO)
                 )
             )
         );
