@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
+import {ERC7540Upgradeable} from "./ERC7540.sol";
 import {State} from "./Enums.sol";
 import {Closed, NewNAVMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
 import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./Events.sol";
