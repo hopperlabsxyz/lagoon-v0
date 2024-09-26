@@ -13,6 +13,9 @@ error NotOpen(State currentState);
 /// @param currentState The current state of the vault.
 error NotClosing(State currentState);
 
+/// @notice Indicates that the vault is Closed.
+error Closed();
+
 /// @notice Indicates that a new NAV was not provided.
 error NewNAVMissing();
 
