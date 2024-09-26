@@ -569,6 +569,81 @@ abstract contract ERC7540Upgradeable is
         return shares.mulDiv(_totalAssets, _totalSupply, rounding);
     }
 
+    /// @dev This function will deposit the pending assets of the pendingSilo.
+    /// @param assetsCustodian The address that will hold the assets.
+    /// and save the deposit parameters in the settleData.
+    function _settleDeposit(address assetsCustodian) internal {
+        address _asset = asset();
+        address _pendingSilo = pendingSilo();
+
+        uint256 pendingAssets = IERC20(_asset).balanceOf(_pendingSilo);
+        if (pendingAssets == 0) return;
+
+        uint256 shares = _convertToShares(pendingAssets, Math.Rounding.Floor);
+
+        // Then save the deposit parameters
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+
+        uint256 _totalAssets = totalAssets();
+        uint40 depositSettleId = $erc7540.depositSettleId;
+
+        SettleData storage settleData = $erc7540.settles[depositSettleId];
+
+        settleData.totalAssets = _totalAssets;
+        settleData.totalSupply = totalSupply();
+        _mint(address(this), shares);
+
+        _totalAssets += pendingAssets;
+
+        $erc7540.totalAssets = _totalAssets;
+
+        $erc7540.depositSettleId = depositSettleId + 2;
+        $erc7540.lastDepositEpochIdSettled = $erc7540.depositEpochId - 2;
+
+        IERC20(_asset).safeTransferFrom(_pendingSilo, assetsCustodian, pendingAssets);
+
+        // change this event maybe
+        emit Deposit(_msgSender(), address(this), pendingAssets, shares);
+    }
+
+    /// @dev This function will redeem the pending shares of the pendingSilo.
+    /// @param assetsCustodian The address that holds the assets.
+    /// and save the redeem parameters in the settleData.
+    function _settleRedeem(address assetsCustodian) internal {
+        // address _safe = safe();
+        address _asset = asset();
+        address _pendingSilo = pendingSilo();
+
+        uint256 pendingShares = balanceOf(_pendingSilo);
+        uint256 assetsToWithdraw = _convertToAssets(pendingShares, Math.Rounding.Floor);
+
+        uint256 assetsInTheSafe = IERC20(_asset).balanceOf(assetsCustodian);
+        if (assetsToWithdraw == 0 || assetsToWithdraw > assetsInTheSafe) return;
+
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+
+        uint256 _totalAssets = totalAssets();
+        uint40 redeemSettleId = $erc7540.redeemSettleId;
+
+        SettleData storage settleData = $erc7540.settles[redeemSettleId];
+
+        settleData.totalAssets = _totalAssets;
+        settleData.totalSupply = totalSupply();
+
+        _burn(_pendingSilo, pendingShares);
+
+        _totalAssets -= assetsToWithdraw;
+        $erc7540.totalAssets = _totalAssets;
+
+        $erc7540.redeemSettleId = redeemSettleId + 2;
+        $erc7540.lastRedeemEpochIdSettled = $erc7540.redeemEpochId - 2;
+
+        IERC20(_asset).safeTransferFrom(assetsCustodian, address(this), assetsToWithdraw);
+
+        // change this event maybe
+        emit Withdraw(_msgSender(), address(this), _pendingSilo, assetsToWithdraw, pendingShares);
+    }
+
     function pendingSilo() public view returns (address) {
         return address(_getERC7540Storage().pendingSilo);
     }
