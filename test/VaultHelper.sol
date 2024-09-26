@@ -56,4 +56,13 @@ contract VaultHelper is Vault {
     function lastDepositRequestId_debug(address controller) public view returns (uint256) {
         return _getERC7540Storage().lastDepositRequestId[controller];
     }
+
+    // Pending states
+    function pendingDeposit() public view returns (uint256) {
+        return IERC20(asset()).balanceOf(pendingSilo());
+    }
+
+    function pendingRedeem() public view returns (uint256) {
+        return balanceOf(pendingSilo());
+    }
 }

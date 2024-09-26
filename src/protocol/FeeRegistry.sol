@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
+import {CustomRateUpdated, ProtocolFeeReceiverUpdated, ProtocolRateUpdated} from "./Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 /// @title FeeRegistry
@@ -44,24 +45,28 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     /// @notice Updates the address of the protocol fee receiver.
     /// @param _protocolFeeReceiver The new protocol fee receiver address.
     function updateProtocolFeeReceiver(address _protocolFeeReceiver) external onlyOwner {
+        emit ProtocolFeeReceiverUpdated(_getFeeRegistryStorage().protocolFeeReceiver, _protocolFeeReceiver);
         _getFeeRegistryStorage().protocolFeeReceiver = _protocolFeeReceiver;
     }
 
     /// @notice Sets the protocol fee rate.
     /// @param rate The new protocol fee rate.
-    function setProtocolRate(uint16 rate) external onlyOwner {
+    function updateProtocolRate(uint16 rate) external onlyOwner {
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
+        emit ProtocolRateUpdated($.protocolRate, rate);
         $.protocolRate = rate;
     }
 
     /// @notice Sets a custom fee rate for a specific vault.
     /// @param vault The address of the vault.
     /// @param rate The custom fee rate for the vault.
-    function setCustomRate(address vault, uint16 rate, bool isActivated) external onlyOwner {
+    /// @param isActivated A boolean indicating whether the custom rate is activated.
+    function updateCustomRate(address vault, uint16 rate, bool isActivated) external onlyOwner {
         _getFeeRegistryStorage().customRate[vault] = CustomRate({isActivated: isActivated, rate: rate});
+        emit CustomRateUpdated(vault, rate, isActivated);
     }
 
-    /// @notice Checks if a custom fee rate is set for a specific vault.
+    /// @notice Checks if a custom fee rate is activated for a specific vault.
     /// @param vault The address of the vault.
     /// @return True if the vault has a custom fee rate, false otherwise.
     function isCustomRate(address vault) external view returns (bool) {

@@ -309,15 +309,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     // MVP UPGRADE //
     /////////////////
 
-    // Pending states
-    function pendingDeposit() public view returns (uint256) {
-        return IERC20(asset()).balanceOf(pendingSilo());
-    }
-
-    function pendingRedeem() public view returns (uint256) {
-        return balanceOf(pendingSilo());
-    }
-
     function initiateClosing() external onlyOwner onlyOpen {
         _getVaultStorage().state = State.Closing;
         emit StateUpdated(State.Closing);

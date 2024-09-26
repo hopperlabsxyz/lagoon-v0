@@ -36,7 +36,7 @@ contract testRateUpdates is BaseTest {
         feeRegistry.initialize(dao.addr, dao.addr);
 
         vm.prank(dao.addr);
-        feeRegistry.setProtocolRate(protocolRate);
+        feeRegistry.updateProtocolRate(protocolRate);
         vault = new VaultHelper(false);
 
         Vault.InitStruct memory v = Vault.InitStruct({
