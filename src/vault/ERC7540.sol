@@ -200,12 +200,12 @@ abstract contract ERC7540Upgradeable is
 
     // ## EIP7540 Deposit Flow ##
 
-    /// @dev should not be usable when contract is paused
+    /// @dev Unusable when paused. Modifier not needed as it's overridden.
     function requestDeposit(
         uint256 assets,
         address controller,
         address owner
-    ) public payable virtual onlyOperator(owner) whenNotPaused returns (uint256) {
+    ) public payable virtual onlyOperator(owner) returns (uint256) {
         uint256 claimable = claimableDepositRequest(0, controller);
         if (claimable > 0) _deposit(claimable, controller, controller);
 
@@ -270,6 +270,7 @@ abstract contract ERC7540Upgradeable is
         return claimableDepositRequest(0, controller);
     }
 
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
     /// @notice Claim the assets from the vault after a request has been settled.
     /// @param assets The amount of assets requested to deposit.
     /// @param receiver The receiver of the shares.
@@ -281,6 +282,7 @@ abstract contract ERC7540Upgradeable is
         return _deposit(assets, receiver, _msgSender());
     }
 
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
     /// @notice Claim the assets from the vault after a request has been settled.
     /// @param assets The assets to deposit.
     /// @param receiver The receiver of the shares.
@@ -315,7 +317,7 @@ abstract contract ERC7540Upgradeable is
         emit Deposit(controller, receiver, assets, shares);
     }
 
-    /// @dev should not be usable when contract is paused
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
     function mint(
         uint256 shares,
         address receiver
@@ -323,7 +325,9 @@ abstract contract ERC7540Upgradeable is
         return _mint(shares, receiver, _msgSender());
     }
 
-    /// @notice Mint shares from the vault.
+
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @notice Claim shares from the vault after a request deposit.
     function mint(
         uint256 shares,
         address receiver,
@@ -353,8 +357,9 @@ abstract contract ERC7540Upgradeable is
         emit Deposit(controller, receiver, assets, shares);
     }
 
+    /// @dev Unusable when paused. Protected by whenNotPaused.
     /// @notice Cancel a deposit request.
-    /// @dev It can only be called until newTotalAssets is updated.
+    /// @dev It can only be called in the same epoch.
     function cancelRequestDeposit() external whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
@@ -373,6 +378,8 @@ abstract contract ERC7540Upgradeable is
 
     // ## EIP7540 Redeem flow ##
 
+
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
     /// @notice Request redemption of shares from the vault.
     /// @param shares The amount of shares to redeem.
     /// @param controller The controller is the address that will manage the request.
@@ -439,8 +446,9 @@ abstract contract ERC7540Upgradeable is
         return claimableRedeemRequest(0, controller);
     }
 
-    /// @notice Redeem shares from the vault. After a request is made and settled.
-    /// @param shares The shares to redeem.
+    /// @dev Unusable when paused. Protected by whenNotPaused in _redeem.
+    /// @notice Claim assets from the vault. After a request is made and settled.
+    /// @param shares The amount shares to convert into assets.
     /// @param receiver The receiver of the assets.
     /// @param controller The controller, who owns the redeem request.
     /// @return assets The corresponding assets.
@@ -476,7 +484,7 @@ abstract contract ERC7540Upgradeable is
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
     }
 
-    /// @dev should not be usable when contract is paused
+    /// @dev Unusable when paused. Protected by whenNotPaused in _withdraw.
     function withdraw(
         uint256 assets,
         address receiver,
@@ -494,7 +502,7 @@ abstract contract ERC7540Upgradeable is
         uint256 assets,
         address receiver,
         address controller
-    ) internal onlyOperator(controller) returns (uint256 shares) {
+    ) internal onlyOperator(controller) whenNotPaused returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastRedeemRequestId[controller];

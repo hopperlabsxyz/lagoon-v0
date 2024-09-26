@@ -140,7 +140,7 @@ abstract contract Constants is Test {
         address[] memory whitelist = new address[](0);
 
         vm.prank(dao.addr);
-        feeRegistry.setProtocolRate(_protocolRate);
+        feeRegistry.updateDefaultRate(_protocolRate);
 
         UpgradeableBeacon beacon;
         if (proxy) {

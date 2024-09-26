@@ -23,7 +23,7 @@ contract TestFeeRegistry is BaseTest {
 
     function test_protocolRate() public {
         vm.prank(dao.addr);
-        feeRegistry.setProtocolRate(200);
+        feeRegistry.updateDefaultRate(200);
 
         vm.prank(mockVault);
         uint256 protocolRate = feeRegistry.protocolRate();
@@ -31,13 +31,13 @@ contract TestFeeRegistry is BaseTest {
 
         assertEq(feeRegistry.protocolRate(mockVault), 200, "Unexpected protocolRate(addres)");
         assertEq(feeRegistry.isCustomRate(mockVault), false, "Unexpected isCustomRate(address)");
-        assertEq(feeRegistry.customRate(mockVault), 0, "Unexpected customRate(address)");
     }
 
     function test_customRate() public {
         vm.startPrank(dao.addr);
-        feeRegistry.setProtocolRate(300);
-        feeRegistry.setCustomRate(mockVault, 200);
+
+        feeRegistry.updateDefaultRate(300);
+        feeRegistry.updateCustomRate(mockVault, 200, true);
         vm.stopPrank();
 
         vm.prank(mockVault);
@@ -47,13 +47,13 @@ contract TestFeeRegistry is BaseTest {
         assertEq(feeRegistry.protocolRate(mockVault), 200, "Unexpected protocolRate(address)");
         assertEq(feeRegistry.protocolRate(), 300, "Unexpected protocolRate(void)");
         assertEq(feeRegistry.isCustomRate(mockVault), true, "Unexpected isCustomRate(void)");
-        assertEq(feeRegistry.customRate(mockVault), 200, "Unexpected customeRate(address)");
     }
 
     function test_cancelCustomRate() public {
         vm.startPrank(dao.addr);
-        feeRegistry.setProtocolRate(300);
-        feeRegistry.setCustomRate(mockVault, 200);
+        feeRegistry.updateDefaultRate(300);
+        feeRegistry.updateCustomRate(mockVault, 200, true);
+
         vm.stopPrank();
 
         vm.prank(mockVault);
@@ -61,7 +61,7 @@ contract TestFeeRegistry is BaseTest {
         assertEq(protocolRate, 200, "Unexpected protocolRate(void)");
 
         vm.prank(dao.addr);
-        feeRegistry.cancelCustomRate(mockVault);
+        feeRegistry.updateCustomRate(mockVault, 0, false);
 
         vm.prank(mockVault);
         protocolRate = feeRegistry.protocolRate();
@@ -70,7 +70,6 @@ contract TestFeeRegistry is BaseTest {
 
         assertEq(feeRegistry.protocolRate(mockVault), 300, "Unexpected protocolRate(addres)");
         assertEq(feeRegistry.isCustomRate(mockVault), false, "Unexpected isCustomRate(address)");
-        assertEq(feeRegistry.customRate(mockVault), 200, "Unexpected customRate(address)");
     }
 
     function test_updateProtocolFeeReceiver() public {

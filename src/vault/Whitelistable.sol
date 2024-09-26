@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
-import {WhitelistUpdated} from "./Events.sol";
+import {WhitelistDisabled, WhitelistUpdated} from "./Events.sol";
 import {RolesUpgradeable} from "./Roles.sol";
 
 // import {console} from "forge-std/console.sol";
@@ -34,8 +34,9 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
     }
 
     /// @notice Deactivates the whitelist
-    function deactivateWhitelist() public onlyOwner {
+    function disableWhitelist() public onlyOwner {
         _getWhitelistableStorage().isActivated = false;
+        emit WhitelistDisabled();
     }
 
     /// @notice Checks if an account is whitelisted
@@ -71,10 +72,13 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
     /// @notice Removes multiple accounts from the whitelist
     function revokeFromWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-
-        for (uint256 i = 0; i < accounts.length; i++) {
+        uint256 i = 0;
+        for (; i < accounts.length;) {
             $.isWhitelisted[accounts[i]] = false;
             emit WhitelistUpdated(accounts[i], false);
+            unchecked {
+                ++i;
+            }
         }
     }
 }

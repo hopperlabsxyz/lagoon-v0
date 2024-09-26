@@ -2,7 +2,7 @@
 pragma solidity "0.8.26";
 
 import {AboveMaxRate, CooldownNotOver} from "./Errors.sol";
-
+import {HighWaterMarkUpdated, RatesUpdated} from "./Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
@@ -108,12 +108,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
             ) _mint(protocolFeeReceiver, protocolShares);
         }
 
-        uint256 _pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
-
-        // we update the high water mark only if the new value is greater than the current one
-        uint256 _highWaterMark = $.highWaterMark;
-        if (_pricePerShare > _highWaterMark) $.highWaterMark = _pricePerShare;
-
         $.lastFeeTime = block.timestamp;
     }
 
@@ -131,9 +125,13 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
             revert AboveMaxRate(MAX_PERFORMANCE_RATE);
         }
 
-        $.newRatesTimestamp = block.timestamp + $.cooldown;
-        $.oldRates = $.rates;
+        uint256 newRatesTimestamp = block.timestamp + $.cooldown;
+        Rates memory currentRates = $.rates;
+
+        $.newRatesTimestamp = newRatesTimestamp;
+        $.oldRates = currentRates;
         $.rates = newRates;
+        emit RatesUpdated(currentRates, newRates, newRatesTimestamp);
     }
 
     /// @dev Since we have a cooldown period and to avoid a double call
@@ -160,18 +158,15 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     /// @dev Update the high water mark only if the new value is greater than the current one
     /// @dev The high water mark is the highest price per share ever reached
     /// @param _newHighWaterMark the new high water mark
-    /// @return the new high water mark
-    function _setHighWaterMark(uint256 _newHighWaterMark) internal returns (uint256) {
+    function _setHighWaterMark(uint256 _newHighWaterMark) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 _highWaterMark = $.highWaterMark;
 
         if (_newHighWaterMark > _highWaterMark) {
+            emit HighWaterMarkUpdated(_highWaterMark, _newHighWaterMark);
             $.highWaterMark = _newHighWaterMark;
-            return _newHighWaterMark;
         }
-
-        return _highWaterMark;
     }
 
     /// @dev Read the protocol rate from the fee registry
@@ -214,7 +209,12 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
         uint256 totalFees = managementFees + performanceFees;
 
-        uint256 totalShares = totalFees.mulDiv(_totalSupply + 1, (totalAssets() - totalFees) + 1, Math.Rounding.Ceil);
+        // since we are minting shares without actually increasing the totalAssets,
+        // we need to compensate the future dilution of price per share by virtually decreasing totalAssets
+        // in our computation
+        uint256 totalShares = totalFees.mulDiv(
+            _totalSupply + 10 ** _decimalsOffset(), (totalAssets() - totalFees) + 1, Math.Rounding.Ceil
+        );
 
         protocolShares = totalShares.mulDiv(_protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
         managerShares = totalShares - protocolShares;
@@ -230,8 +230,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         uint256 annualRate,
         uint256 timeElapsed
     ) internal pure returns (uint256 managementFee) {
-        uint256 annualFee = assets.mulDiv(annualRate, BPS_DIVIDER);
-        managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
+        uint256 annualFee = assets.mulDiv(annualRate, BPS_DIVIDER, Math.Rounding.Ceil);
+        managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR, Math.Rounding.Ceil);
     }
 
     /// @dev Calculate the performance fee
@@ -255,8 +255,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
             unchecked {
                 profitPerShare = _pricePerShare - _highWaterMark;
             }
-            uint256 profit = profitPerShare.mulDiv(_totalSupply, 10 ** _decimals);
-            performanceFee = profit.mulDiv(_rate, BPS_DIVIDER);
+            uint256 profit = profitPerShare.mulDiv(_totalSupply, 10 ** _decimals, Math.Rounding.Ceil);
+            performanceFee = profit.mulDiv(_rate, BPS_DIVIDER, Math.Rounding.Ceil);
         }
     }
 }

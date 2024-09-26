@@ -3,7 +3,7 @@ pragma solidity "0.8.26";
 
 import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
 import {State} from "./Enums.sol";
-import {NewNAVMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
+import {Closed, NewNAVMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
 import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./Events.sol";
 import {FeeManager} from "./FeeManager.sol";
 import {RolesUpgradeable} from "./Roles.sol";
@@ -100,8 +100,12 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
             $whitelistStorage.isWhitelisted[protocolFeeReceiver()] = true;
             $whitelistStorage.isWhitelisted[init.safe] = true;
             $whitelistStorage.isWhitelisted[pendingSilo()] = true;
-            for (uint256 i = 0; i < init.whitelist.length; i++) {
+            uint256 i = 0;
+            for (; i < init.whitelist.length;) {
                 $whitelistStorage.isWhitelisted[init.whitelist[i]] = true;
+                unchecked {
+                    ++i;
+                }
             }
         }
     }
@@ -127,7 +131,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         uint256 assets,
         address controller,
         address owner
-    ) public payable override(ERC7540Upgradeable) returns (uint256 requestId) {
+    ) public payable override(ERC7540Upgradeable) whenNotPaused returns (uint256 requestId) {
         return _requestDeposit(assets, controller, owner);
     }
 
@@ -141,7 +145,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         address controller,
         address owner,
         address referral
-    ) public payable returns (uint256 requestId) {
+    ) public payable whenNotPaused returns (uint256 requestId) {
         requestId = _requestDeposit(assets, controller, owner);
         if (address(referral) != address(0)) {
             emit Referral(referral, owner, requestId, assets);
@@ -177,6 +181,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
+        if ($.state == State.Closed) revert Closed();
+
         $erc7540.epochs[$erc7540.depositEpochId].settleId = $erc7540.depositSettleId;
         $erc7540.epochs[$erc7540.redeemEpochId].settleId = $erc7540.redeemSettleId;
 
@@ -194,6 +200,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
     /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
     /// If possible, it also settles redeem requests.
+    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
     function settleDeposit() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees(feeReceiver(), protocolFeeReceiver());
@@ -255,7 +262,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit Deposit(_msgSender(), address(this), pendingAssets, shares);
     }
 
-    /// @dev should not be usable when contract is paused
+    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
     function settleRedeem() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees(feeReceiver(), protocolFeeReceiver());
@@ -302,15 +309,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     // MVP UPGRADE //
     /////////////////
 
-    // Pending states
-    function pendingDeposit() public view returns (uint256) {
-        return IERC20(asset()).balanceOf(pendingSilo());
-    }
-
-    function pendingRedeem() public view returns (uint256) {
-        return balanceOf(pendingSilo());
-    }
-
     function initiateClosing() external onlyOwner onlyOpen {
         _getVaultStorage().state = State.Closing;
         emit StateUpdated(State.Closing);
@@ -339,12 +337,10 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit StateUpdated(State.Closed);
     }
 
-    /// @dev should not be usable when contract is paused
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) public override whenNotPaused returns (uint256 shares) {
+    /// @dev Unusable when paused.
+    /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
+    /// @dev Second _withdraw path: whenNotPaused in ERC7540Upgradeable.
+    function withdraw(uint256 assets, address receiver, address controller) public override returns (uint256 shares) {
         VaultStorage storage $ = _getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
@@ -355,7 +351,9 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         }
     }
 
-    /// @dev should not be usable when contract is paused
+    /// @dev Unusable when paused.
+    /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
+    /// @dev Second _withdraw path: whenNotPaused in ERC7540Upgradeable.
     function redeem(uint256 shares, address receiver, address controller) public override returns (uint256 assets) {
         VaultStorage storage $ = _getVaultStorage();
 
