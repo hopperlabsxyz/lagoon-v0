@@ -200,9 +200,9 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
         uint256 totalFees = managementFees + performanceFees;
 
-        uint256 totalShares = totalFees.mulDiv(_totalSupply + 1, (totalAssets() - totalFees) + 1, Math.Rounding.Ceil);
         // since we are minting shares without actually increasing the totalAssets,
-        //we need to compensate the future dilution of price per share.
+        // we need to compensate the future dilution of price per share by virtually decreasing totalAssets
+        // in our computation
         uint256 totalShares = totalFees.mulDiv(
             _totalSupply + 10 ** _decimalsOffset(), (totalAssets() - totalFees) + 1, Math.Rounding.Ceil
         );
