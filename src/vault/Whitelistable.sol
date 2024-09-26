@@ -6,8 +6,8 @@ import {RolesUpgradeable} from "./Roles.sol";
 
 contract WhitelistableUpgradeable is RolesUpgradeable {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))
-    // solhint-disable-next-line const-name-snakecase
     /// @custom:storage-location erc7201:hopper.storage.Whitelistable
+    // solhint-disable-next-line const-name-snakecase
     bytes32 private constant whitelistableStorage = 0x083cc98ab296d1a1f01854b5f7a2f47df4425a56ba7b35f7faa3a336067e4800;
 
     /// @custom:storage-definition erc7201:hopper.storage.Whitelistable
@@ -27,9 +27,9 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
         }
     }
 
-    // solhint-disable-next-line func-name-mixedcase
     /// @dev Initializes the whitelist.
     /// @param activate if the whitelist should be activated.
+    // solhint-disable-next-line func-name-mixedcase
     function __Whitelistable_init(bool activate) internal onlyInitializing {
         if (activate) {
             _getWhitelistableStorage().isActivated = true;

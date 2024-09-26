@@ -27,9 +27,9 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         address navManager;
     }
 
-    // solhint-disable-next-line func-name-mixedcase
     /// @dev Initializes the roles of the vault.
     /// @param roles The roles to be initialized.
+    // solhint-disable-next-line func-name-mixedcase
     function __Roles_init(RolesStorage memory roles) internal onlyInitializing {
         RolesStorage storage $ = _getRolesStorage();
 
@@ -41,8 +41,8 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Roles")) - 1)) & ~bytes32(uint256(0xff))
-    // solhint-disable-next-line const-name-snakecase
     /// @custom:storage-location erc7201:hopper.storage.Roles
+    // solhint-disable-next-line const-name-snakecase
     bytes32 private constant rolesStorage = 0x7c302ed2c673c3d6b4551cf74a01ee649f887e14fd20d13dbca1b6099534d900;
 
     /// @dev Returns the storage struct of the roles.

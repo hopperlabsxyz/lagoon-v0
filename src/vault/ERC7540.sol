@@ -85,8 +85,8 @@ abstract contract ERC7540Upgradeable is
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
-    // solhint-disable-next-line const-name-snakecase
     /// @custom:slot erc7201:hopper.storage.ERC7540
+    // solhint-disable-next-line const-name-snakecase
     bytes32 private constant erc7540Storage = 0x5c74d456014b1c0eb4368d944667a568313858a3029a650ff0cb7b56f8b57a00;
 
     /// @notice Returns the ERC7540 storage struct.
@@ -98,10 +98,10 @@ abstract contract ERC7540Upgradeable is
         }
     }
 
-    // solhint-disable-next-line func-name-mixedcase
     /// @notice Initializes the ERC7540 contract.
     /// @param underlying The underlying token.
     /// @param wrappedNativeToken The wrapped native token.
+    // solhint-disable-next-line func-name-mixedcase
     function __ERC7540_init(IERC20 underlying, address wrappedNativeToken) internal onlyInitializing {
         ERC7540Storage storage $ = _getERC7540Storage();
 
