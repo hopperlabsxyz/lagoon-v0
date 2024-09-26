@@ -51,7 +51,7 @@ contract FeeRegistry is Ownable2StepUpgradeable {
 
     /// @notice Sets the protocol fee rate.
     /// @param rate The new protocol fee rate.
-    function updateProtocolRate(uint256 rate) external onlyOwner {
+    function updateProtocolRate(uint16 rate) external onlyOwner {
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
         emit ProtocolRateUpdated($.protocolRate, rate);
         $.protocolRate = rate;

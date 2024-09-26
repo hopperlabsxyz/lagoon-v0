@@ -63,7 +63,6 @@ contract TestFeeRegistry is BaseTest {
         vm.prank(dao.addr);
         feeRegistry.updateCustomRate(mockVault, 0, false);
 
-
         vm.prank(mockVault);
         protocolRate = feeRegistry.protocolRate();
 
