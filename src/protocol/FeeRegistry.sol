@@ -57,14 +57,8 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     /// @notice Sets a custom fee rate for a specific vault.
     /// @param vault The address of the vault.
     /// @param rate The custom fee rate for the vault.
-    function setCustomRate(address vault, uint16 rate) external onlyOwner {
-        _getFeeRegistryStorage().customRate[vault] = CustomRate({isActivated: true, rate: rate});
-    }
-
-    /// @notice Cancels the custom fee rate for a specific vault.
-    /// @param vault The address of the vault.
-    function cancelCustomRate(address vault) external onlyOwner {
-        _getFeeRegistryStorage().customRate[vault].isActivated = false;
+    function setCustomRate(address vault, uint16 rate, bool isActivated) external onlyOwner {
+        _getFeeRegistryStorage().customRate[vault] = CustomRate({isActivated: isActivated, rate: rate});
     }
 
     /// @notice Checks if a custom fee rate is set for a specific vault.
@@ -72,13 +66,6 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     /// @return True if the vault has a custom fee rate, false otherwise.
     function isCustomRate(address vault) external view returns (bool) {
         return _getFeeRegistryStorage().customRate[vault].isActivated;
-    }
-
-    /// @notice Returns the custom fee rate for a specific vault.
-    /// @param vault The address of the vault.
-    /// @return The custom fee rate for the vault.
-    function customRate(address vault) external view returns (uint256) {
-        return _getFeeRegistryStorage().customRate[vault].rate;
     }
 
     /// @notice Returns the address of the protocol fee receiver.
