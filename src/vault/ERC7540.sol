@@ -304,7 +304,7 @@ abstract contract ERC7540Upgradeable is
         emit Deposit(controller, receiver, assets, shares);
     }
 
-    /// @dev should not be usable when contract is paused. Protected by whenNotPaused
+    /// @dev Unusable when paused. Protected by whenNotPaused
     function cancelRequestDeposit() external whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();

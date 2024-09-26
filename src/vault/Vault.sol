@@ -340,9 +340,9 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit StateUpdated(State.Closed);
     }
 
-    /// @dev should not be usable when contract is paused
-    /// @dev first _withdraw path: whenNotPaused is called thanks to ERC20Pausable._update
-    /// @dev second _withdraw path: whenNotPaused is called in the ERC7540Upgradeable implementation
+    /// @dev Unusable when paused.
+    /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
+    /// @dev Second _withdraw path: whenNotPaused in ERC7540Upgradeable.
     function withdraw(uint256 assets, address receiver, address controller) public override returns (uint256 shares) {
         VaultStorage storage $ = _getVaultStorage();
 
@@ -354,9 +354,9 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         }
     }
 
-    /// @dev should not be usable when contract is paused.
-    /// @dev _withdraw path: whenNotPaused is called thanks to ERC20Pausable._update
-    /// @dev _redeem path: whenNotPaused is called in the ERC7540Upgradeable implementation of _redeem()
+    /// @dev Unusable when paused.
+    /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
+    /// @dev Second _withdraw path: whenNotPaused in ERC7540Upgradeable.
     function redeem(uint256 shares, address receiver, address controller) public override returns (uint256 assets) {
         VaultStorage storage $ = _getVaultStorage();
 
