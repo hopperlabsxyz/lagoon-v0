@@ -1,4 +1,3 @@
-
 [profile.default]
 src = "src"
 out = "out"
@@ -9,7 +8,6 @@ ffi = true
 ast = true
 build_info = true
 extra_output = ["storageLayout"]
-fs_permissions = [{ access = "read", path = "./"}] # Read access is needed for MerkleTree whitelist tests
 # optimizer = true
 # optimizer_runs = 1
 solc_version = "0.8.26"
