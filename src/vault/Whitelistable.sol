@@ -71,10 +71,13 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
     /// @notice Removes multiple accounts from the whitelist
     function revokeFromWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-
-        for (uint256 i = 0; i < accounts.length; i++) {
+        uint256 i = 0;
+        for (; i < accounts.length;) {
             $.isWhitelisted[accounts[i]] = false;
             emit WhitelistUpdated(accounts[i], false);
+            unchecked {
+                ++i;
+            }
         }
     }
 }

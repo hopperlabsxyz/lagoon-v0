@@ -102,8 +102,12 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
             $whitelistStorage.isWhitelisted[protocolFeeReceiver()] = true;
             $whitelistStorage.isWhitelisted[init.safe] = true;
             $whitelistStorage.isWhitelisted[pendingSilo()] = true;
-            for (uint256 i = 0; i < init.whitelist.length; i++) {
+            uint256 i = 0;
+            for (; i < init.whitelist.length;) {
                 $whitelistStorage.isWhitelisted[init.whitelist[i]] = true;
+                unchecked {
+                    ++i;
+                }
             }
         }
     }
