@@ -97,12 +97,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
             ) _mint(protocolFeeReceiver, protocolShares);
         }
 
-        uint256 _pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
-
-        // we update the high water mark only if the new value is greater than the current one
-        uint256 _highWaterMark = $.highWaterMark;
-        if (_pricePerShare > _highWaterMark) $.highWaterMark = _pricePerShare;
-
         $.lastFeeTime = block.timestamp;
     }
 
