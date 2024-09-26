@@ -402,7 +402,7 @@ abstract contract ERC7540Upgradeable is
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
     }
 
-    /// @dev should not be usable when contract is paused. Protected thanks to whenNotPaused modifier in _withdraw
+    /// @dev Unusable when paused. Protected by whenNotPaused in _withdraw.
     function withdraw(
         uint256 assets,
         address receiver,
