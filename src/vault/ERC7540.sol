@@ -570,8 +570,8 @@ abstract contract ERC7540Upgradeable is
     }
 
     /// @dev This function will deposit the pending assets of the pendingSilo.
-    /// @param assetsCustodian The address that will hold the assets.
     /// and save the deposit parameters in the settleData.
+    /// @param assetsCustodian The address that will hold the assets.
     function _settleDeposit(address assetsCustodian) internal {
         address _asset = asset();
         address _pendingSilo = pendingSilo();
@@ -607,8 +607,8 @@ abstract contract ERC7540Upgradeable is
     }
 
     /// @dev This function will redeem the pending shares of the pendingSilo.
-    /// @param assetsCustodian The address that holds the assets.
     /// and save the redeem parameters in the settleData.
+    /// @param assetsCustodian The address that holds the assets.
     function _settleRedeem(address assetsCustodian) internal {
         // address _safe = safe();
         address _asset = asset();
