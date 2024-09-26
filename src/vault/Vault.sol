@@ -4,12 +4,10 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 pragma solidity "0.8.26";
 
 import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
-
 import {State} from "./Enums.sol";
 import {Closed, NewNAVMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
 import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-
 import {FeeManager} from "./FeeManager.sol";
 import {RolesUpgradeable} from "./Roles.sol";
 import {WhitelistableUpgradeable} from "./Whitelistable.sol";
@@ -20,6 +18,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 using SafeERC20 for IERC20;
 
 contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
+    /// @custom:storage-definition erc7201:hopper.storage.vault
     /// @param underlying The address of the underlying asset.
     /// @param name The name of the vault and by extension the ERC20 token.
     /// @param symbol The symbol of the vault and by extension the ERC20 token.
@@ -62,16 +61,21 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
+    /// @custom:slot erc7201:hopper.storage.vault
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant vaultStorage = 0x0e6b3200a60a991c539f47dddaca04a18eb4bcf2b53906fb44751d827f001400;
 
-    function _getVaultStorage() internal pure returns (VaultStorage storage $) {
+    /// @notice Returns the storage struct of the vault.
+    /// @return _vaultStorage The storage struct of the vault.
+    function _getVaultStorage() internal pure returns (VaultStorage storage _vaultStorage) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
-            $.slot := vaultStorage
+            _vaultStorage.slot := vaultStorage
         }
     }
 
+    /// @notice Initializes the vault.
+    /// @param init The initialization parameters of the vault.
     function initialize(InitStruct memory init) public virtual initializer {
         __ERC4626_init(init.underlying);
         __ERC20_init(init.name, init.symbol);
@@ -115,12 +119,14 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         }
     }
 
+    /// @notice Reverts if the vault is not open.
     modifier onlyOpen() {
         State _state = _getVaultStorage().state;
         if (_state != State.Open) revert NotOpen(_state);
         _;
     }
 
+    /// @notice Reverts if the vault is not closing.
     modifier onlyClosing() {
         State _state = _getVaultStorage().state;
         if (_state != State.Closing) revert NotClosing(_state);
@@ -215,7 +221,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     }
 
     /// @dev Updates the totalAssets variable with the newTotalAssets variable.
-    /// @dev We set newTotalAssets to max to ensure that it is not called again.
     function _updateTotalAssets() internal whenNotPaused {
         VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
@@ -231,6 +236,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit TotalAssetsUpdated(newTotalAssets);
     }
 
+    /// @dev This function will deposit the pending assets of the pendingSilo.
+    /// and save the deposit parameters in the settleData.
     function _settleDeposit() internal {
         address _asset = asset();
         address _pendingSilo = pendingSilo();
@@ -265,7 +272,10 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit Deposit(_msgSender(), address(this), pendingAssets, shares);
     }
 
+    /// @notice Settles redeem requests, only callable by the safe.
     /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
+    /// @dev After updating totalAssets, it takes fees, updates highWaterMark and finally settles redeem requests.
+    /// @inheritdoc ERC7540Upgradeable
     function settleRedeem() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees(feeReceiver(), protocolFeeReceiver());
@@ -273,6 +283,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         _settleRedeem();
     }
 
+    /// @dev This function will redeem the pending shares of the pendingSilo.
+    /// and save the redeem parameters in the settleData.
     function _settleRedeem() internal {
         address _safe = safe();
         address _asset = asset();
@@ -312,11 +324,14 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     // MVP UPGRADE //
     /////////////////
 
+    /// @notice Initiates the closing of the vault. Can only be called by the owner.
     function initiateClosing() external onlyOwner onlyOpen {
         _getVaultStorage().state = State.Closing;
         emit StateUpdated(State.Closing);
     }
 
+    /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.
+    /// @dev Users can still requestDeposit but it can't be settled.
     function close() external onlySafe onlyClosing {
         VaultStorage storage $ = _getVaultStorage();
         uint256 _totalAssets = _getERC7540Storage().totalAssets;
@@ -376,7 +391,12 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         }
     }
 
-    /// @dev override ERC4626 synchronous withdraw; called when vault is closed
+    /// @dev override ERC4626 synchronous withdraw; called only when vault is closed
+    /// @param caller The address of the caller.
+    /// @param receiver The address of the receiver of the assets.
+    /// @param owner The address of the owner of the shares.
+    /// @param assets The amount of assets to withdraw.
+    /// @param shares The amount of shares to burn.
     function _withdraw(
         address caller,
         address receiver,
@@ -397,13 +417,14 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit Withdraw(caller, receiver, owner, assets, shares);
     }
 
+    /// @notice Returns the state of the vault. It can be Open, Closing, or Closed.
     function state() external view returns (State) {
         return _getVaultStorage().state;
     }
 
     /// @notice Halts core operations of the vault. Can only be called by the owner.
     /// @notice Core operations include deposit, redeem, withdraw, any type of request, settles deposit and redeem and
-    /// totalAssets update.
+    /// newTotalAssets update.
     function pause() public onlyOwner {
         _pause();
     }

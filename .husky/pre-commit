@@ -1,4 +1,4 @@
 forge fmt
-git add .
+git add -A
 forge test --rpc-url ***REMOVED***
 pnpm exec solhint 'src/**/*.sol'

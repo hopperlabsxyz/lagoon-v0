@@ -4,31 +4,40 @@ pragma solidity "0.8.26";
 import {WhitelistDisabled, WhitelistUpdated} from "./Events.sol";
 import {RolesUpgradeable} from "./Roles.sol";
 
-// import {console} from "forge-std/console.sol";
-
 contract WhitelistableUpgradeable is RolesUpgradeable {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))
+    /// @custom:storage-location erc7201:hopper.storage.Whitelistable
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant whitelistableStorage = 0x083cc98ab296d1a1f01854b5f7a2f47df4425a56ba7b35f7faa3a336067e4800;
 
-    /// @custom:storage-location erc7201:hopper.storage.Whitelistable
+    /// @custom:storage-definition erc7201:hopper.storage.Whitelistable
+    /// @param isWhitelisted The mapping of whitelisted addresses.
+    /// @param isActivated The flag to check if the whitelist is activated.
     struct WhitelistableStorage {
         mapping(address => bool) isWhitelisted;
         bool isActivated;
     }
 
-    function _getWhitelistableStorage() internal pure returns (WhitelistableStorage storage $) {
+    /// @dev Returns the storage struct of the whitelist.
+    /// @return _whitelistableStorage The storage struct of the whitelist.
+    function _getWhitelistableStorage() internal pure returns (WhitelistableStorage storage _whitelistableStorage) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
-            $.slot := whitelistableStorage
+            _whitelistableStorage.slot := whitelistableStorage
         }
     }
 
+    /// @dev Initializes the whitelist.
+    /// @param activate if the whitelist should be activated.
     // solhint-disable-next-line func-name-mixedcase
-    function __Whitelistable_init(bool isActivated) internal onlyInitializing {
-        _getWhitelistableStorage().isActivated = isActivated;
+    function __Whitelistable_init(bool activate) internal onlyInitializing {
+        if (activate) {
+            _getWhitelistableStorage().isActivated = true;
+        }
     }
 
+    /// @notice Returns if the whitelist is activated
+    /// @return True if the whitelist is activated, false otherwise
     function isWhitelistActivated() public view returns (bool) {
         return _getWhitelistableStorage().isActivated;
     }
@@ -64,18 +73,21 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
     }
 
     /// @notice Removes an account from the whitelist
+    /// @param account The address of the account to remove
     function revokeFromWhitelist(address account) external onlyWhitelistManager {
         _getWhitelistableStorage().isWhitelisted[account] = false;
         emit WhitelistUpdated(account, false);
     }
 
     /// @notice Removes multiple accounts from the whitelist
+    /// @param accounts The addresses of the accounts to remove
     function revokeFromWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         uint256 i = 0;
         for (; i < accounts.length;) {
             $.isWhitelisted[accounts[i]] = false;
             emit WhitelistUpdated(accounts[i], false);
+            // solhint-disable-next-line no-inline-assembly
             unchecked {
                 ++i;
             }

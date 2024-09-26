@@ -51,6 +51,20 @@ abstract contract ERC7540Upgradeable is
     ERC4626Upgradeable
 {
     /// @custom:storage-location erc7201:hopper.storage.ERC7540
+    /// @param totalAssets The total assets.
+    /// @param depositEpochId The current deposit epoch ID.
+    /// @param depositSettleId The current deposit settle ID.
+    /// @param lastDepositEpochIdSettled The last deposit epoch ID settled.
+    /// @param redeemEpochId The current redeem epoch ID.
+    /// @param redeemSettleId The current redeem settle ID.
+    /// @param lastRedeemEpochIdSettled The last redeem epoch ID settled.
+    /// @param epochs A mapping of epochs data.
+    /// @param settles A mapping of settle data.
+    /// @param lastDepositRequestId A mapping of the last deposit request ID for each user.
+    /// @param lastRedeemRequestId A mapping of the last redeem request ID for each user.
+    /// @param isOperator A mapping of operators for each user.
+    /// @param pendingSilo The pending silo.
+    /// @param wrappedNativeToken The wrapped native token. WETH9 for ethereum.
     struct ERC7540Storage {
         uint256 totalAssets;
         uint40 depositEpochId;
@@ -69,16 +83,22 @@ abstract contract ERC7540Upgradeable is
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
+    /// @custom:slot erc7201:hopper.storage.ERC7540
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant erc7540Storage = 0x5c74d456014b1c0eb4368d944667a568313858a3029a650ff0cb7b56f8b57a00;
 
-    function _getERC7540Storage() internal pure returns (ERC7540Storage storage $) {
+    /// @notice Returns the ERC7540 storage struct.
+    /// @return _erc7540Storage The ERC7540 storage struct.
+    function _getERC7540Storage() internal pure returns (ERC7540Storage storage _erc7540Storage) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
-            $.slot := erc7540Storage
+            _erc7540Storage.slot := erc7540Storage
         }
     }
 
+    /// @notice Initializes the ERC7540 contract.
+    /// @param underlying The underlying token.
+    /// @param wrappedNativeToken The wrapped native token.
     // solhint-disable-next-line func-name-mixedcase
     function __ERC7540_init(IERC20 underlying, address wrappedNativeToken) internal onlyInitializing {
         ERC7540Storage storage $ = _getERC7540Storage();
@@ -93,6 +113,8 @@ abstract contract ERC7540Upgradeable is
         $.wrappedNativeToken = IWETH9(wrappedNativeToken);
     }
 
+    /// @notice Make sure the caller is an operator or the controller.
+    /// @param controller The controller.
     modifier onlyOperator(address controller) {
         if (controller != _msgSender() && !isOperator(controller, _msgSender())) {
             revert ERC7540InvalidOperator();
@@ -101,6 +123,8 @@ abstract contract ERC7540Upgradeable is
     }
 
     // ## Overrides ##
+    /// @notice Returns the total assets.
+    /// @return The total assets.
     function totalAssets() public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
         return $.totalAssets;
@@ -212,6 +236,11 @@ abstract contract ERC7540Upgradeable is
         return _depositId;
     }
 
+    /// @notice Returns the amount of assets that are pending to be deposited for a controller. For a specific request
+    /// ID.
+    /// @param requestId The request ID.
+    /// @param controller The controller.
+    /// @return assets The assets that are waiting to be settled.
     function pendingDepositRequest(uint256 requestId, address controller) public view returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -221,7 +250,10 @@ abstract contract ERC7540Upgradeable is
         }
     }
 
-    // todo: Pass this function as external
+    /// @notice Returns the claimable deposit request for a controller for a specific request ID.
+    /// @param requestId The request ID.
+    /// @param controller The controller.
+    /// @return assets The assets that can be claimed.
     function claimableDepositRequest(uint256 requestId, address controller) public view returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -237,6 +269,10 @@ abstract contract ERC7540Upgradeable is
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @notice Claim the assets from the vault after a request has been settled.
+    /// @param assets The amount of assets requested to deposit.
+    /// @param receiver The receiver of the shares.
+    /// @return shares The corresponding shares.
     function deposit(
         uint256 assets,
         address receiver
@@ -245,6 +281,11 @@ abstract contract ERC7540Upgradeable is
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @notice Claim the assets from the vault after a request has been settled.
+    /// @param assets The assets to deposit.
+    /// @param receiver The receiver of the shares.
+    /// @param controller The controller, who owns the deposit request.
+    /// @return shares The corresponding shares.
     function deposit(
         uint256 assets,
         address receiver,
@@ -253,6 +294,11 @@ abstract contract ERC7540Upgradeable is
         return _deposit(assets, receiver, controller);
     }
 
+    /// @notice Claim the assets from the vault after a request has been settled.
+    /// @param assets The assets to deposit.
+    /// @param receiver The receiver of the shares.
+    /// @param controller The controller, who owns the deposit request.
+    /// @return shares The corresponding shares.
     function _deposit(uint256 assets, address receiver, address controller) internal virtual returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -278,6 +324,7 @@ abstract contract ERC7540Upgradeable is
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @notice Claim shares from the vault after a request deposit.
     function mint(
         uint256 shares,
         address receiver,
@@ -286,6 +333,11 @@ abstract contract ERC7540Upgradeable is
         return _mint(shares, receiver, controller);
     }
 
+    /// @notice Mint shares from the vault.
+    /// @param shares The shares to mint.
+    /// @param receiver The receiver of the shares.
+    /// @param controller The controller, who owns the mint request.
+    /// @return assets The corresponding assets.
     function _mint(uint256 shares, address receiver, address controller) internal virtual returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -302,7 +354,9 @@ abstract contract ERC7540Upgradeable is
         emit Deposit(controller, receiver, assets, shares);
     }
 
-    /// @dev Unusable when paused. Protected by whenNotPaused
+    /// @dev Unusable when paused. Protected by whenNotPaused.
+    /// @notice Cancel a deposit request.
+    /// @dev It can only be called in the same epoch.
     function cancelRequestDeposit() external whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
@@ -322,6 +376,11 @@ abstract contract ERC7540Upgradeable is
     // ## EIP7540 Redeem flow ##
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @notice Request redemption of shares from the vault.
+    /// @param shares The amount of shares to redeem.
+    /// @param controller The controller is the address that will manage the request.
+    /// @param owner The owner of the shares.
+    /// @return The request ID. It is the current redeem epoch ID.
     function requestRedeem(uint256 shares, address controller, address owner) public virtual returns (uint256) {
         if (_msgSender() != owner && !isOperator(owner, _msgSender())) {
             _spendAllowance(owner, _msgSender(), shares);
@@ -347,6 +406,10 @@ abstract contract ERC7540Upgradeable is
         return _redeemId;
     }
 
+    /// @notice Returns the pending redeem request for a controller.
+    /// @param requestId The request ID.
+    /// @param controller The controller.
+    /// @return shares The shares that are waiting to be settled.
     function pendingRedeemRequest(uint256 requestId, address controller) public view returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -358,6 +421,10 @@ abstract contract ERC7540Upgradeable is
         }
     }
 
+    /// @notice Returns the claimable redeem request for a controller for a specific request ID.
+    /// @param requestId The request ID.
+    /// @param controller The controller.
+    /// @return shares The shares that can be redeemed.
     function claimableRedeemRequest(uint256 requestId, address controller) public view returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -368,9 +435,33 @@ abstract contract ERC7540Upgradeable is
         }
     }
 
+    /// @notice Returns the maximum redeemable shares for a controller.
+    /// @param controller The controller.
+    /// @return The maximum redeemable shares.
     function maxRedeem(address controller) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         return claimableRedeemRequest(0, controller);
     }
+
+
+    /// @dev Unusable when paused. Protected by whenNotPaused in _redeem.
+    /// @notice Claim assets from the vault. After a request is made and settled.
+    /// @param shares The amount shares to convert into assets.
+    /// @param receiver The receiver of the assets.
+    /// @param controller The controller, who owns the redeem request.
+    /// @return assets The corresponding assets.
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address controller
+    ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        return _redeem(shares, receiver, controller);
+    }
+
+    /// @notice Redeem shares from the vault.
+    /// @param shares The shares to redeem.
+    /// @param receiver The receiver of the assets.
+    /// @param controller The controller, who owns the redeem request.
+    /// @return assets The corresponding assets.
 
     function _redeem(
         uint256 shares,
@@ -391,6 +482,21 @@ abstract contract ERC7540Upgradeable is
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
     }
 
+
+    /// @dev Unusable when paused. Protected by whenNotPaused in _withdraw.
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        return _withdraw(assets, receiver, controller);
+    }
+
+    /// @notice Withdraw assets from the vault.
+    /// @param assets The assets to withdraw.
+    /// @param receiver The receiver of the assets.
+    /// @param controller The controller, who owns the request.
+    /// @return shares The corresponding shares.
     function _withdraw(
         uint256 assets,
         address receiver,
@@ -411,10 +517,19 @@ abstract contract ERC7540Upgradeable is
     }
 
     // ## Conversion functions ##
+    /// @notice Converts assets to shares for a specific epoch.
+    /// @param assets The assets to convert.
+    /// @param requestId The request ID, which is equivalent to the epoch ID.
+    /// @return The corresponding shares.
     function convertToShares(uint256 assets, uint256 requestId) public view returns (uint256) {
         return _convertToShares(assets, uint40(requestId), Math.Rounding.Floor);
     }
 
+    /// @dev Converts assets to shares for a specific epoch.
+    /// @param assets The assets to convert.
+    /// @param requestId The request ID.
+    /// @param rounding The rounding method.
+    /// @return The corresponding shares.
     function _convertToShares(
         uint256 assets,
         uint40 requestId,
@@ -429,10 +544,18 @@ abstract contract ERC7540Upgradeable is
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
     }
 
+    /// @dev Converts shares to assets for a specific epoch.
+    /// @param shares The shares to convert.
+    /// @param requestId The request ID.
     function convertToAssets(uint256 shares, uint256 requestId) public view returns (uint256) {
         return _convertToAssets(shares, uint40(requestId), Math.Rounding.Floor);
     }
 
+    /// @notice Convert shares to assets for a specific epoch/request.
+    /// @param shares The shares to convert.
+    /// @param requestId The request ID at which the conversion should be done.
+    /// @param rounding The rounding method.
+    /// @return The corresponding assets.
     function _convertToAssets(
         uint256 shares,
         uint40 requestId,
@@ -461,5 +584,7 @@ abstract contract ERC7540Upgradeable is
 
     function settleDeposit() public virtual;
 
+    /// @dev Settles redeem requests by transferring assets from the safe to the vault
+    /// and burning the corresponding shares from the pending silo.
     function settleRedeem() public virtual;
 }
