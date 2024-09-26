@@ -1,8 +1,7 @@
-// SPDX-License-Identifier: MIT
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
 import {State} from "./Enums.sol";
 import {Closed, NewNAVMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
