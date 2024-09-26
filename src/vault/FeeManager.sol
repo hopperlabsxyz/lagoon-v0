@@ -23,7 +23,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     uint16 public constant MAX_PERFORMANCE_RATE = 5000; // 50 %
     uint16 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
 
-    /// @custom:storage-location erc7201:hopper.storage.FeeManager
+    /// @custom:storage-definition erc7201:hopper.storage.FeeManager
     /// @param newRatesTimestamp the timestamp at which the new rates will be applied
     /// @param lastFeeTime the timestamp of the last fee calculation, it is used to compute management fees
     /// @param highWaterMark the highest price per share ever reached, performance fees are taken when the price per
@@ -44,6 +44,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
     // solhint-disable-next-line const-name-snakecase
+    /// @custom:storage-location erc7201:hopper.storage.FeeManager
     bytes32 private constant feeManagerStorage = 0xa5292f7ccd85acc1b3080c01f5da9af7799f2c26826bd4d79081d6511780bd00;
 
     /// @notice Get the storage slot for the FeeManagerStorage struct

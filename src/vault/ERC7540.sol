@@ -325,7 +325,6 @@ abstract contract ERC7540Upgradeable is
         return _mint(shares, receiver, _msgSender());
     }
 
-
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
     /// @notice Claim shares from the vault after a request deposit.
     function mint(
@@ -377,7 +376,6 @@ abstract contract ERC7540Upgradeable is
     }
 
     // ## EIP7540 Redeem flow ##
-
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
     /// @notice Request redemption of shares from the vault.
@@ -585,5 +583,7 @@ abstract contract ERC7540Upgradeable is
 
     function settleDeposit() public virtual;
 
+    /// @dev Settles redeem requests by transferring assets from the safe to the vault
+    /// and burning the corresponding shares from the pending silo.
     function settleRedeem() public virtual;
 }
