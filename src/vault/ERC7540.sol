@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
+//SPDX-License-Identifier: MIT
 pragma solidity "0.8.26";
 
 import {Silo} from "./Silo.sol";
@@ -442,21 +442,6 @@ abstract contract ERC7540Upgradeable is
         return claimableRedeemRequest(0, controller);
     }
 
-
-    /// @dev Unusable when paused. Protected by whenNotPaused in _redeem.
-    /// @notice Claim assets from the vault. After a request is made and settled.
-    /// @param shares The amount shares to convert into assets.
-    /// @param receiver The receiver of the assets.
-    /// @param controller The controller, who owns the redeem request.
-    /// @return assets The corresponding assets.
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address controller
-    ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        return _redeem(shares, receiver, controller);
-    }
-
     /// @notice Redeem shares from the vault.
     /// @param shares The shares to redeem.
     /// @param receiver The receiver of the assets.
@@ -480,16 +465,6 @@ abstract contract ERC7540Upgradeable is
         IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
-    }
-
-
-    /// @dev Unusable when paused. Protected by whenNotPaused in _withdraw.
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        return _withdraw(assets, receiver, controller);
     }
 
     /// @notice Withdraw assets from the vault.

@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
 import {State} from "./Enums.sol";
 import {Closed, NewNAVMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
 import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./Events.sol";
-import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
+
 import {FeeManager} from "./FeeManager.sol";
 import {RolesUpgradeable} from "./Roles.sol";
 import {WhitelistableUpgradeable} from "./Whitelistable.sol";
+import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // import {console} from "forge-std/console.sol";
@@ -375,6 +377,11 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @dev Unusable when paused.
     /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
     /// @dev Second _withdraw path: whenNotPaused in ERC7540Upgradeable.
+    /// @notice Claim assets from the vault. After a request is made and settled.
+    /// @param shares The amount shares to convert into assets.
+    /// @param receiver The receiver of the assets.
+    /// @param controller The controller, who owns the redeem request.
+    /// @return assets The corresponding assets.
     function redeem(
         uint256 shares,
         address receiver,
