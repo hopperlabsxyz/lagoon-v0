@@ -91,4 +91,13 @@ contract TestMisc is BaseTest {
         assertTrue(vault.supportsInterface(0xe3bc4e65), "interface IERC7540 not supported");
         assertTrue(vault.supportsInterface(type(IERC165).interfaceId), "interface IERC165 not supported");
     }
+
+    function test_contractSize() public {
+        uint256 size;
+        address vaultAddr = address(new Vault());
+        assembly {
+            size := extcodesize(vaultAddr)
+        }
+        assertLt(size, 24_576, "Contract size is too large");
+    }
 }

@@ -4,7 +4,7 @@ pragma solidity "0.8.26";
 import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
 
 import {State} from "./Enums.sol";
-import {NewNAVMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
+import {Closed, NewNAVMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
 import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./Events.sol";
 
 import {FeeManager} from "./FeeManager.sol";
@@ -102,8 +102,12 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
             $whitelistStorage.isWhitelisted[protocolFeeReceiver()] = true;
             $whitelistStorage.isWhitelisted[init.safe] = true;
             $whitelistStorage.isWhitelisted[pendingSilo()] = true;
-            for (uint256 i = 0; i < init.whitelist.length; i++) {
+            uint256 i = 0;
+            for (; i < init.whitelist.length;) {
                 $whitelistStorage.isWhitelisted[init.whitelist[i]] = true;
+                unchecked {
+                    ++i;
+                }
             }
         }
     }
@@ -176,6 +180,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     function updateNewTotalAssets(uint256 _newTotalAssets) public onlyNAVManager whenNotPaused {
         VaultStorage storage $ = _getVaultStorage();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
+
+        if ($.state == State.Closed) revert Closed();
 
         $erc7540.epochs[$erc7540.depositEpochId].settleId = $erc7540.depositSettleId;
         $erc7540.epochs[$erc7540.redeemEpochId].settleId = $erc7540.redeemSettleId;

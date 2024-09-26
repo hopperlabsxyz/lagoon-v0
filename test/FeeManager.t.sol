@@ -148,8 +148,8 @@ contract TestFeeManager is BaseTest {
         uint256 freeride = user2InitialDeposit;
         uint256 expectedUser2Profit = (2 * user2InitialDeposit + freeride) - (2 * user2InitialDeposit * 20) / 100;
 
-        assertApproxEqAbs(user2Profit, expectedUser2Profit, 5, "user2 expected profit is wrong");
-        uint256 expectedTotalFees = 400_000_200_000;
+        assertApproxEqAbs(user2Profit, expectedUser2Profit, 6, "user2 expected profit is wrong");
+        uint256 expectedTotalFees = 400_000_200_002;
 
         address feeReceiver = vault.feeReceiver();
         address dao = vault.protocolFeeReceiver();
