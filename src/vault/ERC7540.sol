@@ -372,15 +372,6 @@ abstract contract ERC7540Upgradeable is
         return claimableRedeemRequest(0, controller);
     }
 
-    // /// @dev Unusable when paused. Protected by whenNotPaused in _redeem.
-    // function redeem(
-    //     uint256 shares,
-    //     address receiver,
-    //     address controller
-    // ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-    //     return _redeem(shares, receiver, controller);
-    // }
-
     function _redeem(
         uint256 shares,
         address receiver,
@@ -399,15 +390,6 @@ abstract contract ERC7540Upgradeable is
 
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
     }
-
-    // /// @dev Unusable when paused. Protected by whenNotPaused in _withdraw.
-    // function withdraw(
-    //     uint256 assets,
-    //     address receiver,
-    //     address controller
-    // ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-    //     return _withdraw(assets, receiver, controller);
-    // }
 
     function _withdraw(
         uint256 assets,
