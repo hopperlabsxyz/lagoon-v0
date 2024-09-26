@@ -147,18 +147,15 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     /// @dev Update the high water mark only if the new value is greater than the current one
     /// @dev The high water mark is the highest price per share ever reached
     /// @param _newHighWaterMark the new high water mark
-    /// @return the new high water mark
-    function _setHighWaterMark(uint256 _newHighWaterMark) internal returns (uint256) {
+    function _setHighWaterMark(uint256 _newHighWaterMark) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 _highWaterMark = $.highWaterMark;
 
         if (_newHighWaterMark > _highWaterMark) {
+            emit HighWaterMarkUpdated(_highWaterMark, _newHighWaterMark);
             $.highWaterMark = _newHighWaterMark;
-            return _newHighWaterMark;
         }
-        emit HighWaterMarkUpdated(_highWaterMark, _newHighWaterMark);
-        return _highWaterMark;
     }
 
     /// @dev Read the protocol rate from the fee registry
