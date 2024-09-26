@@ -19,7 +19,7 @@ forge script script/deploy_vault.s.sol \
   --chain-id $CHAIN_ID \
   --rpc-url $RPC_URL \
   --tc DeployVault \
-  --account defaultKey \ # put your account key here
+  --account defaultKey \
   --etherscan-api-key $ETHERSCAN_API_KEY \
   --verify
 
