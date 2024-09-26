@@ -16,11 +16,13 @@ contract TestMint is BaseTest {
 
     function test_mint() public {
         uint256 userBalance = assetBalance(user1.addr);
-        requestDeposit(userBalance, user1.addr);
+        uint256 requestId = requestDeposit(userBalance, user1.addr);
         updateAndSettle(0);
         assertEq(vault.maxDeposit(user1.addr), userBalance);
+
         uint256 claimableAssets = vault.claimableDepositRequest(0, user1.addr);
         uint256 assetsClaimed = mint(12, user1.addr);
+        assertEq(vault.convertToAssets(12, requestId), assetsClaimed);
         assertEq(12, vault.balanceOf(user1.addr));
         uint256 claimableAssetsAfter = vault.claimableDepositRequest(0, user1.addr);
         assertEq(claimableAssetsAfter + assetsClaimed, claimableAssets);

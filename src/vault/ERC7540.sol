@@ -4,7 +4,6 @@ pragma solidity "0.8.26";
 import {Silo} from "./Silo.sol";
 import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
 import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
-
 import {IWETH9} from "./interfaces/IWETH9.sol";
 import {
     ERC20Upgradeable,
@@ -14,7 +13,6 @@ import {
 import {ERC20PausableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -296,7 +294,7 @@ abstract contract ERC7540Upgradeable is
             revert RequestIdNotClaimable();
         }
 
-        assets = convertToAssets(shares, requestId);
+        assets = _convertToAssets(shares, requestId, Math.Rounding.Floor);
 
         $.epochs[requestId].depositRequest[controller] -= assets;
         _update(address(this), receiver, shares);
@@ -374,14 +372,14 @@ abstract contract ERC7540Upgradeable is
         return claimableRedeemRequest(0, controller);
     }
 
-    /// @dev Unusable when paused. Protected by whenNotPaused in _redeem.
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address controller
-    ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        return _redeem(shares, receiver, controller);
-    }
+    // /// @dev Unusable when paused. Protected by whenNotPaused in _redeem.
+    // function redeem(
+    //     uint256 shares,
+    //     address receiver,
+    //     address controller
+    // ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    //     return _redeem(shares, receiver, controller);
+    // }
 
     function _redeem(
         uint256 shares,
@@ -396,20 +394,20 @@ abstract contract ERC7540Upgradeable is
         }
 
         $.epochs[requestId].redeemRequest[controller] -= shares;
-        assets = convertToAssets(shares, requestId);
+        assets = _convertToAssets(shares, requestId, Math.Rounding.Floor);
         IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Withdraw(_msgSender(), receiver, controller, assets, shares);
     }
 
-    /// @dev Unusable when paused. Protected by whenNotPaused in _withdraw.
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        return _withdraw(assets, receiver, controller);
-    }
+    // /// @dev Unusable when paused. Protected by whenNotPaused in _withdraw.
+    // function withdraw(
+    //     uint256 assets,
+    //     address receiver,
+    //     address controller
+    // ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    //     return _withdraw(assets, receiver, controller);
+    // }
 
     function _withdraw(
         uint256 assets,

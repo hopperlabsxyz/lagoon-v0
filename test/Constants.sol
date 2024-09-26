@@ -39,7 +39,7 @@ abstract contract Constants is Test {
     uint256 rateUpdateCooldown = 1 days;
 
     //Underlying
-    ERC20 immutable underlying = ERC20(vm.envAddress(string.concat(underlyingName, "_", network)));
+    ERC20 underlying = ERC20(vm.envAddress(string.concat(underlyingName, "_", network)));
     ERC20Permit immutable underlyingPermit;
 
     // Users
