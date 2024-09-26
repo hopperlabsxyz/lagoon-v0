@@ -176,7 +176,7 @@ abstract contract ERC7540Upgradeable is
 
     // ## EIP7540 Deposit Flow ##
 
-    /// @dev should not be usable when contract is paused. Since it is overriden, we don't need to add the modifier
+    /// @dev Unusable when paused. Modifier not needed as it's overridden.
     function requestDeposit(
         uint256 assets,
         address controller,
@@ -238,8 +238,7 @@ abstract contract ERC7540Upgradeable is
         return claimableDepositRequest(0, controller);
     }
 
-    /// @dev should not be usable when contract is paused. Protected thanks to _update function of
-    /// ERC20PausableUpgradeable
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
     function deposit(
         uint256 assets,
         address receiver
@@ -247,8 +246,7 @@ abstract contract ERC7540Upgradeable is
         return _deposit(assets, receiver, _msgSender());
     }
 
-    /// @dev should not be usable when contract is paused. Protected thanks to _update function of
-    /// ERC20PausableUpgradeable
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
     function deposit(
         uint256 assets,
         address receiver,
@@ -273,8 +271,7 @@ abstract contract ERC7540Upgradeable is
         emit Deposit(controller, receiver, assets, shares);
     }
 
-    /// @dev should not be usable when contract is paused. Protected thanks to _update function of
-    /// ERC20PausableUpgradeable
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
     function mint(
         uint256 shares,
         address receiver
@@ -282,8 +279,7 @@ abstract contract ERC7540Upgradeable is
         return _mint(shares, receiver, _msgSender());
     }
 
-    /// @dev should not be usable when contract is paused. Protected thanks to _update function of
-    /// ERC20PausableUpgradeable
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
     function mint(
         uint256 shares,
         address receiver,
@@ -308,7 +304,7 @@ abstract contract ERC7540Upgradeable is
         emit Deposit(controller, receiver, assets, shares);
     }
 
-    /// @dev should not be usable when contract is paused. Protected thanks to whenNotPaused modifier
+    /// @dev should not be usable when contract is paused. Protected by whenNotPaused
     function cancelRequestDeposit() external whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
         address msgSender = _msgSender();
@@ -327,8 +323,7 @@ abstract contract ERC7540Upgradeable is
 
     // ## EIP7540 Redeem flow ##
 
-    /// @dev should not be usable when contract is paused. Protected thanks to _update function of
-    /// ERC20PausableUpgradeable
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
     function requestRedeem(uint256 shares, address controller, address owner) public virtual returns (uint256) {
         if (_msgSender() != owner && !isOperator(owner, _msgSender())) {
             _spendAllowance(owner, _msgSender(), shares);
@@ -379,7 +374,7 @@ abstract contract ERC7540Upgradeable is
         return claimableRedeemRequest(0, controller);
     }
 
-    /// @dev should not be usable when contract is paused. Protected thanks whenNotPaused modifier in _redeem
+    /// @dev Unusable when paused. Protected by whenNotPaused in _redeem.
     function redeem(
         uint256 shares,
         address receiver,

@@ -194,7 +194,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
     /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
     /// If possible, it also settles redeem requests.
-    /// @dev should not be usable when contract is paused, protected by whenNotPaused of _updateTotalAssets
+    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
     function settleDeposit() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees(feeReceiver(), protocolFeeReceiver());
@@ -256,7 +256,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit Deposit(_msgSender(), address(this), pendingAssets, shares);
     }
 
-    /// @dev should not be usable when contract is paused. Protected by whenNotPaused of _updateTotalAssets
+    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
     function settleRedeem() public override onlySafe onlyOpen {
         _updateTotalAssets();
         _takeFees(feeReceiver(), protocolFeeReceiver());
