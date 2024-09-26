@@ -203,6 +203,9 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         uint256 totalShares = totalFees.mulDiv(_totalSupply + 1, (totalAssets() - totalFees) + 1, Math.Rounding.Ceil);
         // since we are minting shares without actually increasing the totalAssets,
         //we need to compensate the future dilution of price per share.
+        uint256 totalShares = totalFees.mulDiv(
+            _totalSupply + 10 ** _decimalsOffset(), (totalAssets() - totalFees) + 1, Math.Rounding.Ceil
+        );
 
         protocolShares = totalShares.mulDiv(_protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
         managerShares = totalShares - protocolShares;

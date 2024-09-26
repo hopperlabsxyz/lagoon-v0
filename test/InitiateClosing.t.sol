@@ -5,7 +5,7 @@ import {BaseTest} from "./Base.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC7540InvalidOperator} from "@src/vault/ERC7540.sol";
-import {NotClosing, NotEnoughLiquidity, NotOpen, State, Vault} from "@src/vault/Vault.sol";
+import {Closed, NotClosing, NotEnoughLiquidity, NotOpen, State, Vault} from "@src/vault/Vault.sol";
 import "forge-std/Test.sol";
 
 contract TestInitiateClosing is BaseTest {
@@ -379,5 +379,15 @@ contract TestInitiateClosing is BaseTest {
         vm.prank(user4.addr);
         uint256 amount5 = vault.redeem(assetsClaimable / 4, user2.addr, user2.addr);
         assertEq(amount5, assetsClaimable / 4, "amount5 is wrong");
+    }
+
+    function test_cantUpdateNewTotalAssetsWhenClosed() public {
+        vm.prank(safe.addr);
+        vault.close();
+
+        vm.startPrank(vault.navManager());
+        uint256 totalAssets = vault.totalAssets();
+        vm.expectRevert(abi.encodeWithSelector(Closed.selector));
+        vault.updateNewTotalAssets(totalAssets);
     }
 }
