@@ -200,6 +200,9 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
         uint256 totalFees = managementFees + performanceFees;
 
+        // since we are minting shares without actually increasing the totalAssets,
+        // we need to compensate the future dilution of price per share by virtually decreasing totalAssets
+        // in our computation
         uint256 totalShares = totalFees.mulDiv(
             _totalSupply + 10 ** _decimalsOffset(), (totalAssets() - totalFees) + 1, Math.Rounding.Ceil
         );
@@ -217,8 +220,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
         uint256 annualRate,
         uint256 timeElapsed
     ) internal pure returns (uint256 managementFee) {
-        uint256 annualFee = assets.mulDiv(annualRate, BPS_DIVIDER);
-        managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR);
+        uint256 annualFee = assets.mulDiv(annualRate, BPS_DIVIDER, Math.Rounding.Ceil);
+        managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR, Math.Rounding.Ceil);
     }
 
     /// @dev Calculate the performance fee
@@ -236,8 +239,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
             unchecked {
                 profitPerShare = _pricePerShare - _highWaterMark;
             }
-            uint256 profit = profitPerShare.mulDiv(_totalSupply, 10 ** _decimals);
-            performanceFee = profit.mulDiv(_rate, BPS_DIVIDER);
+            uint256 profit = profitPerShare.mulDiv(_totalSupply, 10 ** _decimals, Math.Rounding.Ceil);
+            performanceFee = profit.mulDiv(_rate, BPS_DIVIDER, Math.Rounding.Ceil);
         }
     }
 }
