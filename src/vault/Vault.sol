@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import {ERC7540Upgradeable, SettleData} from "./ERC7540.sol";
+import {ERC7540Upgradeable} from "./ERC7540.sol";
 import {State} from "./Enums.sol";
 import {Closed, NewNAVMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
 import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./Events.sol";
@@ -212,13 +212,26 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// If possible, it also settles redeem requests.
     /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
     function settleDeposit() public override onlySafe onlyOpen {
+        address _safe = safe();
+
         _updateTotalAssets();
         _takeFees(feeReceiver(), protocolFeeReceiver());
         _setHighWaterMark(
             _convertToAssets(10 ** decimals(), Math.Rounding.Floor) // this is the price per share
         );
-        _settleDeposit();
-        _settleRedeem(); // if it is possible to settleRedeem, we should do so
+        _settleDeposit(_safe);
+        _settleRedeem(_safe); // if it is possible to settleRedeem, we should do so
+    }
+
+    /// @notice Settles redeem requests, only callable by the safe.
+    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
+    /// @dev After updating totalAssets, it takes fees, updates highWaterMark and finally settles redeem requests.
+    /// @inheritdoc ERC7540Upgradeable
+    function settleRedeem() public override onlySafe onlyOpen {
+        _updateTotalAssets();
+        _takeFees(feeReceiver(), protocolFeeReceiver());
+        _setHighWaterMark(_convertToAssets(10 ** decimals(), Math.Rounding.Floor));
+        _settleRedeem(safe());
     }
 
     /// @dev Updates the totalAssets variable with the newTotalAssets variable.
@@ -237,90 +250,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         emit TotalAssetsUpdated(newTotalAssets);
     }
 
-    /// @dev This function will deposit the pending assets of the pendingSilo.
-    /// and save the deposit parameters in the settleData.
-    function _settleDeposit() internal {
-        address _asset = asset();
-        address _pendingSilo = pendingSilo();
-
-        uint256 pendingAssets = IERC20(_asset).balanceOf(_pendingSilo);
-        if (pendingAssets == 0) return;
-
-        uint256 shares = _convertToShares(pendingAssets, Math.Rounding.Floor);
-
-        // Then save the deposit parameters
-        ERC7540Storage storage $erc7540 = _getERC7540Storage();
-
-        uint256 _totalAssets = totalAssets();
-        uint40 depositSettleId = $erc7540.depositSettleId;
-
-        SettleData storage settleData = $erc7540.settles[depositSettleId];
-
-        settleData.totalAssets = _totalAssets;
-        settleData.totalSupply = totalSupply();
-        _mint(address(this), shares);
-
-        _totalAssets += pendingAssets;
-
-        $erc7540.totalAssets = _totalAssets;
-
-        $erc7540.depositSettleId = depositSettleId + 2;
-        $erc7540.lastDepositEpochIdSettled = $erc7540.depositEpochId - 2;
-
-        IERC20(_asset).safeTransferFrom(_pendingSilo, safe(), pendingAssets);
-
-        // change this event maybe
-        emit Deposit(_msgSender(), address(this), pendingAssets, shares);
-    }
-
-    /// @notice Settles redeem requests, only callable by the safe.
-    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
-    /// @dev After updating totalAssets, it takes fees, updates highWaterMark and finally settles redeem requests.
-    /// @inheritdoc ERC7540Upgradeable
-    function settleRedeem() public override onlySafe onlyOpen {
-        _updateTotalAssets();
-        _takeFees(feeReceiver(), protocolFeeReceiver());
-        _setHighWaterMark(_convertToAssets(10 ** decimals(), Math.Rounding.Floor));
-        _settleRedeem();
-    }
-
-    /// @dev This function will redeem the pending shares of the pendingSilo.
-    /// and save the redeem parameters in the settleData.
-    function _settleRedeem() internal {
-        address _safe = safe();
-        address _asset = asset();
-        address _pendingSilo = pendingSilo();
-
-        uint256 pendingShares = balanceOf(_pendingSilo);
-        uint256 assetsToWithdraw = _convertToAssets(pendingShares, Math.Rounding.Floor);
-
-        uint256 assetsInTheSafe = IERC20(_asset).balanceOf(_safe);
-        if (assetsToWithdraw == 0 || assetsToWithdraw > assetsInTheSafe) return;
-
-        ERC7540Storage storage $erc7540 = _getERC7540Storage();
-
-        uint256 _totalAssets = totalAssets();
-        uint40 redeemSettleId = $erc7540.redeemSettleId;
-
-        SettleData storage settleData = $erc7540.settles[redeemSettleId];
-
-        settleData.totalAssets = _totalAssets;
-        settleData.totalSupply = totalSupply();
-
-        _burn(_pendingSilo, pendingShares);
-
-        _totalAssets -= assetsToWithdraw;
-        $erc7540.totalAssets = _totalAssets;
-
-        $erc7540.redeemSettleId = redeemSettleId + 2;
-        $erc7540.lastRedeemEpochIdSettled = $erc7540.redeemEpochId - 2;
-
-        IERC20(_asset).safeTransferFrom(_safe, address(this), assetsToWithdraw);
-
-        // change this event maybe
-        emit Withdraw(_msgSender(), address(this), _pendingSilo, assetsToWithdraw, pendingShares);
-    }
-
     /////////////////
     // MVP UPGRADE //
     /////////////////
@@ -336,14 +265,13 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     function close() external onlySafe onlyClosing {
         VaultStorage storage $ = _getVaultStorage();
         uint256 _totalAssets = _getERC7540Storage().totalAssets;
-
+        address _safe = safe();
         _updateTotalAssets();
         _takeFees(feeReceiver(), protocolFeeReceiver());
 
-        _settleDeposit();
-        _settleRedeem();
+        _settleDeposit(_safe);
+        _settleRedeem(_safe);
 
-        address _safe = safe();
         uint256 safeBalance = IERC20(asset()).balanceOf(_safe);
 
         if (_totalAssets > safeBalance) {
