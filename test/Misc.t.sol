@@ -98,6 +98,7 @@ contract TestMisc is BaseTest {
         assembly {
             size := extcodesize(vaultAddr)
         }
+        console.log("Vault size: %d", size);
         assertLt(size, 24_576, "Contract size is too large");
     }
 }
