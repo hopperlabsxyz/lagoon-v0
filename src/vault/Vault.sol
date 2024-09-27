@@ -14,6 +14,8 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+
 // import {console} from "forge-std/console.sol";
 
 using SafeERC20 for IERC20;
@@ -91,13 +93,14 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
                 whitelistManager: init.whitelistManager,
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
-                feeRegistry: init.feeRegistry,
+                feeRegistry: FeeRegistry(init.feeRegistry),
                 navManager: init.navManager
             })
         );
         __Ownable_init(init.admin); // initial vault owner
 
         VaultStorage storage $ = _getVaultStorage();
+        RolesStorage storage $roles = _getRolesStorage();
 
         $.newTotalAssets = type(uint256).max;
 
@@ -107,7 +110,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         if (init.enableWhitelist) {
             WhitelistableStorage storage $whitelistStorage = _getWhitelistableStorage();
             $whitelistStorage.isWhitelisted[init.feeReceiver] = true;
-            $whitelistStorage.isWhitelisted[protocolFeeReceiver()] = true;
+            $whitelistStorage.isWhitelisted[$roles.feeRegistry.protocolFeeReceiver()] = true;
             $whitelistStorage.isWhitelisted[init.safe] = true;
             $whitelistStorage.isWhitelisted[pendingSilo()] = true;
             uint256 i = 0;
@@ -212,8 +215,10 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// If possible, it also settles redeem requests.
     /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
     function settleDeposit() public override onlySafe onlyOpen {
+        RolesStorage storage $roles = _getRolesStorage();
+
         _updateTotalAssets();
-        _takeFees(feeReceiver(), protocolFeeReceiver());
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
         _setHighWaterMark(
             _convertToAssets(10 ** decimals(), Math.Rounding.Floor) // this is the price per share
         );
@@ -226,8 +231,10 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @dev After updating totalAssets, it takes fees, updates highWaterMark and finally settles redeem requests.
     /// @inheritdoc ERC7540Upgradeable
     function settleRedeem() public override onlySafe onlyOpen {
+        RolesStorage storage $roles = _getRolesStorage();
+
         _updateTotalAssets();
-        _takeFees(feeReceiver(), protocolFeeReceiver());
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
         _setHighWaterMark(_convertToAssets(10 ** decimals(), Math.Rounding.Floor));
         _settleRedeem(msg.sender);
     }
@@ -261,8 +268,9 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.
     /// @dev Users can still requestDeposit but it can't be settled.
     function close() external onlySafe onlyClosing {
+        RolesStorage storage $roles = _getRolesStorage();
         _updateTotalAssets();
-        _takeFees(feeReceiver(), protocolFeeReceiver());
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
 
         _settleDeposit(msg.sender);
         _settleRedeem(msg.sender);
