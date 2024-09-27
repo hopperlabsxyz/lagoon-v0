@@ -5,7 +5,7 @@ import {BaseTest} from "./Base.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC7540InvalidOperator} from "@src/vault/ERC7540.sol";
-import {Closed, NotClosing, NotEnoughLiquidity, NotOpen, State, Vault} from "@src/vault/Vault.sol";
+import {Closed, NotClosing, NotOpen, State, Vault} from "@src/vault/Vault.sol";
 import "forge-std/Test.sol";
 
 contract TestInitiateClosing is BaseTest {
@@ -183,11 +183,8 @@ contract TestInitiateClosing is BaseTest {
 
         assertEq(asset.balanceOf(safe.addr), 1);
         assertEq(vault.totalAssets(), 75_000 * 10 ** vault.underlyingDecimals());
-
-        uint256 currentLiquidity = asset.balanceOf(safe.addr);
-        uint256 expectedLiquidity = 75_000 * 10 ** vault.underlyingDecimals();
         vm.prank(safe.addr);
-        vm.expectRevert(abi.encodeWithSelector(NotEnoughLiquidity.selector, currentLiquidity, expectedLiquidity));
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
         vault.close();
 
         assertEq(asset.balanceOf(safe.addr), 1);

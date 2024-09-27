@@ -19,11 +19,6 @@ error Closed();
 /// @notice Indicates that a new NAV was not provided.
 error NewNAVMissing();
 
-/// @notice Indicates insufficient liquidity for the closing of the vault.
-/// @param currentLiquidity The current liquidity available.
-/// @param expectedLiquidity The expected liquidity.
-error NotEnoughLiquidity(uint256 currentLiquidity, uint256 expectedLiquidity);
-
 // ********************* ERC7540 ********************* //
 
 /// @notice Indicates that preview deposit is disabled.

@@ -3,7 +3,7 @@ pragma solidity "0.8.26";
 
 import {ERC7540Upgradeable} from "./ERC7540.sol";
 import {State} from "./Enums.sol";
-import {Closed, NewNAVMissing, NotClosing, NotEnoughLiquidity, NotOpen, NotWhitelisted} from "./Errors.sol";
+import {Closed, NewNAVMissing, NotClosing, NotOpen, NotWhitelisted} from "./Errors.sol";
 import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./Events.sol";
 
 import {FeeManager} from "./FeeManager.sol";
@@ -212,15 +212,13 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// If possible, it also settles redeem requests.
     /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
     function settleDeposit() public override onlySafe onlyOpen {
-        address _safe = safe();
-
         _updateTotalAssets();
         _takeFees(feeReceiver(), protocolFeeReceiver());
         _setHighWaterMark(
             _convertToAssets(10 ** decimals(), Math.Rounding.Floor) // this is the price per share
         );
-        _settleDeposit(_safe);
-        _settleRedeem(_safe); // if it is possible to settleRedeem, we should do so
+        _settleDeposit(msg.sender);
+        _settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
 
     /// @notice Settles redeem requests, only callable by the safe.
@@ -231,7 +229,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         _updateTotalAssets();
         _takeFees(feeReceiver(), protocolFeeReceiver());
         _setHighWaterMark(_convertToAssets(10 ** decimals(), Math.Rounding.Floor));
-        _settleRedeem(safe());
+        _settleRedeem(msg.sender);
     }
 
     /// @dev Updates the totalAssets variable with the newTotalAssets variable.
@@ -263,24 +261,15 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.
     /// @dev Users can still requestDeposit but it can't be settled.
     function close() external onlySafe onlyClosing {
-        VaultStorage storage $ = _getVaultStorage();
-        uint256 _totalAssets = _getERC7540Storage().totalAssets;
-        address _safe = safe();
         _updateTotalAssets();
         _takeFees(feeReceiver(), protocolFeeReceiver());
 
-        _settleDeposit(_safe);
-        _settleRedeem(_safe);
+        _settleDeposit(msg.sender);
+        _settleRedeem(msg.sender);
 
-        uint256 safeBalance = IERC20(asset()).balanceOf(_safe);
+        IERC20(asset()).safeTransferFrom(msg.sender, address(this), _getERC7540Storage().totalAssets);
 
-        if (_totalAssets > safeBalance) {
-            revert NotEnoughLiquidity(safeBalance, _totalAssets);
-        }
-
-        $.state = State.Closed;
-
-        IERC20(asset()).safeTransferFrom(_safe, address(this), safeBalance);
+        _getVaultStorage().state = State.Closed;
         emit StateUpdated(State.Closed);
     }
 
