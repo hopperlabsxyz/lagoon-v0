@@ -65,4 +65,17 @@ contract VaultHelper is Vault {
     function pendingRedeem() public view returns (uint256) {
         return balanceOf(pendingSilo());
     }
+
+    function redeemEpochId() public view returns (uint256) {
+        return _getERC7540Storage().redeemEpochId;
+    }
+
+    function depositEpochId() public view returns (uint256) {
+        return _getERC7540Storage().depositEpochId;
+    }
+
+    /// @notice Returns the state of the vault. It can be Open, Closing, or Closed.
+    function state() external view returns (State) {
+        return _getVaultStorage().state;
+    }
 }

@@ -31,7 +31,7 @@ contract TestRequestRedeem is BaseTest {
         uint256 userBalance = balance(user1.addr);
         requestRedeem(userBalance / 2, user1.addr);
         requestRedeem(userBalance / 2, user1.addr);
-        assertEq(vault.pendingRedeemRequest(vault.redeemId(), user1.addr), userBalance);
+        assertEq(vault.pendingRedeemRequest(vault.redeemEpochId(), user1.addr), userBalance);
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
     }
 

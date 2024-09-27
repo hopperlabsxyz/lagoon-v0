@@ -48,8 +48,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         address wrappedNativeToken;
         uint16 managementRate;
         uint16 performanceRate;
-        uint256 rateUpdateCooldown;
         bool enableWhitelist;
+        uint256 rateUpdateCooldown;
         address[] whitelist;
     }
 
@@ -338,11 +338,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Withdraw(caller, receiver, owner, assets, shares);
-    }
-
-    /// @notice Returns the state of the vault. It can be Open, Closing, or Closed.
-    function state() external view returns (State) {
-        return _getVaultStorage().state;
     }
 
     /// @notice Halts core operations of the vault. Can only be called by the owner.
