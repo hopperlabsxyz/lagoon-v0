@@ -627,10 +627,6 @@ abstract contract ERC7540Upgradeable is
         return address(_getERC7540Storage().pendingSilo);
     }
 
-    function settles(uint40 id) public view returns (SettleData memory) {
-        return _getERC7540Storage().settles[id];
-    }
-
     function epochSettleId(uint40 epochId) public view returns (uint40) {
         return _getERC7540Storage().epochs[epochId].settleId;
     }
