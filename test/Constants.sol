@@ -95,33 +95,7 @@ abstract contract Constants is Test {
         return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner));
     }
 
-    function _proxyDeploy(
-        UpgradeableBeacon beacon,
-        ERC20 _underlying,
-        string memory _vaultName,
-        string memory _vaultSymbol,
-        uint16 _managementRate,
-        uint16 _performanceRate,
-        address[] memory whitelist
-    ) internal returns (VaultHelper) {
-        Vault.InitStruct memory v = Vault.InitStruct({
-            underlying: _underlying,
-            name: _vaultName,
-            symbol: _vaultSymbol,
-            safe: safe.addr,
-            whitelistManager: whitelistManager.addr,
-            navManager: navManager.addr,
-            admin: admin.addr,
-            feeReceiver: feeReceiver.addr,
-            feeRegistry: address(feeRegistry),
-            managementRate: _managementRate,
-            performanceRate: _performanceRate,
-            wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
-            enableWhitelist: enableWhitelist,
-            rateUpdateCooldown: rateUpdateCooldown,
-            whitelist: whitelist
-        });
-
+    function _proxyDeploy(UpgradeableBeacon beacon, Vault.InitStruct memory v) internal returns (VaultHelper) {
         BeaconProxy proxy =
             BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault.initialize, v))));
 
@@ -134,40 +108,45 @@ abstract contract Constants is Test {
         feeRegistry = new FeeRegistry();
         feeRegistry.initialize(dao.addr, dao.addr);
 
-        address[] memory whitelist = new address[](0);
-
         vm.prank(dao.addr);
         feeRegistry.updateDefaultRate(_protocolRate);
 
         UpgradeableBeacon beacon;
+        Vault.InitStruct memory v = Vault.InitStruct({
+            underlying: underlying,
+            name: vaultName,
+            symbol: vaultSymbol,
+            safe: safe.addr,
+            whitelistManager: whitelistManager.addr,
+            navManager: navManager.addr,
+            admin: admin.addr,
+            feeReceiver: feeReceiver.addr,
+            feeRegistry: address(feeRegistry),
+            managementRate: _managementRate,
+            performanceRate: _performanceRate,
+            wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
+            rateUpdateCooldown: rateUpdateCooldown,
+            enableWhitelist: enableWhitelist
+        });
         if (proxy) {
             beacon = _beaconDeploy("Vault.sol", owner.addr);
-            vault =
-                _proxyDeploy(beacon, underlying, vaultName, vaultSymbol, _managementRate, _performanceRate, whitelist);
+            vault = _proxyDeploy(beacon, v);
         } else {
             vm.startPrank(owner.addr);
 
             vault = new VaultHelper(false);
 
-            Vault.InitStruct memory v = Vault.InitStruct({
-                underlying: underlying,
-                name: vaultName,
-                symbol: vaultSymbol,
-                safe: safe.addr,
-                whitelistManager: whitelistManager.addr,
-                navManager: navManager.addr,
-                admin: admin.addr,
-                feeReceiver: feeReceiver.addr,
-                feeRegistry: address(feeRegistry),
-                managementRate: _managementRate,
-                performanceRate: _performanceRate,
-                wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
-                rateUpdateCooldown: rateUpdateCooldown,
-                enableWhitelist: enableWhitelist,
-                whitelist: whitelistInit
-            });
             vault.initialize(v);
             vm.stopPrank();
+        }
+        if (enableWhitelist) {
+            whitelistInit.push(feeReceiver.addr);
+            whitelistInit.push(dao.addr);
+            whitelistInit.push(safe.addr);
+            whitelistInit.push(vault.pendingSilo());
+            whitelistInit.push(address(feeRegistry));
+            vm.prank(whitelistManager.addr);
+            vault.addToWhitelist(whitelistInit);
         }
 
         // console.log(feeReceiver.addr);

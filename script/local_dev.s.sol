@@ -31,8 +31,6 @@ contract LocalDeploy is Script {
 
     IERC20 underlying = IERC20(USDC_MAINNET);
 
-    address[] whitelist = [USER0, USER1, USER2, USER3];
-
     address admin = DAO;
     address whitelistManager = DAO;
     address navManager = DAO;
@@ -66,8 +64,7 @@ contract LocalDeploy is Script {
             performanceRate: _performanceRate,
             wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
             enableWhitelist: enableWhitelist,
-            rateUpdateCooldown: 1 days,
-            whitelist: whitelist
+            rateUpdateCooldown: 1 days
         });
 
         TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(

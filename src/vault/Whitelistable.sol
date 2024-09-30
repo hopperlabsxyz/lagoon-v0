@@ -30,9 +30,11 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
     /// @dev Initializes the whitelist.
     /// @param activate if the whitelist should be activated.
     // solhint-disable-next-line func-name-mixedcase
-    function __Whitelistable_init(bool activate) internal onlyInitializing {
+    function __Whitelistable_init(bool activate, address protocolFeeReceiver) internal onlyInitializing {
         if (activate) {
-            _getWhitelistableStorage().isActivated = true;
+            WhitelistableStorage storage $ = _getWhitelistableStorage();
+            $.isActivated = true;
+            $.isWhitelisted[protocolFeeReceiver] = true;
         }
     }
 

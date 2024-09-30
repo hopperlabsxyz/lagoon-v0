@@ -24,10 +24,10 @@ contract TestWithdraw is BaseTest {
         assertEq(sharesObtained, userBalance);
         requestRedeem(sharesObtained, user1.addr);
 
-        assertEq(vault.claimableRedeemRequest(vault.redeemId(), user1.addr), 0);
+        assertEq(vault.claimableRedeemRequest(vault.redeemEpochId(), user1.addr), 0);
         updateAndSettle(userBalance + 100);
         assertEq(vault.maxRedeem(user1.addr), sharesObtained, "user1 should be able to redeem all his shares");
-        uint256 assetsToWithdraw = vault.convertToAssets(sharesObtained, vault.redeemId() - 2);
+        uint256 assetsToWithdraw = vault.convertToAssets(sharesObtained, vault.redeemEpochId() - 2);
 
         uint256 sharesTaken = withdraw(assetsToWithdraw, user1.addr);
         assertEq(assetsToWithdraw, assetBalance(user1.addr), "assetsToWithdraw should be equal to assetBalance");
@@ -38,8 +38,10 @@ contract TestWithdraw is BaseTest {
             "sharesObtained - sharesTaken should be equal to balanceOf"
         );
         assertEq(vault.maxWithdraw(user1.addr), 0, "maxWithdraw should be 0");
-        assertEq(vault.redeemId(), 4, "redeemId should be 4");
-        assertEq(vault.claimableRedeemRequest(vault.redeemId(), user1.addr), 0, "claimableRedeemRequest should be 0");
+        assertEq(vault.redeemEpochId(), 4, "redeemId should be 4");
+        assertEq(
+            vault.claimableRedeemRequest(vault.redeemEpochId(), user1.addr), 0, "claimableRedeemRequest should be 0"
+        );
     }
 
     function test_withdraw_revertIfRequestIdNotClaimable() public {
@@ -52,8 +54,8 @@ contract TestWithdraw is BaseTest {
         assertEq(sharesObtained, userBalance);
         requestRedeem(sharesObtained, user1.addr);
 
-        assertEq(vault.claimableRedeemRequest(vault.redeemId(), user1.addr), 0);
-        uint256 assetsToWithdraw = vault.convertToAssets(sharesObtained, vault.redeemId());
+        assertEq(vault.claimableRedeemRequest(vault.redeemEpochId(), user1.addr), 0);
+        uint256 assetsToWithdraw = vault.convertToAssets(sharesObtained, vault.redeemEpochId());
 
         vm.prank(user1.addr);
         vm.expectRevert(RequestIdNotClaimable.selector);

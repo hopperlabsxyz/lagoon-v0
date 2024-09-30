@@ -53,8 +53,7 @@ contract testRateUpdates is BaseTest {
             performanceRate: performanceRate,
             wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
             rateUpdateCooldown: rateUpdateCooldown,
-            enableWhitelist: enableWhitelist,
-            whitelist: whitelistInit
+            enableWhitelist: enableWhitelist
         });
         vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
 

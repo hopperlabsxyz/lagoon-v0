@@ -22,15 +22,15 @@ contract TestRedeem is BaseTest {
         assertEq(shares, vault.balanceOf(user1.addr));
         assertEq(shares, userBalance);
         requestRedeem(shares, user1.addr);
-        assertEq(vault.claimableRedeemRequest(vault.redeemId(), user1.addr), 0);
+        assertEq(vault.claimableRedeemRequest(vault.redeemEpochId(), user1.addr), 0);
 
         updateAndSettle(userBalance + 100);
         assertEq(vault.maxRedeem(user1.addr), shares);
         uint256 assets = redeem(shares, user1.addr);
         assertEq(assets, assetBalance(user1.addr));
         assertEq(vault.maxRedeem(user1.addr), 0);
-        assertEq(vault.redeemId(), 4);
-        assertEq(vault.claimableRedeemRequest(vault.redeemId(), user1.addr), 0);
+        assertEq(vault.redeemEpochId(), 4);
+        assertEq(vault.claimableRedeemRequest(vault.redeemEpochId(), user1.addr), 0);
     }
 
     function test_redeem_whenNotOperatorShouldRevert() public {
@@ -76,7 +76,7 @@ contract TestRedeem is BaseTest {
         assertEq(shares, vault.balanceOf(user1.addr));
         assertEq(shares, userBalance);
         requestRedeem(shares, user1.addr);
-        assertEq(vault.claimableRedeemRequest(vault.redeemId(), user1.addr), 0);
+        assertEq(vault.claimableRedeemRequest(vault.redeemEpochId(), user1.addr), 0);
 
         vm.prank(user1.addr);
         vm.expectRevert(RequestIdNotClaimable.selector);

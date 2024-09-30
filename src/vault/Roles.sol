@@ -23,7 +23,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         address whitelistManager;
         address feeReceiver;
         address safe;
-        address feeRegistry;
+        FeeRegistry feeRegistry;
         address navManager;
     }
 
@@ -36,7 +36,7 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         $.whitelistManager = roles.whitelistManager;
         $.feeReceiver = roles.feeReceiver;
         $.safe = roles.safe;
-        $.feeRegistry = roles.feeRegistry;
+        $.feeRegistry = FeeRegistry(roles.feeRegistry);
         $.navManager = roles.navManager;
     }
 
@@ -52,6 +52,12 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
         assembly {
             _rolesStorage.slot := rolesStorage
         }
+    }
+
+    /// @dev Returns the storage struct of the roles.
+    /// @return _rolesStorage The storage struct of the roles.
+    function getRolesStorage() public pure returns (RolesStorage memory _rolesStorage) {
+        _rolesStorage = _getRolesStorage();
     }
 
     /// @dev Modifier to check if the caller is the safe.
@@ -77,36 +83,6 @@ contract RolesUpgradeable is Ownable2StepUpgradeable {
             revert OnlyNAVManager(_navManager);
         }
         _;
-    }
-
-    /// @notice Returns the address of the whitelist manager.
-    function whitelistManager() public view returns (address) {
-        return _getRolesStorage().whitelistManager;
-    }
-
-    /// @notice Returns the address of the fee receiver.
-    function feeReceiver() public view returns (address) {
-        return _getRolesStorage().feeReceiver;
-    }
-
-    /// @notice Returns the address of protocol fee receiver.
-    function protocolFeeReceiver() public view returns (address) {
-        return FeeRegistry(_getRolesStorage().feeRegistry).protocolFeeReceiver();
-    }
-
-    /// @notice Returns the address of the safe associated with the vault.
-    function safe() public view returns (address) {
-        return _getRolesStorage().safe;
-    }
-
-    /// @notice Returns the address of the NAV manager.
-    function navManager() public view returns (address) {
-        return _getRolesStorage().navManager;
-    }
-
-    /// @notice Returns the address of the fee registry.
-    function feeRegistry() public view returns (address) {
-        return _getRolesStorage().feeRegistry;
     }
 
     /// @notice Updates the address of the whitelist manager.

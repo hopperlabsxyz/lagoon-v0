@@ -148,15 +148,15 @@ contract TestSettle is BaseTest {
         vm.expectRevert(NewNAVMissing.selector);
         vault.settleDeposit();
 
-        uint256 expectedDepositId = vault.depositId();
+        uint256 expectedDepositId = vault.depositEpochId();
 
         updateNewTotalAssets(0);
         vm.warp(block.timestamp + 1 days);
-        assertEq(vault.depositId(), expectedDepositId, "wrong depositId 1");
+        assertEq(vault.depositEpochId(), expectedDepositId, "wrong depositId 1");
 
         updateNewTotalAssets(0);
         vm.warp(block.timestamp + 1 days);
-        assertEq(vault.depositId(), expectedDepositId, "wrong depositId 2");
+        assertEq(vault.depositEpochId(), expectedDepositId, "wrong depositId 2");
 
         uint256 userRequestId = requestDeposit(user1Assets / 2, user1.addr);
 
@@ -164,7 +164,7 @@ contract TestSettle is BaseTest {
         vm.warp(block.timestamp + 1 days);
 
         assertEq(userRequestId, expectedDepositId, "wrong userRequestId");
-        assertEq(vault.depositId(), expectedDepositId + 2, "wrong depositId 3");
+        assertEq(vault.depositEpochId(), expectedDepositId + 2, "wrong depositId 3");
 
         vm.prank(vault.safe());
         vault.settleDeposit();
@@ -208,15 +208,15 @@ contract TestSettle is BaseTest {
         vm.expectRevert(NewNAVMissing.selector);
         vault.settleDeposit();
 
-        uint256 expectedRedeemId = vault.redeemId();
+        uint256 expectedRedeemId = vault.redeemEpochId();
 
         updateNewTotalAssets(0);
         vm.warp(block.timestamp + 1 days);
-        assertEq(vault.redeemId(), expectedRedeemId, "wrong redeemId 1");
+        assertEq(vault.redeemEpochId(), expectedRedeemId, "wrong redeemId 1");
 
         updateNewTotalAssets(0);
         vm.warp(block.timestamp + 1 days);
-        assertEq(vault.redeemId(), expectedRedeemId, "wrong redeemId 2");
+        assertEq(vault.redeemEpochId(), expectedRedeemId, "wrong redeemId 2");
 
         uint256 userRequestId = requestRedeem(user1Shares / 2, user1.addr);
 
@@ -224,7 +224,7 @@ contract TestSettle is BaseTest {
         vm.warp(block.timestamp + 1 days);
 
         assertEq(userRequestId, expectedRedeemId, "wrong userRequestId");
-        assertEq(vault.redeemId(), expectedRedeemId + 2, "wrong redeemId 3");
+        assertEq(vault.redeemEpochId(), expectedRedeemId + 2, "wrong redeemId 3");
 
         vm.prank(vault.safe());
         vault.settleRedeem();

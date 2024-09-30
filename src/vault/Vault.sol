@@ -14,6 +14,8 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+
 // import {console} from "forge-std/console.sol";
 
 using SafeERC20 for IERC20;
@@ -34,7 +36,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @param performanceRate The performance fee rate.
     /// @param rateUpdateCooldown The cooldown period for updating the fee rates.
     /// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
-    /// @param whitelist An array of addresses to be whitelisted.
     struct InitStruct {
         IERC20 underlying;
         string name;
@@ -48,9 +49,8 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         address wrappedNativeToken;
         uint16 managementRate;
         uint16 performanceRate;
-        uint256 rateUpdateCooldown;
         bool enableWhitelist;
-        address[] whitelist;
+        uint256 rateUpdateCooldown;
     }
 
     /// @custom:storage-location erc7201:hopper.storage.vault
@@ -85,13 +85,13 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
             init.feeRegistry, init.managementRate, init.performanceRate, decimals(), init.rateUpdateCooldown
         );
         __ERC7540_init(init.underlying, init.wrappedNativeToken);
-        __Whitelistable_init(init.enableWhitelist);
+        __Whitelistable_init(init.enableWhitelist, FeeRegistry(init.feeRegistry).protocolFeeReceiver());
         __Roles_init(
             RolesUpgradeable.RolesStorage({
                 whitelistManager: init.whitelistManager,
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
-                feeRegistry: init.feeRegistry,
+                feeRegistry: FeeRegistry(init.feeRegistry),
                 navManager: init.navManager
             })
         );
@@ -103,21 +103,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         $.state = State.Open;
         emit StateUpdated(State.Open);
-
-        if (init.enableWhitelist) {
-            WhitelistableStorage storage $whitelistStorage = _getWhitelistableStorage();
-            $whitelistStorage.isWhitelisted[init.feeReceiver] = true;
-            $whitelistStorage.isWhitelisted[protocolFeeReceiver()] = true;
-            $whitelistStorage.isWhitelisted[init.safe] = true;
-            $whitelistStorage.isWhitelisted[pendingSilo()] = true;
-            uint256 i = 0;
-            for (; i < init.whitelist.length;) {
-                $whitelistStorage.isWhitelisted[init.whitelist[i]] = true;
-                unchecked {
-                    ++i;
-                }
-            }
-        }
     }
 
     /// @notice Reverts if the vault is not open.
@@ -212,8 +197,10 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// If possible, it also settles redeem requests.
     /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
     function settleDeposit() public override onlySafe onlyOpen {
+        RolesStorage storage $roles = _getRolesStorage();
+
         _updateTotalAssets();
-        _takeFees(feeReceiver(), protocolFeeReceiver());
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
         _setHighWaterMark(
             _convertToAssets(10 ** decimals(), Math.Rounding.Floor) // this is the price per share
         );
@@ -226,8 +213,10 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @dev After updating totalAssets, it takes fees, updates highWaterMark and finally settles redeem requests.
     /// @inheritdoc ERC7540Upgradeable
     function settleRedeem() public override onlySafe onlyOpen {
+        RolesStorage storage $roles = _getRolesStorage();
+
         _updateTotalAssets();
-        _takeFees(feeReceiver(), protocolFeeReceiver());
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
         _setHighWaterMark(_convertToAssets(10 ** decimals(), Math.Rounding.Floor));
         _settleRedeem(msg.sender);
     }
@@ -261,15 +250,16 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.
     /// @dev Users can still requestDeposit but it can't be settled.
     function close() external onlySafe onlyClosing {
+        RolesStorage storage $roles = _getRolesStorage();
         _updateTotalAssets();
-        _takeFees(feeReceiver(), protocolFeeReceiver());
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
 
         _settleDeposit(msg.sender);
         _settleRedeem(msg.sender);
+        _getVaultStorage().state = State.Closed;
 
         IERC20(asset()).safeTransferFrom(msg.sender, address(this), _getERC7540Storage().totalAssets);
 
-        _getVaultStorage().state = State.Closed;
         emit StateUpdated(State.Closed);
     }
 
@@ -338,11 +328,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Withdraw(caller, receiver, owner, assets, shares);
-    }
-
-    /// @notice Returns the state of the vault. It can be Open, Closing, or Closed.
-    function state() external view returns (State) {
-        return _getVaultStorage().state;
     }
 
     /// @notice Halts core operations of the vault. Can only be called by the owner.
