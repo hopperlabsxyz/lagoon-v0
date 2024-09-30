@@ -39,6 +39,15 @@ event SettleDeposit(
     uint256 sharesMinted
 );
 
+event SettleRedeem(
+    uint40 indexed epochId,
+    uint40 indexed settledId,
+    uint256 totalAssets,
+    uint256 totalSupply,
+    uint256 assetsWithdrawed,
+    uint256 sharesBurned
+);
+
 using SafeERC20 for IERC20;
 using Math for uint256;
 
@@ -612,26 +621,32 @@ abstract contract ERC7540Upgradeable is
 
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
+        // cache
         uint256 _totalAssets = totalAssets();
+        uint256 _totalSupply = totalSupply();
         uint40 redeemSettleId = $erc7540.redeemSettleId;
 
         SettleData storage settleData = $erc7540.settles[redeemSettleId];
 
         settleData.totalAssets = _totalAssets;
-        settleData.totalSupply = totalSupply();
+        settleData.totalSupply = _totalSupply;
 
         _burn(_pendingSilo, pendingShares);
 
         _totalAssets -= assetsToWithdraw;
+        _totalSupply -= pendingShares;
+
         $erc7540.totalAssets = _totalAssets;
 
+        uint40 lastRedeemEpochIdSettled = $erc7540.redeemEpochId - 2;
         $erc7540.redeemSettleId = redeemSettleId + 2;
-        $erc7540.lastRedeemEpochIdSettled = $erc7540.redeemEpochId - 2;
+        $erc7540.lastRedeemEpochIdSettled = lastRedeemEpochIdSettled;
 
         IERC20(_asset).safeTransferFrom(assetsCustodian, address(this), assetsToWithdraw);
 
-        // change this event maybe
-        emit Withdraw(_msgSender(), address(this), _pendingSilo, assetsToWithdraw, pendingShares);
+        emit SettleRedeem(
+            lastRedeemEpochIdSettled, redeemSettleId, _totalAssets, _totalSupply, assetsToWithdraw, pendingShares
+        );
     }
 
     function pendingSilo() public view returns (address) {
