@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
+// ********************* ERC7540 ********************* //
+
 /// @dev Holds management and performance rates for the vault.
 /// @param managementRate Management fee rate in basis points.
 /// @param performanceRate Performance fee rate in basis points.
