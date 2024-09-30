@@ -9,7 +9,7 @@ import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/acces
 /// @title RolesUpgradeable
 /// @dev This contract is used to define the various roles needed for a vault to operate.
 /// @dev It also defines the modifiers used to check functions' caller.
-contract RolesUpgradeable is Ownable2StepUpgradeable {
+contract Roles is Ownable2StepUpgradeable {
     /// @notice Stores the various roles responsible of managing the vault.
     /// @param whitelistManager The address responsible of managing the whitelist.
     /// @param feeReceiver The address that will receive the fees generated.
