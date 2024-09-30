@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import {ERC7540Upgradeable} from "./ERC7540.sol";
+import {ERC7540} from "./ERC7540.sol";
 import {AboveMaxRate, CooldownNotOver} from "./primitives/Errors.sol";
 import {HighWaterMarkUpdated, RatesUpdated} from "./primitives/Events.sol";
 import {Rates} from "./primitives/Struct.sol";
@@ -12,7 +12,7 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS_DIVIDER = 10_000; // 100 %
 
-abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
+abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     using Math for uint256;
 
     uint16 public constant MAX_MANAGEMENT_RATE = 1000; // 10 %
