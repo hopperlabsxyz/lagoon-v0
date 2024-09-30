@@ -39,12 +39,7 @@ using Math for uint256;
 /// @title ERC7540Upgradeable
 /// @dev An implementation of the ERC7540 standard. It defines the core data structures and functions necessary
 /// to do requests and process them.
-abstract contract ERC7540Upgradeable is
-    IERC7540Redeem,
-    IERC7540Deposit,
-    ERC20PausableUpgradeable,
-    ERC4626Upgradeable
-{
+abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgradeable, ERC4626Upgradeable {
     /// @custom:storage-location erc7201:hopper.storage.ERC7540
     /// @param totalAssets The total assets.
     /// @param depositEpochId The current deposit epoch ID.
