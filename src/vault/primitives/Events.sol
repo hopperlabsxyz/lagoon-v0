@@ -78,3 +78,12 @@ event RatesUpdated(Rates oldRates, Rates newRate, uint256 timestamp);
 /// @param oldHighWaterMark The old highWaterMark.
 /// @param newHighWaterMark The new highWaterMark.
 event HighWaterMarkUpdated(uint256 oldHighWaterMark, uint256 newHighWaterMark);
+
+// ********************* ERC7540 ********************* //
+/// @notice Emitted when the totalAssets variable is updated.
+/// @param totalAssets The new total assets value.
+event TotalAssetsUpdated(uint256 totalAssets);
+
+/// @notice Emitted when the newTotalAssets variable is updated.
+/// @param totalAssets The new newTotalAssets value.
+event NewTotalAssetsUpdated(uint256 totalAssets);

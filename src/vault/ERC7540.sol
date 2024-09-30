@@ -17,7 +17,7 @@ import {
     RequestIdNotClaimable,
     RequestNotCancelable
 } from "./primitives/Errors.sol";
-import {SettleDeposit, SettleRedeem} from "./primitives/Events.sol";
+import {NewTotalAssetsUpdated, SettleDeposit, SettleRedeem, TotalAssetsUpdated} from "./primitives/Events.sol";
 import {EpochData, SettleData} from "./primitives/Struct.sol";
 import {
     ERC20Upgradeable,
