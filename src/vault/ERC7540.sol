@@ -30,6 +30,15 @@ import {
 } from "./Errors.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+event SettleDeposit(
+    uint40 indexed epochId,
+    uint40 indexed settledId,
+    uint256 totalAssets,
+    uint256 totalSupply,
+    uint256 assetsDeposited,
+    uint256 sharesMinted
+);
+
 using SafeERC20 for IERC20;
 using Math for uint256;
 
@@ -560,26 +569,31 @@ abstract contract ERC7540Upgradeable is
         // Then save the deposit parameters
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
+        // cache
         uint256 _totalAssets = totalAssets();
+        uint256 _totalSupply = totalSupply();
         uint40 depositSettleId = $erc7540.depositSettleId;
+        uint40 lastDepositEpochIdSettled = $erc7540.depositEpochId - 2;
 
         SettleData storage settleData = $erc7540.settles[depositSettleId];
 
         settleData.totalAssets = _totalAssets;
-        settleData.totalSupply = totalSupply();
+        settleData.totalSupply = _totalSupply;
+
         _mint(address(this), shares);
 
         _totalAssets += pendingAssets;
+        _totalSupply += shares;
 
         $erc7540.totalAssets = _totalAssets;
-
         $erc7540.depositSettleId = depositSettleId + 2;
-        $erc7540.lastDepositEpochIdSettled = $erc7540.depositEpochId - 2;
+        $erc7540.lastDepositEpochIdSettled = lastDepositEpochIdSettled;
 
         IERC20(_asset).safeTransferFrom(_pendingSilo, assetsCustodian, pendingAssets);
 
-        // change this event maybe
-        emit Deposit(_msgSender(), address(this), pendingAssets, shares);
+        emit SettleDeposit(
+            lastDepositEpochIdSettled, depositSettleId, _totalAssets, _totalSupply, pendingAssets, shares
+        );
     }
 
     /// @dev This function will redeem the pending shares of the pendingSilo.

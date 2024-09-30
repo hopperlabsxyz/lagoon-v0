@@ -28,9 +28,6 @@ abstract contract Constants is Test {
 
     uint8 decimalsOffset = 0;
 
-    //ERC20 whales
-    address immutable USDC_WHALE = vm.envAddress(string.concat("USDC_WHALE", "_", network));
-
     string underlyingName = vm.envString("UNDERLYING_NAME");
     VaultHelper vault;
     FeeRegistry feeRegistry;
