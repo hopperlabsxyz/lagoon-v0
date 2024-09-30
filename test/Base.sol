@@ -55,7 +55,7 @@ contract BaseTest is Test, Constants {
         uint256 pendingSiloAssetBalance = assetBalance(address(vault.pendingSilo()));
         uint256 vaultAssetBalance = assetBalance(address(vault));
 
-        uint256 depositId = vault.depositId();
+        uint256 depositId = vault.depositEpochId();
         uint256 requestId;
         vm.prank(operator);
         uint256 value = viaEth ? amount : 0;
@@ -113,7 +113,7 @@ contract BaseTest is Test, Constants {
         address operator
     ) internal returns (uint256) {
         uint256 requestRedeemBefore = vault.pendingRedeem();
-        uint256 redeemId = vault.redeemId();
+        uint256 redeemId = vault.redeemEpochId();
         vm.prank(operator);
         uint256 requestId = vault.requestRedeem(amount, controller, owner);
         assertEq(vault.pendingRedeem(), requestRedeemBefore + amount, "pendingRedeem value did not increase properly");

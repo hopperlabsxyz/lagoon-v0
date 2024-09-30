@@ -65,4 +65,47 @@ contract VaultHelper is Vault {
     function pendingRedeem() public view returns (uint256) {
         return balanceOf(pendingSilo());
     }
+
+    function redeemEpochId() public view returns (uint256) {
+        return _getERC7540Storage().redeemEpochId;
+    }
+
+    function depositEpochId() public view returns (uint256) {
+        return _getERC7540Storage().depositEpochId;
+    }
+
+    /// @notice Returns the state of the vault. It can be Open, Closing, or Closed.
+    function state() external view returns (State) {
+        return _getVaultStorage().state;
+    }
+
+    /// @notice Returns the address of the whitelist manager.
+    function whitelistManager() public view returns (address) {
+        return _getRolesStorage().whitelistManager;
+    }
+
+    /// @notice Returns the address of the fee receiver.
+    function feeReceiver() public view returns (address) {
+        return _getRolesStorage().feeReceiver;
+    }
+
+    /// @notice Returns the address of protocol fee receiver.
+    function protocolFeeReceiver() public view returns (address) {
+        return FeeRegistry(_getRolesStorage().feeRegistry).protocolFeeReceiver();
+    }
+
+    /// @notice Returns the address of the safe associated with the vault.
+    function safe() public view returns (address) {
+        return _getRolesStorage().safe;
+    }
+
+    /// @notice Returns the address of the NAV manager.
+    function navManager() public view returns (address) {
+        return _getRolesStorage().navManager;
+    }
+
+    /// @notice Returns the address of the fee registry.
+    function feeRegistry() public view returns (address) {
+        return address(_getRolesStorage().feeRegistry);
+    }
 }

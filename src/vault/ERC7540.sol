@@ -44,6 +44,9 @@ struct SettleData {
     uint256 totalAssets;
 }
 
+/// @title ERC7540Upgradeable
+/// @dev An implementation of the ERC7540 standard. It defines the core data structures and functions necessary
+/// to do requests and process them.
 abstract contract ERC7540Upgradeable is
     IERC7540Redeem,
     IERC7540Deposit,
@@ -624,17 +627,25 @@ abstract contract ERC7540Upgradeable is
         return address(_getERC7540Storage().pendingSilo);
     }
 
-    function redeemId() public view returns (uint256) {
-        return _getERC7540Storage().redeemEpochId;
+    function epochSettleId(uint40 epochId) public view returns (uint40) {
+        return _getERC7540Storage().epochs[epochId].settleId;
     }
 
-    function depositId() public view returns (uint256) {
-        return _getERC7540Storage().depositEpochId;
+    function lastRedeemRequestId(address controller) public view returns (uint40) {
+        return _getERC7540Storage().lastRedeemRequestId[controller];
     }
 
+    function lastDepositRequestId(address controller) public view returns (uint40) {
+        return _getERC7540Storage().lastDepositRequestId[controller];
+    }
+
+    /// @dev Settles deposit requests by transferring assets from the pendingSilo to the safe
+    /// and minting the corresponding shares to vault.
+    /// The function is not implemented here and must be implemented.
     function settleDeposit() public virtual;
 
     /// @dev Settles redeem requests by transferring assets from the safe to the vault
     /// and burning the corresponding shares from the pending silo.
+    /// The function is not implemented here and must be implemented.
     function settleRedeem() public virtual;
 }

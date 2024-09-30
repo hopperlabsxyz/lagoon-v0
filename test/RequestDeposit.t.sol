@@ -52,7 +52,7 @@ contract TestRequestDeposit is BaseTest {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance / 2, user1.addr);
         requestDeposit(userBalance / 2, user1.addr);
-        assertEq(vault.pendingDepositRequest(vault.depositId(), user1.addr), userBalance);
+        assertEq(vault.pendingDepositRequest(vault.depositEpochId(), user1.addr), userBalance);
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
     }
 
@@ -70,7 +70,7 @@ contract TestRequestDeposit is BaseTest {
 
         updateAndSettle(0);
 
-        assertEq(requestId_1 + 2, vault.depositId(), "wrong deposit id");
+        assertEq(requestId_1 + 2, vault.depositEpochId(), "wrong deposit id");
         assertEq(
             vault.lastDepositRequestId_debug(user1.addr), // keep track of the last deposit id of the user, only one
             // requestId is allowed by settle period by user
