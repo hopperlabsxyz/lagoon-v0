@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import {BaseTest} from "./Base.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SettleDeposit, SettleRedeem} from "@src/vault/ERC7540.sol";
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -79,16 +80,37 @@ contract TestSettle is BaseTest {
     }
 
     function test_settleDepositAfterUpdate() public {
-        updateNewTotalAssets(1);
+        uint256 user1Assets = assetBalance(user1.addr);
+        uint256 totalAssets = assetBalance(safe.addr);
 
-        vm.prank(vault.safe());
+        // 50_000 assets deposit request
+        requestDeposit(user1Assets, user1.addr);
+
+        updateNewTotalAssets(totalAssets);
+
+        vm.expectEmit(true, true, false, false);
+        emit SettleDeposit(
+            3, // there is one updateAndSettle in Setup function so 1 => 3
+            3, // same here
+            100_000 * 10 ** vault.underlyingDecimals(),
+            100_000 * 10 ** vault.decimals(),
+            user1Assets,
+            50_000 * 10 ** vault.decimals()
+        );
+        vm.prank(safe.addr);
         vault.settleDeposit();
     }
 
     function test_settleRedeemAfterUpdate() public {
-        updateNewTotalAssets(1);
+        uint256 user1Shares = vault.balanceOf(user1.addr);
+        uint256 totalAssets = assetBalance(safe.addr);
 
-        vm.prank(vault.safe());
+        requestRedeem(user1Shares, user1.addr);
+        updateNewTotalAssets(totalAssets);
+
+        vm.expectEmit(true, true, false, false);
+        emit SettleRedeem(2, 2, 0, 0, 50_000 * 10 ** vault.underlyingDecimals(), user1Shares);
+        vm.prank(safe.addr);
         vault.settleRedeem();
     }
 
