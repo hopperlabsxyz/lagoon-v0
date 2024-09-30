@@ -266,10 +266,10 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
         _settleDeposit(msg.sender);
         _settleRedeem(msg.sender);
+        _getVaultStorage().state = State.Closed;
 
         IERC20(asset()).safeTransferFrom(msg.sender, address(this), _getERC7540Storage().totalAssets);
 
-        _getVaultStorage().state = State.Closed;
         emit StateUpdated(State.Closed);
     }
 
