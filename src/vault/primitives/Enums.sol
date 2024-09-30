@@ -2,7 +2,8 @@
 pragma solidity "0.8.26";
 
 enum State {
-    Open,
-    Closing,
-    Closed
+    Open, // The vault is open for deposits and withdrawals.
+    Closing, // The vault is in the process of closing; no NEW deposit (settlement) are accepted into the vault
+    Closed // The vault is closed; settlement are locked; withdrawals are guaranteed at fixed price per share
+
 }
