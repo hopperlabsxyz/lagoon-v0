@@ -2,9 +2,9 @@
 pragma solidity "0.8.26";
 
 import {ERC7540Upgradeable} from "./ERC7540.sol";
-import {State} from "./Enums.sol";
-import {Closed, NewNAVMissing, NotClosing, NotOpen, NotWhitelisted} from "./Errors.sol";
-import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./Events.sol";
+import {State} from "./primitives/Enums.sol";
+import {Closed, NewNAVMissing, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
+import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./primitives/Events.sol";
 
 import {FeeManager} from "./FeeManager.sol";
 import {RolesUpgradeable} from "./Roles.sol";
@@ -36,7 +36,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @param performanceRate The performance fee rate.
     /// @param rateUpdateCooldown The cooldown period for updating the fee rates.
     /// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
-    /// @param whitelist An array of addresses to be whitelisted.
     struct InitStruct {
         IERC20 underlying;
         string name;
@@ -52,7 +51,6 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         uint16 performanceRate;
         bool enableWhitelist;
         uint256 rateUpdateCooldown;
-        address[] whitelist;
     }
 
     /// @custom:storage-location erc7201:hopper.storage.vault
@@ -87,7 +85,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
             init.feeRegistry, init.managementRate, init.performanceRate, decimals(), init.rateUpdateCooldown
         );
         __ERC7540_init(init.underlying, init.wrappedNativeToken);
-        __Whitelistable_init(init.enableWhitelist);
+        __Whitelistable_init(init.enableWhitelist, FeeRegistry(init.feeRegistry).protocolFeeReceiver());
         __Roles_init(
             RolesUpgradeable.RolesStorage({
                 whitelistManager: init.whitelistManager,
@@ -100,27 +98,11 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         __Ownable_init(init.admin); // initial vault owner
 
         VaultStorage storage $ = _getVaultStorage();
-        RolesStorage storage $roles = _getRolesStorage();
 
         $.newTotalAssets = type(uint256).max;
 
         $.state = State.Open;
         emit StateUpdated(State.Open);
-
-        if (init.enableWhitelist) {
-            WhitelistableStorage storage $whitelistStorage = _getWhitelistableStorage();
-            $whitelistStorage.isWhitelisted[init.feeReceiver] = true;
-            $whitelistStorage.isWhitelisted[$roles.feeRegistry.protocolFeeReceiver()] = true;
-            $whitelistStorage.isWhitelisted[init.safe] = true;
-            $whitelistStorage.isWhitelisted[pendingSilo()] = true;
-            uint256 i = 0;
-            for (; i < init.whitelist.length;) {
-                $whitelistStorage.isWhitelisted[init.whitelist[i]] = true;
-                unchecked {
-                    ++i;
-                }
-            }
-        }
     }
 
     /// @notice Reverts if the vault is not open.

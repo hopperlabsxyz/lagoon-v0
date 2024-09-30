@@ -55,9 +55,8 @@ contract DeployVault is Script {
             managementRate: 0,
             performanceRate: 2000,
             wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
-            rateUpdateCooldown: 1 days,
             enableWhitelist: true,
-            whitelist: new address[](0)
+            rateUpdateCooldown: 1 days
         });
 
         TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
@@ -67,6 +66,13 @@ contract DeployVault is Script {
                 )
             )
         );
+
+        // todo
+        // whitelist the following addresses:
+        // - feeReceiver
+        // - protocolFeeReceiver
+        // - safe
+        // - pendingSilo
 
         console.log("Vault proxy address: ", address(proxy));
 

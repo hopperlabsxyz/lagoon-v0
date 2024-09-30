@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import {WhitelistDisabled, WhitelistUpdated} from "./Events.sol";
 import {RolesUpgradeable} from "./Roles.sol";
+import {WhitelistDisabled, WhitelistUpdated} from "./primitives/Events.sol";
 
 contract WhitelistableUpgradeable is RolesUpgradeable {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))
@@ -30,9 +30,11 @@ contract WhitelistableUpgradeable is RolesUpgradeable {
     /// @dev Initializes the whitelist.
     /// @param activate if the whitelist should be activated.
     // solhint-disable-next-line func-name-mixedcase
-    function __Whitelistable_init(bool activate) internal onlyInitializing {
+    function __Whitelistable_init(bool activate, address protocolFeeReceiver) internal onlyInitializing {
         if (activate) {
-            _getWhitelistableStorage().isActivated = true;
+            WhitelistableStorage storage $ = _getWhitelistableStorage();
+            $.isActivated = true;
+            $.isWhitelisted[protocolFeeReceiver] = true;
         }
     }
 
