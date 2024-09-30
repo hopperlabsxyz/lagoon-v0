@@ -16,9 +16,6 @@ error NotClosing(State currentState);
 /// @notice Indicates that the vault is Closed.
 error Closed();
 
-/// @notice Indicates that a new NAV was not provided.
-error NewNAVMissing();
-
 // ********************* ERC7540 ********************* //
 
 /// @notice Indicates that preview deposit is disabled.
@@ -48,6 +45,9 @@ error RequestIdNotClaimable();
 
 /// @notice Indicates that depositing a native token is not allowed.
 error CantDepositNativeToken();
+
+/// @notice Indicates that a new NAV was not provided.
+error NewNAVMissing();
 
 // ********************* FEE MANAGER ********************* //
 

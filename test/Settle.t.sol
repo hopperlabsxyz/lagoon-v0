@@ -7,7 +7,8 @@ import {SettleDeposit, SettleRedeem} from "@src/vault/primitives/Events.sol";
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {NewNAVMissing, Vault} from "@src/vault/Vault.sol";
+import {NewNAVMissing} from "@src/vault/ERC7540.sol";
+import {Vault} from "@src/vault/Vault.sol";
 import {OnlyNAVManager, OnlySafe} from "@src/vault/primitives/Errors.sol";
 import "forge-std/Test.sol";
 

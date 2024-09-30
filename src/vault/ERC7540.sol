@@ -2,10 +2,21 @@
 pragma solidity "0.8.26";
 
 import {Silo} from "./Silo.sol";
-
 import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
 import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IWETH9} from "./interfaces/IWETH9.sol";
+import {
+    CantDepositNativeToken,
+    ERC7540InvalidOperator,
+    ERC7540PreviewDepositDisabled,
+    ERC7540PreviewMintDisabled,
+    ERC7540PreviewRedeemDisabled,
+    ERC7540PreviewWithdrawDisabled,
+    NewNAVMissing,
+    OnlyOneRequestAllowed,
+    RequestIdNotClaimable,
+    RequestNotCancelable
+} from "./primitives/Errors.sol";
 import {SettleDeposit, SettleRedeem} from "./primitives/Events.sol";
 import {EpochData, SettleData} from "./primitives/Struct.sol";
 import {
@@ -19,18 +30,6 @@ import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC2
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-import {
-    CantDepositNativeToken,
-    ERC7540InvalidOperator,
-    ERC7540PreviewDepositDisabled,
-    ERC7540PreviewMintDisabled,
-    ERC7540PreviewRedeemDisabled,
-    ERC7540PreviewWithdrawDisabled,
-    OnlyOneRequestAllowed,
-    RequestIdNotClaimable,
-    RequestNotCancelable
-} from "./primitives/Errors.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 using SafeERC20 for IERC20;
@@ -62,6 +61,7 @@ abstract contract ERC7540Upgradeable is
     /// @param wrappedNativeToken The wrapped native token. WETH9 for ethereum.
     struct ERC7540Storage {
         uint256 totalAssets;
+        uint256 newTotalAssets;
         uint40 depositEpochId;
         uint40 depositSettleId;
         uint40 lastDepositEpochIdSettled;
@@ -104,8 +104,9 @@ abstract contract ERC7540Upgradeable is
         $.depositSettleId = 1;
         $.redeemSettleId = 2;
 
-        $.pendingSilo = new Silo(underlying);
+        $.pendingSilo = new Silo(underlying, wrappedNativeToken);
         $.wrappedNativeToken = IWETH9(wrappedNativeToken);
+        $.newTotalAssets = type(uint256).max;
     }
 
     /// @notice Make sure the caller is an operator or the controller.
@@ -209,17 +210,15 @@ abstract contract ERC7540Upgradeable is
             if (pendingDepositRequest(0, controller) > 0) {
                 revert OnlyOneRequestAllowed();
             }
+
             $.lastDepositRequestId[controller] = _depositId;
         }
         $.epochs[_depositId].depositRequest[controller] += assets;
 
-        // Shoudn't we move native token wrapping outside the ERC7540?
         if (msg.value != 0) {
             // if user sends eth and the underlying is wETH we will wrap it for him
             if (asset() == address($.wrappedNativeToken)) {
-                //todo remove this security
-                IWETH9($.wrappedNativeToken).deposit{value: msg.value}();
-                IWETH9($.wrappedNativeToken).transfer(address($.pendingSilo), msg.value);
+                $.pendingSilo.depositEth{value: msg.value}();
             } else {
                 revert CantDepositNativeToken();
             }
@@ -624,6 +623,42 @@ abstract contract ERC7540Upgradeable is
         emit SettleRedeem(
             lastRedeemEpochIdSettled, redeemSettleId, _totalAssets, _totalSupply, assetsToWithdraw, pendingShares
         );
+    }
+
+    /// @notice Update newTotalAssets variable in order to update totalAssets.
+    /// @param _newTotalAssets The new total assets of the vault.
+    function _updateNewTotalAssets(uint256 _newTotalAssets) internal whenNotPaused {
+        ERC7540Storage storage $ = _getERC7540Storage();
+
+        $.epochs[$.depositEpochId].settleId = $.depositSettleId;
+        $.epochs[$.redeemEpochId].settleId = $.redeemSettleId;
+
+        address _pendingSilo = pendingSilo();
+        uint256 pendingAssets = IERC20(asset()).balanceOf(_pendingSilo);
+        uint256 pendingShares = balanceOf(_pendingSilo);
+
+        if (pendingAssets != 0) $.depositEpochId += 2;
+        if (pendingShares != 0) $.redeemEpochId += 2;
+
+        $.newTotalAssets = _newTotalAssets;
+
+        emit NewTotalAssetsUpdated(_newTotalAssets);
+    }
+
+    /// @dev Updates the totalAssets variable with the newTotalAssets variable.
+    function _updateTotalAssets() internal whenNotPaused {
+        // VaultStorage storage $vault = _getVaultStorage();
+        ERC7540Storage storage $ = _getERC7540Storage();
+
+        uint256 newTotalAssets = $.newTotalAssets;
+
+        if (
+            newTotalAssets == type(uint256).max // it means newTotalAssets has not been updated
+        ) revert NewNAVMissing();
+
+        $.totalAssets = newTotalAssets;
+        $.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
+        emit TotalAssetsUpdated(newTotalAssets);
     }
 
     function pendingSilo() public view returns (address) {

@@ -7,6 +7,14 @@ import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 interface IERC7540 is IERC7575, IERC165 {
     event OperatorSet(address indexed controller, address indexed operator, bool approved);
 
+    /// @notice Emitted when the totalAssets variable is updated.
+    /// @param totalAssets The new total assets value.
+    event TotalAssetsUpdated(uint256 totalAssets);
+
+    /// @notice Emitted when the newTotalAssets variable is updated.
+    /// @param totalAssets The new newTotalAssets value.
+    event NewTotalAssetsUpdated(uint256 totalAssets);
+
     // EIP7575 https://eips.ethereum.org/EIPS/eip-7575
     function share() external view returns (address);
 

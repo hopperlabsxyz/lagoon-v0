@@ -17,14 +17,6 @@ event Referral(address indexed referral, address indexed owner, uint256 indexed 
 /// @param state The new state of the vault. Either Open, Closing or Close.
 event StateUpdated(State state);
 
-/// @notice Emitted when the total assets of the vault are updated.
-/// @param totalAssets The new total assets value.
-event TotalAssetsUpdated(uint256 totalAssets);
-
-/// @notice Emitted when the total assets are updated with a new value.
-/// @param totalAssets The updated total assets value.
-event UpdateTotalAssets(uint256 totalAssets);
-
 event SettleDeposit(
     uint40 indexed epochId,
     uint40 indexed settledId,
