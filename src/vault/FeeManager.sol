@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import {AboveMaxRate, CooldownNotOver} from "./Errors.sol";
-import {HighWaterMarkUpdated, RatesUpdated} from "./Events.sol";
+import {ERC7540Upgradeable} from "./ERC7540.sol";
+import {AboveMaxRate, CooldownNotOver} from "./primitives/Errors.sol";
+import {HighWaterMarkUpdated, RatesUpdated} from "./primitives/Events.sol";
+import {Rates} from "./primitives/Struct.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
-import {ERC7540Upgradeable} from "@src/vault/ERC7540.sol";
 
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS_DIVIDER = 10_000; // 100 %
-
-struct Rates {
-    uint16 managementRate;
-    uint16 performanceRate;
-}
 
 abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
     using Math for uint256;
@@ -197,14 +193,15 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540Upgradeable {
 
         uint256 timeElapsed = block.timestamp - $.lastFeeTime;
         uint256 _totalAssets = totalAssets();
+        uint256 _decimals = decimals();
         uint256 managementFees = _calculateManagementFee(_totalAssets, _rates.managementRate, timeElapsed);
 
         /// Performance fee computation ///
 
-        uint256 _pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
+        uint256 _pricePerShare = _convertToAssets(10 ** _decimals, Math.Rounding.Floor);
         uint256 _totalSupply = totalSupply();
         uint256 performanceFees =
-            _calculatePerformanceFee(_rates.performanceRate, _totalSupply, _pricePerShare, $.highWaterMark, decimals());
+            _calculatePerformanceFee(_rates.performanceRate, _totalSupply, _pricePerShare, $.highWaterMark, _decimals);
 
         /// Protocol fee computation & convertion to shares ///
 

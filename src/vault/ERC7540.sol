@@ -2,9 +2,12 @@
 pragma solidity "0.8.26";
 
 import {Silo} from "./Silo.sol";
+
 import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
 import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IWETH9} from "./interfaces/IWETH9.sol";
+import {SettleDeposit, SettleRedeem} from "./primitives/Events.sol";
+import {EpochData, SettleData} from "./primitives/Struct.sol";
 import {
     ERC20Upgradeable,
     IERC20,
@@ -27,40 +30,11 @@ import {
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
     RequestNotCancelable
-} from "./Errors.sol";
+} from "./primitives/Errors.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-
-event SettleDeposit(
-    uint40 indexed epochId,
-    uint40 indexed settledId,
-    uint256 totalAssets,
-    uint256 totalSupply,
-    uint256 assetsDeposited,
-    uint256 sharesMinted
-);
-
-event SettleRedeem(
-    uint40 indexed epochId,
-    uint40 indexed settledId,
-    uint256 totalAssets,
-    uint256 totalSupply,
-    uint256 assetsWithdrawed,
-    uint256 sharesBurned
-);
 
 using SafeERC20 for IERC20;
 using Math for uint256;
-
-struct EpochData {
-    uint40 settleId;
-    mapping(address => uint256) depositRequest;
-    mapping(address => uint256) redeemRequest;
-}
-
-struct SettleData {
-    uint256 totalSupply;
-    uint256 totalAssets;
-}
 
 abstract contract ERC7540Upgradeable is
     IERC7540Redeem,

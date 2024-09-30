@@ -2,8 +2,8 @@
 pragma solidity "0.8.26";
 
 import {FeeRegistry} from "../protocol/FeeRegistry.sol";
-import {OnlyNAVManager, OnlySafe, OnlyWhitelistManager} from "./Errors.sol";
-import {FeeReceiverUpdated, NavManagerUpdated, WhitelistManagerUpdated} from "./Events.sol";
+import {OnlyNAVManager, OnlySafe, OnlyWhitelistManager} from "./primitives/Errors.sol";
+import {FeeReceiverUpdated, NavManagerUpdated, WhitelistManagerUpdated} from "./primitives/Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 /// @title RolesUpgradeable

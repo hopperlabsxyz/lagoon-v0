@@ -2,9 +2,9 @@
 pragma solidity "0.8.26";
 
 import {ERC7540Upgradeable} from "./ERC7540.sol";
-import {State} from "./Enums.sol";
-import {Closed, NewNAVMissing, NotClosing, NotOpen, NotWhitelisted} from "./Errors.sol";
-import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./Events.sol";
+import {State} from "./primitives/Enums.sol";
+import {Closed, NewNAVMissing, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
+import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./primitives/Events.sol";
 
 import {FeeManager} from "./FeeManager.sol";
 import {RolesUpgradeable} from "./Roles.sol";

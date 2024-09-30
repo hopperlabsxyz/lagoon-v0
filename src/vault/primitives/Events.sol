@@ -2,7 +2,7 @@
 pragma solidity "0.8.26";
 
 import {State} from "./Enums.sol";
-import {Rates} from "./FeeManager.sol";
+import {Rates} from "./Struct.sol";
 
 // ********************* VAULT ********************* //
 
@@ -24,6 +24,24 @@ event TotalAssetsUpdated(uint256 totalAssets);
 /// @notice Emitted when the total assets are updated with a new value.
 /// @param totalAssets The updated total assets value.
 event UpdateTotalAssets(uint256 totalAssets);
+
+event SettleDeposit(
+    uint40 indexed epochId,
+    uint40 indexed settledId,
+    uint256 totalAssets,
+    uint256 totalSupply,
+    uint256 assetsDeposited,
+    uint256 sharesMinted
+);
+
+event SettleRedeem(
+    uint40 indexed epochId,
+    uint40 indexed settledId,
+    uint256 totalAssets,
+    uint256 totalSupply,
+    uint256 assetsWithdrawed,
+    uint256 sharesBurned
+);
 
 // ********************* WHITELISTABLE ********************* //
 
