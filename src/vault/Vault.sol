@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import {ERC7540Upgradeable} from "./ERC7540.sol";
+import {ERC7540} from "./ERC7540.sol";
 import {State} from "./primitives/Enums.sol";
 import {Closed, NewNAVMissing, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
 import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./primitives/Events.sol";
 
 import {FeeManager} from "./FeeManager.sol";
-import {RolesUpgradeable} from "./Roles.sol";
-import {WhitelistableUpgradeable} from "./Whitelistable.sol";
+import {Roles} from "./Roles.sol";
+import {Whitelistable} from "./Whitelistable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
@@ -20,7 +20,7 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 
 using SafeERC20 for IERC20;
 
-contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
+contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @custom:storage-definition erc7201:hopper.storage.vault
     /// @param underlying The address of the underlying asset.
     /// @param name The name of the vault and by extension the ERC20 token.
@@ -87,7 +87,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         __ERC7540_init(init.underlying, init.wrappedNativeToken);
         __Whitelistable_init(init.enableWhitelist, FeeRegistry(init.feeRegistry).protocolFeeReceiver());
         __Roles_init(
-            RolesUpgradeable.RolesStorage({
+            Roles.RolesStorage({
                 whitelistManager: init.whitelistManager,
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
@@ -126,7 +126,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         uint256 assets,
         address controller,
         address owner
-    ) public payable override(ERC7540Upgradeable) whenNotPaused returns (uint256 requestId) {
+    ) public payable override(ERC7540) whenNotPaused returns (uint256 requestId) {
         return _requestDeposit(assets, controller, owner);
     }
 
@@ -165,7 +165,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
         uint256 shares,
         address controller,
         address owner
-    ) public override(ERC7540Upgradeable) onlyOpen whenNotPaused returns (uint256 requestId) {
+    ) public override(ERC7540) onlyOpen whenNotPaused returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         return super.requestRedeem(shares, controller, owner);
     }
@@ -211,7 +211,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
     /// @notice Settles redeem requests, only callable by the safe.
     /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
     /// @dev After updating totalAssets, it takes fees, updates highWaterMark and finally settles redeem requests.
-    /// @inheritdoc ERC7540Upgradeable
+    /// @inheritdoc ERC7540
     function settleRedeem() public override onlySafe onlyOpen {
         RolesStorage storage $roles = _getRolesStorage();
 
@@ -265,7 +265,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
     /// @dev Unusable when paused.
     /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
-    /// @dev Second _withdraw path: whenNotPaused in ERC7540Upgradeable.
+    /// @dev Second _withdraw path: whenNotPaused in ERC7540.
     function withdraw(
         uint256 assets,
         address receiver,
@@ -283,7 +283,7 @@ contract Vault is ERC7540Upgradeable, WhitelistableUpgradeable, FeeManager {
 
     /// @dev Unusable when paused.
     /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
-    /// @dev Second _withdraw path: whenNotPaused in ERC7540Upgradeable.
+    /// @dev Second _withdraw path: whenNotPaused in ERC7540.
     /// @notice Claim assets from the vault. After a request is made and settled.
     /// @param shares The amount shares to convert into assets.
     /// @param receiver The receiver of the assets.

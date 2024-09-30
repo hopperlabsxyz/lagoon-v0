@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import {RolesUpgradeable} from "./Roles.sol";
+import {Roles} from "./Roles.sol";
 import {WhitelistDisabled, WhitelistUpdated} from "./primitives/Events.sol";
 
-contract WhitelistableUpgradeable is RolesUpgradeable {
+contract Whitelistable is Roles {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))
     /// @custom:storage-location erc7201:hopper.storage.Whitelistable
     // solhint-disable-next-line const-name-snakecase
