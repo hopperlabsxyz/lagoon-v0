@@ -625,6 +625,7 @@ abstract contract ERC7540Upgradeable is
         uint256 _totalAssets = totalAssets();
         uint256 _totalSupply = totalSupply();
         uint40 redeemSettleId = $erc7540.redeemSettleId;
+        uint40 lastRedeemEpochIdSettled = $erc7540.redeemEpochId - 2;
 
         SettleData storage settleData = $erc7540.settles[redeemSettleId];
 
@@ -638,7 +639,6 @@ abstract contract ERC7540Upgradeable is
 
         $erc7540.totalAssets = _totalAssets;
 
-        uint40 lastRedeemEpochIdSettled = $erc7540.redeemEpochId - 2;
         $erc7540.redeemSettleId = redeemSettleId + 2;
         $erc7540.lastRedeemEpochIdSettled = lastRedeemEpochIdSettled;
 
