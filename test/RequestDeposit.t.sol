@@ -81,7 +81,11 @@ contract TestRequestDeposit is BaseTest {
 
         assertEq(vault.maxDeposit(user1.addr), userBalance / 2, "wrong claimable deposit value");
 
-        assertEq(vault.balanceOf(address(vault)), userBalance / 2, "wrong amount of claimable shares");
+        assertEq(
+            vault.balanceOf(address(vault)),
+            (userBalance * 10 ** vault.decimalsOffset()) / 2,
+            "wrong amount of claimable shares"
+        );
 
         requestDeposit(userBalance / 2, user1.addr);
 
@@ -89,7 +93,7 @@ contract TestRequestDeposit is BaseTest {
         assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance / 2, "wrong pending deposit value");
 
         // we automatically claim for the user if he has claimable shares
-        assertEq(vault.balanceOf(user1.addr), userBalance / 2, "wrong shares balance");
+        assertEq(vault.balanceOf(user1.addr), (userBalance * 10 ** vault.decimalsOffset()) / 2, "wrong shares balance");
     }
 
     // @dev Once one of the request of the user has been taken into a TotalAssets

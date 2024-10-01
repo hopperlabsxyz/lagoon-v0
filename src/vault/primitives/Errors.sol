@@ -55,10 +55,6 @@ error NewNAVMissing();
 /// @param maxRate The maximum allowable rate.
 error AboveMaxRate(uint256 maxRate);
 
-/// @notice Indicates that the cooldown period has not yet expired.
-/// @param timeLeft The remaining time in the cooldown period.
-error CooldownNotOver(uint256 timeLeft);
-
 // ********************* ROLES ********************* //
 
 /// @notice Indicates that the caller is not a safe address.

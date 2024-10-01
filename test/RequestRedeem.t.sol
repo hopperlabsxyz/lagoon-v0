@@ -43,14 +43,14 @@ contract TestRequestRedeem is BaseTest {
     }
 
     function test_requestRedeem_withClaimableBalance() public {
-        uint256 userBalance = balance(user1.addr);
-        requestRedeem(userBalance / 2, user1.addr);
+        uint256 userShareBalance = balance(user1.addr);
+        requestRedeem(userShareBalance / 2, user1.addr);
         updateAndSettle(vault.totalAssets());
-        assertEq(vault.claimableRedeemRequest(0, user1.addr), userBalance / 2, "wrong claimable redeem value");
+        assertEq(vault.claimableRedeemRequest(0, user1.addr), userShareBalance / 2, "wrong claimable redeem value");
         requestRedeem(balance(user1.addr), user1.addr);
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0, "wrong claimable redeem value");
-        assertEq(vault.pendingRedeemRequest(0, user1.addr), userBalance / 2, "wrong pending redeem value");
-        assertEq(assetBalance(user1.addr), userBalance / 2, "wrong assets balance");
+        assertEq(vault.pendingRedeemRequest(0, user1.addr), userShareBalance / 2, "wrong pending redeem value");
+        assertEq(assetBalance(user1.addr) * 10 ** vault.decimalsOffset(), userShareBalance / 2, "wrong assets balance");
     }
 
     function test_requestRedeem_asAnOperator() public {

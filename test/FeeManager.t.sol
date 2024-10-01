@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import {BaseTest} from "./Base.sol";
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {AboveMaxRate, CooldownNotOver, FeeManager, Rates} from "@src/vault/FeeManager.sol";
+import {AboveMaxRate, FeeManager, Rates} from "@src/vault/FeeManager.sol";
 import {Vault} from "@src/vault/Vault.sol";
 import "forge-std/Test.sol";
 
@@ -311,20 +311,5 @@ contract TestFeeManager is BaseTest {
         assertEq(
             ratesAfter.performanceRate, ratesBefore.performanceRate, "performanceRate before and after are different"
         );
-    }
-
-    function test_updateRates_revertIfCoolDownNotOver() public {
-        Rates memory newRates = Rates({managementRate: 42, performanceRate: 42});
-
-        vm.prank(vault.owner());
-        vault.updateRates(newRates);
-
-        vm.prank(vault.owner());
-        vm.expectRevert(abi.encodeWithSelector(CooldownNotOver.selector, 1 days));
-        vault.updateRates(newRates);
-
-        vm.warp(block.timestamp + 1 days);
-        vm.prank(vault.owner());
-        vault.updateRates(newRates);
     }
 }

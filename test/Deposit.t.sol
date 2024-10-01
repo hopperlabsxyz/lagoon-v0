@@ -22,7 +22,7 @@ contract TestDeposit is BaseTest {
         uint256 shares = deposit(userBalance, user1.addr);
         assertEq(vault.convertToShares(userBalance, requestId), shares);
         assertEq(shares, vault.balanceOf(user1.addr));
-        assertEq(shares, userBalance);
+        assertEq(shares, userBalance * 10 ** vault.decimalsOffset());
     }
 
     function test_deposit_revertIfNotOperator() public {

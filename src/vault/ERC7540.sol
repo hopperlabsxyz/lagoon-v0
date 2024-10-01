@@ -70,6 +70,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         mapping(address controller => mapping(address operator => bool)) isOperator;
         Silo pendingSilo;
         IWETH9 wrappedNativeToken;
+        uint8 decimals;
+        uint8 decimalsOffset;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
@@ -102,6 +104,17 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         $.pendingSilo = new Silo(underlying, wrappedNativeToken);
         $.wrappedNativeToken = IWETH9(wrappedNativeToken);
         $.newTotalAssets = type(uint256).max;
+
+        uint8 underlyingDecimals = ERC20Upgradeable(asset()).decimals();
+        if (underlyingDecimals >= 18) {
+            $.decimals = underlyingDecimals;
+            $.decimalsOffset = 0;
+        } else {
+            $.decimals = 18;
+            unchecked {
+                $.decimalsOffset = 18 - underlyingDecimals;
+            }
+        }
     }
 
     /// @notice Make sure the caller is an operator or the controller.
@@ -128,7 +141,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         override(ERC4626Upgradeable, ERC20Upgradeable, IERC20Metadata)
         returns (uint8)
     {
-        return ERC4626Upgradeable.decimals();
+        return _getERC7540Storage().decimals;
+    }
+
+    function _decimalsOffset() internal view virtual override returns (uint8) {
+        return _getERC7540Storage().decimalsOffset;
     }
 
     function _update(

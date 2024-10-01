@@ -20,7 +20,7 @@ contract TestRedeem is BaseTest {
         assertEq(vault.maxDeposit(user1.addr), userBalance);
         uint256 shares = deposit(userBalance, user1.addr);
         assertEq(shares, vault.balanceOf(user1.addr));
-        assertEq(shares, userBalance);
+        assertEq(shares, userBalance * 10 ** vault.decimalsOffset());
         requestRedeem(shares, user1.addr);
         assertEq(vault.claimableRedeemRequest(vault.redeemEpochId(), user1.addr), 0);
 
@@ -40,7 +40,7 @@ contract TestRedeem is BaseTest {
         assertEq(vault.maxDeposit(user1.addr), userBalance);
         uint256 shares = deposit(userBalance, user1.addr);
         assertEq(shares, vault.balanceOf(user1.addr));
-        assertEq(shares, userBalance);
+        assertEq(shares, userBalance * 10 ** vault.decimalsOffset());
         requestRedeem(shares, user1.addr);
         updateAndSettle(userBalance);
 
@@ -57,7 +57,7 @@ contract TestRedeem is BaseTest {
         assertEq(vault.maxDeposit(user1.addr), userBalance);
         uint256 shares = deposit(userBalance, user1.addr);
         assertEq(shares, vault.balanceOf(user1.addr));
-        assertEq(shares, userBalance);
+        assertEq(shares, userBalance * 10 ** vault.decimalsOffset());
         requestRedeem(shares, user1.addr);
         updateAndSettle(userBalance);
 
@@ -74,7 +74,7 @@ contract TestRedeem is BaseTest {
         assertEq(vault.maxDeposit(user1.addr), userBalance);
         uint256 shares = deposit(userBalance, user1.addr);
         assertEq(shares, vault.balanceOf(user1.addr));
-        assertEq(shares, userBalance);
+        assertEq(shares, userBalance * 10 ** vault.decimalsOffset());
         requestRedeem(shares, user1.addr);
         assertEq(vault.claimableRedeemRequest(vault.redeemEpochId(), user1.addr), 0);
 

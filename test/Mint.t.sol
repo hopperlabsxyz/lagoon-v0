@@ -21,9 +21,9 @@ contract TestMint is BaseTest {
         assertEq(vault.maxDeposit(user1.addr), userBalance);
 
         uint256 claimableAssets = vault.claimableDepositRequest(0, user1.addr);
-        uint256 assetsClaimed = mint(12, user1.addr);
-        assertEq(vault.convertToAssets(12, requestId), assetsClaimed);
-        assertEq(12, vault.balanceOf(user1.addr));
+        uint256 assetsClaimed = mint(12 * 10 ** vault.decimalsOffset(), user1.addr);
+        assertEq(vault.convertToAssets(12 * 10 ** vault.decimalsOffset(), requestId), assetsClaimed);
+        assertEq(12 * 10 ** vault.decimalsOffset(), vault.balanceOf(user1.addr));
         uint256 claimableAssetsAfter = vault.claimableDepositRequest(0, user1.addr);
         assertEq(claimableAssetsAfter + assetsClaimed, claimableAssets);
         assertLt(claimableAssetsAfter, claimableAssets);
@@ -38,8 +38,8 @@ contract TestMint is BaseTest {
         vault.setOperator(user2.addr, true);
         assertEq(vault.maxDeposit(user1.addr), userBalance);
         uint256 claimableAssets = vault.claimableDepositRequest(0, user1.addr);
-        uint256 assetsClaimed = mint(12, user1.addr, user2.addr, user1.addr);
-        assertEq(12, vault.balanceOf(user1.addr));
+        uint256 assetsClaimed = mint(12 * 10 ** vault.decimalsOffset(), user1.addr, user2.addr, user1.addr);
+        assertEq(12 * 10 ** vault.decimalsOffset(), vault.balanceOf(user1.addr));
         uint256 claimableAssetsAfter = vault.claimableDepositRequest(0, user1.addr);
         assertEq(claimableAssetsAfter + assetsClaimed, claimableAssets);
         assertLt(claimableAssetsAfter, claimableAssets);

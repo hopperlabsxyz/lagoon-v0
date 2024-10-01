@@ -16,6 +16,10 @@ contract VaultHelper is Vault {
         return $.settles[$.epochs[uint40(epochId)].settleId].totalSupply;
     }
 
+    function decimalsOffset() public view returns (uint256) {
+        return _decimalsOffset();
+    }
+
     // function previousEpochTotalSupply() public view returns (uint256) {
     //     ERC7540Storage storage $ = _getERC7540Storage();
     //     return $.epochs[$.epochId - 1].totalSupply;

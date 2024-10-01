@@ -2,7 +2,7 @@
 pragma solidity "0.8.26";
 
 import {ERC7540} from "./ERC7540.sol";
-import {AboveMaxRate, CooldownNotOver} from "./primitives/Errors.sol";
+import {AboveMaxRate} from "./primitives/Errors.sol";
 import {HighWaterMarkUpdated, RatesUpdated} from "./primitives/Events.sol";
 import {Rates} from "./primitives/Struct.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
@@ -84,8 +84,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
 
         $.rates.managementRate = _managementRate;
         $.rates.performanceRate = _performanceRate;
-
-        $.lastFeeTime = block.timestamp;
     }
 
     /// @notice Take the fees by minting the manager and protocol shares
@@ -112,9 +110,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// @param newRates the new fee rates
     function updateRates(Rates memory newRates) external onlyOwner {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        if (block.timestamp < $.newRatesTimestamp) {
-            revert CooldownNotOver($.newRatesTimestamp - block.timestamp);
-        }
         if (newRates.managementRate > MAX_MANAGEMENT_RATE) {
             revert AboveMaxRate(MAX_MANAGEMENT_RATE);
         }
