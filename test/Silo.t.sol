@@ -15,7 +15,7 @@ contract TestSilo is BaseTest {
 
     function test_constructorGivesInfiniteApprovalToMsgSender() public {
         vm.prank(user1.addr);
-        Silo silo = new Silo(underlying);
+        Silo silo = new Silo(underlying, address(0));
         uint256 allowance = underlying.allowance(address(silo), user1.addr);
         assertEq(allowance, type(uint256).max);
     }

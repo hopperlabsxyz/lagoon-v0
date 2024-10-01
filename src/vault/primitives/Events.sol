@@ -17,14 +17,6 @@ event Referral(address indexed referral, address indexed owner, uint256 indexed 
 /// @param state The new state of the vault. Either Open, Closing or Close.
 event StateUpdated(State state);
 
-/// @notice Emitted when the total assets of the vault are updated.
-/// @param totalAssets The new total assets value.
-event TotalAssetsUpdated(uint256 totalAssets);
-
-/// @notice Emitted when the total assets are updated with a new value.
-/// @param totalAssets The updated total assets value.
-event UpdateTotalAssets(uint256 totalAssets);
-
 event SettleDeposit(
     uint40 indexed epochId,
     uint40 indexed settledId,
@@ -86,3 +78,12 @@ event RatesUpdated(Rates oldRates, Rates newRate, uint256 timestamp);
 /// @param oldHighWaterMark The old highWaterMark.
 /// @param newHighWaterMark The new highWaterMark.
 event HighWaterMarkUpdated(uint256 oldHighWaterMark, uint256 newHighWaterMark);
+
+// ********************* ERC7540 ********************* //
+/// @notice Emitted when the totalAssets variable is updated.
+/// @param totalAssets The new total assets value.
+event TotalAssetsUpdated(uint256 totalAssets);
+
+/// @notice Emitted when the newTotalAssets variable is updated.
+/// @param totalAssets The new newTotalAssets value.
+event NewTotalAssetsUpdated(uint256 totalAssets);

@@ -2,20 +2,17 @@
 pragma solidity "0.8.26";
 
 import {ERC7540} from "./ERC7540.sol";
-import {State} from "./primitives/Enums.sol";
-import {Closed, NewNAVMissing, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
-import {Referral, StateUpdated, TotalAssetsUpdated, UpdateTotalAssets} from "./primitives/Events.sol";
-
 import {FeeManager} from "./FeeManager.sol";
 import {Roles} from "./Roles.sol";
 import {Whitelistable} from "./Whitelistable.sol";
+import {State} from "./primitives/Enums.sol";
+import {Closed, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
+import {Referral, StateUpdated} from "./primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
-
 // import {console} from "forge-std/console.sol";
 
 using SafeERC20 for IERC20;
@@ -57,7 +54,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @param newTotalAssets The new total assets of the vault. It is used to update the totalAssets variable.
     /// @param state The state of the vault. It can be Open, Closing, or Closed.
     struct VaultStorage {
-        uint256 newTotalAssets;
         State state;
     }
 
@@ -98,8 +94,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         __Ownable_init(init.admin); // initial vault owner
 
         VaultStorage storage $ = _getVaultStorage();
-
-        $.newTotalAssets = type(uint256).max;
 
         $.state = State.Open;
         emit StateUpdated(State.Open);
@@ -170,27 +164,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         return super.requestRedeem(shares, controller, owner);
     }
 
-    /// @notice Update newTotalAssets variable in order to update totalAssets.
-    /// @param _newTotalAssets The new total assets of the vault.
-    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyNAVManager whenNotPaused {
-        VaultStorage storage $ = _getVaultStorage();
-        ERC7540Storage storage $erc7540 = _getERC7540Storage();
-
-        if ($.state == State.Closed) revert Closed();
-
-        $erc7540.epochs[$erc7540.depositEpochId].settleId = $erc7540.depositSettleId;
-        $erc7540.epochs[$erc7540.redeemEpochId].settleId = $erc7540.redeemSettleId;
-
-        address _pendingSilo = pendingSilo();
-        uint256 pendingAssets = IERC20(asset()).balanceOf(_pendingSilo);
-        uint256 pendingShares = balanceOf(_pendingSilo);
-
-        if (pendingAssets != 0) $erc7540.depositEpochId += 2;
-        if (pendingShares != 0) $erc7540.redeemEpochId += 2;
-
-        $.newTotalAssets = _newTotalAssets;
-
-        emit UpdateTotalAssets(_newTotalAssets);
+    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyNAVManager {
+        if (_getVaultStorage().state == State.Closed) revert Closed();
+        _updateNewTotalAssets(_newTotalAssets);
     }
 
     /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
@@ -219,22 +195,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
         _setHighWaterMark(_convertToAssets(10 ** decimals(), Math.Rounding.Floor));
         _settleRedeem(msg.sender);
-    }
-
-    /// @dev Updates the totalAssets variable with the newTotalAssets variable.
-    function _updateTotalAssets() internal whenNotPaused {
-        VaultStorage storage $vault = _getVaultStorage();
-        ERC7540Storage storage $erc7540 = _getERC7540Storage();
-
-        uint256 newTotalAssets = $vault.newTotalAssets;
-
-        if (
-            newTotalAssets == type(uint256).max // it means newTotalAssets has not been updated
-        ) revert NewNAVMissing();
-
-        $erc7540.totalAssets = newTotalAssets;
-        $vault.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
-        emit TotalAssetsUpdated(newTotalAssets);
     }
 
     /////////////////

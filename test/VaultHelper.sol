@@ -27,7 +27,7 @@ contract VaultHelper is Vault {
     }
 
     function newTotalAssets() public view returns (uint256) {
-        VaultStorage storage $ = _getVaultStorage();
+        ERC7540Storage storage $ = _getERC7540Storage();
         return $.newTotalAssets;
     }
 
