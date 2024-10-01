@@ -96,7 +96,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0, "protocol received unexpected fee shares");
 
         // ------------ Settle ------------ //
-        newTotalAssets = 4_000_000 * 10 ** vault.underlyingDecimals(); // vault valo made a x4 for user2; and x2 for
+        newTotalAssets = 4_000_002 * 10 ** vault.underlyingDecimals(); // vault valo made a x4 for user2; and x2 for
         // user1
         updateAndSettle(newTotalAssets);
 
@@ -148,9 +148,7 @@ contract TestFeeManager is BaseTest {
         uint256 freeride = user2InitialDeposit;
         uint256 expectedUser2Profit = (2 * user2InitialDeposit + freeride) - (2 * user2InitialDeposit * 20) / 100;
 
-        assertApproxEqAbs(
-            user2Profit, expectedUser2Profit, 2 * 10 ** vault.underlyingDecimals(), "user2 expected profit is wrong"
-        );
+        assertApproxEqAbs(user2Profit, expectedUser2Profit, 6, "user2 expected profit is wrong");
         uint256 expectedTotalFees = 4_000_002 * 10 ** (vault.underlyingDecimals() - 1);
 
         address feeReceiver = vault.feeReceiver();
@@ -170,7 +168,7 @@ contract TestFeeManager is BaseTest {
 
         uint256 totalFees = feeReceiverAssetAfter + daoAssetAfter;
 
-        assertApproxEqAbs(totalFees, expectedTotalFees, 10 ** vault.underlyingDecimals(), "wrong total Fees");
+        assertApproxEqAbs(totalFees, expectedTotalFees, 2, "wrong total Fees");
     }
 
     function test_NoFeesAreTakenDuringFreeRide() public {

@@ -92,12 +92,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     function _takeFees(address feeReceiver, address protocolFeeReceiver) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        uint256 _lastFeeTime = $.lastFeeTime;
-        if (_lastFeeTime == 0) {
-            $.lastFeeTime = block.timestamp;
-            return;
-        }
-        if (_lastFeeTime == block.timestamp) return; // this will happen when settleRedeem happens after settleDeposit
+        if ($.lastFeeTime == block.timestamp) return; // this will happen when settleRedeem happens after settleDeposit
 
         (uint256 managerShares, uint256 protocolShares) = _calculateFees();
 
