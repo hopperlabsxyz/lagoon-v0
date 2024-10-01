@@ -48,7 +48,8 @@ contract TestMisc is BaseTest {
     function test_decimals() public view {
         uint256 underlyingDecimals = underlying.decimals();
         uint256 vaultDecimals = vault.decimals();
-        assertEq(underlyingDecimals, vaultDecimals);
+        assertEq(vaultDecimals, 18);
+        assertEq(underlyingDecimals, 18 - vault.decimalsOffset());
     }
 
     function test_redeemId() public {

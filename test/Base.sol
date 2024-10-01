@@ -240,8 +240,10 @@ contract BaseTest is Test, Constants {
     }
 
     function whitelist(address user) public {
+        address[] memory users = new address[](1);
+        users[0] = user;
         vm.prank(vault.whitelistManager());
-        vault.addToWhitelist(user);
+        vault.addToWhitelist(users);
     }
 
     function whitelist(address[] memory users) public {
@@ -255,8 +257,10 @@ contract BaseTest is Test, Constants {
     }
 
     function unwhitelist(address user) public {
+        address[] memory users = new address[](1);
+        users[0] = user;
         vm.prank(vault.whitelistManager());
-        vault.revokeFromWhitelist(user);
+        vault.revokeFromWhitelist(users);
     }
 
     function updateRates(Rates memory newRates) public {

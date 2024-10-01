@@ -176,17 +176,11 @@ contract TestWhitelist is BaseTest {
         withWhitelistSetUp();
 
         vm.expectRevert(abi.encodeWithSelector(OnlyWhitelistManager.selector, vault.whitelistManager()));
-        vault.addToWhitelist(address(0x42));
-
-        vm.expectRevert(abi.encodeWithSelector(OnlyWhitelistManager.selector, vault.whitelistManager()));
         vault.addToWhitelist(new address[](5));
     }
 
     function test_revokeFromWhitelist_revert() public {
         withWhitelistSetUp();
-
-        vm.expectRevert(abi.encodeWithSelector(OnlyWhitelistManager.selector, vault.whitelistManager()));
-        vault.revokeFromWhitelist(address(0x42));
 
         vm.expectRevert(abi.encodeWithSelector(OnlyWhitelistManager.selector, vault.whitelistManager()));
         vault.revokeFromWhitelist(new address[](5));

@@ -10,6 +10,7 @@ import {Closed, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.s
 import {Referral, StateUpdated} from "./primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
@@ -78,7 +79,11 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         __ERC20_init(init.name, init.symbol);
         __ERC20Pausable_init();
         __FeeManager_init(
-            init.feeRegistry, init.managementRate, init.performanceRate, decimals(), init.rateUpdateCooldown
+            init.feeRegistry,
+            init.managementRate,
+            init.performanceRate,
+            IERC20Metadata(address(init.underlying)).decimals(),
+            init.rateUpdateCooldown
         );
         __ERC7540_init(init.underlying, init.wrappedNativeToken);
         __Whitelistable_init(init.enableWhitelist, FeeRegistry(init.feeRegistry).protocolFeeReceiver());

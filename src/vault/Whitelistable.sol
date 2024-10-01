@@ -58,12 +58,6 @@ contract Whitelistable is Roles {
         return $.isActivated ? $.isWhitelisted[account] : true;
     }
 
-    /// @notice Adds an account to the whitelist
-    function addToWhitelist(address account) external onlyWhitelistManager {
-        _getWhitelistableStorage().isWhitelisted[account] = true;
-        emit WhitelistUpdated(account, true);
-    }
-
     /// @notice Adds multiple accounts to the whitelist
     function addToWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
@@ -72,13 +66,6 @@ contract Whitelistable is Roles {
             $.isWhitelisted[accounts[i]] = true;
             emit WhitelistUpdated(accounts[i], true);
         }
-    }
-
-    /// @notice Removes an account from the whitelist
-    /// @param account The address of the account to remove
-    function revokeFromWhitelist(address account) external onlyWhitelistManager {
-        _getWhitelistableStorage().isWhitelisted[account] = false;
-        emit WhitelistUpdated(account, false);
     }
 
     /// @notice Removes multiple accounts from the whitelist

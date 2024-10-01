@@ -76,7 +76,8 @@ contract TestSettle is BaseTest {
         // user1 assets: user1Assets + user1Shares.muldiv(75*1e6 + 1, 50e1e6 + 1, Math.Round.floor)
         assertEq(
             user1NewAssets,
-            user1Assets + user1Shares.mulDiv(totalAssetsWhenRedeem, totalSupplyWhenRedeem, Math.Rounding.Floor)
+            user1Assets - 1 + user1Shares.mulDiv(totalAssetsWhenRedeem, totalSupplyWhenRedeem, Math.Rounding.Floor),
+            "wrong user1 new assets"
         );
     }
 

@@ -18,13 +18,13 @@ contract TestWithdraw is BaseTest {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance, user1.addr);
         updateAndSettle(0);
-        assertEq(vault.maxDeposit(user1.addr), userBalance);
+        assertEq(vault.maxDeposit(user1.addr), userBalance, "wrong max deposit");
         uint256 sharesObtained = deposit(userBalance, user1.addr);
-        assertEq(sharesObtained, vault.balanceOf(user1.addr));
-        assertEq(sharesObtained, userBalance);
+        assertEq(sharesObtained, vault.balanceOf(user1.addr), "wrong amount of shares obtained");
+        assertEq(sharesObtained, userBalance * 10 ** vault.decimalsOffset(), "wrong amount of shares obtained 2");
         requestRedeem(sharesObtained, user1.addr);
 
-        assertEq(vault.claimableRedeemRequest(vault.redeemEpochId(), user1.addr), 0);
+        assertEq(vault.claimableRedeemRequest(vault.redeemEpochId(), user1.addr), 0, "wrong claimable redeem amount");
         updateAndSettle(userBalance + 100);
         assertEq(vault.maxRedeem(user1.addr), sharesObtained, "user1 should be able to redeem all his shares");
         uint256 assetsToWithdraw = vault.convertToAssets(sharesObtained, vault.redeemEpochId() - 2);
@@ -34,7 +34,7 @@ contract TestWithdraw is BaseTest {
         assertApproxEqAbs(
             sharesObtained - sharesTaken,
             vault.balanceOf(user1.addr),
-            1,
+            1 * 10 ** vault.decimalsOffset(),
             "sharesObtained - sharesTaken should be equal to balanceOf"
         );
         assertEq(vault.maxWithdraw(user1.addr), 0, "maxWithdraw should be 0");
@@ -48,10 +48,10 @@ contract TestWithdraw is BaseTest {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance, user1.addr);
         updateAndSettle(0);
-        assertEq(vault.maxDeposit(user1.addr), userBalance);
+        assertEq(vault.maxDeposit(user1.addr), userBalance, "wrong max deposit");
         uint256 sharesObtained = deposit(userBalance, user1.addr);
-        assertEq(sharesObtained, vault.balanceOf(user1.addr));
-        assertEq(sharesObtained, userBalance);
+        assertEq(sharesObtained, vault.balanceOf(user1.addr), "wrong shares obtained");
+        assertEq(sharesObtained, userBalance * 10 ** vault.decimalsOffset(), "wrong shares obtained 2");
         requestRedeem(sharesObtained, user1.addr);
 
         assertEq(vault.claimableRedeemRequest(vault.redeemEpochId(), user1.addr), 0);

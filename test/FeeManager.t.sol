@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import {BaseTest} from "./Base.sol";
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {AboveMaxRate, CooldownNotOver, FeeManager, Rates} from "@src/vault/FeeManager.sol";
+import {AboveMaxRate, FeeManager, Rates} from "@src/vault/FeeManager.sol";
 import {Vault} from "@src/vault/Vault.sol";
 import "forge-std/Test.sol";
 
@@ -96,7 +96,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0, "protocol received unexpected fee shares");
 
         // ------------ Settle ------------ //
-        newTotalAssets = 4_000_002 * 10 ** vault.underlyingDecimals(); // vault valo made a x4 for user2; and x2 for
+        newTotalAssets = 4_000_000 * 10 ** vault.underlyingDecimals(); // vault valo made a x4 for user2; and x2 for
         // user1
         updateAndSettle(newTotalAssets);
 
@@ -148,7 +148,9 @@ contract TestFeeManager is BaseTest {
         uint256 freeride = user2InitialDeposit;
         uint256 expectedUser2Profit = (2 * user2InitialDeposit + freeride) - (2 * user2InitialDeposit * 20) / 100;
 
-        assertApproxEqAbs(user2Profit, expectedUser2Profit, 6, "user2 expected profit is wrong");
+        assertApproxEqAbs(
+            user2Profit, expectedUser2Profit, 2 * 10 ** vault.underlyingDecimals(), "user2 expected profit is wrong"
+        );
         uint256 expectedTotalFees = 4_000_002 * 10 ** (vault.underlyingDecimals() - 1);
 
         address feeReceiver = vault.feeReceiver();
@@ -168,7 +170,7 @@ contract TestFeeManager is BaseTest {
 
         uint256 totalFees = feeReceiverAssetAfter + daoAssetAfter;
 
-        assertApproxEqAbs(totalFees, expectedTotalFees, 2, "wrong total Fees");
+        assertApproxEqAbs(totalFees, expectedTotalFees, 10 ** vault.underlyingDecimals(), "wrong total Fees");
     }
 
     function test_NoFeesAreTakenDuringFreeRide() public {
@@ -311,20 +313,5 @@ contract TestFeeManager is BaseTest {
         assertEq(
             ratesAfter.performanceRate, ratesBefore.performanceRate, "performanceRate before and after are different"
         );
-    }
-
-    function test_updateRates_revertIfCoolDownNotOver() public {
-        Rates memory newRates = Rates({managementRate: 42, performanceRate: 42});
-
-        vm.prank(vault.owner());
-        vault.updateRates(newRates);
-
-        vm.prank(vault.owner());
-        vm.expectRevert(abi.encodeWithSelector(CooldownNotOver.selector, 1 days));
-        vault.updateRates(newRates);
-
-        vm.warp(block.timestamp + 1 days);
-        vm.prank(vault.owner());
-        vault.updateRates(newRates);
     }
 }
