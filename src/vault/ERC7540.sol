@@ -120,7 +120,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @notice Make sure the caller is an operator or the controller.
     /// @param controller The controller.
     modifier onlyOperator(address controller) {
-        if (controller != _msgSender() && !isOperator(controller, _msgSender())) {
+        if (controller != msg.sender && !isOperator(controller, msg.sender)) {
             revert ERC7540InvalidOperator();
         }
         _;
@@ -163,7 +163,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @dev should not be usable when contract is paused
     function setOperator(address operator, bool approved) external whenNotPaused returns (bool success) {
-        address msgSender = _msgSender();
+        address msgSender = msg.sender;
         _getERC7540Storage().isOperator[msgSender][operator] = approved;
         emit OperatorSet(msgSender, operator, approved);
         return true;
@@ -234,7 +234,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
         }
 
-        emit DepositRequest(controller, owner, _depositId, _msgSender(), assets);
+        emit DepositRequest(controller, owner, _depositId, msg.sender, assets);
         return _depositId;
     }
 
@@ -279,7 +279,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 assets,
         address receiver
     ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        return _deposit(assets, receiver, _msgSender());
+        return _deposit(assets, receiver, msg.sender);
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
@@ -322,7 +322,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 shares,
         address receiver
     ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        return _mint(shares, receiver, _msgSender());
+        return _mint(shares, receiver, msg.sender);
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
@@ -361,7 +361,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @dev It can only be called in the same epoch.
     function cancelRequestDeposit() external whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
-        address msgSender = _msgSender();
+        address msgSender = msg.sender;
 
         uint40 requestId = $.lastDepositRequestId[msgSender];
         if (requestId != $.depositEpochId) {
@@ -384,8 +384,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param owner The owner of the shares.
     /// @return The request ID. It is the current redeem epoch ID.
     function requestRedeem(uint256 shares, address controller, address owner) public virtual returns (uint256) {
-        if (_msgSender() != owner && !isOperator(owner, _msgSender())) {
-            _spendAllowance(owner, _msgSender(), shares);
+        if (msg.sender != owner && !isOperator(owner, msg.sender)) {
+            _spendAllowance(owner, msg.sender, shares);
         }
 
         uint256 claimable = claimableRedeemRequest(0, controller);
@@ -404,7 +404,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
         _update(owner, address($.pendingSilo), shares);
 
-        emit RedeemRequest(controller, owner, _redeemId, _msgSender(), shares);
+        emit RedeemRequest(controller, owner, _redeemId, msg.sender, shares);
         return _redeemId;
     }
 
@@ -466,7 +466,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         assets = _convertToAssets(shares, requestId, Math.Rounding.Floor);
         IERC20(asset()).safeTransfer(receiver, assets);
 
-        emit Withdraw(_msgSender(), receiver, controller, assets, shares);
+        emit Withdraw(msg.sender, receiver, controller, assets, shares);
     }
 
     /// @notice Withdraw assets from the vault.
@@ -490,7 +490,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         $.epochs[requestId].redeemRequest[controller] -= shares;
         IERC20(asset()).safeTransfer(receiver, assets);
 
-        emit Withdraw(_msgSender(), receiver, controller, assets, shares);
+        emit Withdraw(msg.sender, receiver, controller, assets, shares);
     }
 
     // ## Conversion functions ##

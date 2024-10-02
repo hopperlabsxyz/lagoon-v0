@@ -63,14 +63,14 @@ contract Roles is Ownable2StepUpgradeable {
     /// @dev Modifier to check if the caller is the safe.
     modifier onlySafe() {
         address _safe = _getRolesStorage().safe;
-        if (_safe != _msgSender()) revert OnlySafe(_safe);
+        if (_safe != msg.sender) revert OnlySafe(_safe);
         _;
     }
 
     /// @dev Modifier to check if the caller is the whitelist manager.
     modifier onlyWhitelistManager() {
         address _whitelistManager = _getRolesStorage().whitelistManager;
-        if (_whitelistManager != _msgSender()) {
+        if (_whitelistManager != msg.sender) {
             revert OnlyWhitelistManager(_whitelistManager);
         }
         _;
@@ -79,7 +79,7 @@ contract Roles is Ownable2StepUpgradeable {
     /// @dev Modifier to check if the caller is the total assets manager.
     modifier onlyNAVManager() {
         address _navManager = _getRolesStorage().navManager;
-        if (_navManager != _msgSender()) {
+        if (_navManager != msg.sender) {
             revert OnlyNAVManager(_navManager);
         }
         _;
