@@ -184,24 +184,20 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             || interfaceId == type(IERC165).interfaceId;
     }
 
-    function previewDeposit(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256 shares) {
-        shares;
-        if (true) revert ERC7540PreviewDepositDisabled();
+    function previewDeposit(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        revert ERC7540PreviewDepositDisabled();
     }
 
-    function previewMint(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256 assets) {
-        assets;
-        if (true) revert ERC7540PreviewMintDisabled();
+    function previewMint(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        revert ERC7540PreviewMintDisabled();
     }
 
-    function previewRedeem(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256 assets) {
-        assets;
-        if (true) revert ERC7540PreviewRedeemDisabled();
+    function previewRedeem(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        revert ERC7540PreviewRedeemDisabled();
     }
 
-    function previewWithdraw(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256 shares) {
-        shares;
-        if (true) revert ERC7540PreviewWithdrawDisabled();
+    function previewWithdraw(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        revert ERC7540PreviewWithdrawDisabled();
     }
 
     // ## EIP7540 Deposit Flow ##

@@ -9,6 +9,7 @@ import {
     ERC7540PreviewWithdrawDisabled,
     IERC165
 } from "@src/vault/ERC7540.sol";
+import {Roles} from "@src/vault/Roles.sol";
 import {Vault} from "@src/vault/Vault.sol";
 import "forge-std/Test.sol";
 
@@ -101,5 +102,114 @@ contract TestMisc is BaseTest {
         }
         console.log("Vault size: %d", size);
         assertLt(size, 24_576, "Contract size is too large");
+    }
+
+    function test_epochSettleId() public {
+        assertEq(vault.epochSettleId(0), 0);
+        assertEq(vault.epochSettleId(1), 0);
+        assertEq(vault.epochSettleId(2), 0);
+
+        updateAndSettle(0);
+
+        assertEq(vault.epochSettleId(0), 0);
+        assertEq(vault.epochSettleId(1), 1);
+        assertEq(vault.epochSettleId(2), 2);
+        assertEq(vault.epochSettleId(3), 0);
+        assertEq(vault.epochSettleId(4), 0);
+
+        dealAndApproveAndWhitelist(user1.addr);
+        uint256 user1Balance = assetBalance(user1.addr);
+        uint256 requestId1 = requestDeposit(user1Balance, user1.addr);
+        assertEq(requestId1, 1);
+
+        // this increment depositEpochId since there are pending deposit
+        updateNewTotalAssets(10_000);
+
+        dealAndApproveAndWhitelist(user2.addr);
+        uint256 requestId2 = requestDeposit(user1Balance, user2.addr);
+        assertEq(requestId2, 3);
+
+        assertEq(vault.epochSettleId(0), 0);
+        assertEq(vault.epochSettleId(1), 1);
+        assertEq(vault.epochSettleId(2), 2);
+        // settleId for epochId 3 is still uncertain
+        assertEq(vault.epochSettleId(3), 0);
+        assertEq(vault.epochSettleId(4), 0);
+
+        updateNewTotalAssets(10_000);
+
+        assertEq(vault.epochSettleId(0), 0);
+        assertEq(vault.epochSettleId(1), 1);
+        assertEq(vault.epochSettleId(2), 2);
+        // settleId for epochId 3 points to settleId 1
+        assertEq(vault.epochSettleId(3), 1);
+        assertEq(vault.epochSettleId(4), 0);
+    }
+
+    function test_lastDepositRequestId() public {
+        dealAndApproveAndWhitelist(user1.addr);
+        uint256 user1Balance = assetBalance(user1.addr);
+        uint256 requestId1 = requestDeposit(user1Balance, user1.addr);
+        assertEq(vault.lastDepositRequestId(user1.addr), requestId1);
+
+        dealAndApproveAndWhitelist(user1.addr);
+        uint256 requestId2 = requestDeposit(user1Balance, user1.addr);
+        assertEq(requestId1, requestId2);
+        assertEq(vault.lastDepositRequestId(user1.addr), requestId2);
+
+        updateAndSettle(0);
+
+        dealAndApproveAndWhitelist(user1.addr);
+        uint256 requestId3 = requestDeposit(user1Balance, user1.addr);
+        assertNotEq(requestId2, requestId3);
+        assertEq(vault.lastDepositRequestId(user1.addr), requestId3);
+    }
+
+    function test_lastRedeemRequestId() public {
+        dealAndApproveAndWhitelist(user1.addr);
+        uint256 user1Balance = assetBalance(user1.addr);
+        uint256 requestId1 = requestDeposit(user1Balance, user1.addr);
+        assertEq(vault.lastDepositRequestId(user1.addr), requestId1);
+
+        dealAndApproveAndWhitelist(user1.addr);
+        uint256 requestId2 = requestDeposit(user1Balance, user1.addr);
+        assertEq(requestId1, requestId2);
+        assertEq(vault.lastDepositRequestId(user1.addr), requestId2);
+
+        updateAndSettle(0);
+
+        dealAndApproveAndWhitelist(user1.addr);
+        uint256 requestId3 = requestDeposit(user1Balance, user1.addr);
+        assertNotEq(requestId2, requestId3);
+        assertEq(vault.lastDepositRequestId(user1.addr), requestId3);
+
+        updateAndSettle(2 * user1Balance);
+
+        vm.prank(user1.addr);
+        vault.deposit(user1Balance, user1.addr, user1.addr);
+
+        uint256 requestId4 = requestRedeem(user1Balance * 10 ** vault.decimalsOffset(), user1.addr);
+        assertEq(vault.lastRedeemRequestId(user1.addr), requestId4);
+
+        uint256 requestId5 = requestRedeem(user1Balance * 10 ** vault.decimalsOffset(), user1.addr);
+        assertEq(vault.lastRedeemRequestId(user1.addr), requestId5);
+
+        assertEq(requestId5, requestId4);
+
+        updateAndSettle(3 * user1Balance);
+
+        uint256 requestId6 = requestRedeem(user1Balance * 10 ** vault.decimalsOffset(), user1.addr);
+        assertEq(vault.lastRedeemRequestId(user1.addr), requestId6);
+
+        assertNotEq(requestId5, requestId6);
+    }
+
+    function test_getRoleStorage() public view {
+        Roles.RolesStorage memory rolesStorage = vault.getRolesStorage();
+        assertEq(rolesStorage.whitelistManager, whitelistManager.addr);
+        assertEq(rolesStorage.feeReceiver, feeReceiver.addr);
+        assertEq(rolesStorage.safe, safe.addr);
+        assertEq(address(rolesStorage.feeRegistry), address(feeRegistry));
+        assertEq(rolesStorage.navManager, navManager.addr);
     }
 }
