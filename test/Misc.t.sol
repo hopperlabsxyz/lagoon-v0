@@ -101,6 +101,11 @@ contract TestMisc is BaseTest {
             size := extcodesize(vaultAddr)
         }
         console.log("Vault size: %d", size);
+        if (size > 24_576) {
+            console.log("Size diff: %d", size - 24_576);
+        } else {
+            console.log("Size diff: %d", 24_576 - size);
+        }
         assertLt(size, 24_576, "Contract size is too large");
     }
 
@@ -210,6 +215,6 @@ contract TestMisc is BaseTest {
         assertEq(rolesStorage.feeReceiver, feeReceiver.addr);
         assertEq(rolesStorage.safe, safe.addr);
         assertEq(address(rolesStorage.feeRegistry), address(feeRegistry));
-        assertEq(rolesStorage.navManager, navManager.addr);
+        assertEq(rolesStorage.valuationManager, valuationManager.addr);
     }
 }

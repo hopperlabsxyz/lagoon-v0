@@ -48,7 +48,7 @@ contract DeployVault is Script {
             symbol: VAULT_SYMBOL,
             safe: SAFE,
             whitelistManager: DAO,
-            navManager: DAO,
+            valuationManager: DAO,
             admin: DAO,
             feeReceiver: FEE_RECEIVER,
             feeRegistry: FEE_REGISTRY,

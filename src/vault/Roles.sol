@@ -2,8 +2,8 @@
 pragma solidity "0.8.26";
 
 import {FeeRegistry} from "../protocol/FeeRegistry.sol";
-import {OnlyNAVManager, OnlySafe, OnlyWhitelistManager} from "./primitives/Errors.sol";
-import {FeeReceiverUpdated, NavManagerUpdated, WhitelistManagerUpdated} from "./primitives/Events.sol";
+import {OnlySafe, OnlyValuationManager, OnlyWhitelistManager} from "./primitives/Errors.sol";
+import {FeeReceiverUpdated, ValuationManagerUpdated, WhitelistManagerUpdated} from "./primitives/Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 /// @title RolesUpgradeable
@@ -16,7 +16,7 @@ contract Roles is Ownable2StepUpgradeable {
     /// @param safe Every lagoon vault is associated with a Safe smart contract. This address will receive the assets of
     /// the vault and can settle deposits and redeems.
     /// @param feeRegistry The address of the FeeRegistry contract.
-    /// @param navManager. This address is responsible of updating the newTotalAssets value of the vault.
+    /// @param valuationManager. This address is responsible of updating the newTotalAssets value of the vault.
     /// @param owner The address of the owner of the contract. It considered as the admin. It is not visible in the
     /// struct. It can change the others roles and itself. Initiate the fund closing. Disable the whitelist.
     struct RolesStorage {
@@ -24,7 +24,7 @@ contract Roles is Ownable2StepUpgradeable {
         address feeReceiver;
         address safe;
         FeeRegistry feeRegistry;
-        address navManager;
+        address valuationManager;
     }
 
     /// @dev Initializes the roles of the vault.
@@ -37,7 +37,7 @@ contract Roles is Ownable2StepUpgradeable {
         $.feeReceiver = roles.feeReceiver;
         $.safe = roles.safe;
         $.feeRegistry = FeeRegistry(roles.feeRegistry);
-        $.navManager = roles.navManager;
+        $.valuationManager = roles.valuationManager;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Roles")) - 1)) & ~bytes32(uint256(0xff))
@@ -76,11 +76,11 @@ contract Roles is Ownable2StepUpgradeable {
         _;
     }
 
-    /// @dev Modifier to check if the caller is the total assets manager.
-    modifier onlyNAVManager() {
-        address _navManager = _getRolesStorage().navManager;
-        if (_navManager != msg.sender) {
-            revert OnlyNAVManager(_navManager);
+    /// @dev Modifier to check if the caller is the valuation manager.
+    modifier onlyValuationManager() {
+        address _valuationManager = _getRolesStorage().valuationManager;
+        if (_valuationManager != msg.sender) {
+            revert OnlyValuationManager(_valuationManager);
         }
         _;
     }
@@ -93,12 +93,12 @@ contract Roles is Ownable2StepUpgradeable {
         _getRolesStorage().whitelistManager = _whitelistManager;
     }
 
-    /// @notice Updates the address of the nav manager.
-    /// @param _navManager The new address of the nav manager.
+    /// @notice Updates the address of the valuation manager.
+    /// @param _valuationManager The new address of the valuation manager.
     /// @dev Only the owner can call this function.
-    function updateNAVManager(address _navManager) external onlyOwner {
-        emit NavManagerUpdated(_getRolesStorage().navManager, _navManager);
-        _getRolesStorage().navManager = _navManager;
+    function updateValuationManager(address _valuationManager) external onlyOwner {
+        emit ValuationManagerUpdated(_getRolesStorage().valuationManager, _valuationManager);
+        _getRolesStorage().valuationManager = _valuationManager;
     }
 
     /// @notice Updates the address of the fee receiver.

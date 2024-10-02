@@ -24,7 +24,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @param symbol The symbol of the vault and by extension the ERC20 token.
     /// @param safe The address of the safe smart contract.
     /// @param whitelistManager The address of the whitelist manager.
-    /// @param navManager The address of the NAV manager.
+    /// @param valuationManager The address of the valuation manager.
     /// @param admin The address of the owner of the vault.
     /// @param feeReceiver The address of the fee receiver.
     /// @param feeRegistry The address of the fee registry.
@@ -39,7 +39,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         string symbol;
         address safe;
         address whitelistManager;
-        address navManager;
+        address valuationManager;
         address admin;
         address feeReceiver;
         address feeRegistry;
@@ -92,14 +92,11 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
                 feeRegistry: FeeRegistry(init.feeRegistry),
-                navManager: init.navManager
+                valuationManager: init.valuationManager
             })
         );
         __Ownable_init(init.admin); // initial vault owner
 
-        VaultStorage storage $ = _getVaultStorage();
-
-        $.state = State.Open;
         emit StateUpdated(State.Open);
     }
 
@@ -124,7 +121,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address controller,
         address owner
-    ) public payable override(ERC7540) whenNotPaused returns (uint256 requestId) {
+    ) public payable override onlyOperator(owner) whenNotPaused returns (uint256 requestId) {
+        if (!isWhitelisted(owner)) revert NotWhitelisted();
         return _requestDeposit(assets, controller, owner);
     }
 
@@ -138,20 +136,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller,
         address owner,
         address referral
-    ) public payable whenNotPaused returns (uint256 requestId) {
-        requestId = _requestDeposit(assets, controller, owner);
-        if (address(referral) != address(0)) {
-            emit Referral(referral, owner, requestId, assets);
-        }
-    }
-
-    /// @param assets The amount of assets to deposit.
-    /// @param controller The address of the controller involved in the deposit request.
-    /// @param owner The address of the owner for whom the deposit is requested.
-    /// @return The id of the deposit request.
-    function _requestDeposit(uint256 assets, address controller, address owner) internal returns (uint256) {
+    ) public payable onlyOperator(owner) whenNotPaused returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
-        return super.requestDeposit(assets, controller, owner);
+        requestId = _requestDeposit(assets, controller, owner);
+        emit Referral(referral, owner, requestId, assets);
     }
 
     /// @notice Requests the redemption of tokens, subject to whitelist validation.
@@ -163,12 +151,16 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 shares,
         address controller,
         address owner
-    ) public override(ERC7540) onlyOpen whenNotPaused returns (uint256 requestId) {
+    ) public onlyOpen whenNotPaused returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
-        return super.requestRedeem(shares, controller, owner);
+        return _requestRedeem(shares, controller, owner);
     }
 
-    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyNAVManager {
+    /// @notice Function to propose a new valuation for the vault.
+    /// @notice It can only be called by the ValueManager.
+    /// @param _newTotalAssets The new total assets of the vault.
+
+    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyValuationManager {
         if (_getVaultStorage().state == State.Closed) revert Closed();
         _updateNewTotalAssets(_newTotalAssets);
     }
@@ -234,12 +226,12 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address receiver,
         address controller
-    ) public override(ERC4626Upgradeable, IERC4626) returns (uint256 shares) {
+    ) public override(ERC4626Upgradeable, IERC4626) onlyOperator(controller) whenNotPaused returns (uint256 shares) {
         VaultStorage storage $ = _getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             shares = _convertToShares(assets, Math.Rounding.Ceil);
-            _withdraw(_msgSender(), receiver, controller, assets, shares);
+            _withdraw(msg.sender, receiver, controller, assets, shares);
         } else {
             return _withdraw(assets, receiver, controller);
         }
@@ -257,7 +249,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 shares,
         address receiver,
         address controller
-    ) public override(ERC4626Upgradeable, IERC4626) returns (uint256 assets) {
+    ) public override(ERC4626Upgradeable, IERC4626) onlyOperator(controller) whenNotPaused returns (uint256 assets) {
         VaultStorage storage $ = _getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {

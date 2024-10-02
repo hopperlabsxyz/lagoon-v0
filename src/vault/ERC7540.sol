@@ -12,7 +12,7 @@ import {
     ERC7540PreviewMintDisabled,
     ERC7540PreviewRedeemDisabled,
     ERC7540PreviewWithdrawDisabled,
-    NewNAVMissing,
+    NewTotalAssetsMissing,
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
     RequestNotCancelable
@@ -108,7 +108,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint8 underlyingDecimals = ERC20Upgradeable(asset()).decimals();
         if (underlyingDecimals >= 18) {
             $.decimals = underlyingDecimals;
-            $.decimalsOffset = 0;
         } else {
             $.decimals = 18;
             unchecked {
@@ -203,11 +202,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     // ## EIP7540 Deposit Flow ##
 
     /// @dev Unusable when paused. Modifier not needed as it's overridden.
-    function requestDeposit(
-        uint256 assets,
-        address controller,
-        address owner
-    ) public payable virtual onlyOperator(owner) returns (uint256) {
+    function _requestDeposit(uint256 assets, address controller, address owner) internal returns (uint256) {
         uint256 claimable = claimableDepositRequest(0, controller);
         if (claimable > 0) _deposit(claimable, controller, controller);
 
@@ -218,7 +213,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             if (pendingDepositRequest(0, controller) > 0) {
                 revert OnlyOneRequestAllowed();
             }
-
             $.lastDepositRequestId[controller] = _depositId;
         }
         $.epochs[_depositId].depositRequest[controller] += assets;
@@ -383,7 +377,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param controller The controller is the address that will manage the request.
     /// @param owner The owner of the shares.
     /// @return The request ID. It is the current redeem epoch ID.
-    function requestRedeem(uint256 shares, address controller, address owner) public virtual returns (uint256) {
+    function _requestRedeem(uint256 shares, address controller, address owner) internal returns (uint256) {
         if (msg.sender != owner && !isOperator(owner, msg.sender)) {
             _spendAllowance(owner, msg.sender, shares);
         }
@@ -450,11 +444,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param controller The controller, who owns the redeem request.
     /// @return assets The corresponding assets.
 
-    function _redeem(
-        uint256 shares,
-        address receiver,
-        address controller
-    ) internal onlyOperator(controller) whenNotPaused returns (uint256 assets) {
+    function _redeem(uint256 shares, address receiver, address controller) internal returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastRedeemRequestId[controller];
@@ -474,11 +464,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param receiver The receiver of the assets.
     /// @param controller The controller, who owns the request.
     /// @return shares The corresponding shares.
-    function _withdraw(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) internal onlyOperator(controller) whenNotPaused returns (uint256 shares) {
+    function _withdraw(uint256 assets, address receiver, address controller) internal returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastRedeemRequestId[controller];
@@ -661,7 +647,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
         if (
             newTotalAssets == type(uint256).max // it means newTotalAssets has not been updated
-        ) revert NewNAVMissing();
+        ) revert NewTotalAssetsMissing();
 
         $.totalAssets = newTotalAssets;
         $.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
