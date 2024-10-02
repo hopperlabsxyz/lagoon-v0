@@ -12,7 +12,7 @@ import {
     ERC7540PreviewMintDisabled,
     ERC7540PreviewRedeemDisabled,
     ERC7540PreviewWithdrawDisabled,
-    NewNAVMissing,
+    NewTotalAssetsMissing,
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
     RequestNotCancelable
@@ -664,7 +664,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
         if (
             newTotalAssets == type(uint256).max // it means newTotalAssets has not been updated
-        ) revert NewNAVMissing();
+        ) revert NewTotalAssetsMissing();
 
         $.totalAssets = newTotalAssets;
         $.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again

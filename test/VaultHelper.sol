@@ -103,9 +103,9 @@ contract VaultHelper is Vault {
         return _getRolesStorage().safe;
     }
 
-    /// @notice Returns the address of the NAV manager.
-    function navManager() public view returns (address) {
-        return _getRolesStorage().navManager;
+    /// @notice Returns the address of the valuation manager.
+    function valuationManager() public view returns (address) {
+        return _getRolesStorage().valuationManager;
     }
 
     /// @notice Returns the address of the fee registry.
