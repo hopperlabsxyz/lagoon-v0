@@ -171,14 +171,17 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address receiver,
         address controller
-    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused onlyOperator(controller) returns (uint256 shares) {
+    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256 shares) {
         VaultStorage storage $ = _getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             shares = _convertToShares(assets, Math.Rounding.Ceil);
-            _withdraw(msg.sender, receiver, controller, assets, shares);
+            _withdraw(msg.sender, receiver, controller, assets, shares); // sync
         } else {
-            return _withdraw(assets, receiver, controller);
+            if (controller != msg.sender && !isOperator(controller, msg.sender)) {
+                revert ERC7540InvalidOperator();
+            }
+            return _withdraw(assets, receiver, controller); // async
         }
     }
 
@@ -194,13 +197,16 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 shares,
         address receiver,
         address controller
-    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused onlyOperator(controller) returns (uint256 assets) {
+    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256 assets) {
         VaultStorage storage $ = _getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             assets = _convertToAssets(shares, Math.Rounding.Floor);
             _withdraw(_msgSender(), receiver, controller, assets, shares);
         } else {
+            if (controller != msg.sender && !isOperator(controller, msg.sender)) {
+                revert ERC7540InvalidOperator();
+            }
             return _redeem(shares, receiver, controller);
         }
     }
@@ -223,11 +229,14 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         }
 
         _getERC7540Storage().totalAssets -= assets;
+
         _burn(owner, shares);
+
         IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Withdraw(caller, receiver, owner, assets, shares);
     }
+
     ///////////////////////////////////////////////////////
     // ## VALUATION UPDATING AND SETTLEMENT FUNCTIONS ## //
     ///////////////////////////////////////////////////////
@@ -293,6 +302,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         emit StateUpdated(State.Closed);
     }
+
     /////////////////////////////////
     // ## PAUSABILITY FUNCTIONS ## //
     /////////////////////////////////

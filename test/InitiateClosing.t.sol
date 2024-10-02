@@ -253,7 +253,7 @@ contract TestInitiateClosing is BaseTest {
         // profit here because settle associated with this request did not bring any profits
         uint256 secondRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
         assertEq(secondRedeem, (25_000 / 2) * 10 ** vault.underlyingDecimals(), "did not received expected assets 2"); // same
-            // here
+        // here
 
         uint256 thirdRedeem = redeem(25_000 * 10 ** vault.decimals(), user2.addr);
         assertApproxEqAbs(
@@ -332,8 +332,8 @@ contract TestInitiateClosing is BaseTest {
         vm.prank(user2.addr);
         vault.setOperator(user3.addr, true);
 
-        vm.prank(user2.addr);
-        vault.setOperator(user4.addr, true);
+        // vm.prank(user2.addr);
+        // vault.setOperator(user4.addr, true);
 
         vm.prank(user2.addr);
         vault.approve(user4.addr, sharesClaimable / 2);
@@ -357,14 +357,26 @@ contract TestInitiateClosing is BaseTest {
         assertEq(amount3, assetsClaimable / 4, "amount3 is wrong");
 
         // user5 can't redeem because he is not an operator nor has enough allowance for doing so
-        vm.expectRevert(ERC7540InvalidOperator.selector);
-
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientAllowance.selector,
+                user5.addr,
+                vault.allowance(user2.addr, user5.addr),
+                sharesClaimable / 4
+            )
+        );
         vm.prank(user5.addr);
         vault.redeem(sharesClaimable / 4, user2.addr, user2.addr);
 
         // ... same for withdraw
-        vm.expectRevert(ERC7540InvalidOperator.selector);
-
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientAllowance.selector,
+                user5.addr,
+                vault.allowance(user2.addr, user5.addr),
+                sharesClaimable / 4
+            )
+        );
         vm.prank(user5.addr);
         vault.withdraw(assetsClaimable / 4, user2.addr, user2.addr);
 
