@@ -97,9 +97,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         );
         __Ownable_init(init.admin); // initial vault owner
 
-        VaultStorage storage $ = _getVaultStorage();
-
-        $.state = State.Open;
         emit StateUpdated(State.Open);
     }
 

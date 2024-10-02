@@ -15,7 +15,8 @@ contract TestInitiateClosing is BaseTest {
     function setUp() public {
         enableWhitelist = false;
         setUpVault(0, 0, 0);
-
+        State s = vault.state();
+        require(s == State.Open, "vault should be open");
         dealAndApprove(user1.addr); // if we deal 100k assets
         dealAndApprove(user2.addr); // if we deal 100k assets
 
