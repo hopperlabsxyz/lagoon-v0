@@ -108,7 +108,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint8 underlyingDecimals = ERC20Upgradeable(asset()).decimals();
         if (underlyingDecimals >= 18) {
             $.decimals = underlyingDecimals;
-            $.decimalsOffset = 0;
         } else {
             $.decimals = 18;
             unchecked {
