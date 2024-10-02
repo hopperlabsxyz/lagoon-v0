@@ -6,7 +6,7 @@ import {FeeManager} from "./FeeManager.sol";
 import {Roles} from "./Roles.sol";
 import {Whitelistable} from "./Whitelistable.sol";
 import {State} from "./primitives/Enums.sol";
-import {Closed, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
+import {Closed, ERC7540InvalidOperator, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
 import {Referral, StateUpdated} from "./primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
@@ -100,6 +100,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         emit StateUpdated(State.Open);
     }
 
+    /////////////////////
+    // ## MODIFIERS ## //
+    /////////////////////
+
     /// @notice Reverts if the vault is not open.
     modifier onlyOpen() {
         State _state = _getVaultStorage().state;
@@ -113,6 +117,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         if (_state != State.Closing) revert NotClosing(_state);
         _;
     }
+
+    /////////////////////////////////////////////
+    // ## DEPOSIT AND REDEEM FLOW FUNCTIONS ## //
+    /////////////////////////////////////////////
 
     /// @param assets The amount of assets to deposit.
     /// @param controller The address of the controller involved in the deposit request.
@@ -156,11 +164,77 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         return _requestRedeem(shares, controller, owner);
     }
 
+    /// @dev Unusable when paused.
+    /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
+    /// @dev Second _withdraw path: whenNotPaused in ERC7540.
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused onlyOperator(controller) returns (uint256 shares) {
+        VaultStorage storage $ = _getVaultStorage();
+
+        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
+            shares = _convertToShares(assets, Math.Rounding.Ceil);
+            _withdraw(msg.sender, receiver, controller, assets, shares);
+        } else {
+            return _withdraw(assets, receiver, controller);
+        }
+    }
+
+    /// @dev Unusable when paused.
+    /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
+    /// @dev Second _withdraw path: whenNotPaused in ERC7540.
+    /// @notice Claim assets from the vault. After a request is made and settled.
+    /// @param shares The amount shares to convert into assets.
+    /// @param receiver The receiver of the assets.
+    /// @param controller The controller, who owns the redeem request.
+    /// @return assets The corresponding assets.
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address controller
+    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused onlyOperator(controller) returns (uint256 assets) {
+        VaultStorage storage $ = _getVaultStorage();
+
+        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
+            assets = _convertToAssets(shares, Math.Rounding.Floor);
+            _withdraw(_msgSender(), receiver, controller, assets, shares);
+        } else {
+            return _redeem(shares, receiver, controller);
+        }
+    }
+
+    /// @dev override ERC4626 synchronous withdraw; called only when vault is closed
+    /// @param caller The address of the caller.
+    /// @param receiver The address of the receiver of the assets.
+    /// @param owner The address of the owner of the shares.
+    /// @param assets The amount of assets to withdraw.
+    /// @param shares The amount of shares to burn.
+    function _withdraw(
+        address caller,
+        address receiver,
+        address owner,
+        uint256 assets,
+        uint256 shares
+    ) internal virtual override {
+        if (caller != owner && !isOperator(owner, caller)) {
+            _spendAllowance(owner, caller, shares);
+        }
+
+        _getERC7540Storage().totalAssets -= assets;
+        _burn(owner, shares);
+        IERC20(asset()).safeTransfer(receiver, assets);
+
+        emit Withdraw(caller, receiver, owner, assets, shares);
+    }
+    ///////////////////////////////////////////////////////
+    // ## VALUATION UPDATING AND SETTLEMENT FUNCTIONS ## //
+    ///////////////////////////////////////////////////////
 
     /// @notice Function to propose a new valuation for the vault.
     /// @notice It can only be called by the ValueManager.
     /// @param _newTotalAssets The new total assets of the vault.
-
     function updateNewTotalAssets(uint256 _newTotalAssets) public onlyValuationManager {
         if (_getVaultStorage().state == State.Closed) revert Closed();
         _updateNewTotalAssets(_newTotalAssets);
@@ -194,9 +268,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _settleRedeem(msg.sender);
     }
 
-    /////////////////
-    // MVP UPGRADE //
-    /////////////////
+    /////////////////////////////
+    // ## CLOSING FUNCTIONS ## //
+    /////////////////////////////
 
     /// @notice Initiates the closing of the vault. Can only be called by the owner.
     function initiateClosing() external onlyOwner onlyOpen {
@@ -219,73 +293,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         emit StateUpdated(State.Closed);
     }
-
-    /// @dev Unusable when paused.
-    /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
-    /// @dev Second _withdraw path: whenNotPaused in ERC7540.
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) public override(ERC4626Upgradeable, IERC4626) onlyOperator(controller) whenNotPaused returns (uint256 shares) {
-        VaultStorage storage $ = _getVaultStorage();
-
-        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
-            shares = _convertToShares(assets, Math.Rounding.Ceil);
-            _withdraw(msg.sender, receiver, controller, assets, shares);
-        } else {
-            return _withdraw(assets, receiver, controller);
-        }
-    }
-
-    /// @dev Unusable when paused.
-    /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
-    /// @dev Second _withdraw path: whenNotPaused in ERC7540.
-    /// @notice Claim assets from the vault. After a request is made and settled.
-    /// @param shares The amount shares to convert into assets.
-    /// @param receiver The receiver of the assets.
-    /// @param controller The controller, who owns the redeem request.
-    /// @return assets The corresponding assets.
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address controller
-    ) public override(ERC4626Upgradeable, IERC4626) onlyOperator(controller) whenNotPaused returns (uint256 assets) {
-        VaultStorage storage $ = _getVaultStorage();
-
-        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
-            assets = _convertToAssets(shares, Math.Rounding.Floor);
-            _withdraw(_msgSender(), receiver, controller, assets, shares);
-        } else {
-            return _redeem(shares, receiver, controller);
-        }
-    }
-
-    /// @dev override ERC4626 synchronous withdraw; called only when vault is closed
-    /// @param caller The address of the caller.
-    /// @param receiver The address of the receiver of the assets.
-    /// @param owner The address of the owner of the shares.
-    /// @param assets The amount of assets to withdraw.
-    /// @param shares The amount of shares to burn.
-    function _withdraw(
-        address caller,
-        address receiver,
-        address owner,
-        uint256 assets,
-        uint256 shares
-    ) internal virtual override {
-        if (caller != owner && !isOperator(owner, caller)) {
-            _spendAllowance(owner, caller, shares);
-        }
-
-        _getERC7540Storage().totalAssets -= assets;
-
-        _burn(owner, shares);
-
-        IERC20(asset()).safeTransfer(receiver, assets);
-
-        emit Withdraw(caller, receiver, owner, assets, shares);
-    }
+    /////////////////////////////////
+    // ## PAUSABILITY FUNCTIONS ## //
+    /////////////////////////////////
 
     /// @notice Halts core operations of the vault. Can only be called by the owner.
     /// @notice Core operations include deposit, redeem, withdraw, any type of request, settles deposit and redeem and
