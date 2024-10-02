@@ -196,7 +196,7 @@ contract BaseTest is Test, Constants {
     }
 
     function updateNewTotalAssets(uint256 newTotalAssets) internal {
-        vm.prank(vault.navManager());
+        vm.prank(vault.valuationManager());
         vault.updateNewTotalAssets(newTotalAssets);
     }
 

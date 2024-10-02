@@ -61,10 +61,10 @@ event WhitelistManagerUpdated(address oldManager, address newManager);
 /// @param newReceiver The address of the new fee receiver.
 event FeeReceiverUpdated(address oldReceiver, address newReceiver);
 
-/// @notice Emitted when the NAV manager role is updated.
-/// @param oldManager The address of the old NAV manager.
-/// @param newManager The address of the new NAV manager.
-event NavManagerUpdated(address oldManager, address newManager);
+/// @notice Emitted when the Valuation manager role is updated.
+/// @param oldManager The address of the old Valuation manager.
+/// @param newManager The address of the new Valuation manager.
+event ValuationManagerUpdated(address oldManager, address newManager);
 
 // ********************* FEE_MANAGER ********************* //
 

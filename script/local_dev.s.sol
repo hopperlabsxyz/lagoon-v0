@@ -33,7 +33,7 @@ contract LocalDeploy is Script {
 
     address admin = DAO;
     address whitelistManager = DAO;
-    address navManager = DAO;
+    address valuationManager = DAO;
     uint16 _managementRate = 0;
     uint16 _performanceRate = 0;
     bool enableWhitelist = true;
@@ -56,7 +56,7 @@ contract LocalDeploy is Script {
             symbol: VAULT_SYMBOL,
             safe: SAFE,
             whitelistManager: whitelistManager,
-            navManager: navManager,
+            valuationManager: valuationManager,
             admin: admin,
             feeReceiver: FEE_RECEIVER,
             feeRegistry: address(feeRegistry),

@@ -52,7 +52,7 @@ abstract contract Constants is Test {
     VmSafe.Wallet user10 = vm.createWallet("user10");
     VmSafe.Wallet owner = vm.createWallet("owner");
     VmSafe.Wallet safe = vm.createWallet("safe");
-    VmSafe.Wallet navManager = vm.createWallet("navManager");
+    VmSafe.Wallet valuationManager = vm.createWallet("valuationManager");
     VmSafe.Wallet admin = vm.createWallet("admin");
     VmSafe.Wallet feeReceiver = vm.createWallet("feeReceiver");
     VmSafe.Wallet dao = vm.createWallet("dao");
@@ -118,7 +118,7 @@ abstract contract Constants is Test {
             symbol: vaultSymbol,
             safe: safe.addr,
             whitelistManager: whitelistManager.addr,
-            navManager: navManager.addr,
+            valuationManager: valuationManager.addr,
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
             feeRegistry: address(feeRegistry),
@@ -153,7 +153,7 @@ abstract contract Constants is Test {
         // console.log(dao.addr);
         // console.log(assetManager.addr);
         // console.log(whitelistManager.addr);
-        // console.log(navManager.addr);
+        // console.log(valuationManager.addr);
         // console.log(admin.addr);
         // console.log(vault.pendingSilo());
         // console.log(address(0));

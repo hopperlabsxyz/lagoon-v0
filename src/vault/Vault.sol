@@ -24,7 +24,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @param symbol The symbol of the vault and by extension the ERC20 token.
     /// @param safe The address of the safe smart contract.
     /// @param whitelistManager The address of the whitelist manager.
-    /// @param navManager The address of the NAV manager.
+    /// @param valuationManager The address of the valuation manager.
     /// @param admin The address of the owner of the vault.
     /// @param feeReceiver The address of the fee receiver.
     /// @param feeRegistry The address of the fee registry.
@@ -39,7 +39,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         string symbol;
         address safe;
         address whitelistManager;
-        address navManager;
+        address valuationManager;
         address admin;
         address feeReceiver;
         address feeRegistry;
@@ -92,7 +92,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
                 feeRegistry: FeeRegistry(init.feeRegistry),
-                navManager: init.navManager
+                valuationManager: init.valuationManager
             })
         );
         __Ownable_init(init.admin); // initial vault owner
@@ -156,11 +156,12 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         return _requestRedeem(shares, controller, owner);
     }
 
+
     /// @notice Function to propose a new valuation for the vault.
     /// @notice It can only be called by the ValueManager.
     /// @param _newTotalAssets The new total assets of the vault.
 
-    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyNAVManager {
+    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyValuationManager {
         if (_getVaultStorage().state == State.Closed) revert Closed();
         _updateNewTotalAssets(_newTotalAssets);
     }

@@ -383,7 +383,7 @@ contract TestInitiateClosing is BaseTest {
         vm.prank(safe.addr);
         vault.close();
 
-        vm.startPrank(vault.navManager());
+        vm.startPrank(vault.valuationManager());
         uint256 totalAssets = vault.totalAssets();
         vm.expectRevert(abi.encodeWithSelector(Closed.selector));
         vault.updateNewTotalAssets(totalAssets);

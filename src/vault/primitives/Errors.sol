@@ -46,8 +46,8 @@ error RequestIdNotClaimable();
 /// @notice Indicates that depositing a native token is not allowed.
 error CantDepositNativeToken();
 
-/// @notice Indicates that a new NAV was not provided.
-error NewNAVMissing();
+/// @notice Indicates that a new total assets value was not provided by the valuation manager.
+error NewTotalAssetsMissing();
 
 // ********************* FEE MANAGER ********************* //
 
@@ -65,9 +65,9 @@ error OnlySafe(address safe);
 /// @param whitelistManager The address of the whitelist manager.
 error OnlyWhitelistManager(address whitelistManager);
 
-/// @notice Indicates that the caller is not the NAV manager.
-/// @param navManager The address of the NAV manager.
-error OnlyNAVManager(address navManager);
+/// @notice Indicates that the caller is not the valuation manager.
+/// @param valuationManager The address of the valuation manager.
+error OnlyValuationManager(address valuationManager);
 
 // ********************* WHITELISTABLE ********************* //
 

@@ -7,9 +7,9 @@ import {SettleDeposit, SettleRedeem} from "@src/vault/primitives/Events.sol";
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {NewNAVMissing} from "@src/vault/ERC7540.sol";
+import {NewTotalAssetsMissing} from "@src/vault/ERC7540.sol";
 import {Vault} from "@src/vault/Vault.sol";
-import {OnlyNAVManager, OnlySafe} from "@src/vault/primitives/Errors.sol";
+import {OnlySafe, OnlyValuationManager} from "@src/vault/primitives/Errors.sol";
 import "forge-std/Test.sol";
 
 using Math for uint256;
@@ -138,7 +138,7 @@ contract TestSettle is BaseTest {
         requestDeposit(user1Assets / 2, user1.addr);
 
         vm.prank(vault.safe());
-        vm.expectRevert(NewNAVMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleDeposit();
 
         updateNewTotalAssets(0);
@@ -147,7 +147,7 @@ contract TestSettle is BaseTest {
         vault.settleDeposit();
 
         vm.prank(vault.safe());
-        vm.expectRevert(NewNAVMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleDeposit();
 
         uint256 expectedDepositId = vault.depositEpochId();
@@ -172,7 +172,7 @@ contract TestSettle is BaseTest {
         vault.settleDeposit();
 
         vm.prank(vault.safe());
-        vm.expectRevert(NewNAVMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleDeposit();
     }
 
@@ -193,7 +193,7 @@ contract TestSettle is BaseTest {
         requestRedeem(user1Shares / 2, user1.addr);
 
         vm.prank(vault.safe());
-        vm.expectRevert(NewNAVMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleRedeem();
 
         updateNewTotalAssets(user1Assets / 2);
@@ -203,11 +203,11 @@ contract TestSettle is BaseTest {
         vault.settleRedeem();
 
         vm.prank(vault.safe());
-        vm.expectRevert(NewNAVMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleRedeem();
 
         vm.prank(vault.safe());
-        vm.expectRevert(NewNAVMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleDeposit();
 
         uint256 expectedRedeemId = vault.redeemEpochId();
@@ -232,12 +232,12 @@ contract TestSettle is BaseTest {
         vault.settleRedeem();
 
         vm.prank(vault.safe());
-        vm.expectRevert(NewNAVMissing.selector);
+        vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleRedeem();
     }
 
     function test_updateNewTotalAssets_revertIfNotTotalAssetsManager() public {
-        vm.expectRevert(abi.encodeWithSelector(OnlyNAVManager.selector, vault.navManager()));
+        vm.expectRevert(abi.encodeWithSelector(OnlyValuationManager.selector, vault.valuationManager()));
         vault.updateNewTotalAssets(0);
     }
 
