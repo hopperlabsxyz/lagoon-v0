@@ -333,6 +333,9 @@ contract TestInitiateClosing is BaseTest {
         vault.setOperator(user3.addr, true);
 
         vm.prank(user2.addr);
+        vault.setOperator(user4.addr, true);
+
+        vm.prank(user2.addr);
         vault.approve(user4.addr, sharesClaimable / 2);
 
         // All assets that where redeemed in async mode are claimed first
@@ -354,26 +357,27 @@ contract TestInitiateClosing is BaseTest {
         assertEq(amount3, assetsClaimable / 4, "amount3 is wrong");
 
         // user5 can't redeem because he is not an operator nor has enough allowance for doing so
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IERC20Errors.ERC20InsufficientAllowance.selector,
-                user5.addr,
-                vault.allowance(user2.addr, user5.addr),
-                sharesClaimable / 4
-            )
-        );
+        vm.expectRevert(ERC7540InvalidOperator.selector);
+        // abi.encodeWithSelector(
+        //     IERC20Errors.ERC20InsufficientAllowance.selector,
+        //     user5.addr,
+        //     vault.allowance(user2.addr, user5.addr),
+        //     sharesClaimable / 4
+        // )
+
         vm.prank(user5.addr);
         vault.redeem(sharesClaimable / 4, user2.addr, user2.addr);
 
         // ... same for withdraw
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IERC20Errors.ERC20InsufficientAllowance.selector,
-                user5.addr,
-                vault.allowance(user2.addr, user5.addr),
-                sharesClaimable / 4
-            )
-        );
+        vm.expectRevert(ERC7540InvalidOperator.selector);
+
+        // abi.encodeWithSelector(
+        //     IERC20Errors.ERC20InsufficientAllowance.selector,
+        //     user5.addr,
+        //     vault.allowance(user2.addr, user5.addr),
+        //     sharesClaimable / 4
+        // )
+
         vm.prank(user5.addr);
         vault.withdraw(assetsClaimable / 4, user2.addr, user2.addr);
 
