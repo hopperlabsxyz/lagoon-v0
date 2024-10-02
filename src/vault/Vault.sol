@@ -100,6 +100,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         emit StateUpdated(State.Open);
     }
 
+    /////////////////////
+    // ## MODIFIERS ## //
+    /////////////////////
+
     /// @notice Reverts if the vault is not open.
     modifier onlyOpen() {
         State _state = _getVaultStorage().state;
@@ -113,6 +117,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         if (_state != State.Closing) revert NotClosing(_state);
         _;
     }
+
+    /////////////////////////////////////////////
+    // ## DEPOSIT AND REDEEM FLOW FUNCTIONS ## //
+    /////////////////////////////////////////////
 
     /// @param assets The amount of assets to deposit.
     /// @param controller The address of the controller involved in the deposit request.
@@ -154,69 +162,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     ) public onlyOpen whenNotPaused returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         return _requestRedeem(shares, controller, owner);
-    }
-
-    /// @notice Function to propose a new valuation for the vault.
-    /// @notice It can only be called by the ValueManager.
-    /// @param _newTotalAssets The new total assets of the vault.
-
-    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyValuationManager {
-        if (_getVaultStorage().state == State.Closed) revert Closed();
-        _updateNewTotalAssets(_newTotalAssets);
-    }
-
-    /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
-    /// If possible, it also settles redeem requests.
-    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
-    function settleDeposit() public override onlySafe onlyOpen {
-        RolesStorage storage $roles = _getRolesStorage();
-
-        _updateTotalAssets();
-        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
-        _setHighWaterMark(
-            _convertToAssets(10 ** decimals(), Math.Rounding.Floor) // this is the price per share
-        );
-        _settleDeposit(msg.sender);
-        _settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
-    }
-
-    /// @notice Settles redeem requests, only callable by the safe.
-    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
-    /// @dev After updating totalAssets, it takes fees, updates highWaterMark and finally settles redeem requests.
-    /// @inheritdoc ERC7540
-    function settleRedeem() public override onlySafe onlyOpen {
-        RolesStorage storage $roles = _getRolesStorage();
-
-        _updateTotalAssets();
-        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
-        _setHighWaterMark(_convertToAssets(10 ** decimals(), Math.Rounding.Floor));
-        _settleRedeem(msg.sender);
-    }
-
-    /////////////////
-    // MVP UPGRADE //
-    /////////////////
-
-    /// @notice Initiates the closing of the vault. Can only be called by the owner.
-    function initiateClosing() external onlyOwner onlyOpen {
-        _getVaultStorage().state = State.Closing;
-        emit StateUpdated(State.Closing);
-    }
-
-    /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.
-    /// @dev Users can still requestDeposit but it can't be settled.
-    function close() external onlySafe onlyClosing {
-        RolesStorage storage $roles = _getRolesStorage();
-        _updateTotalAssets();
-        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
-
-        _settleDeposit(msg.sender);
-        _settleRedeem(msg.sender);
-        _getVaultStorage().state = State.Closed;
-
-        IERC20(asset()).safeTransferFrom(msg.sender, address(this), _getERC7540Storage().totalAssets);
-
-        emit StateUpdated(State.Closed);
     }
 
     /// @dev Unusable when paused.
@@ -291,6 +236,76 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         emit Withdraw(caller, receiver, owner, assets, shares);
     }
+
+    ///////////////////////////////////////////////////////
+    // ## VALUATION UPDATING AND SETTLEMENT FUNCTIONS ## //
+    ///////////////////////////////////////////////////////
+
+    /// @notice Function to propose a new valuation for the vault.
+    /// @notice It can only be called by the ValueManager.
+    /// @param _newTotalAssets The new total assets of the vault.
+    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyValuationManager {
+        if (_getVaultStorage().state == State.Closed) revert Closed();
+        _updateNewTotalAssets(_newTotalAssets);
+    }
+
+    /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
+    /// If possible, it also settles redeem requests.
+    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
+    function settleDeposit() public override onlySafe onlyOpen {
+        RolesStorage storage $roles = _getRolesStorage();
+
+        _updateTotalAssets();
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+        _setHighWaterMark(
+            _convertToAssets(10 ** decimals(), Math.Rounding.Floor) // this is the price per share
+        );
+        _settleDeposit(msg.sender);
+        _settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
+    }
+
+    /// @notice Settles redeem requests, only callable by the safe.
+    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
+    /// @dev After updating totalAssets, it takes fees, updates highWaterMark and finally settles redeem requests.
+    /// @inheritdoc ERC7540
+    function settleRedeem() public override onlySafe onlyOpen {
+        RolesStorage storage $roles = _getRolesStorage();
+
+        _updateTotalAssets();
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+        _setHighWaterMark(_convertToAssets(10 ** decimals(), Math.Rounding.Floor));
+        _settleRedeem(msg.sender);
+    }
+
+    /////////////////////////////
+    // ## CLOSING FUNCTIONS ## //
+    /////////////////////////////
+
+    /// @notice Initiates the closing of the vault. Can only be called by the owner.
+    function initiateClosing() external onlyOwner onlyOpen {
+        _getVaultStorage().state = State.Closing;
+        emit StateUpdated(State.Closing);
+    }
+
+    /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.
+    /// @dev Users can still requestDeposit but it can't be settled.
+    function close() external onlySafe onlyClosing {
+        RolesStorage storage $roles = _getRolesStorage();
+        _updateTotalAssets();
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+
+        _settleDeposit(msg.sender);
+        _settleRedeem(msg.sender);
+        _getVaultStorage().state = State.Closed;
+
+        IERC20(asset()).safeTransferFrom(msg.sender, address(this), _getERC7540Storage().totalAssets);
+
+        emit StateUpdated(State.Closed);
+    }
+
+    /////////////////////////////////
+    // ## PAUSABILITY FUNCTIONS ## //
+    /////////////////////////////////
 
     /// @notice Halts core operations of the vault. Can only be called by the owner.
     /// @notice Core operations include deposit, redeem, withdraw, any type of request, settles deposit and redeem and
