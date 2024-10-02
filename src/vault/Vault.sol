@@ -156,6 +156,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         return _requestRedeem(shares, controller, owner);
     }
 
+    /// @notice Function to propose a new valuation for the vault.
+    /// @notice It can only be called by the ValueManager.
+    /// @param _newTotalAssets The new total assets of the vault.
+
     function updateNewTotalAssets(uint256 _newTotalAssets) public onlyNAVManager {
         if (_getVaultStorage().state == State.Closed) revert Closed();
         _updateNewTotalAssets(_newTotalAssets);

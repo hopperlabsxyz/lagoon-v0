@@ -358,25 +358,12 @@ contract TestInitiateClosing is BaseTest {
 
         // user5 can't redeem because he is not an operator nor has enough allowance for doing so
         vm.expectRevert(ERC7540InvalidOperator.selector);
-        // abi.encodeWithSelector(
-        //     IERC20Errors.ERC20InsufficientAllowance.selector,
-        //     user5.addr,
-        //     vault.allowance(user2.addr, user5.addr),
-        //     sharesClaimable / 4
-        // )
 
         vm.prank(user5.addr);
         vault.redeem(sharesClaimable / 4, user2.addr, user2.addr);
 
         // ... same for withdraw
         vm.expectRevert(ERC7540InvalidOperator.selector);
-
-        // abi.encodeWithSelector(
-        //     IERC20Errors.ERC20InsufficientAllowance.selector,
-        //     user5.addr,
-        //     vault.allowance(user2.addr, user5.addr),
-        //     sharesClaimable / 4
-        // )
 
         vm.prank(user5.addr);
         vault.withdraw(assetsClaimable / 4, user2.addr, user2.addr);

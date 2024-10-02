@@ -206,7 +206,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     // ## EIP7540 Deposit Flow ##
 
     /// @dev Unusable when paused. Modifier not needed as it's overridden.
-    function _requestDeposit(uint256 assets, address controller, address owner) internal virtual returns (uint256) {
+    function _requestDeposit(uint256 assets, address controller, address owner) internal returns (uint256) {
         uint256 claimable = claimableDepositRequest(0, controller);
         if (claimable > 0) _deposit(claimable, controller, controller);
 
@@ -381,7 +381,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param controller The controller is the address that will manage the request.
     /// @param owner The owner of the shares.
     /// @return The request ID. It is the current redeem epoch ID.
-    function _requestRedeem(uint256 shares, address controller, address owner) internal virtual returns (uint256) {
+    function _requestRedeem(uint256 shares, address controller, address owner) internal returns (uint256) {
         if (_msgSender() != owner && !isOperator(owner, _msgSender())) {
             _spendAllowance(owner, _msgSender(), shares);
         }
