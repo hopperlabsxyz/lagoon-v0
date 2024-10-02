@@ -581,16 +581,15 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param assetsCustodian The address that holds the assets.
     function _settleRedeem(address assetsCustodian) internal {
         // address _safe = safe();
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
         address _asset = asset();
-        address _pendingSilo = pendingSilo();
+        address _pendingSilo = address($erc7540.pendingSilo);
 
         uint256 pendingShares = balanceOf(_pendingSilo);
         uint256 assetsToWithdraw = _convertToAssets(pendingShares, Math.Rounding.Floor);
 
         uint256 assetsInTheSafe = IERC20(_asset).balanceOf(assetsCustodian);
         if (assetsToWithdraw == 0 || assetsToWithdraw > assetsInTheSafe) return;
-
-        ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         // cache
         uint256 _totalAssets = totalAssets();

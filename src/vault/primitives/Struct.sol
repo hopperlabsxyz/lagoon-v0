@@ -12,7 +12,7 @@ struct Rates {
 }
 
 /// @dev Holds data for a specific epoch.
-/// @param settleId Unique identifier for the settlement period.
+/// @param settleId Unique identifier for the related settlement data.
 /// @param depositRequest Records deposit requests by address.
 /// @param redeemRequest Records redeem requests by address.
 struct EpochData {

@@ -84,8 +84,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
 
         $.rates.managementRate = _managementRate;
         $.rates.performanceRate = _performanceRate;
-
-        $.lastFeeTime = block.timestamp;
     }
 
     /// @notice Take the fees by minting the manager and protocol shares
