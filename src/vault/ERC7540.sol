@@ -315,7 +315,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             revert RequestIdNotClaimable();
         }
 
-        assets = _convertToAssets(shares, requestId, Math.Rounding.Floor);
+        assets = _convertToAssets(shares, requestId, Math.Rounding.Ceil);
 
         $.epochs[requestId].depositRequest[controller] -= assets;
         _update(address(this), receiver, shares);
@@ -409,7 +409,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             revert RequestIdNotClaimable();
         }
 
-        shares = convertToShares(assets, requestId);
+        shares = _convertToShares(assets, requestId, Math.Rounding.Ceil);
         $.epochs[requestId].redeemRequest[controller] -= shares;
         IERC20(asset()).safeTransfer(receiver, assets);
 
