@@ -6,7 +6,7 @@ import {FeeManager} from "./FeeManager.sol";
 import {Roles} from "./Roles.sol";
 import {Whitelistable} from "./Whitelistable.sol";
 import {State} from "./primitives/Enums.sol";
-import {Closed, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
+import {Closed, ERC7540InvalidOperator, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
 import {Referral, StateUpdated} from "./primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
@@ -202,7 +202,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             assets = _convertToAssets(shares, Math.Rounding.Floor);
-            _withdraw(_msgSender(), receiver, controller, assets, shares);
+            _withdraw(msg.sender, receiver, controller, assets, shares);
         } else {
             if (controller != msg.sender && !isOperator(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
