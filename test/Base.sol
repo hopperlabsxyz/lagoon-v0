@@ -195,7 +195,9 @@ contract BaseTest is Test, Constants {
         return shares;
     }
 
-    function updateNewTotalAssets(uint256 newTotalAssets) internal {
+    function updateNewTotalAssets(
+        uint256 newTotalAssets
+    ) internal {
         vm.prank(vault.valuationManager());
         vault.updateNewTotalAssets(newTotalAssets);
     }
@@ -207,13 +209,17 @@ contract BaseTest is Test, Constants {
         vm.stopPrank();
     }
 
-    function updateAndSettle(uint256 newTotalAssets) internal {
+    function updateAndSettle(
+        uint256 newTotalAssets
+    ) internal {
         updateNewTotalAssets(newTotalAssets);
         vm.warp(block.timestamp + 1 days);
         settle();
     }
 
-    function dealAndApproveAndWhitelist(address user) public {
+    function dealAndApproveAndWhitelist(
+        address user
+    ) public {
         dealAmountAndApprove(user, 100_000);
         whitelist(user);
     }
@@ -223,7 +229,9 @@ contract BaseTest is Test, Constants {
         whitelist(user);
     }
 
-    function dealAndApprove(address user) public {
+    function dealAndApprove(
+        address user
+    ) public {
         dealAmountAndApprove(user, 100_000);
     }
 
@@ -235,40 +243,54 @@ contract BaseTest is Test, Constants {
         IERC4626(asset).approve(address(vault), UINT256_MAX);
     }
 
-    function assetBalance(address user) public view returns (uint256) {
+    function assetBalance(
+        address user
+    ) public view returns (uint256) {
         return IERC4626(vault.asset()).balanceOf(user);
     }
 
-    function whitelist(address user) public {
+    function whitelist(
+        address user
+    ) public {
         address[] memory users = new address[](1);
         users[0] = user;
         vm.prank(vault.whitelistManager());
         vault.addToWhitelist(users);
     }
 
-    function whitelist(address[] memory users) public {
+    function whitelist(
+        address[] memory users
+    ) public {
         vm.prank(vault.whitelistManager());
         vault.addToWhitelist(users);
     }
 
-    function unwhitelist(address[] memory users) public {
+    function unwhitelist(
+        address[] memory users
+    ) public {
         vm.prank(vault.whitelistManager());
         vault.revokeFromWhitelist(users);
     }
 
-    function unwhitelist(address user) public {
+    function unwhitelist(
+        address user
+    ) public {
         address[] memory users = new address[](1);
         users[0] = user;
         vm.prank(vault.whitelistManager());
         vault.revokeFromWhitelist(users);
     }
 
-    function updateRates(Rates memory newRates) public {
+    function updateRates(
+        Rates memory newRates
+    ) public {
         vm.prank(vault.owner());
         vault.updateRates(newRates);
     }
 
-    function balance(address user) public view returns (uint256) {
+    function balance(
+        address user
+    ) public view returns (uint256) {
         return vault.balanceOf(user);
     }
 }

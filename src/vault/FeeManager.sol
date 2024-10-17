@@ -108,7 +108,9 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
 
     /// @notice update the fee rates, the new rates will be applied after the cooldown period
     /// @param newRates the new fee rates
-    function updateRates(Rates memory newRates) external onlyOwner {
+    function updateRates(
+        Rates memory newRates
+    ) external onlyOwner {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
         if (newRates.managementRate > MAX_MANAGEMENT_RATE) {
             revert AboveMaxRate(MAX_MANAGEMENT_RATE);
@@ -150,7 +152,9 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// @dev Update the high water mark only if the new value is greater than the current one
     /// @dev The high water mark is the highest price per share ever reached
     /// @param _newHighWaterMark the new high water mark
-    function _setHighWaterMark(uint256 _newHighWaterMark) internal {
+    function _setHighWaterMark(
+        uint256 _newHighWaterMark
+    ) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 _highWaterMark = $.highWaterMark;
