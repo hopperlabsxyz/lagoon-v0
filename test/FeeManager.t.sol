@@ -108,8 +108,12 @@ contract TestFeeManager is BaseTest {
             "Price per share didn't increased as expected"
         );
 
-        assertEq(
-            vault.highWaterMark(), pricePerShare(), "Highwater mark hasn't been raised at expected price per share"
+        // We expect the highWaterMark to be 2$ per share
+        assertApproxEqAbs(
+            vault.highWaterMark(),
+            2 * 10 ** vault.underlyingDecimals(),
+            5, // rounding approximation
+            "Highwater mark hasn't been raised at expected price per share"
         );
 
         uint256 user1ShareBalance = vault.balanceOf(user1.addr);

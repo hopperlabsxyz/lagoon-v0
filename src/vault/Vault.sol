@@ -261,9 +261,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         _updateTotalAssets();
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
-        _setHighWaterMark(
-            _convertToAssets(10 ** decimals(), Math.Rounding.Floor) // this is the price per share
-        );
         _settleDeposit(msg.sender);
         _settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
@@ -277,7 +274,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         _updateTotalAssets();
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
-        _setHighWaterMark(_convertToAssets(10 ** decimals(), Math.Rounding.Floor));
         _settleRedeem(msg.sender);
     }
 
