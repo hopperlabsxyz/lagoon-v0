@@ -7,15 +7,11 @@ import "../src/vault/Vault.sol";
 contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
-    constructor(
-        bool disable
-    ) Vault() {
+    constructor(bool disable) Vault() {
         if (disable) _disableInitializers();
     }
 
-    function totalSupply(
-        uint256 epochId
-    ) public view returns (uint256) {
+    function totalSupply(uint256 epochId) public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
         return $.settles[$.epochs[uint40(epochId)].settleId].totalSupply;
     }
@@ -29,9 +25,7 @@ contract VaultHelper is Vault {
     //     return $.epochs[$.epochId - 1].totalSupply;
     // }
 
-    function totalAssets(
-        uint256 epochId
-    ) public view returns (uint256) {
+    function totalAssets(uint256 epochId) public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
         return $.settles[$.epochs[uint40(epochId)].settleId].totalAssets;
     }
@@ -63,9 +57,7 @@ contract VaultHelper is Vault {
         return _getERC7540Storage().lastDepositEpochIdSettled;
     }
 
-    function lastDepositRequestId_debug(
-        address controller
-    ) public view returns (uint256) {
+    function lastDepositRequestId_debug(address controller) public view returns (uint256) {
         return _getERC7540Storage().lastDepositRequestId[controller];
     }
 

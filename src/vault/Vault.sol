@@ -73,9 +73,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     /// @notice Initializes the vault.
     /// @param init The initialization parameters of the vault.
-    function initialize(
-        InitStruct memory init
-    ) public virtual initializer {
+    function initialize(InitStruct memory init) public virtual initializer {
         __ERC4626_init(init.underlying);
         __ERC20_init(init.name, init.symbol);
         __ERC20Pausable_init();
@@ -246,9 +244,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @notice Function to propose a new valuation for the vault.
     /// @notice It can only be called by the ValueManager.
     /// @param _newTotalAssets The new total assets of the vault.
-    function updateNewTotalAssets(
-        uint256 _newTotalAssets
-    ) public onlyValuationManager {
+    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyValuationManager {
         if (_getVaultStorage().state == State.Closed) revert Closed();
         _updateNewTotalAssets(_newTotalAssets);
     }

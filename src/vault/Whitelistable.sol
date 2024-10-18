@@ -53,17 +53,13 @@ contract Whitelistable is Roles {
     /// @notice Checks if an account is whitelisted
     /// @param account The address of the account to check
     /// @return True if the account is whitelisted, false otherwise
-    function isWhitelisted(
-        address account
-    ) public view returns (bool) {
+    function isWhitelisted(address account) public view returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         return $.isActivated ? $.isWhitelisted[account] : true;
     }
 
     /// @notice Adds multiple accounts to the whitelist
-    function addToWhitelist(
-        address[] memory accounts
-    ) external onlyWhitelistManager {
+    function addToWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
         for (uint256 i = 0; i < accounts.length; i++) {
@@ -74,9 +70,7 @@ contract Whitelistable is Roles {
 
     /// @notice Removes multiple accounts from the whitelist
     /// @param accounts The addresses of the accounts to remove
-    function revokeFromWhitelist(
-        address[] memory accounts
-    ) external onlyWhitelistManager {
+    function revokeFromWhitelist(address[] memory accounts) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         uint256 i = 0;
         for (; i < accounts.length;) {
