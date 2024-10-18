@@ -94,7 +94,10 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
 
         if ($.lastFeeTime == block.timestamp) return; // this will happen when settleRedeem happens after settleDeposit
 
-        (uint256 managerShares, uint256 protocolShares) = _calculateFees();
+        uint256 _decimals = decimals();
+        uint256 _pricePerShare = _convertToAssets(10 ** _decimals, Math.Rounding.Floor);
+        (uint256 managerShares, uint256 protocolShares) = _calculateFees(_pricePerShare, _decimals);
+        _setHighWaterMark(_pricePerShare);
 
         if (managerShares > 0) {
             _mint(feeReceiver, managerShares);
@@ -179,7 +182,10 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// @dev protocol shares are the fees that go to the protocol
     /// @return managerShares the manager shares to be minted as fees
     /// @return protocolShares the protocol shares to be minted as fees
-    function _calculateFees() internal view returns (uint256 managerShares, uint256 protocolShares) {
+    function _calculateFees(
+        uint256 pricePerShare,
+        uint256 decimals
+    ) internal view returns (uint256 managerShares, uint256 protocolShares) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         Rates memory _rates = feeRates();
@@ -188,15 +194,13 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
 
         uint256 timeElapsed = block.timestamp - $.lastFeeTime;
         uint256 _totalAssets = totalAssets();
-        uint256 _decimals = decimals();
         uint256 managementFees = _calculateManagementFee(_totalAssets, _rates.managementRate, timeElapsed);
 
         /// Performance fee computation ///
 
-        uint256 _pricePerShare = _convertToAssets(10 ** _decimals, Math.Rounding.Floor);
         uint256 _totalSupply = totalSupply();
         uint256 performanceFees =
-            _calculatePerformanceFee(_rates.performanceRate, _totalSupply, _pricePerShare, $.highWaterMark, _decimals);
+            _calculatePerformanceFee(_rates.performanceRate, _totalSupply, pricePerShare, $.highWaterMark, decimals);
 
         /// Protocol fee computation & convertion to shares ///
 
