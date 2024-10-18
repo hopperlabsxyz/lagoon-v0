@@ -89,10 +89,12 @@ abstract contract Constants is Test {
         users.push(user10);
     }
 
-    function _beaconDeploy(string memory contractName, address _owner) internal returns (UpgradeableBeacon) {
-        Options memory deploy;
-        deploy.constructorData = abi.encode(true);
-        return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner));
+    function _beaconDeploy(
+        string memory contractName,
+        address _owner,
+        Options memory opts
+    ) internal returns (UpgradeableBeacon) {
+        return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner, opts));
     }
 
     function _proxyDeploy(UpgradeableBeacon beacon, Vault.InitStruct memory v) internal returns (VaultHelper) {
@@ -129,7 +131,9 @@ abstract contract Constants is Test {
             enableWhitelist: enableWhitelist
         });
         if (proxy) {
-            beacon = _beaconDeploy("Vault.sol", owner.addr);
+            Options memory opts;
+            opts.constructorData = abi.encode(true);
+            beacon = _beaconDeploy("VaultHelper.sol", owner.addr, opts);
             vault = _proxyDeploy(beacon, v);
         } else {
             vm.startPrank(owner.addr);

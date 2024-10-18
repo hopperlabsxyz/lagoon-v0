@@ -71,6 +71,12 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         }
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    // solhint-disable-next-line ignoreConstructors
+    constructor(bool disable) {
+        if (disable) _disableInitializers();
+    }
+
     /// @notice Initializes the vault.
     /// @param init The initialization parameters of the vault.
     function initialize(InitStruct memory init) public virtual initializer {
