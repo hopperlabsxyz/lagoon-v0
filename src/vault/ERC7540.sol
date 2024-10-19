@@ -516,11 +516,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
         if (pendingAssets != 0) {
             $.depositEpochId += 2;
-            $.settles[$.depositSettleId].pendingAssets += pendingAssets;
+            $.settles[$.depositSettleId].pendingAssets = pendingAssets;
         }
         if (pendingShares != 0) {
             $.redeemEpochId += 2;
-            $.settles[$.redeemSettleId].pendingShares += pendingShares;
+            $.settles[$.redeemSettleId].pendingShares = pendingShares;
         }
 
         $.newTotalAssets = _newTotalAssets;
