@@ -365,7 +365,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
         $.epochs[_redeemId].redeemRequest[controller] += shares;
 
-        // TODO: check that we can't call it with address(0);
         _update(owner, address($.pendingSilo), shares);
 
         emit RedeemRequest(controller, owner, _redeemId, msg.sender, shares);
