@@ -567,10 +567,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        // TODO:: cache settleId
-        uint256 _totalAssets = $.settles[$.epochs[requestId].settleId].totalAssets + 1;
+        // cache
+        uint40 settleId = $.epochs[requestId].settleId;
 
-        uint256 _totalSupply = $.settles[$.epochs[requestId].settleId].totalSupply + 10 ** _decimalsOffset();
+        uint256 _totalAssets = $.settles[settleId].totalAssets + 1;
+        uint256 _totalSupply = $.settles[settleId].totalSupply + 10 ** _decimalsOffset();
 
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
     }
@@ -594,10 +595,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        // TODO:: cache settleId
-        uint256 _totalAssets = $.settles[$.epochs[requestId].settleId].totalAssets + 1;
+        // cache
+        uint40 settleId = $.epochs[requestId].settleId;
 
-        uint256 _totalSupply = $.settles[$.epochs[requestId].settleId].totalSupply + 10 ** _decimalsOffset();
+        uint256 _totalAssets = $.settles[settleId].totalAssets + 1;
+        uint256 _totalSupply = $.settles[settleId].totalSupply + 10 ** _decimalsOffset();
 
         return shares.mulDiv(_totalAssets, _totalSupply, rounding);
     }
