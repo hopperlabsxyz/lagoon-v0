@@ -233,7 +233,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return _depositId;
     }
 
-    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
     /// @notice Claim the assets from the vault after a request has been settled.
     /// @param assets The amount of assets requested to deposit.
     /// @param receiver The receiver of the shares.
@@ -245,7 +245,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return _deposit(assets, receiver, msg.sender);
     }
 
-    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
     /// @notice Claim the assets from the vault after a request has been settled.
     /// @param assets The assets to deposit.
     /// @param receiver The receiver of the shares.
@@ -275,12 +275,12 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         $.epochs[requestId].depositRequest[controller] -= assets;
         shares = convertToShares(assets, requestId);
 
-        _update(address(this), receiver, shares);
+        _transfer(address(this), receiver, shares);
 
         emit Deposit(controller, receiver, assets, shares);
     }
 
-    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
     function mint(
         uint256 shares,
         address receiver
@@ -288,7 +288,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return _mint(shares, receiver, msg.sender);
     }
 
-    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
     /// @notice Claim shares from the vault after a request deposit.
     function mint(
         uint256 shares,
@@ -314,7 +314,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         assets = _convertToAssets(shares, requestId, Math.Rounding.Ceil);
 
         $.epochs[requestId].depositRequest[controller] -= assets;
-        _update(address(this), receiver, shares);
+        _transfer(address(this), receiver, shares);
 
         emit Deposit(controller, receiver, assets, shares);
     }
@@ -365,6 +365,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
         $.epochs[_redeemId].redeemRequest[controller] += shares;
 
+        // TODO: check that we can't call it with address(0);
         _update(owner, address($.pendingSilo), shares);
 
         emit RedeemRequest(controller, owner, _redeemId, msg.sender, shares);
