@@ -224,5 +224,14 @@ contract TestRequestDeposit is BaseTest {
 
         // We expect the pending Silo to only send the assets of the first deposit and not the one from user2
         assertEq(assetBalance(vault.pendingSilo()), amountToDeposit);
+
+        assertEq(vault.claimableDepositRequest(requestId_1, user1.addr), amountToDeposit);
+        assertEq(vault.claimableDepositRequest(requestId_2, user2.addr), 0);
+
+        // now we update settle the vault again and we expect user2's deposit to be deposited into the vault
+        updateAndSettle(amountToDeposit);
+
+        assertEq(vault.claimableDepositRequest(requestId_1, user1.addr), amountToDeposit);
+        assertEq(vault.claimableDepositRequest(requestId_2, user2.addr), amountToDeposit);
     }
 }

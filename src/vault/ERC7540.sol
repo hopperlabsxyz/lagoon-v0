@@ -419,9 +419,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// and save the deposit parameters in the settleData.
     /// @param assetsCustodian The address that will hold the assets.
     function _settleDeposit(address assetsCustodian) internal {
-        address _asset = asset();
-
-        // Then save the deposit parameters
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         uint40 depositSettleId = $erc7540.depositSettleId;
@@ -450,7 +447,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         $erc7540.depositSettleId = depositSettleId + 2;
         $erc7540.lastDepositEpochIdSettled = lastDepositEpochIdSettled;
 
-        IERC20(_asset).safeTransferFrom(pendingSilo(), assetsCustodian, _pendingAssets);
+        IERC20(asset()).safeTransferFrom(pendingSilo(), assetsCustodian, _pendingAssets);
 
         emit SettleDeposit(
             lastDepositEpochIdSettled, depositSettleId, _totalAssets, _totalSupply, _pendingAssets, shares
@@ -462,7 +459,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param assetsCustodian The address that holds the assets.
     function _settleRedeem(address assetsCustodian) internal {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
+
         uint40 redeemSettleId = $erc7540.redeemSettleId;
+
         address _asset = asset();
 
         uint256 pendingShares = $erc7540.settles[redeemSettleId].pendingShares;
