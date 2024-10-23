@@ -102,7 +102,7 @@ contract TestRequestRedeem is BaseTest {
     function test_requestRedeem_ShouldBeAbleToRequestRedeemAfterNAVUpdateAndClaimTheCorrectAmountOfAssets() public {
         uint256 amountToRedeem = vault.balanceOf(user1.addr);
 
-        // user1 request redeem 50k shares
+        // user1 request redeem
         uint256 requestId_1 = requestRedeem(amountToRedeem, user1.addr);
 
         // Then the NAV commity commit a new NAV (defined to the amoun already deposited in the vault in setUp function)
@@ -112,10 +112,10 @@ contract TestRequestRedeem is BaseTest {
         // settled
         assertEq(vault.balanceOf(vault.pendingSilo()), amountToRedeem);
 
-        // user2 request redeem 50k shares
+        // user2 request redeem
         uint256 requestId_2 = requestRedeem(amountToRedeem, user2.addr);
 
-        // There is now 100K shares waiting in the pending silo to be settlled
+        // There is now 2 * amountToRedeem shares waiting in the pending silo to be settlled
         assertEq(vault.balanceOf(vault.pendingSilo()), 2 * amountToRedeem);
 
         // the asset manager settle the vault
