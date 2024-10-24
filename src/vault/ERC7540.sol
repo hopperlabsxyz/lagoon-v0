@@ -461,7 +461,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// and save the redeem parameters in the settleData.
     /// @param assetsCustodian The address that holds the assets.
     function _settleRedeem(address assetsCustodian) internal {
-        // address _safe = safe();
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
         address _asset = asset();
         address _pendingSilo = address($erc7540.pendingSilo);
@@ -526,7 +525,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @dev Updates the totalAssets variable with the newTotalAssets variable.
     function _updateTotalAssets() internal whenNotPaused {
-        // VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 newTotalAssets = $.newTotalAssets;

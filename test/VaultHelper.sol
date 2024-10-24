@@ -110,4 +110,14 @@ contract VaultHelper is Vault {
     function feeRegistry() public view returns (address) {
         return address(_getRolesStorage().feeRegistry);
     }
+
+    function redeemSettleId() public view returns (uint256) {
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+        return $erc7540.redeemSettleId;
+    }
+
+    function depositSettleId() public view returns (uint256) {
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+        return $erc7540.depositSettleId;
+    }
 }

@@ -90,6 +90,8 @@ contract TestSettle is BaseTest {
 
         updateNewTotalAssets(totalAssets);
 
+        uint256 settleDepositIdBefore = vault.depositSettleId();
+
         vm.expectEmit(true, true, true, true);
         emit SettleDeposit(
             3, // there is one updateAndSettle in Setup function so 1 => 3
@@ -101,6 +103,10 @@ contract TestSettle is BaseTest {
         );
         vm.prank(safe.addr);
         vault.settleDeposit();
+
+        uint256 settleDepositIdAfter = vault.depositSettleId();
+
+        assertEq(settleDepositIdBefore + 2, settleDepositIdAfter, "wrong settle redeem id after settle redeem");
     }
 
     function test_settleRedeemAfterUpdate() public {
@@ -110,10 +116,16 @@ contract TestSettle is BaseTest {
         requestRedeem(user1Shares, user1.addr);
         updateNewTotalAssets(totalAssets);
 
+        uint256 settleRedeemIdBefore = vault.redeemSettleId();
+
         vm.expectEmit(true, true, true, true);
         emit SettleRedeem(2, 2, 0, 0, 50_000 * 10 ** vault.underlyingDecimals(), user1Shares);
         vm.prank(safe.addr);
         vault.settleRedeem();
+
+        uint256 settleRedeemIdAfter = vault.redeemSettleId();
+
+        assertEq(settleRedeemIdBefore + 2, settleRedeemIdAfter, "wrong settle redeem id after settle redeem");
     }
 
     function test_settleDepositThenRedeemAfterUpdate() public {
