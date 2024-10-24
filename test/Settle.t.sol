@@ -90,7 +90,7 @@ contract TestSettle is BaseTest {
 
         updateNewTotalAssets(totalAssets);
 
-        vm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, true, true);
         emit SettleDeposit(
             3, // there is one updateAndSettle in Setup function so 1 => 3
             3, // same here
@@ -110,7 +110,7 @@ contract TestSettle is BaseTest {
         requestRedeem(user1Shares, user1.addr);
         updateNewTotalAssets(totalAssets);
 
-        vm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, true, true);
         emit SettleRedeem(2, 2, 0, 0, 50_000 * 10 ** vault.underlyingDecimals(), user1Shares);
         vm.prank(safe.addr);
         vault.settleRedeem();
@@ -255,13 +255,4 @@ contract TestSettle is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(OnlySafe.selector, vault.safe()));
         vault.close();
     }
-
-    // function test_settleAfterUpdate_TooLate() public {
-    //     updateNewTotalAssets(1);
-    //     vm.warp(block.timestamp + 3 days);
-    //     vm.startPrank(vault.valorizationRole());
-    //     vm.expectRevert();
-    //     vault.settle();
-    //     vm.stopPrank();
-    // }
 }
