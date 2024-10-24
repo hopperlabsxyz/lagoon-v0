@@ -687,6 +687,14 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return _getERC7540Storage().lastDepositRequestId[controller];
     }
 
+    function depositEpochId() public view returns (uint40) {
+        return _getERC7540Storage().depositEpochId;
+    }
+
+    function redeemEpochId() public view returns (uint40) {
+        return _getERC7540Storage().redeemEpochId;
+    }
+
     ///////////////////
     // ## EIP7575 ## //
     ///////////////////
