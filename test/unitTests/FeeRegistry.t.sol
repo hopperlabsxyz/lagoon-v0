@@ -13,7 +13,7 @@ contract TestFeeRegistry is BaseTest {
     address mockVault = address(0x1);
 
     function setUp() public {
-        feeRegistry = new FeeRegistry();
+        feeRegistry = new FeeRegistry(false);
         feeRegistry.initialize(dao.addr, dao.addr);
     }
 

@@ -47,7 +47,7 @@ contract LocalDeploy is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        FeeRegistry feeRegistry = new FeeRegistry();
+        FeeRegistry feeRegistry = new FeeRegistry(false);
         feeRegistry.initialize(DAO, DAO);
 
         Vault.InitStruct memory v = Vault.InitStruct({

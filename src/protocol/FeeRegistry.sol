@@ -26,6 +26,12 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant feeRegistryStorage = 0xfae567c932a2d69f96a50330b7967af6689561bf72e1f4ad815fc97800b3f300;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    // solhint-disable-next-line ignoreConstructors
+    constructor(bool disable) {
+        if (disable) _disableInitializers();
+    }
+
     /// @notice Initializes the owner and protocol fee receiver.
     /// @param initialOwner The contract protocol address.
     /// @param _protocolFeeReceiver The protocol fee receiver.
