@@ -7,7 +7,7 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Script, console} from "forge-std/Script.sol";
 
-import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 /*
 
@@ -55,14 +55,16 @@ contract DeployVault is Script {
             managementRate: 0,
             performanceRate: 2000,
             wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
-            enableWhitelist: true,
+            enableWhitelist: false,
             rateUpdateCooldown: 1 days
         });
+        Options memory opts;
+        opts.constructorData = abi.encode(true);
 
         TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
             payable(
                 Upgrades.deployTransparentProxy(
-                    "Vault.sol:Vault", PROXY_ADMIN, abi.encodeWithSelector(Vault.initialize.selector, v)
+                    "Vault.sol:Vault", PROXY_ADMIN, abi.encodeWithSelector(Vault.initialize.selector, v), opts
                 )
             )
         );
