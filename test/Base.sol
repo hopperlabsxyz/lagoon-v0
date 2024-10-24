@@ -207,6 +207,13 @@ contract BaseTest is Test, Constants {
         vm.stopPrank();
     }
 
+    function settleRedeem() internal {
+        dealAmountAndApprove(vault.safe(), vault.newTotalAssets());
+        vm.startPrank(vault.safe());
+        vault.settleRedeem();
+        vm.stopPrank();
+    }
+
     function updateAndSettle(uint256 newTotalAssets) internal {
         updateNewTotalAssets(newTotalAssets);
         vm.warp(block.timestamp + 1 days);

@@ -13,10 +13,13 @@ contract TestRequestRedeem is BaseTest {
         enableWhitelist = false;
         setUpVault(0, 0, 0);
         dealAndApprove(user1.addr);
+        dealAndApprove(user2.addr);
         uint256 balance = assetBalance(user1.addr);
         requestDeposit(balance, user1.addr);
+        requestDeposit(balance, user2.addr);
         updateAndSettle(0);
         deposit(balance, user1.addr);
+        deposit(balance, user2.addr);
     }
 
     function test_requestRedeem() public {
@@ -94,5 +97,45 @@ contract TestRequestRedeem is BaseTest {
         vm.prank(user1.addr);
         vm.expectRevert(OnlyOneRequestAllowed.selector);
         vault.requestRedeem(userBalance / 2, user1.addr, user1.addr);
+    }
+
+    function test_requestRedeem_ShouldBeAbleToRequestRedeemAfterNAVUpdateAndClaimTheCorrectAmountOfAssets() public {
+        uint256 amountToRedeem = vault.balanceOf(user1.addr);
+
+        // user1 request redeem
+        uint256 requestId_1 = requestRedeem(amountToRedeem, user1.addr);
+
+        // Then the NAV commity commit a new NAV (defined to the amoun already deposited in the vault in setUp function)
+        updateNewTotalAssets(2 * vault.convertToAssets(amountToRedeem));
+
+        // user 1 is not able to cancel his request - The shares are still in the pending silo waiting for being
+        // settled
+        assertEq(vault.balanceOf(vault.pendingSilo()), amountToRedeem);
+
+        // user2 request redeem
+        uint256 requestId_2 = requestRedeem(amountToRedeem, user2.addr);
+
+        // There is now 2 * amountToRedeem shares waiting in the pending silo to be settlled
+        assertEq(vault.balanceOf(vault.pendingSilo()), 2 * amountToRedeem);
+
+        // the asset manager settle the vault
+        settleRedeem();
+
+        // We expect the pending Silo to only send the assets of the first deposit and not the one from user2
+        assertEq(vault.balanceOf(vault.pendingSilo()), amountToRedeem);
+        assertEq(vault.claimableRedeemRequest(requestId_1, user1.addr), amountToRedeem);
+        assertEq(vault.claimableRedeemRequest(requestId_2, user2.addr), 0);
+
+        // now we update settle the vault again and we expect user2's deposit to be deposited into the vault
+        updateAndSettle(vault.convertToAssets(amountToRedeem));
+
+        assertEq(vault.claimableRedeemRequest(requestId_1, user1.addr), amountToRedeem);
+        assertEq(vault.claimableRedeemRequest(requestId_2, user2.addr), amountToRedeem);
+
+        redeem(amountToRedeem, user1.addr);
+        redeem(amountToRedeem, user2.addr);
+
+        assertEq(assetBalance(user1.addr), vault.convertToAssets(amountToRedeem));
+        assertEq(assetBalance(user2.addr), vault.convertToAssets(amountToRedeem));
     }
 }

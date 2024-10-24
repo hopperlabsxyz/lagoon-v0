@@ -27,4 +27,6 @@ struct EpochData {
 struct SettleData {
     uint256 totalSupply;
     uint256 totalAssets;
+    uint256 pendingAssets;
+    uint256 pendingShares;
 }

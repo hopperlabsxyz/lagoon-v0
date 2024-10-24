@@ -13,6 +13,7 @@ contract TestRequestDeposit is BaseTest {
     function setUp() public {
         setUpVault(0, 0, 0);
         dealAndApproveAndWhitelist(user1.addr);
+        dealAndApproveAndWhitelist(user2.addr);
         whitelist(user1.addr);
         whitelist(user2.addr);
         whitelist(user3.addr);
@@ -192,5 +193,91 @@ contract TestRequestDeposit is BaseTest {
 
         vm.prank(user1.addr);
         vault.requestDeposit(42, user1.addr, user1.addr);
+    }
+
+    function test_requestDeposit_ShouldBeAbleToRequestDepositAfterNAVUpdateAndClaimTheCorrectAmountOfShares() public {
+        // first: User 1 make a request deposit
+        uint256 amountToDeposit = 10 * 10 ** vault.underlyingDecimals();
+        vm.prank(user1.addr);
+        uint256 requestId_1 = vault.requestDeposit(amountToDeposit, user1.addr, user1.addr);
+        assertEq(requestId_1, 1);
+
+        // The request amount is now inside the pending silo wainting for Nav update and then settlement
+
+        // Then the NAV commity commit a new NAV
+        updateNewTotalAssets(0);
+
+        // Now user 1 is not able to cancel his request - The assets are still in the pending silo waiting for being
+        // settle
+        assertEq(assetBalance(vault.pendingSilo()), amountToDeposit);
+
+        // second: User 2 make an other request deposit
+        vm.prank(user2.addr);
+        uint256 requestId_2 = vault.requestDeposit(amountToDeposit, user2.addr, user2.addr);
+        assertEq(requestId_2, 3);
+
+        // Now the pendingSilo olds the two deposits
+        assertEq(assetBalance(vault.pendingSilo()), 2 * amountToDeposit);
+
+        // the asset manager settle the vault
+        settle();
+
+        // We expect the pending Silo to only send the assets of the first deposit and not the one from user2
+        assertEq(assetBalance(vault.pendingSilo()), amountToDeposit);
+
+        assertEq(vault.claimableDepositRequest(requestId_1, user1.addr), amountToDeposit);
+        assertEq(vault.claimableDepositRequest(requestId_2, user2.addr), 0);
+
+        // now we update settle the vault again and we expect user2's deposit to be deposited into the vault
+        updateAndSettle(amountToDeposit);
+
+        assertEq(vault.claimableDepositRequest(requestId_1, user1.addr), amountToDeposit);
+        assertEq(vault.claimableDepositRequest(requestId_2, user2.addr), amountToDeposit);
+    }
+
+    function test_requestDeposit_shouldBeCancelableAfterSettlementWhenRequestIsMadeDuringTheCurrentEpoch() public {
+        // first: User 1 make a request deposit
+        uint256 amountToDeposit = 10 * 10 ** vault.underlyingDecimals();
+        vm.prank(user1.addr);
+        uint256 requestId_1 = vault.requestDeposit(amountToDeposit, user1.addr, user1.addr);
+        assertEq(requestId_1, 1);
+
+        // The request amount is now inside the pending silo wainting for Nav update and then settlement
+
+        // Then the NAV commity commit a new NAV
+        updateNewTotalAssets(0);
+
+        // Now user 1 is not able to cancel his request - The assets are still in the pending silo waiting for being
+        // settle
+        assertEq(assetBalance(vault.pendingSilo()), amountToDeposit);
+
+        // second: User 2 make an other request deposit
+        vm.prank(user2.addr);
+        uint256 requestId_2 = vault.requestDeposit(amountToDeposit, user2.addr, user2.addr);
+        assertEq(requestId_2, 3);
+
+        // Now the pendingSilo olds the two deposits
+        assertEq(assetBalance(vault.pendingSilo()), 2 * amountToDeposit);
+
+        // the asset manager settle the vault
+        settle();
+
+        // We expect the pending Silo to only send the assets of the first deposit and not the one from user2
+        assertEq(assetBalance(vault.pendingSilo()), amountToDeposit);
+
+        uint256 assetBefore = assetBalance(user2.addr);
+
+        // now the request from user2 should still be cancelable and he can get his deposit back since no update total
+        // assets has been made
+        vm.prank(user2.addr);
+        vault.cancelRequestDeposit();
+
+        // the pendingSilo should now be empty
+        assertEq(assetBalance(vault.pendingSilo()), 0);
+
+        uint256 assetAfter = assetBalance(user2.addr);
+
+        // and user2 get his money back
+        assertEq(assetAfter - assetBefore, amountToDeposit);
     }
 }
