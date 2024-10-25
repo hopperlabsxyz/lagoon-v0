@@ -652,7 +652,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     function claimableDepositRequest(uint256 requestId, address controller) public view returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        if (requestId == 0) requestId = 1;
+        if (requestId == 0) requestId = $.lastDepositRequestId[controller];
         if (requestId <= $.lastDepositEpochIdSettled) {
             return $.epochs[uint40(requestId)].depositRequest[controller];
         }
