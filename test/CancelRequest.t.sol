@@ -21,10 +21,22 @@ contract TestCancelRequest is BaseTest {
 
     function test_cancelRequestDeposit() public {
         uint256 assetsBeforeRequest = assetBalance(user1.addr);
-        requestDeposit(assetsBeforeRequest / 2, user1.addr);
+        uint256 requestId = requestDeposit(assetsBeforeRequest / 2, user1.addr);
         uint256 assetsBeforeCancel = assetBalance(user1.addr);
+
+        assertEq(vault.pendingDepositRequest(requestId, user1.addr), assetsBeforeRequest / 2);
+        assertEq(vault.pendingDepositRequest(0, user1.addr), assetsBeforeRequest / 2);
+        assertEq(vault.claimableDepositRequest(requestId, user1.addr), 0);
+        assertEq(vault.claimableDepositRequest(0, user1.addr), 0);
+
         vm.prank(user1.addr);
         vault.cancelRequestDeposit();
+
+        assertEq(vault.pendingDepositRequest(requestId, user1.addr), 0);
+        assertEq(vault.pendingDepositRequest(0, user1.addr), 0);
+        assertEq(vault.claimableDepositRequest(requestId, user1.addr), 0);
+        assertEq(vault.claimableDepositRequest(0, user1.addr), 0);
+
         uint256 assetsAfterCancel = assetBalance(user1.addr);
         assertLt(assetsBeforeCancel, assetsAfterCancel);
         assertEq(assetsAfterCancel, assetsBeforeRequest);
