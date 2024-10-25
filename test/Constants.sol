@@ -107,7 +107,7 @@ abstract contract Constants is Test {
     function setUpVault(uint16 _protocolRate, uint16 _managementRate, uint16 _performanceRate) internal {
         bool proxy = vm.envBool("PROXY");
 
-        feeRegistry = new FeeRegistry();
+        feeRegistry = new FeeRegistry(false);
         feeRegistry.initialize(dao.addr, dao.addr);
 
         vm.prank(dao.addr);

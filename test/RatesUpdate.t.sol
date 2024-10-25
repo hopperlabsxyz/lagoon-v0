@@ -32,7 +32,7 @@ contract testRateUpdates is BaseTest {
         uint16 managementRate = MAX_MANAGEMENT_RATE + 1;
         uint16 performanceRate = MAX_PERFORMANCE_RATE + 1;
 
-        feeRegistry = new FeeRegistry();
+        feeRegistry = new FeeRegistry(false);
         feeRegistry.initialize(dao.addr, dao.addr);
 
         vm.prank(dao.addr);

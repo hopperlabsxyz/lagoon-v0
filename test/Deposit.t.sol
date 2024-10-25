@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
+import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC7540InvalidOperator, RequestIdNotClaimable} from "@src/vault/ERC7540.sol";
 import {Vault} from "@src/vault/Vault.sol";
@@ -37,5 +38,18 @@ contract TestDeposit is BaseTest {
         vm.prank(user1.addr);
         vm.expectRevert(RequestIdNotClaimable.selector);
         vault.deposit(userBalance, user1.addr, user1.addr);
+    }
+
+    function test_deposit_shouldRevertIfInvalidReceiver() public {
+        uint256 userBalance = assetBalance(user1.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        assertEq(vault.maxDeposit(user1.addr), userBalance);
+        uint256 totalSupplyBefore = vault.totalSupply();
+        vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidReceiver.selector, address(0)));
+        vm.prank(user1.addr);
+        vault.deposit(userBalance, address(0));
+        uint256 totalSupplyAfter = vault.totalSupply();
+        assertEq(totalSupplyBefore, totalSupplyAfter, "supply before != supply after");
     }
 }

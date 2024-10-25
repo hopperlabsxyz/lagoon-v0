@@ -178,7 +178,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return true;
     }
 
-    function previewDeposit(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256 shares) {
+    function previewDeposit(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         revert ERC7540PreviewDepositDisabled();
     }
 
@@ -233,7 +233,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return _depositId;
     }
 
-    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
     /// @notice Claim the assets from the vault after a request has been settled.
     /// @param assets The amount of assets requested to deposit.
     /// @param receiver The receiver of the shares.
@@ -245,7 +245,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return _deposit(assets, receiver, msg.sender);
     }
 
-    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
     /// @notice Claim the assets from the vault after a request has been settled.
     /// @param assets The assets to deposit.
     /// @param receiver The receiver of the shares.
@@ -275,12 +275,12 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         $.epochs[requestId].depositRequest[controller] -= assets;
         shares = convertToShares(assets, requestId);
 
-        _update(address(this), receiver, shares);
+        _transfer(address(this), receiver, shares);
 
         emit Deposit(controller, receiver, assets, shares);
     }
 
-    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
     function mint(
         uint256 shares,
         address receiver
@@ -288,7 +288,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return _mint(shares, receiver, msg.sender);
     }
 
-    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
     /// @notice Claim shares from the vault after a request deposit.
     function mint(
         uint256 shares,
@@ -314,7 +314,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         assets = _convertToAssets(shares, requestId, Math.Rounding.Ceil);
 
         $.epochs[requestId].depositRequest[controller] -= assets;
-        _update(address(this), receiver, shares);
+        _transfer(address(this), receiver, shares);
 
         emit Deposit(controller, receiver, assets, shares);
     }
@@ -419,21 +419,18 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// and save the deposit parameters in the settleData.
     /// @param assetsCustodian The address that will hold the assets.
     function _settleDeposit(address assetsCustodian) internal {
-        address _asset = asset();
-        address _pendingSilo = pendingSilo();
-
-        uint256 pendingAssets = IERC20(_asset).balanceOf(_pendingSilo);
-        if (pendingAssets == 0) return;
-
-        uint256 shares = _convertToShares(pendingAssets, Math.Rounding.Floor);
-
-        // Then save the deposit parameters
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
+
+        uint40 depositSettleId = $erc7540.depositSettleId;
+
+        uint256 _pendingAssets = $erc7540.settles[depositSettleId].pendingAssets;
+        if (_pendingAssets == 0) return;
+
+        uint256 shares = _convertToShares(_pendingAssets, Math.Rounding.Floor);
 
         // cache
         uint256 _totalAssets = totalAssets();
         uint256 _totalSupply = totalSupply();
-        uint40 depositSettleId = $erc7540.depositSettleId;
         uint40 lastDepositEpochIdSettled = $erc7540.depositEpochId - 2;
 
         SettleData storage settleData = $erc7540.settles[depositSettleId];
@@ -443,17 +440,17 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
         _mint(address(this), shares);
 
-        _totalAssets += pendingAssets;
+        _totalAssets += _pendingAssets;
         _totalSupply += shares;
 
         $erc7540.totalAssets = _totalAssets;
         $erc7540.depositSettleId = depositSettleId + 2;
         $erc7540.lastDepositEpochIdSettled = lastDepositEpochIdSettled;
 
-        IERC20(_asset).safeTransferFrom(_pendingSilo, assetsCustodian, pendingAssets);
+        IERC20(asset()).safeTransferFrom(pendingSilo(), assetsCustodian, _pendingAssets);
 
         emit SettleDeposit(
-            lastDepositEpochIdSettled, depositSettleId, _totalAssets, _totalSupply, pendingAssets, shares
+            lastDepositEpochIdSettled, depositSettleId, _totalAssets, _totalSupply, _pendingAssets, shares
         );
     }
 
@@ -462,10 +459,12 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param assetsCustodian The address that holds the assets.
     function _settleRedeem(address assetsCustodian) internal {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
-        address _asset = asset();
-        address _pendingSilo = address($erc7540.pendingSilo);
 
-        uint256 pendingShares = balanceOf(_pendingSilo);
+        uint40 redeemSettleId = $erc7540.redeemSettleId;
+
+        address _asset = asset();
+
+        uint256 pendingShares = $erc7540.settles[redeemSettleId].pendingShares;
         uint256 assetsToWithdraw = _convertToAssets(pendingShares, Math.Rounding.Floor);
 
         uint256 assetsInTheSafe = IERC20(_asset).balanceOf(assetsCustodian);
@@ -474,7 +473,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         // cache
         uint256 _totalAssets = totalAssets();
         uint256 _totalSupply = totalSupply();
-        uint40 redeemSettleId = $erc7540.redeemSettleId;
         uint40 lastRedeemEpochIdSettled = $erc7540.redeemEpochId - 2;
 
         SettleData storage settleData = $erc7540.settles[redeemSettleId];
@@ -482,7 +480,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         settleData.totalAssets = _totalAssets;
         settleData.totalSupply = _totalSupply;
 
-        _burn(_pendingSilo, pendingShares);
+        _burn(pendingSilo(), pendingShares);
 
         _totalAssets -= assetsToWithdraw;
         _totalSupply -= pendingShares;
@@ -515,8 +513,14 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 pendingAssets = IERC20(asset()).balanceOf(_pendingSilo);
         uint256 pendingShares = balanceOf(_pendingSilo);
 
-        if (pendingAssets != 0) $.depositEpochId += 2;
-        if (pendingShares != 0) $.redeemEpochId += 2;
+        if (pendingAssets != 0) {
+            $.depositEpochId += 2;
+            $.settles[$.depositSettleId].pendingAssets = pendingAssets;
+        }
+        if (pendingShares != 0) {
+            $.redeemEpochId += 2;
+            $.settles[$.redeemSettleId].pendingShares = pendingShares;
+        }
 
         $.newTotalAssets = _newTotalAssets;
 
@@ -562,9 +566,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        uint256 _totalAssets = $.settles[$.epochs[requestId].settleId].totalAssets + 1;
+        // cache
+        uint40 settleId = $.epochs[requestId].settleId;
 
-        uint256 _totalSupply = $.settles[$.epochs[requestId].settleId].totalSupply + 10 ** _decimalsOffset();
+        uint256 _totalAssets = $.settles[settleId].totalAssets + 1;
+        uint256 _totalSupply = $.settles[settleId].totalSupply + 10 ** _decimalsOffset();
 
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
     }
@@ -588,9 +594,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     ) internal view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        uint256 _totalAssets = $.settles[$.epochs[requestId].settleId].totalAssets + 1;
+        // cache
+        uint40 settleId = $.epochs[requestId].settleId;
 
-        uint256 _totalSupply = $.settles[$.epochs[requestId].settleId].totalSupply + 10 ** _decimalsOffset();
+        uint256 _totalAssets = $.settles[settleId].totalAssets + 1;
+        uint256 _totalSupply = $.settles[settleId].totalSupply + 10 ** _decimalsOffset();
 
         return shares.mulDiv(_totalAssets, _totalSupply, rounding);
     }
@@ -675,6 +683,14 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     function lastDepositRequestId(address controller) public view returns (uint40) {
         return _getERC7540Storage().lastDepositRequestId[controller];
+    }
+
+    function depositEpochId() public view returns (uint40) {
+        return _getERC7540Storage().depositEpochId;
+    }
+
+    function redeemEpochId() public view returns (uint40) {
+        return _getERC7540Storage().redeemEpochId;
     }
 
     ///////////////////
