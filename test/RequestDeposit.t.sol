@@ -68,6 +68,8 @@ contract TestRequestDeposit is BaseTest {
 
         uint256 requestId_1 = requestDeposit(userBalance / 2, user1.addr);
 
+        assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), userBalance / 2);
+
         updateAndSettle(0);
 
         assertEq(requestId_1 + 2, vault.depositEpochId(), "wrong deposit id");
@@ -87,7 +89,10 @@ contract TestRequestDeposit is BaseTest {
             "wrong amount of claimable shares"
         );
 
-        requestDeposit(userBalance / 2, user1.addr);
+        uint256 requestId_2 = requestDeposit(userBalance / 2, user1.addr);
+
+        assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), 0);
+        assertEq(vault.pendingDepositRequest(requestId_2, user1.addr), userBalance / 2);
 
         assertEq(vault.maxDeposit(user1.addr), 0, "wrong claimable deposit value");
         assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance / 2, "wrong pending deposit value");
