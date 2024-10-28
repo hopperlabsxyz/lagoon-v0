@@ -195,6 +195,17 @@ contract TestInitiateClosing is BaseTest {
         assertEq(vault.claimableRedeemRequest(0, user3.addr), 25_000 * 10 ** vault.decimals());
     }
 
+    function test_close_revertsIfPendingRequestCantBeFullfilled() public {
+        // We simulate that there are not enough asset in the safe (we expected newTotalAssets, here 125K)
+        deal(vault.asset(), vault.safe(), (50_000 * 10 ** vault.underlyingDecimals()));
+        // The vault is empty
+        deal(vault.asset(), address(vault), 0);
+
+        vm.expectRevert();
+        vm.prank(safe.addr);
+        vault.close();
+    }
+
     function logUserInfo(VmSafe.Wallet memory user) internal view {
         uint256 userPendingAssets = vault.pendingDepositRequest(0, user.addr);
         uint256 userPendingShares = vault.pendingRedeemRequest(0, user.addr);
