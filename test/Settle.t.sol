@@ -60,6 +60,7 @@ contract TestSettle is BaseTest {
         uint256 totalSupply = vault.totalSupply();
 
         updateAndSettle(totalAssets.mulDiv(150, 100));
+        assertEq(vault.highWaterMark(), vault.pricePerShare());
 
         // when settle-deposit:
         uint256 totalAssetsWhenDeposit = totalAssets.mulDiv(150, 100);
@@ -133,11 +134,13 @@ contract TestSettle is BaseTest {
 
         vm.prank(vault.safe());
         vault.settleDeposit();
+        assertEq(vault.highWaterMark(), vault.pricePerShare());
 
         updateNewTotalAssets(1);
 
         vm.prank(vault.safe());
         vault.settleRedeem();
+        assertEq(vault.highWaterMark(), vault.pricePerShare());
     }
 
     function test_settle_deposit_without_totalAssets_update_reverts() public {
@@ -157,6 +160,7 @@ contract TestSettle is BaseTest {
         vm.warp(block.timestamp + 1 days);
         vm.prank(vault.safe());
         vault.settleDeposit();
+        assertEq(vault.highWaterMark(), vault.pricePerShare());
 
         vm.prank(vault.safe());
         vm.expectRevert(NewTotalAssetsMissing.selector);
@@ -182,6 +186,7 @@ contract TestSettle is BaseTest {
 
         vm.prank(vault.safe());
         vault.settleDeposit();
+        assertEq(vault.highWaterMark(), vault.pricePerShare());
 
         vm.prank(vault.safe());
         vm.expectRevert(NewTotalAssetsMissing.selector);
@@ -198,6 +203,7 @@ contract TestSettle is BaseTest {
         requestDeposit(user1Assets / 2, user1.addr);
 
         updateAndSettle(0);
+        assertEq(vault.highWaterMark(), vault.pricePerShare());
 
         vm.prank(user1.addr);
         uint256 user1Shares = vault.deposit(user1Assets / 2, user1.addr);
@@ -213,6 +219,7 @@ contract TestSettle is BaseTest {
         vm.warp(block.timestamp + 1 days);
         vm.prank(vault.safe());
         vault.settleRedeem();
+        assertEq(vault.highWaterMark(), vault.pricePerShare());
 
         vm.prank(vault.safe());
         vm.expectRevert(NewTotalAssetsMissing.selector);
@@ -242,6 +249,7 @@ contract TestSettle is BaseTest {
 
         vm.prank(vault.safe());
         vault.settleRedeem();
+        assertEq(vault.highWaterMark(), vault.pricePerShare());
 
         vm.prank(vault.safe());
         vm.expectRevert(NewTotalAssetsMissing.selector);
