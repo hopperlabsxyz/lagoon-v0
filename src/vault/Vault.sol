@@ -300,6 +300,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _settleRedeem(msg.sender);
         _getVaultStorage().state = State.Closed;
 
+        // Transfer will fail if there are not enough assets inside the safe, making sure that redeem requests are
+        // fulfilled
         IERC20(asset()).safeTransferFrom(msg.sender, address(this), _getERC7540Storage().totalAssets);
 
         emit StateUpdated(State.Closed);
