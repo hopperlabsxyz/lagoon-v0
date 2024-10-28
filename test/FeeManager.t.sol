@@ -94,7 +94,7 @@ contract TestFeeManager is BaseTest {
         assertEq(
             pricePerShare(), 45 * 10 ** (vault.underlyingDecimals() - 2), "price per share didn't decreased as expected"
         );
-        // The assets manager is supposed to take 10% of what all users old before new request deposit are taken into
+        // The assets manager is supposed to take 10% off what all users old before new request deposit are taken into
         // account.
         // Here only user1 is in the vault holding 1 share that worth 0.45$ after taking the fees so the asset manager
         // is supposed to hold some shares that worth 0.05$ - protocol fees.

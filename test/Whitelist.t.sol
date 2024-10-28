@@ -34,6 +34,13 @@ contract TestWhitelist is BaseTest {
     function test_requestDeposit_ShouldFailWhenControllerNotWhitelisted() public {
         withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
+
+        // referral
+        vm.startPrank(user1.addr);
+        vm.expectRevert(NotWhitelisted.selector);
+        vault.requestDeposit(userBalance, user1.addr, user1.addr, user2.addr);
+
+        // no referral
         vm.startPrank(user1.addr);
         vm.expectRevert(NotWhitelisted.selector);
         vault.requestDeposit(userBalance, user1.addr, user1.addr);
