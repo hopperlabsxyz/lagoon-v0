@@ -7,10 +7,12 @@ import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {ERC7540InvalidOperator} from "@src/vault/ERC7540.sol";
 import {Closed, NotClosing, NotOpen, State, Vault} from "@src/vault/Vault.sol";
 import "forge-std/Test.sol";
+import {VmSafe} from "forge-std/Vm.sol";
 
 contract TestInitiateClosing is BaseTest {
     uint256 user1AssetsBeginning = 0;
     uint256 user2AssetsBeginning = 0;
+    uint256 user3AssetsBeginning = 0;
 
     function setUp() public {
         enableWhitelist = false;
@@ -19,6 +21,7 @@ contract TestInitiateClosing is BaseTest {
         require(s == State.Open, "vault should be open");
         dealAndApprove(user1.addr); // if we deal 100k assets
         dealAndApprove(user2.addr); // if we deal 100k assets
+        dealAndApprove(user3.addr); // if we deal 100k assets
 
         uint256 user1Assets = assetBalance(user1.addr);
         user1AssetsBeginning = user1Assets; // 100k assets
@@ -26,11 +29,16 @@ contract TestInitiateClosing is BaseTest {
         uint256 user2Assets = assetBalance(user2.addr);
         user2AssetsBeginning = user2Assets; // 100k assets
 
+        uint256 user3Assets = assetBalance(user3.addr);
+        user3AssetsBeginning = user3Assets; // 100k assets
+
         requestDeposit(user1Assets / 2, user1.addr); // 50k assets
         requestDeposit(user2Assets / 2, user2.addr); // 50k assets
+        requestDeposit(user3Assets / 2, user3.addr); // 50k assets
 
         // user1: 50k shares claimable
         // user2: 50k shares claimable
+        // user3: 50k shares claimable
         updateAndSettle(0);
 
         // User2 claims 50k shares
@@ -41,11 +49,16 @@ contract TestInitiateClosing is BaseTest {
         vault.requestRedeem(25_000 * 10 ** vault.decimals(), user2.addr, user2.addr); // 25k shares pending
         vm.stopPrank();
 
+        // User3 claims 50k shares
+        vm.prank(user3.addr);
+        vault.deposit(user3Assets / 2, user3.addr);
+
         // user1: 50k shares claimable
         // user2:
         //    - 25k assets claimable
         //    - 25k shares holding
-        updateAndSettle(100_000 * 10 ** vault.underlyingDecimals());
+        // user3: 50k shares holding
+        updateAndSettle(150_000 * 10 ** vault.underlyingDecimals());
 
         vm.warp(block.timestamp + 30 days);
 
@@ -56,6 +69,11 @@ contract TestInitiateClosing is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(NotClosing.selector, State.Open));
         vault.close();
 
+        // user 3 request deposit before vault goes into closing state
+        requestDeposit(user3Assets / 2, user3.addr); // 50k assets
+        // user 3 request redeem before vault goes into closing state on half of his shares
+        requestRedeem(25_000 * 10 ** vault.decimals(), user3.addr); // 25k shares pending
+
         vm.prank(admin.addr);
         vault.initiateClosing();
 
@@ -65,6 +83,13 @@ contract TestInitiateClosing is BaseTest {
         // user2:
         //    - 25k assets claimable
         //    - 25k shares holding
+        // user3:
+        //    - 25k shares holding
+        //    - 25k shares pending redeem
+        //    - 50k assets pending deposit
+        console.log("total assets       ", vault.totalAssets());
+        console.log("asset balance vault", assetBalance(address(vault)));
+        console.log("asset balance safe ", assetBalance(safe.addr));
         updateNewTotalAssets(vault.totalAssets());
 
         vm.warp(block.timestamp + 1 days);
@@ -150,32 +175,138 @@ contract TestInitiateClosing is BaseTest {
         assertEq(assetBalance(user1.addr), user1AssetsBeginning);
     }
 
+    function test_close_onPendingDeposit() public {
+        assertEq(vault.pendingDepositRequest(0, user3.addr), 50_000 * 10 ** vault.underlyingDecimals());
+
+        vm.prank(safe.addr);
+        vault.close();
+
+        assertEq(vault.pendingDepositRequest(0, user3.addr), 0);
+        assertEq(vault.claimableDepositRequest(0, user3.addr), 50_000 * 10 ** vault.underlyingDecimals());
+    }
+
+    function test_close_onPendingRedeem() public {
+        assertEq(vault.pendingRedeemRequest(0, user3.addr), 25_000 * 10 ** vault.decimals());
+
+        vm.prank(safe.addr);
+        vault.close();
+
+        assertEq(vault.pendingRedeemRequest(0, user3.addr), 0);
+        assertEq(vault.claimableRedeemRequest(0, user3.addr), 25_000 * 10 ** vault.decimals());
+    }
+
+    function logUserInfo(VmSafe.Wallet memory user) internal view {
+        uint256 userPendingAssets = vault.pendingDepositRequest(0, user.addr);
+        uint256 userPendingShares = vault.pendingRedeemRequest(0, user.addr);
+        uint256 userClaimableAssets = vault.claimableDepositRequest(0, user.addr);
+        uint256 userClaimableShares = vault.claimableRedeemRequest(0, user.addr);
+
+        console.log("asset balance  ", assetBalance(user.addr));
+        console.log("share balance  ", vault.balanceOf(user.addr));
+        console.log("pending asset  ", userPendingAssets);
+        console.log("pending share  ", userPendingShares);
+        console.log("claimable asset", userClaimableAssets);
+        console.log("claimable share", userClaimableShares);
+    }
+
     function test_withdrawAssetWithoutClaimableRedeem() public {
         uint256 user1ClaimableAssets = vault.claimableDepositRequest(0, user1.addr);
 
+        uint256 user2ClaimableAssets = vault.claimableDepositRequest(0, user2.addr);
+        uint256 user2ClaimableShares = vault.claimableRedeemRequest(0, user2.addr);
+
+        uint256 user3ClaimableAssets = vault.claimableDepositRequest(0, user3.addr);
+
+        console.log("Log info user1:");
+        logUserInfo(user1);
+        console.log("Log info user2:");
+        logUserInfo(user2);
+        console.log("Log info user3:");
+        logUserInfo(user3);
+
         vm.prank(user1.addr);
         vault.deposit(user1ClaimableAssets, user1.addr);
+
+        vm.prank(user2.addr);
+        redeem(user2ClaimableShares, user2.addr);
 
         // @dev we can add assets and shares because pps = 1 assets / share
         assertEq(
             vault.balanceOf(user1.addr), user1ClaimableAssets * 10 ** vault.decimalsOffset(), "wrong balance of shares"
         );
 
-        console.log("safe balance: ", IERC20(vault.asset()).balanceOf(safe.addr));
-
         vm.prank(safe.addr);
         vault.close();
 
+        console.log("total assets       ", vault.totalAssets());
+        console.log("asset balance vault", assetBalance(address(vault)));
+        console.log("asset balance safe ", assetBalance(safe.addr));
+
+        // user3's assets are now claimable
+        user3ClaimableAssets = vault.claimableDepositRequest(0, user3.addr);
+
+        vm.prank(user3.addr);
+        vault.deposit(user3ClaimableAssets, user3.addr);
+
+        // user1 withdraw his assets
         vm.startPrank(user1.addr);
-        uint256 sharesFirstWithdraw = vault.withdraw(user1ClaimableAssets / 2, user1.addr, user1.addr);
-
-        uint256 sharesSecondWithdraw = vault.withdraw(user1ClaimableAssets / 2, user1.addr, user1.addr);
-        assertEq(sharesFirstWithdraw, sharesSecondWithdraw, "first withdraw != second withdraw");
-
+        uint256 sharesFirstWithdraw_user1 = vault.withdraw(user1ClaimableAssets / 2, user1.addr, user1.addr);
+        uint256 sharesSecondWithdraw_user1 = vault.withdraw(user1ClaimableAssets / 2, user1.addr, user1.addr);
+        assertEq(sharesFirstWithdraw_user1, sharesSecondWithdraw_user1, "first withdraw != second withdraw");
+        assertEq(assetBalance(user1.addr), 100_000 * 10 ** vault.underlyingDecimals());
         vm.stopPrank();
 
-        assertEq(assetBalance(user1.addr), 2 * user1ClaimableAssets);
-        assertEq(assetBalance(user1.addr), user1AssetsBeginning);
+        console.log("---------");
+        console.log("Log info user1:");
+        logUserInfo(user1);
+        console.log("Log info user2:");
+        logUserInfo(user2);
+        console.log("Log info user3:");
+        logUserInfo(user3);
+        console.log("---------");
+
+        // user2 withdraw his assets
+        vm.startPrank(user2.addr);
+        uint256 sharesFirstWithdraw_user2 = vault.withdraw(user2ClaimableAssets / 2, user1.addr, user1.addr);
+        uint256 sharesSecondWithdraw_user2 = vault.withdraw(user2ClaimableAssets / 2, user1.addr, user1.addr);
+        uint256 user2Shares = vault.balanceOf(user2.addr);
+        vault.approve(address(vault), user2Shares);
+        vault.redeem(user2Shares, user2.addr, user2.addr);
+        assertEq(sharesFirstWithdraw_user2, sharesSecondWithdraw_user2, "first withdraw != second withdraw");
+        assertEq(assetBalance(user2.addr), 100_000 * 10 ** vault.underlyingDecimals());
+        vm.stopPrank();
+
+        console.log("---------");
+        console.log("Log info user1:");
+        logUserInfo(user1);
+        console.log("Log info user2:");
+        logUserInfo(user2);
+        console.log("Log info user3:");
+        logUserInfo(user3);
+        console.log("---------");
+
+        // user3 withdraw his assets
+        vm.startPrank(user3.addr);
+        uint256 sharesFirstWithdraw_user3 = vault.withdraw(user3ClaimableAssets / 2, user3.addr, user3.addr);
+        uint256 sharesSecondWithdraw_user3 = vault.withdraw(user3ClaimableAssets / 2, user3.addr, user3.addr);
+        uint256 user3Shares = vault.balanceOf(user3.addr);
+        vault.approve(address(vault), user3Shares);
+        vault.redeem(user3Shares, user3.addr, user3.addr);
+        assertEq(sharesFirstWithdraw_user3, sharesSecondWithdraw_user3, "first withdraw != second withdraw");
+        assertEq(assetBalance(user3.addr), 100_000 * 10 ** vault.underlyingDecimals());
+        vm.stopPrank();
+
+        console.log("---------");
+        console.log("Log info user1:");
+        logUserInfo(user1);
+        console.log("Log info user2:");
+        logUserInfo(user2);
+        console.log("Log info user3:");
+        logUserInfo(user3);
+        console.log("---------");
+
+        // assertEq(assetBalance(user1.addr), 2 * user1ClaimableAssets);
+        // assertEq(assetBalance(user1.addr), user1AssetsBeginning);
     }
 
     function test_cantCloseAVaultWithoutFullUnwind() public {
@@ -185,7 +316,7 @@ contract TestInitiateClosing is BaseTest {
         asset.transfer(address(0x1), safeBalance - 1);
 
         assertEq(asset.balanceOf(safe.addr), 1);
-        assertEq(vault.totalAssets(), 75_000 * 10 ** vault.underlyingDecimals());
+        assertEq(vault.totalAssets(), 125_000 * 10 ** vault.underlyingDecimals());
         vm.prank(safe.addr);
         vm.expectRevert("ERC20: transfer amount exceeds balance");
         vault.close();
@@ -246,11 +377,11 @@ contract TestInitiateClosing is BaseTest {
         deal(vault.asset(), safe.addr, vault.totalAssets() * multi);
         vm.prank(safe.addr);
         vault.close();
-        assertEq(vault.totalAssets() / 10 ** vault.underlyingDecimals(), 150_000, "wrong total assets");
+        assertEq(vault.totalAssets() / 10 ** vault.underlyingDecimals(), 250_000, "wrong total assets");
 
         uint256 firstRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
-        assertEq(firstRedeem / 10 ** vault.underlyingDecimals(), (25_000 / 2), "did not received expected assets"); // no
-        // profit here because settle associated with this request did not bring any profits
+        assertEq(firstRedeem / 10 ** vault.underlyingDecimals(), (25_000 / 2), "did not received expected assets");
+        // no profit here because settle associated with this request did not bring any profits
         uint256 secondRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
         assertEq(secondRedeem, (25_000 / 2) * 10 ** vault.underlyingDecimals(), "did not received expected assets 2"); // same
         // here
