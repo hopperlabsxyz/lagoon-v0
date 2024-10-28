@@ -99,6 +99,152 @@ contract TestRequestRedeem is BaseTest {
         vault.requestRedeem(userBalance / 2, user1.addr, user1.addr);
     }
 
+    function test_requestRedeem_updateClaimableDepositRequestAndPendingDepositRequest() public {
+        // REQUEST REDEEM 1
+        uint256 requestId_1 = requestRedeem(100 * 10 ** vault.decimals(), user1.addr);
+
+        // pendings
+        assertEq(
+            vault.pendingRedeemRequest(requestId_1, user1.addr),
+            100 * 10 ** vault.decimals(),
+            "[0 - pending - requestId 1]: wrong amount"
+        );
+        assertEq(
+            vault.pendingRedeemRequest(0, user1.addr),
+            100 * 10 ** vault.decimals(),
+            "[0 - pending - requestId 0]: wrong amount"
+        );
+
+        // claimables
+        assertEq(
+            vault.claimableRedeemRequest(requestId_1, user1.addr), 0, "[0 - claimable - requestId 1]: wrong amount"
+        );
+        assertEq(vault.claimableRedeemRequest(0, user1.addr), 0, "[0 - claimable - requestId 0]: wrong amount");
+
+        /// ------------------ settlement ------------------ ///
+        updateAndSettle(assetBalance(vault.safe()));
+
+        // pendings
+        assertEq(vault.pendingRedeemRequest(requestId_1, user1.addr), 0, "[1 - pending - requestId 1]: wrong amount");
+        assertEq(vault.pendingRedeemRequest(0, user1.addr), 0, "[1 - pending - requestId 0]: wrong amount");
+
+        // claimables
+        assertEq(
+            vault.claimableRedeemRequest(requestId_1, user1.addr),
+            100 * 10 ** vault.decimals(),
+            "[1 - claimable - requestId 1]: wrong amount"
+        );
+        assertEq(
+            vault.claimableRedeemRequest(0, user1.addr),
+            100 * 10 ** vault.decimals(),
+            "[1 - claimable - requestId 0]: wrong amount"
+        );
+
+        // REQUEST REDEEM 2
+        uint256 requestId_2 = requestRedeem(200 * 10 ** vault.decimals(), user1.addr);
+
+        // pendings
+        assertEq(vault.pendingRedeemRequest(requestId_1, user1.addr), 0, "[2 - pending - requestId 1]: wrong amount");
+        assertEq(
+            vault.pendingRedeemRequest(requestId_2, user1.addr),
+            200 * 10 ** vault.decimals(),
+            "[2 - pending - requestId 2]: wrong amount"
+        );
+        assertEq(
+            vault.pendingRedeemRequest(0, user1.addr),
+            200 * 10 ** vault.decimals(),
+            "[2 - pending - requestId 0]: wrong amount"
+        );
+
+        // claimables
+        assertEq(
+            vault.claimableRedeemRequest(requestId_1, user1.addr), 0, "[2 - claimable - requestId 1]: wrong amount"
+        );
+        assertEq(
+            vault.claimableRedeemRequest(requestId_2, user1.addr), 0, "[2 - claimable - requestId 2]: wrong amount"
+        );
+        assertEq(vault.claimableRedeemRequest(0, user1.addr), 0, "[2 - claimable - requestId 0]: wrong amount");
+
+        /// ------------------ settlement ------------------ ///
+        updateAndSettle(assetBalance(vault.safe()));
+
+        // pendings
+        assertEq(vault.pendingRedeemRequest(requestId_1, user1.addr), 0, "[3 - pending - requestId 1]: wrong amount");
+        assertEq(vault.pendingRedeemRequest(requestId_2, user1.addr), 0, "[3 - pending - requestId 2]: wrong amount");
+        assertEq(vault.pendingRedeemRequest(0, user1.addr), 0, "[3 - pending - requestId 0]: wrong amount");
+
+        // claimables
+        assertEq(
+            vault.claimableRedeemRequest(requestId_1, user1.addr), 0, "[3 - claimable - requestId 1]: wrong amount"
+        );
+        assertEq(
+            vault.claimableRedeemRequest(requestId_2, user1.addr),
+            200 * 10 ** vault.decimals(),
+            "[3 - claimable - requestId 2]: wrong amount"
+        );
+        assertEq(
+            vault.claimableRedeemRequest(0, user1.addr),
+            200 * 10 ** vault.decimals(),
+            "[3 - claimable - requestId 0]: wrong amount"
+        );
+
+        // REQUEST REDEEM 3
+        uint256 requestId_3 = requestRedeem(150 * 10 ** vault.decimals(), user1.addr);
+
+        // pendings
+        assertEq(vault.pendingRedeemRequest(requestId_1, user1.addr), 0, "[4 - pending - requestId 1]: wrong amount");
+        assertEq(vault.pendingRedeemRequest(requestId_2, user1.addr), 0, "[4 - pending - requestId 2]: wrong amount");
+        assertEq(
+            vault.pendingRedeemRequest(requestId_3, user1.addr),
+            150 * 10 ** vault.decimals(),
+            "[4 - pending - requestId 3]: wrong amount"
+        );
+        assertEq(
+            vault.pendingRedeemRequest(0, user1.addr),
+            150 * 10 ** vault.decimals(),
+            "[4 - pending - requestId 0]: wrong amount"
+        );
+
+        // claimables
+        assertEq(
+            vault.claimableRedeemRequest(requestId_1, user1.addr), 0, "[4 - claimable - requestId 1]: wrong amount"
+        );
+        assertEq(
+            vault.claimableRedeemRequest(requestId_2, user1.addr), 0, "[4 - claimable - requestId 2]: wrong amount"
+        );
+        assertEq(
+            vault.claimableRedeemRequest(requestId_3, user1.addr), 0, "[4 - claimable - requestId 3]: wrong amount"
+        );
+        assertEq(vault.claimableRedeemRequest(0, user1.addr), 0, "[4 - claimable - requestId 0]: wrong amount");
+
+        /// ------------------ settlement ------------------ ///
+        updateAndSettle(assetBalance(vault.safe()));
+
+        // pendings
+        assertEq(vault.pendingRedeemRequest(requestId_1, user1.addr), 0, "[5 - pending - requestId 1]: wrong amount");
+        assertEq(vault.pendingRedeemRequest(requestId_2, user1.addr), 0, "[5 - pending - requestId 2]: wrong amount");
+        assertEq(vault.pendingRedeemRequest(requestId_3, user1.addr), 0, "[5 - pending - requestId 3]: wrong amount");
+        assertEq(vault.pendingRedeemRequest(0, user1.addr), 0, "[5 - pending - requestId 0]: wrong amount");
+
+        // claimables
+        assertEq(
+            vault.claimableRedeemRequest(requestId_1, user1.addr), 0, "[5 - claimable - requestId 1]: wrong amount"
+        );
+        assertEq(
+            vault.claimableRedeemRequest(requestId_2, user1.addr), 0, "[5 - claimable - requestId 2]: wrong amount"
+        );
+        assertEq(
+            vault.claimableRedeemRequest(requestId_3, user1.addr),
+            150 * 10 ** vault.decimals(),
+            "[5 - claimable - requestId 3]: wrong amount"
+        );
+        assertEq(
+            vault.claimableRedeemRequest(0, user1.addr),
+            150 * 10 ** vault.decimals(),
+            "[5 - claimable - requestId 0]: wrong amount"
+        );
+    }
+
     function test_requestRedeem_ShouldBeAbleToRequestRedeemAfterNAVUpdateAndClaimTheCorrectAmountOfAssets() public {
         uint256 amountToRedeem = vault.balanceOf(user1.addr);
 

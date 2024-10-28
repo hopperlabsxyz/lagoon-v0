@@ -3,6 +3,7 @@ pragma solidity "0.8.26";
 
 import "../src/vault/ERC7540.sol";
 import "../src/vault/Vault.sol";
+import "forge-std/Test.sol";
 
 contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -101,5 +102,15 @@ contract VaultHelper is Vault {
     /// @notice Returns the address of the fee registry.
     function feeRegistry() public view returns (address) {
         return address(_getRolesStorage().feeRegistry);
+    }
+
+    function redeemSettleId() public view returns (uint256) {
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+        return $erc7540.redeemSettleId;
+    }
+
+    function depositSettleId() public view returns (uint256) {
+        ERC7540Storage storage $erc7540 = _getERC7540Storage();
+        return $erc7540.depositSettleId;
     }
 }

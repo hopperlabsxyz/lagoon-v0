@@ -529,7 +529,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @dev Updates the totalAssets variable with the newTotalAssets variable.
     function _updateTotalAssets() internal whenNotPaused {
-        // VaultStorage storage $vault = _getVaultStorage();
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 newTotalAssets = $.newTotalAssets;
@@ -627,7 +626,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) requestId = $.lastRedeemRequestId[controller];
-
         if (requestId <= $.lastRedeemEpochIdSettled) {
             return $.epochs[uint40(requestId)].redeemRequest[controller];
         }

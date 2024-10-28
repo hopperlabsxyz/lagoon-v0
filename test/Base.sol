@@ -207,6 +207,13 @@ contract BaseTest is Test, Constants {
         vm.stopPrank();
     }
 
+    function close() internal {
+        dealAmountAndApprove(vault.safe(), vault.newTotalAssets());
+        vm.startPrank(vault.safe());
+        vault.close();
+        vm.stopPrank();
+    }
+
     function settleRedeem() internal {
         dealAmountAndApprove(vault.safe(), vault.newTotalAssets());
         vm.startPrank(vault.safe());
@@ -218,6 +225,18 @@ contract BaseTest is Test, Constants {
         updateNewTotalAssets(newTotalAssets);
         vm.warp(block.timestamp + 1 days);
         settle();
+    }
+
+    function updateAndSettleRedeem(uint256 newTotalAssets) internal {
+        updateNewTotalAssets(newTotalAssets);
+        vm.warp(block.timestamp + 1 days);
+        settleRedeem();
+    }
+
+    function updateAndClose(uint256 newTotalAssets) internal {
+        updateNewTotalAssets(newTotalAssets);
+        vm.warp(block.timestamp + 1 days);
+        close();
     }
 
     function dealAndApproveAndWhitelist(address user) public {

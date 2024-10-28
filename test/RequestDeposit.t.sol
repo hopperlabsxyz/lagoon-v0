@@ -69,6 +69,8 @@ contract TestRequestDeposit is BaseTest {
 
         uint256 requestId_1 = requestDeposit(userBalance / 2, user1.addr);
 
+        assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), userBalance / 2);
+
         updateAndSettle(0);
 
         assertEq(requestId_1 + 2, vault.depositEpochId(), "wrong deposit id");
@@ -88,7 +90,10 @@ contract TestRequestDeposit is BaseTest {
             "wrong amount of claimable shares"
         );
 
-        requestDeposit(userBalance / 2, user1.addr);
+        uint256 requestId_2 = requestDeposit(userBalance / 2, user1.addr);
+
+        assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), 0);
+        assertEq(vault.pendingDepositRequest(requestId_2, user1.addr), userBalance / 2);
 
         assertEq(vault.maxDeposit(user1.addr), 0, "wrong claimable deposit value");
         assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance / 2, "wrong pending deposit value");
@@ -193,6 +198,110 @@ contract TestRequestDeposit is BaseTest {
 
         vm.prank(user1.addr);
         vault.requestDeposit(42, user1.addr, user1.addr);
+    }
+
+    function test_requestDeposit_updateClaimableDepositRequest() public {
+        // REQUEST DEPOSIT 1
+        uint256 requestId_1 = requestDeposit(100, user1.addr);
+
+        // pendings
+        assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), 100, "[0 - pending - requestId 1]: wrong amount");
+        assertEq(vault.pendingDepositRequest(0, user1.addr), 100, "[0 - pending - requestId 0]: wrong amount");
+
+        // claimables
+        assertEq(
+            vault.claimableDepositRequest(requestId_1, user1.addr), 0, "[0 - claimable - requestId 1]: wrong amount"
+        );
+        assertEq(vault.claimableDepositRequest(0, user1.addr), 0, "[0 - claimable - requestId 0]: wrong amount");
+
+        /// ------------------ settlement ------------------ ///
+        updateAndSettle(0);
+
+        // pendings
+        assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), 0, "[1 - pending - requestId 1]: wrong amount");
+        assertEq(vault.pendingDepositRequest(0, user1.addr), 0, "[1 - pending - requestId 0]: wrong amount");
+
+        // claimables
+        assertEq(
+            vault.claimableDepositRequest(requestId_1, user1.addr), 100, "[1 - claimable - requestId 1]: wrong amount"
+        );
+        assertEq(vault.claimableDepositRequest(0, user1.addr), 100, "[1 - claimable - requestId 0]: wrong amount");
+
+        // REQUEST DEPOSIT 2
+        uint256 requestId_2 = requestDeposit(200, user1.addr);
+
+        // pendings
+        assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), 0, "[2 - pending - requestId 1]: wrong amount");
+        assertEq(vault.pendingDepositRequest(requestId_2, user1.addr), 200, "[2 - pending - requestId 2]: wrong amount");
+        assertEq(vault.pendingDepositRequest(0, user1.addr), 200, "[2 - pending - requestId 0]: wrong amount");
+
+        // claimables
+        assertEq(
+            vault.claimableDepositRequest(requestId_1, user1.addr), 0, "[2 - claimable - requestId 1]: wrong amount"
+        );
+        assertEq(
+            vault.claimableDepositRequest(requestId_2, user1.addr), 0, "[2 - claimable - requestId 2]: wrong amount"
+        );
+        assertEq(vault.claimableDepositRequest(0, user1.addr), 0, "[2 - claimable - requestId 0]: wrong amount");
+
+        /// ------------------ settlement ------------------ ///
+        updateAndSettle(100);
+
+        // pendings
+        assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), 0, "[3 - pending - requestId 1]: wrong amount");
+        assertEq(vault.pendingDepositRequest(requestId_2, user1.addr), 0, "[3 - pending - requestId 2]: wrong amount");
+        assertEq(vault.pendingDepositRequest(0, user1.addr), 0, "[3 - pending - requestId 0]: wrong amount");
+
+        // claimables
+        assertEq(
+            vault.claimableDepositRequest(requestId_1, user1.addr), 0, "[3 - claimable - requestId 1]: wrong amount"
+        );
+        assertEq(
+            vault.claimableDepositRequest(requestId_2, user1.addr), 200, "[3 - claimable - requestId 2]: wrong amount"
+        );
+        assertEq(vault.claimableDepositRequest(0, user1.addr), 200, "[3 - claimable - requestId 0]: wrong amount");
+
+        // REQUEST DEPOSIT 3
+        uint256 requestId_3 = requestDeposit(150, user1.addr);
+
+        // pendings
+        assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), 0, "[4 - pending - requestId 1]: wrong amount");
+        assertEq(vault.pendingDepositRequest(requestId_2, user1.addr), 0, "[4 - pending - requestId 2]: wrong amount");
+        assertEq(vault.pendingDepositRequest(requestId_3, user1.addr), 150, "[4 - pending - requestId 3]: wrong amount");
+        assertEq(vault.pendingDepositRequest(0, user1.addr), 150, "[4 - pending - requestId 0]: wrong amount");
+
+        // claimables
+        assertEq(
+            vault.claimableDepositRequest(requestId_1, user1.addr), 0, "[4 - claimable - requestId 1]: wrong amount"
+        );
+        assertEq(
+            vault.claimableDepositRequest(requestId_2, user1.addr), 0, "[4 - claimable - requestId 2]: wrong amount"
+        );
+        assertEq(
+            vault.claimableDepositRequest(requestId_3, user1.addr), 0, "[4 - claimable - requestId 3]: wrong amount"
+        );
+        assertEq(vault.claimableDepositRequest(0, user1.addr), 0, "[4 - claimable - requestId 0]: wrong amount");
+
+        /// ------------------ settlement ------------------ ///
+        updateAndSettle(100);
+
+        // pendings
+        assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), 0, "[5 - pending - requestId 1]: wrong amount");
+        assertEq(vault.pendingDepositRequest(requestId_2, user1.addr), 0, "[5 - pending - requestId 2]: wrong amount");
+        assertEq(vault.pendingDepositRequest(requestId_3, user1.addr), 0, "[5 - pending - requestId 3]: wrong amount");
+        assertEq(vault.pendingDepositRequest(0, user1.addr), 0, "[5 - pending - requestId 0]: wrong amount");
+
+        // claimables
+        assertEq(
+            vault.claimableDepositRequest(requestId_1, user1.addr), 0, "[5 - claimable - requestId 1]: wrong amount"
+        );
+        assertEq(
+            vault.claimableDepositRequest(requestId_2, user1.addr), 0, "[5 - claimable - requestId 2]: wrong amount"
+        );
+        assertEq(
+            vault.claimableDepositRequest(requestId_3, user1.addr), 150, "[5 - claimable - requestId 3]: wrong amount"
+        );
+        assertEq(vault.claimableDepositRequest(0, user1.addr), 150, "[5 - claimable - requestId 0]: wrong amount");
     }
 
     function test_requestDeposit_ShouldBeAbleToRequestDepositAfterNAVUpdateAndClaimTheCorrectAmountOfShares() public {
