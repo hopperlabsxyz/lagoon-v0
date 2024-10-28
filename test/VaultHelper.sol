@@ -3,6 +3,7 @@ pragma solidity "0.8.26";
 
 import "../src/vault/ERC7540.sol";
 import "../src/vault/Vault.sol";
+import "forge-std/Test.sol";
 
 contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -43,11 +44,8 @@ contract VaultHelper is Vault {
         return asset.decimals();
     }
 
-    function pricePerShare() public view returns (uint256 pps) {
-        pps = _convertToAssets(1 * 10 ** decimals(), Math.Rounding.Floor);
-        if (pps == 0) {
-            return 10 ** underlyingDecimals();
-        }
+    function pricePerShare() public view returns (uint256) {
+        return _convertToAssets(1 * 10 ** decimals(), Math.Rounding.Floor);
     }
 
     function protocolRate() public view returns (uint256) {
