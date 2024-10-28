@@ -102,7 +102,7 @@ contract TestPause is BaseTest {
 
         vm.startPrank(user1.addr);
         vault.deposit(vault.maxDeposit(user1.addr), user1.addr);
-        vault.requestRedeem(10, user1.addr, user1.addr);
+        vault.requestRedeem(1 * 10 ** vault.decimals(), user1.addr, user1.addr);
         vm.stopPrank();
 
         updateAndSettle(vault.totalAssets());
@@ -121,7 +121,7 @@ contract TestPause is BaseTest {
 
         vm.startPrank(user1.addr);
         vault.deposit(vault.maxDeposit(user1.addr), user1.addr);
-        vault.requestRedeem(10, user1.addr, user1.addr);
+        vault.requestRedeem(1 * 10 ** vault.decimals(), user1.addr, user1.addr);
 
         vm.stopPrank();
         updateAndSettle(vault.totalAssets());

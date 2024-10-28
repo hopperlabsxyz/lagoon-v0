@@ -202,23 +202,74 @@ contract BaseTest is Test, Constants {
 
     function settle() internal {
         dealAmountAndApprove(vault.safe(), vault.newTotalAssets());
+        uint256 depositSettleIdBefore = vault.depositSettleId();
+        uint256 redeemSettleIdBefore = vault.redeemSettleId();
+
+        uint256 pendingDepositAmount = vault.pendingDeposit();
+        uint256 pendingRedeemAmount = vault.pendingRedeem();
+
         vm.startPrank(vault.safe());
         vault.settleDeposit();
         vm.stopPrank();
+
+        uint256 depositSettleIdAfter = vault.depositSettleId();
+        uint256 redeemSettleIdAfter = vault.redeemSettleId();
+
+        if (pendingDepositAmount == 0) {
+            assertEq(depositSettleIdBefore, depositSettleIdAfter);
+        } else {
+            assertEq(depositSettleIdBefore + 2, depositSettleIdAfter);
+        }
+        if (pendingRedeemAmount == 0) {
+            assertEq(redeemSettleIdBefore, redeemSettleIdAfter);
+        } else {
+            assertEq(redeemSettleIdBefore + 2, redeemSettleIdAfter);
+        }
     }
 
     function close() internal {
         dealAmountAndApprove(vault.safe(), vault.newTotalAssets());
+        uint256 depositSettleIdBefore = vault.depositSettleId();
+        uint256 redeemSettleIdBefore = vault.redeemSettleId();
+
+        uint256 pendingDepositAmount = vault.pendingDeposit();
+        uint256 pendingRedeemAmount = vault.pendingRedeem();
+
         vm.startPrank(vault.safe());
         vault.close();
         vm.stopPrank();
+
+        uint256 depositSettleIdAfter = vault.depositSettleId();
+        uint256 redeemSettleIdAfter = vault.redeemSettleId();
+
+        if (pendingDepositAmount == 0) {
+            assertEq(depositSettleIdBefore, depositSettleIdAfter);
+        } else {
+            assertEq(depositSettleIdBefore + 2, depositSettleIdAfter);
+        }
+        if (pendingRedeemAmount == 0) {
+            assertEq(redeemSettleIdBefore, redeemSettleIdAfter);
+        } else {
+            assertEq(redeemSettleIdBefore + 2, redeemSettleIdAfter);
+        }
     }
 
     function settleRedeem() internal {
         dealAmountAndApprove(vault.safe(), vault.newTotalAssets());
+        uint256 redeemSettleIdBefore = vault.redeemSettleId();
+        uint256 pendingRedeemAmount = vault.pendingRedeem();
+
         vm.startPrank(vault.safe());
         vault.settleRedeem();
         vm.stopPrank();
+
+        uint256 redeemSettleIdAfter = vault.redeemSettleId();
+
+        if (pendingRedeemAmount == 0) {
+            assertEq(redeemSettleIdBefore, redeemSettleIdAfter);
+        } else {
+            assertEq(redeemSettleIdBefore + 2, redeemSettleIdAfter);
+        }
     }
 
     function updateAndSettle(uint256 newTotalAssets) internal {
