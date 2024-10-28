@@ -23,6 +23,7 @@ contract TestFeeManager is BaseTest {
     uint256 _100M;
 
     function setUp() public {
+        enableWhitelist = false;
         // 10%  protocol fee
         // 10% management fee
         // 20% performance fee
@@ -228,6 +229,102 @@ contract TestFeeManager is BaseTest {
         uint256 totalFees = feeReceiverAssetAfter + daoAssetAfter;
 
         assertApproxEqAbs(totalFees, expectedTotalFees, 10 ** vault.underlyingDecimals(), "wrong total Fees");
+    }
+
+    function test_SettleRedeemTakesCorrectAmountOfFees() public {
+        // setup
+        dealAndApprove(user1.addr);
+        dealAndApprove(user2.addr);
+        uint256 balance1Before = assetBalance(user1.addr);
+        uint256 balance2Before = assetBalance(user2.addr);
+        uint256 balance = assetBalance(user1.addr);
+        requestDeposit(balance, user1.addr);
+        requestDeposit(balance, user2.addr);
+        updateAndSettle(0);
+        deposit(balance, user1.addr);
+        deposit(balance, user2.addr);
+        ////
+
+        uint256 user1Shares = vault.balanceOf(user1.addr);
+        uint256 user2Shares = vault.balanceOf(user2.addr);
+
+        requestRedeem(user1Shares, user1.addr);
+        requestRedeem(user2Shares, user2.addr);
+
+        vm.warp(block.timestamp + 364 days);
+        // the asset manager takes 10% management fees + 20% performance fees
+        // vault valo went from 200K (pps = 1) to 400K (pps = 2)
+        // totalFees = 400K * 10% + [(400K - 200K) * 20%] = 80K
+        updateAndSettleRedeem(4 * balance);
+
+        redeem(user1Shares, user1.addr);
+        redeem(user2Shares, user2.addr);
+
+        uint256 balance1After = assetBalance(user1.addr);
+        uint256 balance2After = assetBalance(user2.addr);
+        uint256 amSharesBalance = vault.balanceOf(feeReceiver.addr);
+        uint256 daoSharesBalance = vault.balanceOf(dao.addr);
+
+        uint256 user1Profit = 60_000 * 10 ** vault.underlyingDecimals();
+        uint256 user2Profit = 60_000 * 10 ** vault.underlyingDecimals();
+        uint256 amProfit = vault.convertToShares(72_000 * 10 ** vault.underlyingDecimals());
+        uint256 daoProfit = vault.convertToShares(8000 * 10 ** vault.underlyingDecimals());
+
+        assertApproxEqAbs(balance1After - balance1Before, user1Profit, 100_000);
+        assertApproxEqAbs(balance2After - balance2Before, user2Profit, 100_000);
+        assertApproxEqAbs(amSharesBalance, amProfit, vault.convertToShares(100_000), "am: wrong profits");
+        assertApproxEqAbs(daoSharesBalance, daoProfit, vault.convertToShares(100_000), "dao: wrong profits");
+    }
+
+    function test_CloseTakesCorrectAmountOfFees() public {
+        // setup
+        dealAndApprove(user1.addr);
+        dealAndApprove(user2.addr);
+        uint256 balance1Before = assetBalance(user1.addr);
+        uint256 balance2Before = assetBalance(user2.addr);
+        uint256 balance = assetBalance(user1.addr);
+        requestDeposit(balance, user1.addr);
+        requestDeposit(balance, user2.addr);
+        updateAndSettle(0);
+        deposit(balance, user1.addr);
+        deposit(balance, user2.addr);
+        ////
+
+        uint256 user1Shares = vault.balanceOf(user1.addr);
+        uint256 user2Shares = vault.balanceOf(user2.addr);
+
+        vm.warp(block.timestamp + 364 days);
+        // the asset manager takes 10% management fees + 20% performance fees
+        // vault valo went from 200K (pps = 1) to 400K (pps = 2)
+        // totalFees = 400K * 10% + [(400K - 200K) * 20%] = 80K
+        vm.prank(vault.owner());
+        vault.initiateClosing();
+        updateAndClose(4 * balance);
+
+        redeem(user1Shares, user1.addr);
+        redeem(user2Shares, user2.addr);
+
+        uint256 balance1After = assetBalance(user1.addr);
+        uint256 balance2After = assetBalance(user2.addr);
+        uint256 amSharesBalance = vault.balanceOf(feeReceiver.addr);
+        uint256 daoSharesBalance = vault.balanceOf(dao.addr);
+
+        uint256 user1Profit = 60_000 * 10 ** vault.underlyingDecimals();
+        uint256 user2Profit = 60_000 * 10 ** vault.underlyingDecimals();
+        uint256 amProfit = vault.convertToShares(72_000 * 10 ** vault.underlyingDecimals());
+        uint256 daoProfit = vault.convertToShares(8000 * 10 ** vault.underlyingDecimals());
+
+        assertApproxEqAbs(
+            assetBalance(address(vault)),
+            80_000 * 10 ** vault.underlyingDecimals(),
+            100_000,
+            "wrong vault asset balance"
+        );
+
+        assertApproxEqAbs(balance1After - balance1Before, user1Profit, 100_000, "user1: wrong profits");
+        assertApproxEqAbs(balance2After - balance2Before, user2Profit, 100_000, "user2: wrong profits");
+        assertApproxEqAbs(amSharesBalance, amProfit, vault.convertToShares(100_000), "am: wrong profits");
+        assertApproxEqAbs(daoSharesBalance, daoProfit, vault.convertToShares(100_000), "dao: wrong profits");
     }
 
     function test_NoFeesAreTakenDuringFreeRide() public {
