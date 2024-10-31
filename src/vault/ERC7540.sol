@@ -17,7 +17,13 @@ import {
     RequestIdNotClaimable,
     RequestNotCancelable
 } from "./primitives/Errors.sol";
-import {NewTotalAssetsUpdated, SettleDeposit, SettleRedeem, TotalAssetsUpdated} from "./primitives/Events.sol";
+import {
+    DepositRequestCanceled,
+    NewTotalAssetsUpdated,
+    SettleDeposit,
+    SettleRedeem,
+    TotalAssetsUpdated
+} from "./primitives/Events.sol";
 import {EpochData, SettleData} from "./primitives/Struct.sol";
 import {
     ERC20Upgradeable,
@@ -332,10 +338,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         uint256 request = $.epochs[requestId].depositRequest[msgSender];
-        if (request != 0) {
-            $.epochs[requestId].depositRequest[msgSender] = 0;
-            IERC20(asset()).safeTransferFrom(pendingSilo(), msgSender, request);
-        }
+        $.epochs[requestId].depositRequest[msgSender] = 0;
+        IERC20(asset()).safeTransferFrom(pendingSilo(), msgSender, request);
+
+        emit DepositRequestCanceled(requestId, msgSender);
     }
 
     ///////////////////////////////
