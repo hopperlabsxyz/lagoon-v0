@@ -1,4 +1,1 @@
-forge fmt
-git add -A
-forge test --rpc-url ***REMOVED***
-pnpm exec solhint 'src/**/*.sol'
+make pre-commit
