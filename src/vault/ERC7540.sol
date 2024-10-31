@@ -335,9 +335,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             revert RequestNotCancelable(requestId);
         }
 
-        uint256 request = $.epochs[requestId].depositRequest[msg.sender];
+        uint256 requestedAmount = $.epochs[requestId].depositRequest[msg.sender];
         $.epochs[requestId].depositRequest[msg.sender] = 0;
-        IERC20(asset()).safeTransferFrom(pendingSilo(), msg.sender, request);
+        IERC20(asset()).safeTransferFrom(pendingSilo(), msg.sender, requestedAmount);
 
         emit DepositRequestCanceled(requestId, msg.sender);
     }
