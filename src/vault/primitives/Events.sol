@@ -90,5 +90,5 @@ event NewTotalAssetsUpdated(uint256 totalAssets);
 
 /// @notice Emitted when a deposit request is canceled.
 /// @param requestId The ID of the canceled request.
-/// @param owner The address of the owner of the canceled request.
-event DepositRequestCanceled(uint256 indexed requestId, address indexed owner);
+/// @param controller The address of the controller of the canceled request.
+event DepositRequestCanceled(uint256 indexed requestId, address indexed controller);
