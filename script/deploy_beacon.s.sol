@@ -8,18 +8,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 /*
-
-> How to deploy this script:
-
-source .env && \
-forge clean && \
-forge script script/deploy_beacon.s.sol \
-  --chain-id $CHAIN_ID \
-  --rpc-url $RPC_URL \
-  --tc DeployBeacon \
-  --account defaultKey \
-  --etherscan-api-key $ETHERSCAN_API_KEY
-
+  run `make beacon` to deploy this script
 */
 
 contract DeployBeacon is Script {

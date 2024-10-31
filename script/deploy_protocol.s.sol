@@ -10,18 +10,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 /*
-
-> How to deploy this script:
-
-source .env && \
-forge clean && \
-forge script script/deploy_protocol.s.sol \
-  --chain-id $CHAIN_ID \
-  --rpc-url $RPC_URL \
-  --tc DeployProtocol \
-  --account defaultKey \
-  --etherscan-api-key $ETHERSCAN_API_KEY
-
+  run `make protocol` to deploy this script
 */
 
 contract DeployProtocol is Script {

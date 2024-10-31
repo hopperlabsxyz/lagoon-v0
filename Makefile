@@ -2,7 +2,6 @@ ENV_DEV := .env.dev
 # ENV_PROD := .env.prod-arb1
 ENV_PROD := .env.prod-base
 
-
 load_dev_env:
 	@echo "Using development environment"
 	$(eval include $(ENV_DEV))
@@ -28,6 +27,12 @@ fmt:
 solhint:
 	pnpm exec solhint 'src/**/*.sol'
 
+pre-commit: fmt test solhint
+	git add -A
+
+
+################### PROTOCOL ################### 
+
 protocol: load_prod_env clean
 	forge script script/deploy_protocol.s.sol \
 		--chain-id $(CHAIN_ID) \
@@ -35,6 +40,26 @@ protocol: load_prod_env clean
 		--tc DeployProtocol \
 		--account $(ACCOUNT) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY)
+
+protocol-broadcast: load_prod_env clean
+	forge script script/deploy_protocol.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--tc DeployProtocol \
+		--account $(ACCOUNT) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--broadcast
+
+protocol-verify: load_prod_env clean
+	forge script script/deploy_protocol.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--tc DeployProtocol \
+		--account $(ACCOUNT) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--verify
+
+################### BEACON ################### 
 
 beacon: load_prod_env clean
 	forge script script/deploy_beacon.s.sol \
@@ -44,6 +69,26 @@ beacon: load_prod_env clean
 		--account $(ACCOUNT) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY)
 
+beacon-broadcast: load_prod_env clean
+	forge script script/deploy_beacon.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--tc DeployBeacon \
+		--account $(ACCOUNT) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--broadcast
+
+beacon-verify: load_prod_env clean
+	forge script script/deploy_beacon.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--tc DeployBeacon \
+		--account $(ACCOUNT) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--verify
+
+################### VAULT ################### 
+
 vault: load_prod_env clean
 	forge script script/deploy_vault.s.sol \
 		--chain-id $(CHAIN_ID) \
@@ -52,7 +97,39 @@ vault: load_prod_env clean
 		--account $(ACCOUNT) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY)
 
-pre-commit: fmt test solhint
-	git add -A
+vault-broadcast: load_prod_env clean
+	forge script script/deploy_vault.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--tc DeployVault \
+		--account $(ACCOUNT) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--broadcast
 
-.PHONY: load_dev_env load_prod_env clean build test fmt solhint protocol beacon vault pre-commit
+vault-verify: load_prod_env clean
+	forge script script/deploy_vault.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--tc DeployVault \
+		--account $(ACCOUNT) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--verify
+
+.PHONY:
+	load_dev_env
+	load_prod_env
+	clean build
+	test
+	fmt
+	solhint
+	protocol
+	protocol
+	broadcast
+	protocol-verify
+	beacon
+	beacon-broadcast
+	beacon-verify
+	vault
+	vault-broadcast
+	vault-verify
+	pre-commit

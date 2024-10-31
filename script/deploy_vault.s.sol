@@ -10,18 +10,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 /*
-
-> How to deploy this script:
-
-source .env && \
-forge clean && \
-forge script script/deploy_vault.s.sol \
-  --chain-id $CHAIN_ID \
-  --rpc-url $RPC_URL \
-  --tc DeployVault \
-  --account defaultKey \
-  --etherscan-api-key $ETHERSCAN_API_KEY
-
+  run `make vault` to deploy this script
 */
 
 contract DeployVault is Script {
