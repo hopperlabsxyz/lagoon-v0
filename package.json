@@ -1,12 +1,12 @@
 {
   "devDependencies": {
     "@defi-wonderland/natspec-smells": "^1.1.5",
-    "husky": "^9.0.11"
+    "husky": "^9.1.6"
   },
   "scripts": {
     "prepare": "husky"
   },
   "dependencies": {
-    "solhint": "^5.0.1"
+    "solhint": "^5.0.3"
   }
 }
