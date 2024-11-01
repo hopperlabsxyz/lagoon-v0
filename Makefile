@@ -123,8 +123,7 @@ vault-verify: load_prod_env clean
 	fmt
 	solhint
 	protocol
-	protocol
-	broadcast
+	protocol-broadcast
 	protocol-verify
 	beacon
 	beacon-broadcast
