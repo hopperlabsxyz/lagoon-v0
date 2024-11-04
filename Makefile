@@ -115,20 +115,19 @@ vault-verify: load_prod_env clean
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--verify
 
-.PHONY:
-	load_dev_env
-	load_prod_env
-	clean build
-	test
-	fmt
-	solhint
-	protocol
-	protocol-broadcast
-	protocol-verify
-	beacon
-	beacon-broadcast
-	beacon-verify
-	vault
-	vault-broadcast
-	vault-verify
+.PHONY: test \
+	load_dev_env \
+	load_prod_env \
+	clean build \
+	fmt \
+	solhint \
+	protocol \
+	protocol-broadcast \
+	protocol-verify \
+	beacon \
+	beacon-broadcast \
+	beacon-verify \
+	vault \
+	vault-broadcast \
+	vault-verify \
 	pre-commit
