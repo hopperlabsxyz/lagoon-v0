@@ -17,7 +17,13 @@ import {
     RequestIdNotClaimable,
     RequestNotCancelable
 } from "./primitives/Errors.sol";
-import {NewTotalAssetsUpdated, SettleDeposit, SettleRedeem, TotalAssetsUpdated} from "./primitives/Events.sol";
+import {
+    DepositRequestCanceled,
+    NewTotalAssetsUpdated,
+    SettleDeposit,
+    SettleRedeem,
+    TotalAssetsUpdated
+} from "./primitives/Events.sol";
 import {EpochData, SettleData} from "./primitives/Struct.sol";
 import {
     ERC20Upgradeable,
@@ -172,9 +178,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @dev should not be usable when contract is paused
     function setOperator(address operator, bool approved) external whenNotPaused returns (bool success) {
-        address msgSender = msg.sender;
-        _getERC7540Storage().isOperator[msgSender][operator] = approved;
-        emit OperatorSet(msgSender, operator, approved);
+        _getERC7540Storage().isOperator[msg.sender][operator] = approved;
+        emit OperatorSet(msg.sender, operator, approved);
         return true;
     }
 
@@ -324,18 +329,17 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @dev It can only be called in the same epoch.
     function cancelRequestDeposit() external whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
-        address msgSender = msg.sender;
 
-        uint40 requestId = $.lastDepositRequestId[msgSender];
+        uint40 requestId = $.lastDepositRequestId[msg.sender];
         if (requestId != $.depositEpochId) {
             revert RequestNotCancelable(requestId);
         }
 
-        uint256 request = $.epochs[requestId].depositRequest[msgSender];
-        if (request != 0) {
-            $.epochs[requestId].depositRequest[msgSender] = 0;
-            IERC20(asset()).safeTransferFrom(pendingSilo(), msgSender, request);
-        }
+        uint256 requestedAmount = $.epochs[requestId].depositRequest[msg.sender];
+        $.epochs[requestId].depositRequest[msg.sender] = 0;
+        IERC20(asset()).safeTransferFrom(pendingSilo(), msg.sender, requestedAmount);
+
+        emit DepositRequestCanceled(requestId, msg.sender);
     }
 
     ///////////////////////////////
