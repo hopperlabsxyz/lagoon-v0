@@ -47,7 +47,7 @@ Ensure the following setup is done before starting:
 
 - **Foundry**: Make sure Foundry is installed and configured. If not, refer to the [Foundry documentation](https://book.getfoundry.sh/getting-started/installation).
 
-- Creating an `.env.prod-[chain]` file (replacing `[chain]` by the the name of the chain where you want to deploy)
+- Creating an `.env.prod-[chain]` file (replacing `[chain]` by the name of the chain where you want to deploy)
 
 Ensure your `.env.prod-[chain]` file contains the following additional or modified variables:
 
