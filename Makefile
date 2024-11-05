@@ -41,16 +41,18 @@ protocol: load_prod_env clean
 	forge script script/deploy_protocol.s.sol \
 		--chain-id $(CHAIN_ID) \
 		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
 		--tc DeployProtocol \
-		--account $(ACCOUNT) \
+		--account $(ACCOUNT_0) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY)
 
 protocol-broadcast: load_prod_env clean
 	forge script script/deploy_protocol.s.sol \
 		--chain-id $(CHAIN_ID) \
 		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
 		--tc DeployProtocol \
-		--account $(ACCOUNT) \
+		--account $(ACCOUNT_0) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--broadcast
 
@@ -58,8 +60,9 @@ protocol-verify: load_prod_env clean
 	forge script script/deploy_protocol.s.sol \
 		--chain-id $(CHAIN_ID) \
 		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
 		--tc DeployProtocol \
-		--account $(ACCOUNT) \
+		--account $(ACCOUNT_0) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--verify
 
@@ -69,16 +72,18 @@ beacon: load_prod_env clean
 	forge script script/deploy_beacon.s.sol \
 		--chain-id $(CHAIN_ID) \
 		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
 		--tc DeployBeacon \
-		--account $(ACCOUNT) \
+		--account $(ACCOUNT_0) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY)
 
 beacon-broadcast: load_prod_env clean
 	forge script script/deploy_beacon.s.sol \
 		--chain-id $(CHAIN_ID) \
 		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
 		--tc DeployBeacon \
-		--account $(ACCOUNT) \
+		--account $(ACCOUNT_0) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--broadcast
 
@@ -86,8 +91,45 @@ beacon-verify: load_prod_env clean
 	forge script script/deploy_beacon.s.sol \
 		--chain-id $(CHAIN_ID) \
 		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
 		--tc DeployBeacon \
-		--account $(ACCOUNT) \
+		--account $(ACCOUNT_0) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--verify
+
+####### UPGRADE BEACON IMPLEMENTATION ####### 
+
+# @dev: Use at your own risk, upgradability is NOT garanted /!\
+
+upgrade-implementation: load_prod_env clean
+	forge script script/deploy_beacon.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
+		--tc UpgradeBeaconImplementation \
+		--account $(ACCOUNT_0) \
+		--account $(ACCOUNT_1) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY)
+
+upgrade-implementation-broadcast: load_prod_env clean
+	forge script script/deploy_beacon.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
+		--tc UpgradeBeaconImplementation \
+		--account $(ACCOUNT_0) \
+		--account $(ACCOUNT_1) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--broadcast
+
+upgrade-implementation-verify: load_prod_env clean
+	forge script script/deploy_beacon.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
+		--tc UpgradeBeaconImplementation \
+		--account $(ACCOUNT_0) \
+		--account $(ACCOUNT_1) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--verify
 
@@ -97,16 +139,18 @@ vault: load_prod_env clean
 	forge script script/deploy_vault.s.sol \
 		--chain-id $(CHAIN_ID) \
 		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
 		--tc DeployVault \
-		--account $(ACCOUNT) \
+		--account $(ACCOUNT_0) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY)
 
 vault-broadcast: load_prod_env clean
 	forge script script/deploy_vault.s.sol \
 		--chain-id $(CHAIN_ID) \
 		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
 		--tc DeployVault \
-		--account $(ACCOUNT) \
+		--account $(ACCOUNT_0) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--broadcast
 
@@ -114,8 +158,9 @@ vault-verify: load_prod_env clean
 	forge script script/deploy_vault.s.sol \
 		--chain-id $(CHAIN_ID) \
 		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
 		--tc DeployVault \
-		--account $(ACCOUNT) \
+		--account $(ACCOUNT_0) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--verify
 
@@ -131,6 +176,9 @@ vault-verify: load_prod_env clean
 	beacon \
 	beacon-broadcast \
 	beacon-verify \
+	upgrade-implementation \
+	upgrade-implementation-broadcast \
+	upgrade-implementation-verify \
 	vault \
 	vault-broadcast \
 	vault-verify \
