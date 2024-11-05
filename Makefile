@@ -43,7 +43,6 @@ protocol: load_prod_env clean
 		--rpc-url $(RPC_URL) \
 		--sender $(SENDER) \
 		--tc DeployProtocol \
-		--account $(ACCOUNT_0) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY)
 
 protocol-broadcast: load_prod_env clean
@@ -66,6 +65,28 @@ protocol-verify: load_prod_env clean
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--verify
 
+protocol-broadcast-ledger: load_prod_env clean
+	forge script script/deploy_protocol.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
+		--tc DeployProtocol \
+		--ledger \
+		--hd-paths  $(HD_PATH) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--broadcast
+
+protocol-verify-ledger: load_prod_env clean
+	forge script script/deploy_protocol.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
+		--tc DeployProtocol \
+		--ledger \
+		--hd-paths  $(HD_PATH) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--verify
+
 ################### BEACON ################### 
 
 beacon: load_prod_env clean
@@ -74,7 +95,6 @@ beacon: load_prod_env clean
 		--rpc-url $(RPC_URL) \
 		--sender $(SENDER) \
 		--tc DeployBeacon \
-		--account $(ACCOUNT_0) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY)
 
 beacon-broadcast: load_prod_env clean
@@ -97,6 +117,28 @@ beacon-verify: load_prod_env clean
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--verify
 
+beacon-broadcast-ledger: load_prod_env clean
+	forge script script/deploy_beacon.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
+		--tc DeployBeacon \
+		--ledger \
+		--hd-paths $(HD_PATH) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--broadcast
+
+beacon-verify-ledger: load_prod_env clean
+	forge script script/deploy_beacon.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
+		--tc DeployBeacon \
+		--ledger \
+		--hd-paths  $(HD_PATH) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--verify
+
 ####### UPGRADE BEACON IMPLEMENTATION ####### 
 
 # @dev: Use at your own risk, upgradability is NOT garanted /!\
@@ -107,8 +149,6 @@ upgrade-implementation: load_prod_env clean
 		--rpc-url $(RPC_URL) \
 		--sender $(SENDER) \
 		--tc UpgradeBeaconImplementation \
-		--account $(ACCOUNT_0) \
-		--account $(ACCOUNT_1) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY)
 
 upgrade-implementation-broadcast: load_prod_env clean
@@ -141,7 +181,6 @@ vault: load_prod_env clean
 		--rpc-url $(RPC_URL) \
 		--sender $(SENDER) \
 		--tc DeployVault \
-		--account $(ACCOUNT_0) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY)
 
 vault-broadcast: load_prod_env clean
@@ -161,6 +200,28 @@ vault-verify: load_prod_env clean
 		--sender $(SENDER) \
 		--tc DeployVault \
 		--account $(ACCOUNT_0) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--verify
+
+vault-broadcast-ledger: load_prod_env clean
+	forge script script/deploy_vault.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
+		--tc DeployVault \
+		--ledger \
+		--hd-paths  $(HD_PATH) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--broadcast
+
+vault-verify-ledger: load_prod_env clean
+	forge script script/deploy_vault.s.sol \
+		--chain-id $(CHAIN_ID) \
+		--rpc-url $(RPC_URL) \
+		--sender $(SENDER) \
+		--tc DeployVault \
+		--ledger \
+		--hd-paths  $(HD_PATH) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--verify
 
