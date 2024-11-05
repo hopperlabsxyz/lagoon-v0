@@ -5,6 +5,7 @@ import {BaseTest} from "./Base.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {RequestNotCancelable} from "@src/vault/ERC7540.sol";
 import {Vault} from "@src/vault/Vault.sol";
+import {DepositRequestCanceled} from "@src/vault/primitives/Events.sol";
 import "forge-std/Test.sol";
 
 contract TestCancelRequest is BaseTest {
@@ -30,6 +31,8 @@ contract TestCancelRequest is BaseTest {
         assertEq(vault.claimableDepositRequest(0, user1.addr), 0);
 
         vm.prank(user1.addr);
+        vm.expectEmit(address(vault));
+        emit DepositRequestCanceled(3, user1.addr);
         vault.cancelRequestDeposit();
 
         assertEq(vault.pendingDepositRequest(requestId, user1.addr), 0);
@@ -58,6 +61,18 @@ contract TestCancelRequest is BaseTest {
 
         vm.prank(user1.addr);
         vm.expectRevert(abi.encodeWithSelector(RequestNotCancelable.selector, requestId));
+        vault.cancelRequestDeposit();
+    }
+
+    function test_cancelRequestDeposit_whenNoRequestWereMade() public {
+        vm.prank(user2.addr);
+        vm.expectRevert(abi.encodeWithSelector(RequestNotCancelable.selector, 0));
+        vault.cancelRequestDeposit();
+    }
+
+    function test_cancelRequestDeposit_whenRequestIsClaimable() public {
+        vm.prank(user1.addr);
+        vm.expectRevert(abi.encodeWithSelector(RequestNotCancelable.selector, 1));
         vault.cancelRequestDeposit();
     }
 }

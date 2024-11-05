@@ -87,3 +87,8 @@ event TotalAssetsUpdated(uint256 totalAssets);
 /// @notice Emitted when the newTotalAssets variable is updated.
 /// @param totalAssets The new newTotalAssets value.
 event NewTotalAssetsUpdated(uint256 totalAssets);
+
+/// @notice Emitted when a deposit request is canceled.
+/// @param requestId The ID of the canceled request.
+/// @param controller The address of the controller of the canceled request.
+event DepositRequestCanceled(uint256 indexed requestId, address indexed controller);
