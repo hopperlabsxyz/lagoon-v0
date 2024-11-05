@@ -1,6 +1,6 @@
 ENV_DEV := .env.dev
-# ENV_PROD := .env.prod-arb1
-ENV_PROD := .env.prod-base
+ENV_PROD := .env.prod-arb1
+# ENV_PROD := .env.prod-base
 
 load_dev_env:
 	@echo "Using development environment"
