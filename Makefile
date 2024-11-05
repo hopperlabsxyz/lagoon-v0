@@ -1,6 +1,10 @@
-ENV_DEV := .env.dev
-ENV_PROD := .env.prod-arb1
-# ENV_PROD := .env.prod-base
+ifeq ($(ENV_DEV),)
+	ENV_DEV := .env.dev
+endif
+
+ifeq ($(ENV_PROD),)
+	ENV_PROD := .env.prod-arb1
+endif
 
 load_dev_env:
 	@echo "Using development environment"
