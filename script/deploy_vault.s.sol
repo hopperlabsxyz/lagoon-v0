@@ -26,7 +26,7 @@ contract DeployVault is Script {
     // Fees
     uint16 MANAGEMENT_RATE = uint16(vm.envUint("MANAGEMENT_RATE"));
     uint16 PERFORMANCE_RATE = uint16(vm.envUint("PERFORMANCE_RATE"));
-    uint256 RATE_UPDATE_COOLDOWN = vm.envUint("RATE_UPDATE_COOLDOWN") * 1 days;
+    uint256 RATE_UPDATE_COOLDOWN = vm.envUint("RATE_UPDATE_COOLDOWN");
 
     // Roles
     address SAFE = vm.envAddress("SAFE");
