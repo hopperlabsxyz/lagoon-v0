@@ -222,18 +222,18 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             $.lastDepositRequestId[controller] = _depositId;
         }
 
-        $.epochs[_depositId].depositRequest[controller] += assets;
-
         if (msg.value != 0) {
             // if user sends eth and the underlying is wETH we will wrap it for him
             if (asset() == address($.wrappedNativeToken)) {
                 $.pendingSilo.depositEth{value: msg.value}();
+                assets = msg.value;
             } else {
                 revert CantDepositNativeToken();
             }
         } else {
             IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
         }
+        $.epochs[_depositId].depositRequest[controller] += assets;
 
         emit DepositRequest(controller, owner, _depositId, msg.sender, assets);
         return _depositId;

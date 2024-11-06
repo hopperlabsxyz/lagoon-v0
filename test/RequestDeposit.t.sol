@@ -61,8 +61,6 @@ contract TestRequestDeposit is BaseTest {
             console.log("requestId", requestId);
             vm.stopPrank();
 
-            underlying = ERC20(WRAPPED_NATIVE_TOKEN);
-
             assertEq(assetBalance(address(vault)), 0);
             assertEq(assetBalance(address(vault.pendingSilo())), userBalance);
             assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance);

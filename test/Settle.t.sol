@@ -52,14 +52,11 @@ contract TestSettle is BaseTest {
         uint256 user1Assets = assetBalance(user1.addr);
         uint256 user1Shares = vault.balanceOf(user1.addr);
         uint256 user2Assets = IERC20(vault.asset()).balanceOf(user2.addr);
-        console.log("user1Assets", user1Assets);
 
         requestRedeem(user1Shares, user1.addr);
         requestDeposit(user2Assets, user2.addr);
-
         uint256 totalAssets = vault.totalAssets();
         uint256 totalSupply = vault.totalSupply();
-
         updateAndSettle(totalAssets.mulDiv(150, 100));
         assertApproxEqAbs(vault.highWaterMark(), vault.pricePerShare(), 1, "wrong highWaterMark");
 
