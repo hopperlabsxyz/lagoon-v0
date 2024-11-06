@@ -217,8 +217,9 @@ contract TestRequestRedeem is BaseTest {
         );
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0, "[4 - claimable - requestId 0]: wrong amount");
 
-        /// ------------------ settlement ------------------ ///
-        updateAndSettle(assetBalance(vault.safe()));
+        // /// ------------------ settlement ------------------ ///
+        uint256 assetBalance = assetBalance(vault.safe());
+        updateAndSettle(assetBalance);
 
         // pendings
         assertEq(vault.pendingRedeemRequest(requestId_1, user1.addr), 0, "[5 - pending - requestId 1]: wrong amount");

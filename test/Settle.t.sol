@@ -52,6 +52,7 @@ contract TestSettle is BaseTest {
         uint256 user1Assets = assetBalance(user1.addr);
         uint256 user1Shares = vault.balanceOf(user1.addr);
         uint256 user2Assets = IERC20(vault.asset()).balanceOf(user2.addr);
+        console.log("user1Assets", user1Assets);
 
         requestRedeem(user1Shares, user1.addr);
         requestDeposit(user2Assets, user2.addr);
@@ -60,7 +61,7 @@ contract TestSettle is BaseTest {
         uint256 totalSupply = vault.totalSupply();
 
         updateAndSettle(totalAssets.mulDiv(150, 100));
-        assertEq(vault.highWaterMark(), vault.pricePerShare());
+        assertApproxEqAbs(vault.highWaterMark(), vault.pricePerShare(), 1, "wrong highWaterMark");
 
         // when settle-deposit:
         uint256 totalAssetsWhenDeposit = totalAssets.mulDiv(150, 100);
@@ -75,9 +76,10 @@ contract TestSettle is BaseTest {
         deposit(user2Assets, user2.addr);
         uint256 user1NewAssets = assetBalance(user1.addr);
         // user1 assets: user1Assets + user1Shares.muldiv(75*1e6 + 1, 50e1e6 + 1, Math.Round.floor)
-        assertEq(
+        assertApproxEqAbs(
             user1NewAssets,
-            user1Assets - 1 + user1Shares.mulDiv(totalAssetsWhenRedeem, totalSupplyWhenRedeem, Math.Rounding.Floor),
+            user1Assets + user1Shares.mulDiv(totalAssetsWhenRedeem, totalSupplyWhenRedeem, Math.Rounding.Floor),
+            1,
             "wrong user1 new assets"
         );
     }

@@ -45,7 +45,7 @@ contract VaultHelper is Vault {
     }
 
     function pricePerShare() public view returns (uint256) {
-        return _convertToAssets(1 * 10 ** decimals(), Math.Rounding.Floor);
+        return _convertToAssets(1 * 10 ** decimals(), Math.Rounding.Ceil);
     }
 
     function protocolRate() public view returns (uint256) {

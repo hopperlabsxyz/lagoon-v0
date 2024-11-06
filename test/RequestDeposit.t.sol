@@ -49,6 +49,27 @@ contract TestRequestDeposit is BaseTest {
         assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
     }
 
+    function test_requestDeposit_with_eth_and_wrong_userBalance() public {
+        uint256 userBalance = 10e18;
+
+        string memory wtoken = "WRAPPED_NATIVE_TOKEN";
+        bool isNative = keccak256(abi.encode(underlyingName)) == keccak256(abi.encode(wtoken));
+        console.log("isNative", isNative);
+        if (isNative) {
+            vm.startPrank(user1.addr);
+            uint256 requestId = vault.requestDeposit{value: userBalance}(0, user1.addr, user1.addr);
+            console.log("requestId", requestId);
+            vm.stopPrank();
+
+            underlying = ERC20(WRAPPED_NATIVE_TOKEN);
+
+            assertEq(assetBalance(address(vault)), 0);
+            assertEq(assetBalance(address(vault.pendingSilo())), userBalance);
+            assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance);
+            assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
+        }
+    }
+
     function test_requestDepositTwoTimes() public {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance / 2, user1.addr);
