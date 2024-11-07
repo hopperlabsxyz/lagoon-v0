@@ -3,7 +3,7 @@ ifeq ($(ENV_DEV),)
 endif
 
 ifeq ($(ENV_PROD),)
-	ENV_PROD := .env.prod-arb1
+	ENV_PROD := .env.prod-mainnet
 endif
 
 load_dev_env:
