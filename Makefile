@@ -159,7 +159,6 @@ upgrade-implementation-broadcast: load_prod_env clean
 		--sender $(SENDER) \
 		--tc UpgradeBeaconImplementation \
 		--account $(ACCOUNT_0) \
-		--account $(ACCOUNT_1) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--broadcast
 
@@ -170,7 +169,6 @@ upgrade-implementation-verify: load_prod_env clean
 		--sender $(SENDER) \
 		--tc UpgradeBeaconImplementation \
 		--account $(ACCOUNT_0) \
-		--account $(ACCOUNT_1) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--verify
 
