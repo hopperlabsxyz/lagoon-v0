@@ -23,7 +23,8 @@ build:
 	forge build
 
 test: load_dev_env
-	forge test -vv
+	UNDERLYING_NAME=USDC forge test
+	UNDERLYING_NAME=WRAPPED_NATIVE_TOKEN forge test
 
 fmt:
 	forge fmt

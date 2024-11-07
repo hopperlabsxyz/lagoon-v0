@@ -291,7 +291,7 @@ contract BaseTest is Test, Constants {
     }
 
     function dealAndApproveAndWhitelist(address user) public {
-        dealAmountAndApprove(user, 100_000);
+        dealAmountAndApprove(user, 100_000 * 10 ** vault.underlyingDecimals());
         whitelist(user);
     }
 
@@ -301,13 +301,13 @@ contract BaseTest is Test, Constants {
     }
 
     function dealAndApprove(address user) public {
-        dealAmountAndApprove(user, 100_000);
+        dealAmountAndApprove(user, 100_000 * 10 ** vault.underlyingDecimals());
     }
 
     function dealAmountAndApprove(address user, uint256 amount) public {
         address asset = vault.asset();
         deal(user, type(uint256).max);
-        deal(vault.asset(), user, amount * 10 ** IERC20Metadata(asset).decimals());
+        deal(vault.asset(), user, amount);
         vm.prank(user);
         IERC4626(asset).approve(address(vault), UINT256_MAX);
     }

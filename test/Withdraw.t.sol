@@ -17,7 +17,9 @@ contract TestWithdraw is BaseTest {
     function test_withdraw() public {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance, user1.addr);
+        console.log("here");
         updateAndSettle(0);
+        console.log("here2");
         assertEq(vault.maxDeposit(user1.addr), userBalance, "wrong max deposit");
         uint256 sharesObtained = deposit(userBalance, user1.addr);
         assertEq(sharesObtained, vault.balanceOf(user1.addr), "wrong amount of shares obtained");

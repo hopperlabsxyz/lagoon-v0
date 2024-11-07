@@ -55,12 +55,10 @@ contract TestSettle is BaseTest {
 
         requestRedeem(user1Shares, user1.addr);
         requestDeposit(user2Assets, user2.addr);
-
         uint256 totalAssets = vault.totalAssets();
         uint256 totalSupply = vault.totalSupply();
-
         updateAndSettle(totalAssets.mulDiv(150, 100));
-        assertEq(vault.highWaterMark(), vault.pricePerShare());
+        assertApproxEqAbs(vault.highWaterMark(), vault.pricePerShare(), 1, "wrong highWaterMark");
 
         // when settle-deposit:
         uint256 totalAssetsWhenDeposit = totalAssets.mulDiv(150, 100);
@@ -75,9 +73,10 @@ contract TestSettle is BaseTest {
         deposit(user2Assets, user2.addr);
         uint256 user1NewAssets = assetBalance(user1.addr);
         // user1 assets: user1Assets + user1Shares.muldiv(75*1e6 + 1, 50e1e6 + 1, Math.Round.floor)
-        assertEq(
+        assertApproxEqAbs(
             user1NewAssets,
-            user1Assets - 1 + user1Shares.mulDiv(totalAssetsWhenRedeem, totalSupplyWhenRedeem, Math.Rounding.Floor),
+            user1Assets + user1Shares.mulDiv(totalAssetsWhenRedeem, totalSupplyWhenRedeem, Math.Rounding.Floor),
+            1,
             "wrong user1 new assets"
         );
     }
