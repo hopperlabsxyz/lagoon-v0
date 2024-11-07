@@ -2,7 +2,7 @@
 
 Welcome to the Lagoon Protocol Documentation! This page serves as a comprehensive introduction to the core concepts, components, and unique features that make Lagoon Protocol a powerful tool for decentralized asset management.
 
-### What is Lagoon Protocol?
+## What is Lagoon Protocol?
 
 Lagoon Protocol is a decentralized asset management platform that enables asset managers to create Lagoon Vaults. These Vaults provide efficient, non-custodial, and risk-managed asset management solutions.
 
@@ -10,7 +10,7 @@ Built on a foundation of smart contract standards, Lagoon Protocol leverages the
 
 Lagoon Protocol enables the creation of decentralized Vaults (Lagoon Vaults) that support various roles, including Asset Managers, NAV Committees, Vault Creators and Fund Depositors. These Vaults are governed by smart contracts that allow for a wide range of DeFi strategies, from asset management to yield farming, all while maintaining a high level of security and control. The protocol's design prioritizes flexibility, enabling asset manager to configure their Vaults with specific DeFi protocol whitelists, separation of power, fee structures, and more.
 
-### Key Innovations
+## Key Innovations
 
 Lagoon Protocol is built on a robust infrastructure that includes:
 
@@ -21,17 +21,17 @@ Lagoon Protocol is built on a robust infrastructure that includes:
 - **Modular Fees Management:** Allows Vault creators to define, update, or remove performance, management, and entry/exit fees, providing a tailored experience for each Vault.
 - **Seamless Integration with Layer 2:** As part of our ongoing commitment to expand the DeFi ecosystem, Lagoon Protocol is fully integrated with Layer 2 compatible with Gnosis Safe, enabling low-cost, high-speed transactions and broadening access to DeFi strategies across multiple chains.
 
-### Why Lagoon Protocol?
+## Why Lagoon Protocol?
 
 Lagoon Protocol is more than just a Vault management system. It represents a significant step forward in the evolution of decentralized finance by providing a flexible, secure, and scalable solution for managing digital assets. Whether you're a sophisticated asset manager, a NAV committee member, or a shareholder looking to optimize your DeFi strategies, Lagoon Protocol offers the tools and infrastructure you need to succeed.
 
-### Who Should Use Lagoon Protocol?
+## Who Should Use Lagoon Protocol?
 
 - **Asset Managers** looking to execute sophisticated DeFi strategies with speed of adaptation and full control over asset security.
 - **Institutional Investors** who require a secure, transparent, and customizable solution for managing large volumes of digital assets.
 - **DeFi Enthusiasts** seeking a platform that supports a wide range of decentralized financial protocols.
 
-### Getting Started
+## Getting Started
 
 Ready to dive in? Use the navigation on the left to explore architecture, smart contract specifications, and more. Whether you're just getting started or looking to implement advanced vaults, Lagoon Protocol’s documentation will provide you with the knowledge and tools you need.
 
@@ -47,55 +47,52 @@ Ensure the following setup is done before starting:
 
 - **Foundry**: Make sure Foundry is installed and configured. If not, refer to the [Foundry documentation](https://book.getfoundry.sh/getting-started/installation).
 
+- Creating an `.env.prod-[chain]` file (replacing `[chain]` by the name of the chain where you want to deploy)
+
+Ensure your `.env.prod-[chain]` file contains the following additional or modified variables:
+
+```bash
+
+CHAIN_ID=42161 # arb1 chain id
+RPC_URL="https://arb-mainnet.g.alchemy.com/v2/YOUR_API_KEY"
+ETHERSCAN_API_KEY='YOUR_ETHERSCAN_API_KEY'
+```
+
 ## 1. Deploy the FeeRegistry Contract
 
 Before setting up a `Gnosis Safe` and a `Vault`, you must first deploy the `FeeRegistry` contract.
-
-### `.env` File Configuration
-
-Ensure your `.env` file contains the following additional or modified variables:
-
-```bash
-# Contract-specific addresses
-PROXY_ADMIN=<Proxy admin address>          # The address responsible for managing the proxy
-DAO=<DAO address>                          # The DAO responsible for protocol management
-```
 
 ### Steps to Deploy FeeRegistry
 
 #### 1. Prepare the Environment
 
-Before deploying, run the following command to source your environment variables and clean the project:
+Ensure your `.env.prod-[chain]` file contains the following additional or modified variables:
 
 ```bash
-source .env && forge clean
+DAO=0x...
+PROTOCOL_FEE_RECEIVER=0x...
+PROXY_ADMIN=0x...
 ```
 
 #### 2. Execute the Deployment Script
 
 ```bash
-forge script script/deploy_protocol.s.sol \
-    --chain-id $CHAIN_ID \
-    --rpc-url $RPC_URL \
-    --tc DeployProtocol \
-    --account defaultKey \
-    --etherscan-api-key $ETHERSCAN_API_KEY
-    --verify
-```
+# simulate deployment
+make protocol
 
-- `--chain-id`: Specifies the chain ID of the target blockchain.
-- `--rpc-url`: Provides the RPC URL to interact with the blockchain network.
-- `--tc DeployProtocol`: Specifies the deployment script to execute (`DeployProtocol` in this case).
-- `--account`: Specifies the account to use for deployment.
-- `--etherscan-api-key`: Optional. If provided, this will verify the contract on Etherscan.
-- `--verify`: Enables verification of the contract on Etherscan (requires API key).
+# broadcast to network
+make protocol-broadcast
+
+# verify on etherscan
+make protocol-verify
+```
 
 #### 3. Check Deployment Logs
 
 After running the script, you’ll see the deployment logs including the proxy address for the `FeeRegistry` contract:
 
 ```bash
-FeeRegistry proxy address: 0x<Deployed_Proxy_Address>
+FeeRegistry proxy address: 0x...
 ```
 
 ## 2. Deploy the Gnosis Safe
@@ -108,60 +105,84 @@ For a detailed guide and to deploy your own Safe, visit the [official Gnosis Saf
 
 Once the `Gnosis Safe` is set up, you can deploy the `Vault` contract.
 
-### `.env` File Configuration
+### `.env.prod-[chain]` File Configuration
+
+Ensure your `.env.prod-[chain]` file contains the following additional or modified variables:
 
 ```bash
-# Blockchain specific configurations
-CHAIN_ID=<Your chain ID>          # The chain ID of the blockchain network
-RPC_URL=<Your RPC URL>            # The RPC URL for connecting to the blockchain network
-ETHERSCAN_API_KEY=<Your Etherscan API key>  # Optional for contract verification on Etherscan
+## --------  VAULT BEACON  ------------ ##
 
-# Vault specific details
-UNDERLYING=<Underlying token address>        # The address of the vault underlying ERC20 token
-WRAPPED_NATIVE_TOKEN=<Wrapped native token address>  # The address of the wrapped native token
-PROXY_ADMIN=<Proxy admin address>            # The address that will administer the proxy
-DAO=<DAO address>                            # The DAO responsible for managing the vault
-SAFE=<SAFE address>                          # The address of the SAFE responsible for vault operations
-FEE_RECEIVER=<Fee receiver address>          # The address to receive the vault fees
-FEE_REGISTRY=<Fee registry address>          # The address of the fee registry
+BEACON_OWNER=0x...
 
-VAULT_NAME=<Vault name>                      # The name of the vault
-VAULT_SYMBOL=<Vault symbol>                  # The symbol of the vault
+## --------  VAULT PROXY  ------------ ##
+
+## General ##
+
+UNDERLYING=0x...
+WRAPPED_NATIVE_TOKEN=0x...
+FEE_REGISTRY=0x...
+BEACON=0x...
+NAME="Test WETH"
+SYMBOL="tWETH"
+ENABLE_WHITELIST=false
+
+## Fees ##
+
+MANAGEMENT_RATE=0
+PERFORMANCE_RATE=20
+RATE_UPDATE_COOLDOWN=7
+
+## Roles ##
+
+SAFE=0x...
+FEE_RECEIVER=0x...
+ADMIN=0x...
+WHITELIST_MANAGER=0x...
+VALUATION_MANAGER=0x...
 ```
 
 ### Steps to Deploy
 
-#### 1. Prepare the Environment
+#### 1. Make sure to have beacon deployed
 
-Before deploying, run the following command to source your environment variables and clean the project:
+Before deploying vault proxy, make sure to deploy the vault beacon if haven't already done so:
 
 ```bash
-source .env && forge clean
+# simulate deployment
+make beacon
+
+# broadcast to network
+make beacon-broadcast
+
+# verify on etherscan
+make beacon-verify
 ```
 
 #### 2. Execute the Deployment Script
 
-Once the environment is prepared, you can deploy the `Vault` contract using the `forge script` command. This command will deploy the `Vault` contract, using a transparent upgradeable proxy, to the blockchain specified by the RPC URL and chain ID.
+Once the environment is prepared, you can deploy the `Vault` contract using the `make vault` command. This command will deploy the `Vault` contract, using a beacon proxy, to the blockchain specified by the `RPC_URL` and `CAHIN_ID`.
 
 ```bash
-forge script script/deploy_vault.s.sol   --chain-id $CHAIN_ID   --rpc-url $RPC_URL   --tc DeployVault   --account defaultKey   --etherscan-api-key $ETHERSCAN_API_KEY   --verify
-```
+# simulate deployment
+make vault
 
-- `--chain-id`: Specifies the chain ID of the target blockchain.
-- `--rpc-url`: Provides the RPC URL to interact with the target blockchain.
-- `--tc DeployVault`: Specifies the target script to run (`DeployVault` in this case).
-- `--account`: Specifies the account (key) to use for deployment (use `defaultKey` if configured).
-- `--etherscan-api-key`: Optional. If provided, this will verify the contract on Etherscan after deployment.
-- `--verify`: Enables verification of the contract on Etherscan (requires the API key above).
+# broadcast to network
+make vault-broadcast
+
+# verify on etherscan
+make vault-verify
+```
 
 #### 3. Check Deployment Logs
 
 After running the deployment command, you should see output in the console with details about the deployment, including the address of the deployed `Vault` contract. The relevant line will look something like this:
 
 ```
-Vault proxy address: 0x<Deployed_Proxy_Address>
+Vault proxy address: 0x...
 ```
 
-#### 4. Contract Verification (Optional)
+# Contributing
 
-If you've provided the `ETHERSCAN_API_KEY` and used the `--verify` flag during deployment, the contract will automatically be verified on Etherscan.
+Ensure that you copied `.env.example` to `.env.dev` and that you provided a valid `FOUNDRY_ETH_RPC_URL`
+
+Then you can run `make test` to run the full test suit.

@@ -1,5 +1,1 @@
-forge fmt
-git add -A
-UNDERLYING_NAME=USDC forge test
-UNDERLYING_NAME=WRAPPED_NATIVE_TOKEN forge test
-pnpm exec solhint 'src/**/*.sol'
+make pre-commit

@@ -7,37 +7,30 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 import {Script, console} from "forge-std/Script.sol";
 
-import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 /*
-
-> How to deploy this script:
-
-source .env && \
-forge clean && \
-forge script script/deploy_protocol.s.sol \
-  --chain-id $CHAIN_ID \
-  --rpc-url $RPC_URL \
-  --tc DeployProtocol \
-  --account defaultKey \
-  --etherscan-api-key $ETHERSCAN_API_KEY \
-  --verify
-
+  run `make protocol` to deploy this script
 */
 
 contract DeployProtocol is Script {
     address DAO = vm.envAddress("DAO");
+    address PROTOCOL_FEE_RECEIVER = vm.envAddress("PROTOCOL_FEE_RECEIVER");
+    address PROXY_ADMIN = vm.envAddress("PROXY_ADMIN");
 
     function run() external {
-        address PROXY_ADMIN = vm.envAddress("PROXY_ADMIN");
-
         vm.startBroadcast();
+
+        Options memory opts;
+        opts.constructorData = abi.encode(true);
+
         TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
             payable(
                 Upgrades.deployTransparentProxy(
                     "FeeRegistry.sol:FeeRegistry",
                     PROXY_ADMIN,
-                    abi.encodeWithSelector(FeeRegistry.initialize.selector, DAO, DAO)
+                    abi.encodeWithSelector(FeeRegistry.initialize.selector, DAO, PROTOCOL_FEE_RECEIVER),
+                    opts
                 )
             )
         );

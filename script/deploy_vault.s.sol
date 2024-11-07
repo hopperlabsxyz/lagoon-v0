@@ -3,70 +3,76 @@ pragma solidity 0.8.26;
 
 import {Vault} from "../src/vault/Vault.sol";
 
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Script, console} from "forge-std/Script.sol";
 
-import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 /*
-
-> How to deploy this script:
-
-source .env && \
-forge clean && \
-forge script script/deploy_vault.s.sol \
-  --chain-id $CHAIN_ID \
-  --rpc-url $RPC_URL \
-  --tc DeployVault \
-  --account defaultKey \
-  --etherscan-api-key $ETHERSCAN_API_KEY \
-  --verify
-
+  run `make vault` to deploy this script
 */
 
 contract DeployVault is Script {
+    // General
     address UNDERLYING = vm.envAddress("UNDERLYING");
     address WRAPPED_NATIVE_TOKEN = vm.envAddress("WRAPPED_NATIVE_TOKEN");
+    address FEE_REGISTRY = vm.envAddress("FEE_REGISTRY");
+    address BEACON = vm.envAddress("BEACON");
+    string NAME = vm.envString("NAME");
+    string SYMBOL = vm.envString("SYMBOL");
+    bool ENABLE_WHITELIST = vm.envBool("ENABLE_WHITELIST");
 
-    address PROXY_ADMIN = vm.envAddress("PROXY_ADMIN");
+    // Fees
+    uint16 MANAGEMENT_RATE = uint16(vm.envUint("MANAGEMENT_RATE"));
+    uint16 PERFORMANCE_RATE = uint16(vm.envUint("PERFORMANCE_RATE"));
+    uint256 RATE_UPDATE_COOLDOWN = vm.envUint("RATE_UPDATE_COOLDOWN");
 
-    address DAO = vm.envAddress("DAO");
+    // Roles
     address SAFE = vm.envAddress("SAFE");
     address FEE_RECEIVER = vm.envAddress("FEE_RECEIVER");
-    address FEE_REGISTRY = vm.envAddress("FEE_REGISTRY");
-
-    string VAULT_NAME = vm.envString("VAULT_NAME");
-    string VAULT_SYMBOL = vm.envString("VAULT_SYMBOL");
+    address ADMIN = vm.envAddress("ADMIN");
+    address WHITELIST_MANAGER = vm.envAddress("WHITELIST_MANAGER");
+    address VALUATION_MANAGER = vm.envAddress("VALUATION_MANAGER");
 
     function run() external {
         vm.startBroadcast();
 
+        console.log("UNDERLYING:", UNDERLYING);
+        console.log("WRAPPED_NATIVE_TOKEN:", WRAPPED_NATIVE_TOKEN);
+        console.log("FEE_REGISTRY:", FEE_REGISTRY);
+        console.log("BEACON:", BEACON);
+        console.log("NAME:", NAME);
+        console.log("SYMBOL:", SYMBOL);
+        console.log("ENABLE_WHITELIST:", ENABLE_WHITELIST);
+        console.log("MANAGEMENT_RATE:", MANAGEMENT_RATE);
+        console.log("PERFORMANCE_RATE:", PERFORMANCE_RATE);
+        console.log("RATE_UPDATE_COOLDOWN:", RATE_UPDATE_COOLDOWN);
+        console.log("SAFE:", SAFE);
+        console.log("FEE_RECEIVER:", FEE_RECEIVER);
+        console.log("ADMIN:", ADMIN);
+        console.log("WHITELIST_MANAGER:", WHITELIST_MANAGER);
+        console.log("VALUATION_MANAGER:", VALUATION_MANAGER);
+
         Vault.InitStruct memory v = Vault.InitStruct({
             underlying: IERC20(UNDERLYING),
-            name: VAULT_NAME,
-            symbol: VAULT_SYMBOL,
+            name: NAME,
+            symbol: SYMBOL,
             safe: SAFE,
-            whitelistManager: DAO,
-            valuationManager: DAO,
-            admin: DAO,
+            whitelistManager: WHITELIST_MANAGER,
+            valuationManager: VALUATION_MANAGER,
+            admin: ADMIN,
             feeReceiver: FEE_RECEIVER,
             feeRegistry: FEE_REGISTRY,
-            managementRate: 0,
-            performanceRate: 2000,
+            managementRate: MANAGEMENT_RATE,
+            performanceRate: PERFORMANCE_RATE,
             wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
-            enableWhitelist: false,
-            rateUpdateCooldown: 1 days
+            enableWhitelist: ENABLE_WHITELIST,
+            rateUpdateCooldown: RATE_UPDATE_COOLDOWN
         });
-        Options memory opts;
-        opts.constructorData = abi.encode(true);
 
-        TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
-            payable(
-                Upgrades.deployTransparentProxy(
-                    "Vault.sol:Vault", PROXY_ADMIN, abi.encodeWithSelector(Vault.initialize.selector, v), opts
-                )
-            )
+        BeaconProxy proxy = BeaconProxy(
+            payable(Upgrades.deployBeaconProxy(BEACON, abi.encodeWithSelector(Vault.initialize.selector, v)))
         );
 
         // todo
