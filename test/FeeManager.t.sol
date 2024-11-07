@@ -61,8 +61,8 @@ contract TestFeeManager is BaseTest {
         uint256 newTotalAssets = 0;
 
         // new airdrop !
-        dealAmountAndApproveAndWhitelist(user1.addr, 1);
-        dealAmountAndApproveAndWhitelist(user2.addr, 1_000_000);
+        dealAmountAndApproveAndWhitelist(user1.addr, _1);
+        dealAmountAndApproveAndWhitelist(user2.addr, _1M);
 
         uint256 ppsAtStart = pricePerShare();
 
@@ -70,6 +70,7 @@ contract TestFeeManager is BaseTest {
         uint256 user2InitialDeposit = _1M;
 
         // user1 deposit into vault at 1$ per share
+        // console.log("user1InitialDeposit", user1InitialDeposit, assetBalance(user1.addr));
         requestDeposit(user1InitialDeposit, user1.addr);
 
         // ------------ Settle ------------ //
@@ -336,8 +337,8 @@ contract TestFeeManager is BaseTest {
         uint256 newTotalAssets = 0;
 
         // new airdrop !
-        dealAmountAndApproveAndWhitelist(user1.addr, 1);
-        dealAmountAndApproveAndWhitelist(user2.addr, 1_000_000);
+        dealAmountAndApproveAndWhitelist(user1.addr, _1);
+        dealAmountAndApproveAndWhitelist(user2.addr, _1M);
 
         uint256 ppsAtStart = pricePerShare();
 
