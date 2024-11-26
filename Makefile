@@ -1,30 +1,84 @@
+IMAGE_NAME := lagoon-deployer
+
 ifeq ($(ENV_DEV),)
 	ENV_DEV := .env.dev
 endif
 
 ifeq ($(ENV_PROD),)
-	ENV_PROD := .env.prod-mainnet
+	ENV_PROD := .env.local-fork # local fork rpc-url
 endif
 
+ifeq ($(NETWORK_DOCKER),)
+	NETWORK_DOCKER := local-fork-network 
+endif
+
+##################### FLAGS #####################
+
+DOCKER_FLAGS := --rm \
+								--platform linux/x86_64 \
+								--network $(NETWORK_DOCKER) \
+								--env-file $(ENV_PROD)
+
+DEPLOYER_FLAGS := --chain-id $$CHAIN_ID \
+									--rpc-url $$RPC_URL \
+									--sender $$SENDER
+
+PK_FLAGS := $(DEPLOYER_FLAGS) \
+						--private-key $$PRIVATE_KEY \
+						--broadcast
+
+LEDGER_FLAGS := $(DEPLOYER_FLAGS) \
+								--ledger \
+								--hd-paths $$HD_PATH \
+								--broadcast
+
+VERIFY_FLAGS := --etherscan-api-key $$ETHERSCAN_API_KEY \
+								--verify 
+
+#################### COMMANDS ####################
+
+DOCKER_RUN := docker run $(DOCKER_FLAGS) 
+
+#################### SCRIPTS ####################
+
+FULL_SCRIPT := script/deploy_local_fork.s.sol:DeployFull
+PROTOCOL_SCRIPT := script/deploy_protocol.s.sol:DeployProtocol
+BEACON_SCRIPT := script/deploy_beacon.s.sol:DeployBeacon
+VAULT_SCRIPT := script/deploy_vault.s.sol:DeployVault 
+
+#################### UTILS #####################
+
 load_dev_env:
-	@echo "Using development environment"
+	@echo "Using $(ENV_DEV) environment"
 	$(eval include $(ENV_DEV))
-	$(eval export $(shell sed 's/=.*//' $(ENV_DEV)))
+	$(eval export $(set -a && source $(ENV_DEV) && set +a))
 
 load_prod_env:
-	@echo "Using production environment"
+	@echo "Using $(ENV_PROD) environment"
 	$(eval include $(ENV_PROD))
-	$(eval export $(shell sed 's/=.*//' $(ENV_PROD)))
+	$(eval export $(set -a && source $(ENV_PROD) && set +a))
 
 clean:
-	forge clean
+	@forge clean
 
 build:
-	forge build
+	@forge build
 
-test: load_dev_env
-	UNDERLYING_NAME=USDC forge test
-	UNDERLYING_NAME=WRAPPED_NATIVE_TOKEN forge test
+clean-docker:
+	docker rmi $(IMAGE_NAME) || true
+
+build-image: load_dev_env
+	docker build \
+		--secret "id=RPC_URL" \
+		--platform linux/x86_64 \
+		--no-cache \
+		-t $(IMAGE_NAME) \
+		. # < do not remove the dot
+
+test-image: build-image
+
+test:
+	forge test
 
 fmt:
 	forge fmt
@@ -32,214 +86,108 @@ fmt:
 solhint:
 	pnpm exec solhint 'src/**/*.sol'
 
-pre-commit: fmt test solhint
+pre-commit: fmt test-image solhint
 	git add -A
 
+################### LOCAL FORK ##################
 
-################### PROTOCOL ################### 
+start-fork: load_prod_env
+	docker compose --env-file $$ENV_PROD up local-fork
 
+stop-fork: load_prod_env
+	docker compose --env-file $$ENV_PROD down local-fork
+
+########## PROTOCOL + BEACON + VAULT ############
+
+# simulation
+full: load_prod_env
+		@echo "Deploying FeeRegistry + Beacon + Vault..."
+		@$(DOCKER_RUN) $(IMAGE_NAME) $(DEPLOYER_FLAGS) $(FULL_SCRIPT)
+
+# pk broadcast
+deploy-full-pk: load_prod_env
+		@echo "Deploying FeeRegistry + Beacon + Vault..."
+		@$(DOCKER_RUN) $(IMAGE_NAME) $(PK_FLAGS) $(VERIFY_FLAGS) $(FULL_SCRIPT)
+
+# ledger broadcast
+deploy-full-ledger: load_prod_env clean
+	@echo "Deploying FeeRegistry + Beacon + Vault..."
+	@forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(FULL_SCRIPT)
+
+################### PROTOCOL ONLY ################### 
+
+# simulation
 protocol: load_prod_env clean
-	forge script script/deploy_protocol.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployProtocol \
-		--etherscan-api-key $(ETHERSCAN_API_KEY)
+	@echo "Deploying FeeRegistry..."
+	@$(DOCKER_RUN) $(IMAGE_NAME) $(DEPLOYER_FLAGS) $(PROTOCOL_SCRIPT)
+ 
+# pk broadcast
+deploy-protocol-pk: load_prod_env
+	@echo "Deploying FeeRegistry..."
+	@$(DOCKER_RUN) $(IMAGE_NAME) $(PK_FLAGS) $(VERIFY_FLAGS) $(PROTOCOL_SCRIPT)
 
-protocol-broadcast: load_prod_env clean
-	forge script script/deploy_protocol.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployProtocol \
-		--account $(ACCOUNT_0) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--broadcast
+# ledger broadcast
+deploy-protocol-ledger: load_prod_env clean
+	@echo "Deploying FeeRegistry..."
+	forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(PROTOCOL_SCRIPT)
 
-protocol-verify: load_prod_env clean
-	forge script script/deploy_protocol.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployProtocol \
-		--account $(ACCOUNT_0) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--verify
+################### BEACON ONLY ################### 
 
-protocol-broadcast-ledger: load_prod_env clean
-	forge script script/deploy_protocol.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployProtocol \
-		--ledger \
-		--hd-paths  $(HD_PATH) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--broadcast
-
-protocol-verify-ledger: load_prod_env clean
-	forge script script/deploy_protocol.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployProtocol \
-		--ledger \
-		--hd-paths  $(HD_PATH) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--verify
-
-################### BEACON ################### 
-
+# simulation
 beacon: load_prod_env clean
-	forge script script/deploy_beacon.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployBeacon \
-		--etherscan-api-key $(ETHERSCAN_API_KEY)
+	@echo "Deploying Beacon..."
+	@$(DOCKER_RUN) $(IMAGE_NAME) $(DEPLOYER_FLAGS) $(BEACON_SCRIPT)
 
-beacon-broadcast: load_prod_env clean
-	forge script script/deploy_beacon.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployBeacon \
-		--account $(ACCOUNT_0) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--broadcast
+# pk broadcast 
+deploy-beacon-pk: load_prod_env
+	@echo "Deploying Beacon..."
+	@$(DOCKER_RUN) $(IMAGE_NAME) $(PK_FLAGS) $(VERIFY_FLAGS) $(BEACON_SCRIPT)
 
-beacon-verify: load_prod_env clean
-	forge script script/deploy_beacon.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployBeacon \
-		--account $(ACCOUNT_0) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--verify
+# ledger broadcast
+deploy-beacon-ledger: load_prod_env clean
+	@echo "Deploying Beacon..."
+	@forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(BEACON_SCRIPT)
 
-beacon-broadcast-ledger: load_prod_env clean
-	forge script script/deploy_beacon.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployBeacon \
-		--ledger \
-		--hd-paths $(HD_PATH) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--broadcast
+################### VAULT ONLY ################### 
 
-beacon-verify-ledger: load_prod_env clean
-	forge script script/deploy_beacon.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployBeacon \
-		--ledger \
-		--hd-paths  $(HD_PATH) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--verify
+# simulation
+vault: load_prod_env
+	@echo "Deploying Vault..."
+	@$(DOCKER_RUN) $(IMAGE_NAME) $(DEPLOYER_FLAGS) $(VAULT_SCRIPT)
 
-####### UPGRADE BEACON IMPLEMENTATION ####### 
+# pk broadcast 
+deploy-vault-pk: load_prod_env
+	@echo "Deploying Vault..."
+	@$(DOCKER_RUN) $(IMAGE_NAME) $(PK_FLAGS) $(VERIFY_FLAGS) $(VAULT_SCRIPT)
 
-# @dev: Use at your own risk, upgradability is NOT garanted /!\
+# ledger broadcast
+deploy-vault-ledger: load_prod_env clean
+	@echo "Deploying Vault..."
+	@forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(VAULT_SCRIPT)
 
-upgrade-implementation: load_prod_env clean
-	forge script script/deploy_beacon.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc UpgradeBeaconImplementation \
-		--etherscan-api-key $(ETHERSCAN_API_KEY)
 
-upgrade-implementation-broadcast: load_prod_env clean
-	forge script script/deploy_beacon.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc UpgradeBeaconImplementation \
-		--account $(ACCOUNT_0) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--broadcast
-
-upgrade-implementation-verify: load_prod_env clean
-	forge script script/deploy_beacon.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc UpgradeBeaconImplementation \
-		--account $(ACCOUNT_0) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--verify
-
-################### VAULT ################### 
-
-vault: load_prod_env clean
-	forge script script/deploy_vault.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployVault \
-		--etherscan-api-key $(ETHERSCAN_API_KEY)
-
-vault-broadcast: load_prod_env clean
-	forge script script/deploy_vault.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployVault \
-		--account $(ACCOUNT_0) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--broadcast
-
-vault-verify: load_prod_env clean
-	forge script script/deploy_vault.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployVault \
-		--account $(ACCOUNT_0) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--verify
-
-vault-broadcast-ledger: load_prod_env clean
-	forge script script/deploy_vault.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployVault \
-		--ledger \
-		--hd-paths  $(HD_PATH) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--broadcast
-
-vault-verify-ledger: load_prod_env clean
-	forge script script/deploy_vault.s.sol \
-		--chain-id $(CHAIN_ID) \
-		--rpc-url $(RPC_URL) \
-		--sender $(SENDER) \
-		--tc DeployVault \
-		--ledger \
-		--hd-paths  $(HD_PATH) \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--verify
-
-.PHONY: test \
-	load_dev_env \
+.PHONY: load_dev_env \
 	load_prod_env \
-	clean build \
+	clean \
+	build \
+	clean-docker \
+	build-image \
+	test-image \
+	test \
 	fmt \
 	solhint \
+	pre-commit \
+	start-fork \
+	stop-fork \
+	full \
+	deploy-full-ledger \
+	deploy-full-pk \
 	protocol \
-	protocol-broadcast \
-	protocol-verify \
-	beacon \
-	beacon-broadcast \
-	beacon-verify \
-	upgrade-implementation \
-	upgrade-implementation-broadcast \
-	upgrade-implementation-verify \
-	vault \
-	vault-broadcast \
-	vault-verify \
-	pre-commit
+	deploy-protocol-pk \
+	deploy-protocol-ledger \
+	beacon\
+	deploy-beacon-ledger \
+	deploy-beacon-pk \
+	vault\
+	deploy-vault-ledger \
+	deploy-vault-pk

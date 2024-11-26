@@ -1,0 +1,13 @@
+services:
+  local-fork:
+    container_name: local-fork
+    image: "ghcr.io/foundry-rs/foundry:latest"
+    platform: linux/x86_64
+    entrypoint: anvil --host 0.0.0.0 --fork-url $FORK_RPC_URL
+    networks:
+      - local-fork-network
+
+networks:
+  local-fork-network:
+    name: local-fork-network
+    driver: bridge
