@@ -30,7 +30,7 @@ ARG VAULT_SYMBOL="MVP"
 # clone vault repo
 RUN --mount=type=secret,id=PERSONAL_ACCESS_TOKEN \
   PERSONAL_ACCESS_TOKEN=$(cat /run/secrets/PERSONAL_ACCESS_TOKEN) && \
-  git clone -b script/docker "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/vault"
+  git clone "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/vault"
 
 # Copy our source code into the container
 WORKDIR /vault
