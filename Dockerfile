@@ -4,6 +4,8 @@ FROM node:${NODE_VERSION}-alpine AS node
 # Use the latest foundry image
 FROM ghcr.io/foundry-rs/foundry
 
+RUN apk add --no-cache git
+
 # OZ scripts expect npx; we take it from official node image
 COPY --from=node /usr/lib /usr/lib
 COPY --from=node /usr/local/lib /usr/local/lib
@@ -25,12 +27,18 @@ ARG WBTC_MAINNET=0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599
 ARG VAULT_NAME="MVP_HOPPER"
 ARG VAULT_SYMBOL="MVP"
 
-# Copy our source code into the container
-WORKDIR /app
+# clone vault repo
+# RUN --mount=type=secret,id=PERSONAL_ACCESS_TOKEN \
+#   PERSONAL_ACCESS_TOKEN=$(cat /run/secrets/PERSONAL_ACCESS_TOKEN) && \
+#   git clone -b script/docker "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/vault"
 
-# Build and test the source code
-COPY . .
-RUN forge clean && forge build
+# Copy our source code into the container
+WORKDIR /vault
+
+COPY . . 
+
+# build vault
+RUN forge build
 RUN --mount=type=secret,id=RPC_URL \
   FOUNDRY_ETH_RPC_URL=$(cat /run/secrets/RPC_URL) \
   UNDERLYING_NAME=USDC forge test \
