@@ -1,4 +1,4 @@
-:wq# Compiler files
+# Compiler files
 cache/
 out/
 
@@ -12,6 +12,8 @@ docs/
 
 # Dotenv file
 .env*
+!.env.example
+!.env.prod-example
 
 # Node modules
 node_modules/
