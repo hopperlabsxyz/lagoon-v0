@@ -41,7 +41,7 @@ In order to deploy a new vault you will have to create a new `BeaconProxy` that 
 
 Before starting, make sure you have `docker daemon` up and running on your machine.
 
-Now, let's build our docker image. To do so, copy the `.env.example` file into a `.env.dev` file and provide the `FOUNDRY_ETH_RPC_URL` variable with a valid `mainnet` rpc url.
+Now, let's build our docker image. To do so, copy the `.env.example` file into a `.env.dev` file and provide the `RPC_URL` variable with a valid `mainnet` rpc url.
 
 Then, run the following command to build the image:
 
@@ -49,7 +49,7 @@ Then, run the following command to build the image:
 make build-image
 ```
 
-First make sure you have a newly created Safe available. You can create one using the [safe-cli](https://github.com/safe-global/safe-cli)
+First make sure you have a newly created Safe available. You can create one using the [safe-cli](https://github.com/safe-global/safe-cli) or through the [Safe UI](https://safe.global/)
 
 The image now can be used to deploy new vault proxies.
 
