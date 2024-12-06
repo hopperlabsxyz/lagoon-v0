@@ -49,11 +49,7 @@ Then, run the following command to build the image:
 make build-image
 ```
 
-First make sure you have a newly created Safe available.
-
-```bash
-TODO: explain how to deploy a safe using docker container
-```
+First make sure you have a newly created Safe available. You can create one using the [safe-cli](https://github.com/safe-global/safe-cli)
 
 The image now can be used to deploy new vault proxies.
 
