@@ -87,7 +87,7 @@ fmt:
 solhint:
 	pnpm exec solhint 'src/**/*.sol'
 
-pre-commit: fmt test-image solhint
+pre-commit: fmt test solhint
 	git add -A
 
 ################### LOCAL FORK ##################
