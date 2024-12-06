@@ -1,6 +1,6 @@
-# What is Lagoon Protocol?
+# Overview
 
-Lagoon Protocol is a decentralized platform for creating and managing secure, non-custodial Vaults. These Vaults allow asset managers to implement various DeFi strategies like yield farming while maintaining control and flexibility. Built on smart contracts and tools like Gnosis Safe and Zodiac Roles modifiers, Lagoon Vaults are highly customizable, supporting different roles such as managers, fund depositors, and valuation oracles.
+Welcome to the Lagoon Protocol Documentation! This page serves as a comprehensive introduction to the core concepts, components, and unique features that make Lagoon Protocol a powerful tool for decentralized asset management.
 
 Find more info about Lagoon Protocol in the [documentation](https://docs.lagoon.finance/)
 
