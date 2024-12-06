@@ -1,11 +1,11 @@
 IMAGE_NAME := lagoon-deployer
 
-ifeq ($(ENV_DEV),)
-	ENV_DEV := .env.dev
+ifeq ($(ENV_TEST),)
+	ENV_TEST := .env.dev
 endif
 
-ifeq ($(ENV_PROD),)
-	ENV_PROD := .env.local-fork # local fork rpc-url
+ifeq ($(ENV_DEPLOY),)
+	ENV_DEPLOY := .env.local-fork # local fork rpc-url
 endif
 
 ifeq ($(NETWORK_DOCKER),)
@@ -17,7 +17,7 @@ endif
 DOCKER_FLAGS := --rm \
 								--platform linux/x86_64 \
 								--network $(NETWORK_DOCKER) \
-								--env-file $(ENV_PROD)
+								--env-file $(ENV_DEPLOY)
 
 DEPLOYER_FLAGS := --chain-id $$CHAIN_ID \
 									--rpc-url $$RPC_URL \
@@ -49,14 +49,14 @@ VAULT_SCRIPT := script/deploy_vault.s.sol:DeployVault
 #################### UTILS #####################
 
 load_dev_env:
-	@echo "Using $(ENV_DEV) environment"
-	$(eval include $(ENV_DEV))
-	$(eval export $(set -a && source $(ENV_DEV) && set +a))
+	@echo "Using $(ENV_TEST) environment"
+	$(eval include $(ENV_TEST))
+	$(eval export $(set -a && source $(ENV_TEST) && set +a))
 
 load_prod_env:
-	@echo "Using $(ENV_PROD) environment"
-	$(eval include $(ENV_PROD))
-	$(eval export $(set -a && source $(ENV_PROD) && set +a))
+	@echo "Using $(ENV_DEPLOY) environment"
+	$(eval include $(ENV_DEPLOY))
+	$(eval export $(set -a && source $(ENV_DEPLOY) && set +a))
 
 clean:
 	@forge clean
@@ -93,10 +93,10 @@ pre-commit: fmt test solhint
 ################### LOCAL FORK ##################
 
 start-fork: load_prod_env
-	docker compose --env-file $$ENV_PROD up local-fork
+	docker compose --env-file $$ENV_DEPLOY up local-fork
 
 stop-fork: load_prod_env
-	docker compose --env-file $$ENV_PROD down local-fork
+	docker compose --env-file $$ENV_DEPLOY down local-fork
 
 ########## PROTOCOL + BEACON + VAULT ############
 

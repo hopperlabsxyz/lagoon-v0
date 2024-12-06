@@ -60,7 +60,7 @@ Let's deploy the vault on a local fork for now, to do so we need to provide a va
 We can start the forked env with the following command:
 
 ```bash
-ENV_PROD=.env.prod-base make start-fork
+ENV_DEPLOY=.env.prod-base make start-fork
 ```
 
 Open a new shell window where you will deploy the vault.
@@ -68,7 +68,7 @@ Open a new shell window where you will deploy the vault.
 First, you are able to simulate the vault deployment running the following command:
 
 ```bash
-ENV_PROD=.env.prod-base make vault
+ENV_DEPLOY=.env.prod-base make vault
 ```
 
 If the deployment simulation fails, make sure all the addresses you put in your `.env.prod` file are correct.
@@ -78,10 +78,10 @@ Then, you can use the following command to broadcast the deployment to the local
 Make sure the `RPC_URL` variable points to the correct domain, when deploying from another container the domain should map to the container's local fork name. (example: `RPC_URL="http://local-fork:8545"`)
 
 ```bash
-ENV_PROD=.env.prod-base make deploy-vault-pk
+ENV_DEPLOY=.env.prod-base make deploy-vault-pk
 ```
 
-If you want to deploy the vault on mainnet you can change `RPC_URL` to point to a mainnet rpc url and run `ENV_PROD=.env.prod-base make deploy-vault-pk` again.
+If you want to deploy the vault on mainnet you can change `RPC_URL` to point to a mainnet rpc url and run `ENV_DEPLOY=.env.prod-base make deploy-vault-pk` again.
 
 ## Audits
 
