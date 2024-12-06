@@ -52,7 +52,7 @@ make build-image
 First make sure you have a newly created Safe available.
 
 ```bash
-to do, explain how to deploy a safe using docker container
+TODO: explain how to deploy a safe using docker container
 ```
 
 The image now can be used to deploy new vault proxies.
