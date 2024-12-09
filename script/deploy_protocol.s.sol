@@ -14,12 +14,12 @@ import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 */
 
 contract DeployProtocol is Script {
-    address DAO = vm.envAddress("DAO");
-    address PROTOCOL_FEE_RECEIVER = vm.envAddress("PROTOCOL_FEE_RECEIVER");
-    address PROXY_ADMIN = vm.envAddress("PROXY_ADMIN");
-
-    function run() external {
-        vm.startBroadcast();
+    function deployFeeRegistry(
+        address _dao,
+        address _protocolFeeReceiver,
+        address _proxyAdmin
+    ) internal returns (address) {
+        console.log("--- deployFeeRegistry() ---");
 
         Options memory opts;
         opts.constructorData = abi.encode(true);
@@ -28,13 +28,24 @@ contract DeployProtocol is Script {
             payable(
                 Upgrades.deployTransparentProxy(
                     "FeeRegistry.sol:FeeRegistry",
-                    PROXY_ADMIN,
-                    abi.encodeWithSelector(FeeRegistry.initialize.selector, DAO, PROTOCOL_FEE_RECEIVER),
+                    _proxyAdmin,
+                    abi.encodeWithSelector(FeeRegistry.initialize.selector, _dao, _protocolFeeReceiver),
                     opts
                 )
             )
         );
         console.log("FeeRegistry proxy address: ", address(proxy));
+
+        return address(proxy);
+    }
+
+    function run() external virtual {
+        address DAO = vm.envAddress("DAO");
+        address PROTOCOL_FEE_RECEIVER = vm.envAddress("PROTOCOL_FEE_RECEIVER");
+        address PROXY_ADMIN = vm.envAddress("PROXY_ADMIN");
+
+        vm.startBroadcast();
+        deployFeeRegistry(DAO, PROTOCOL_FEE_RECEIVER, PROXY_ADMIN);
         vm.stopBroadcast();
     }
 }

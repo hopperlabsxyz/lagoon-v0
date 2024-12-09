@@ -12,19 +12,21 @@ import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 */
 
 contract DeployBeacon is Script {
-    address BEACON_OWNER = vm.envAddress("BEACON_OWNER");
-
-    function run() external {
-        vm.startBroadcast();
-
-        console.log("BEACON_OWNER:", BEACON_OWNER);
-
+    function deployBeacon(address _owner) internal returns (address) {
+        console.log("--- deployBeacon() ---");
+        console.log("Beacon owner:  ", _owner);
         Options memory opts;
         opts.constructorData = abi.encode(true);
-        UpgradeableBeacon beacon = UpgradeableBeacon(Upgrades.deployBeacon("Vault.sol:Vault", BEACON_OWNER, opts));
+        UpgradeableBeacon beacon = UpgradeableBeacon(Upgrades.deployBeacon("Vault.sol:Vault", _owner, opts));
+        console.log("Beacon address:", address(beacon));
+        return address(beacon);
+    }
 
-        console.log("Beacon address: ", address(beacon));
+    function run() external virtual {
+        address BEACON_OWNER = vm.envAddress("BEACON_OWNER");
 
+        vm.startBroadcast();
+        deployBeacon(BEACON_OWNER);
         vm.stopBroadcast();
     }
 }
