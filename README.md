@@ -43,6 +43,18 @@ Before starting, make sure you have `docker daemon` up and running on your machi
 
 Now, let's build our docker image. To do so, copy the `.env.example` file into a `.env.dev` file and provide the `RPC_URL` variable with a valid `mainnet` rpc url.
 
+```bash
+cp .env.example .env.dev
+# Makefile is going to hammer the RPC hard, so you need a commercial RPC or your own node, 
+# otherwise the build will crash.
+# Recommended vendor: drpc.org
+echo 'RPC_URL="https://lb.drpc.org/ogrpc?network=ethereum&dkey=... "' >> .env.dev
+
+# Get Classic Personal access token from https://github.com/settings/tokens
+# Scope: repo
+echo 'PERSONAL_ACCESS_TOKEN=ghp_...' >> .env.dev
+```
+
 Then, run the following command to build the image:
 
 ```bash
