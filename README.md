@@ -226,7 +226,11 @@ export VAULT=0x6712008CCD96751d586FdBa0DEf5495E0E22D904
 cast call $VAULT "name()(string)"  
 ```
 
-This outputs 
+This outputs:
+
+```
+"VaultyVaultExample"
+```
 
 ## Deploying a production vault
 
