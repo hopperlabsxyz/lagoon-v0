@@ -175,51 +175,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         return _requestRedeem(shares, controller, owner);
     }
 
-        function claimSharesAndRequestRedeem(uint256 sharesToRedeem) public onlyOpen whenNotPaused returns (uint40 requestId) {
-        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
+    function claimSharesAndRequestRedeem(uint256 sharesToRedeem) public onlyOpen whenNotPaused returns (uint40 requestId) {
+         uint256 claimable = claimableDepositRequest(0, msg.sender);
+        if (claimable > 0) _deposit(claimable, msg.sender, msg.sender);
+
+        uint256 redeemId = _requestRedeem(sharesToRedeem, msg.sender, msg.sender);
         
-        ERC7540Storage storage $ = _getERC7540Storage();
-
-        // first we make sure the user can claim shares
-        requestId = $.lastDepositRequestId[msg.sender];
-        if (requestId > $.lastDepositEpochIdSettled) {
-            revert RequestIdNotClaimable();
-        }
-
-        uint256 assets = $.epochs[requestId].depositRequest[msg.sender];
-        // we claim those shares
-
-        $.epochs[requestId].depositRequest[msg.sender] -= 0;
-        uint256 sharesClaimed = convertToShares(assets, requestId);
-        emit Deposit(msg.sender, msg.sender, assets, sharesClaimed);
-
-        // we claim the redeemRequest if there is any
-        uint256 claimable = claimableRedeemRequest(0, msg.sender);
-        if (claimable > 0) _redeem(claimable, msg.sender, msg.sender);
-
-        // we make sure the user has not got a pending  redeemRequest made before the current epoch
-        uint40 _redeemId = $.redeemEpochId;
-        if ($.lastRedeemRequestId[msg.sender] != _redeemId) {
-            if (pendingRedeemRequest(0, msg.sender) > 0) {
-                revert OnlyOneRequestAllowed();
-            }
-            $.lastRedeemRequestId[msg.sender] = _redeemId;
-        }
-
-        // we add the claimed shares in his pending redeem request
-        $.epochs[_redeemId].redeemRequest[msg.sender] += sharesClaimed;
-
-        // we now transfer the various shares around
-        if (sharesToRedeem <= sharesClaimed) {
-            _update(address(this), address($.pendingSilo), sharesToRedeem);
-            _update(address(this),msg.sender, sharesClaimed - sharesToRedeem);
-        } else {
-            _update(address(this), address($.pendingSilo), sharesClaimed);
-            _update(msg.sender, address($.pendingSilo), sharesToRedeem - sharesClaimed);
-        }
-
-        emit RedeemRequest(msg.sender, msg.sender, _redeemId, msg.sender, sharesClaimed);
-        return _redeemId;
+        return uint40(redeemId);
     }
 
     /// @dev Unusable when paused.
