@@ -92,8 +92,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     function _takeFees(address feeReceiver, address protocolFeeReceiver) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        (uint256 managerShares, uint256 protocolShares, uint256 pricePerShare) = _calculateFees();
-        _setHighWaterMark(pricePerShare);
+        (uint256 managerShares, uint256 protocolShares) = _calculateFees();
 
         if (managerShares > 0) {
             _mint(feeReceiver, managerShares);
@@ -101,6 +100,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
                 protocolShares > 0 // they can't be protocolShares without managerShares
             ) _mint(protocolFeeReceiver, protocolShares);
         }
+        uint256 pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
+        _setHighWaterMark(pricePerShare);
 
         $.lastFeeTime = block.timestamp;
     }
@@ -178,16 +179,14 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// @dev protocol shares are the fees that go to the protocol
     /// @return managerShares the manager shares to be minted as fees
     /// @return protocolShares the protocol shares to be minted as fees
-    /// @return pricePerShare the price per share before charging fees
     function _calculateFees()
         internal
         view
-        returns (uint256 managerShares, uint256 protocolShares, uint256 pricePerShare)
+        returns (uint256 managerShares, uint256 protocolShares)
     {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 _decimals = decimals();
-        pricePerShare = _convertToAssets(10 ** _decimals, Math.Rounding.Floor);
 
         Rates memory _rates = feeRates();
 
@@ -196,6 +195,9 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         uint256 timeElapsed = block.timestamp - $.lastFeeTime;
         uint256 _totalAssets = totalAssets();
         uint256 managementFees = _calculateManagementFee(_totalAssets, _rates.managementRate, timeElapsed);
+
+        // by taking management fees the price per share decreases
+        uint256 pricePerShare = (10 ** _decimals).mulDiv(_totalAssets + 1 - managementFees, totalSupply() + 10 ** _decimalsOffset(), Math.Rounding.Ceil );
 
         /// Performance fee computation ///
 

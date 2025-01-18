@@ -8,12 +8,17 @@ import {Whitelistable} from "./Whitelistable.sol";
 import {State} from "./primitives/Enums.sol";
 import {Closed, ERC7540InvalidOperator, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
 import {Referral, StateUpdated} from "./primitives/Events.sol";
+import {ERC20Storage} from "./primitives/Struct.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+import {
+    OnlyOneRequestAllowed,
+    RequestIdNotClaimable
+} from "./primitives/Errors.sol";
 
 using SafeERC20 for IERC20;
 
@@ -321,5 +326,30 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @notice Resumes core operations of the vault. Can only be called by the owner.
     function unpause() public onlyOwner {
         _unpause();
+    }
+
+    
+    ////////////////////////////////////////////
+    // ## ERC20 METADATA UPDATES FUNCTIONS ## //
+    ////////////////////////////////////////////
+
+    // Since OZ contracts make the function to access ERC20 storage private we have to bypass it.
+
+    bytes32 private constant ERC20StorageLocation = 0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00;
+
+    function updateName(string memory name) onlyOwner public  {
+         ERC20Storage storage $;
+        assembly {
+            $.slot := ERC20StorageLocation
+        }
+        $._name = name;
+    }
+
+    function updateSymbol(string memory symbol) onlyOwner public  {
+         ERC20Storage storage $;
+        assembly {
+            $.slot := ERC20StorageLocation
+        }
+        $._name = symbol;
     }
 }
