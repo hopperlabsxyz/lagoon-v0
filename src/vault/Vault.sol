@@ -176,7 +176,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     }
 
     function claimSharesAndRequestRedeem(uint256 sharesToRedeem) public onlyOpen whenNotPaused returns (uint40 requestId) {
-         uint256 claimable = claimableDepositRequest(0, msg.sender);
+        uint256 claimable = claimableDepositRequest(0, msg.sender);
         if (claimable > 0) _deposit(claimable, msg.sender, msg.sender);
 
         uint256 redeemId = _requestRedeem(sharesToRedeem, msg.sender, msg.sender);
