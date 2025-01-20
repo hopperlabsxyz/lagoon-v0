@@ -345,7 +345,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     // Since OZ contracts make the function to access ERC20 storage private we have to bypass it.
 
     bytes32 private constant ERC20StorageLocation = 0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00;
-
+    
+    /// @param name The new name.
     function updateName(string memory name) onlyOwner public  {
          ERC20Storage storage $;
         assembly {
@@ -354,6 +355,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         $._name = name;
     }
 
+    /// @param symbol The new symbol.
     function updateSymbol(string memory symbol) onlyOwner public  {
          ERC20Storage storage $;
         assembly {
