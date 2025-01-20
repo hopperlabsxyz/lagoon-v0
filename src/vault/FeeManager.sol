@@ -91,8 +91,37 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// @param protocolFeeReceiver the address that will receive the protocol shares
     function _takeFees(address feeReceiver, address protocolFeeReceiver) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
+        uint256 _decimals = decimals();
+        Rates memory _rates = feeRates();
+        uint256 _totalSupply = totalSupply();
+        
+        uint256 managerShares;
+        uint256 protocolShares;
+        
 
-        (uint256 managerShares, uint256 protocolShares) = _calculateFees();
+        /// Management fee computation ///
+        uint256 timeElapsed = block.timestamp - $.lastFeeTime;
+        uint256 _totalAssets = totalAssets();
+        uint256 managementFees = _calculateManagementFee(_totalAssets, _rates.managementRate, timeElapsed);
+
+        // by taking management fees the price per share decreases so we take it off the totalAssets value
+        uint256 pricePerShare = (10 ** _decimals).mulDiv(_totalAssets + 1 - managementFees, totalSupply() + 10 ** _decimalsOffset(), Math.Rounding.Ceil );
+
+        /// Performance fee computation ///
+        uint256 performanceFees =
+            _calculatePerformanceFee(_rates.performanceRate, _totalSupply, pricePerShare, $.highWaterMark, _decimals);
+
+        /// Protocol fee computation & convertion to shares ///
+        uint256 totalFees = managementFees + performanceFees;
+
+        // since we are minting shares without actually increasing the totalAssets, we need to compensate the future
+        // dilution of price per share by virtually decreasing totalAssets in our computation
+        uint256 totalShares =
+            totalFees.mulDiv(_totalSupply + 10 ** _decimalsOffset(), (_totalAssets - totalFees) + 1, Math.Rounding.Ceil);
+
+        protocolShares = totalShares.mulDiv(_protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
+        managerShares = totalShares - protocolShares;
+        // (uint256 managerShares, uint256 protocolShares) = _calculateFees();
 
         if (managerShares > 0) {
             _mint(feeReceiver, managerShares);
@@ -100,7 +129,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
                 protocolShares > 0 // they can't be protocolShares without managerShares
             ) _mint(protocolFeeReceiver, protocolShares);
         }
-        uint256 pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
+        pricePerShare = _convertToAssets(10 ** decimals(), Math.Rounding.Floor);
         _setHighWaterMark(pricePerShare);
 
         $.lastFeeTime = block.timestamp;
