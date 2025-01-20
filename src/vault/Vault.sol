@@ -8,7 +8,7 @@ import {Whitelistable} from "./Whitelistable.sol";
 import {State} from "./primitives/Enums.sol";
 import {Closed, ERC7540InvalidOperator, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
 import {Referral, StateUpdated} from "./primitives/Events.sol";
-import {ERC20Storage} from "./primitives/Struct.sol";
+import { ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -359,6 +359,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         assembly {
             $.slot := ERC20StorageLocation
         }
-        $._name = symbol;
+        $._symbol = symbol;
     }
 }
