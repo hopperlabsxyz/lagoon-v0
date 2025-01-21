@@ -149,6 +149,25 @@ contract TestInitiateClosing is BaseTest {
         vault.requestRedeem(user1Shares / 2, user1.addr, user1.addr);
     }
 
+    function test_claimSharesAndRequestRedeem_whenNotOpen_shouldFail() public {
+        uint256 user1PendingAssets = vault.pendingDepositRequest(0, user1.addr);
+
+        vm.startPrank(user1.addr);
+
+        vault.deposit(user1PendingAssets, user1.addr);
+
+        vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closing));
+        vault.claimSharesAndRequestRedeem(2);
+
+        vm.stopPrank();
+
+        vm.prank(safe.addr);
+        vault.close();
+
+        vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closed));
+        vault.claimSharesAndRequestRedeem(2);
+    }
+
     function test_redeemAssetWithoutClaimableRedeem() public {
         uint256 user1ClaimableAssets = vault.claimableDepositRequest(0, user1.addr);
 
