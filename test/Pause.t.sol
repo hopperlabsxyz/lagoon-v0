@@ -49,7 +49,7 @@ contract TestPause is BaseTest {
     }
 
     function test_deposit_whenPaused_shouldFail() public {
-        vm.assertNotEq(vault.maxDeposit(user1.addr), 0);
+        vm.assertNotEq(vault.claimableDepositRequest(0, user1.addr), 0);
 
         vm.startPrank(user1.addr);
 

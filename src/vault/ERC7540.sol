@@ -636,26 +636,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
     }
 
-    /// @notice Returns the maximum redeemable shares for a controller.
-    /// @param controller The controller.
-    /// @return The maximum redeemable shares.
-    function maxRedeem(address controller) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
-        return claimableRedeemRequest(0, controller);
-    }
-
-    /// @notice Returns the amount of assets a controller will get if he redeem.
-    /// @param controller The controller.
-    /// @return The maximum amount of assets to get.
-    function maxWithdraw(
-        address controller
-    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
-        uint256 lastRedeemId = _getERC7540Storage().lastRedeemRequestId[
-            controller
-        ];
-        uint256 claimable = claimableRedeemRequest(0, controller);
-        return convertToAssets(claimable, lastRedeemId);
-    }
-
     /// @notice Returns the amount of assets that are pending to be deposited for a controller. For a specific request
     /// ID.
     /// @param requestId The request ID.
@@ -681,23 +661,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         if (requestId <= $.lastDepositEpochIdSettled) {
             return $.epochs[uint40(requestId)].depositRequest[controller];
         }
-    }
-
-    function maxDeposit(address controller) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
-        return claimableDepositRequest(0, controller);
-    }
-
-    /// @notice Returns the amount of sharres a controller will get if he calls Deposit.
-    /// @param controller The controller.
-    /// @return The maximum amount of shares to get.
-    function maxMint(
-        address controller
-    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
-        uint256 lastDepositId = _getERC7540Storage().lastDepositRequestId[
-            controller
-        ];
-        uint256 claimable = claimableDepositRequest(0, controller);
-        return convertToShares(claimable, lastDepositId);
     }
 
     function pendingSilo() public view returns (address) {

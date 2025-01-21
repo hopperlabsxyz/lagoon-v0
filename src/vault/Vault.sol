@@ -363,4 +363,54 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         }
         $._symbol = symbol;
     }
+
+
+    // MAX //
+
+    /// @notice Returns the maximum redeemable shares for a controller.
+    /// @param controller The controller.
+    /// @return shares The maximum redeemable shares.
+    function maxRedeem(address controller) public view override(IERC4626, ERC4626Upgradeable) returns (uint256 shares) {
+        if (paused()) return 0;
+        shares = claimableRedeemRequest(0, controller);
+        if (shares == 0 && _getVaultStorage().state != State.Open)
+            shares = balanceOf(controller);
+    }
+
+    /// @notice Returns the amount of assets a controller will get if he redeem.
+    /// @param controller The controller.
+    /// @return The maximum amount of assets to get.
+    function maxWithdraw(
+        address controller
+    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+        uint256 lastRedeemId = _getERC7540Storage().lastRedeemRequestId[
+            controller
+        ];
+        uint256 claimable = claimableRedeemRequest(0, controller);
+        if (claimable != 0)
+            return convertToAssets(claimable, lastRedeemId);
+        else if (_getVaultStorage().state != State.Open)
+            return convertToAssets(balanceOf(controller));
+        return 0;
+    }
+
+    function maxDeposit(address controller) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+        if (paused()) return 0;
+        return claimableDepositRequest(0, controller);
+    }
+
+    /// @notice Returns the amount of sharres a controller will get if he calls Deposit.
+    /// @param controller The controller.
+    /// @return The maximum amount of shares to get.
+    function maxMint(
+        address controller
+    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+        if (paused()) return 0;
+        uint256 lastDepositId = _getERC7540Storage().lastDepositRequestId[
+            controller
+        ];
+        uint256 claimable = claimableDepositRequest(lastDepositId, controller);
+        return convertToShares(claimable, lastDepositId);
+    }
+
 }
