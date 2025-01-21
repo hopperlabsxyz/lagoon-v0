@@ -166,6 +166,9 @@ contract TestInitiateClosing is BaseTest {
 
         vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closed));
         vault.claimSharesAndRequestRedeem(2);
+        // vm.prank(user1.addr);
+        // vm.expectRevert(Pausable.EnforcedPause.selector);
+        // vault.claimSharesAndRequestRedeem(2);
     }
 
     function test_redeemAssetWithoutClaimableRedeem() public {

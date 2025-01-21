@@ -299,6 +299,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     /// @notice Initiates the closing of the vault. Can only be called by the owner.
     function initiateClosing() external onlyOwner onlyOpen {
+        ERC7540Storage storage $ = _getERC7540Storage();
+
+        _updateNewTotalAssets($.newTotalAssets);
         _getVaultStorage().state = State.Closing;
         emit StateUpdated(State.Closing);
     }
@@ -306,6 +309,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.
     /// @dev Users can still requestDeposit but it can't be settled.
     function close() external onlySafe onlyClosing {
+        
         RolesStorage storage $roles = _getRolesStorage();
         _updateTotalAssets();
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
@@ -365,7 +369,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     }
 
 
-    // MAX //
+    // MAX FUNCTIONS OVERRIDE //
 
     /// @notice Returns the maximum redeemable shares for a controller.
     /// @param controller The controller.
@@ -373,7 +377,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     function maxRedeem(address controller) public view override(IERC4626, ERC4626Upgradeable) returns (uint256 shares) {
         if (paused()) return 0;
         shares = claimableRedeemRequest(0, controller);
-        if (shares == 0 && _getVaultStorage().state != State.Open)
+        if (shares == 0 && _getVaultStorage().state == State.Closed)
             shares = balanceOf(controller);
     }
 
