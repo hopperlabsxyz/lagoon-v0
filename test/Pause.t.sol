@@ -61,7 +61,7 @@ contract TestPause is BaseTest {
     }
 
     function test_mint_whenPaused_shouldFail() public {
-        vm.assertNotEq(vault.maxMint(user1.addr), 0);
+        vm.assertNotEq(vault.claimableDepositRequest(0, user1.addr), 0);
         vm.startPrank(user1.addr);
 
         vm.expectRevert(Pausable.EnforcedPause.selector);

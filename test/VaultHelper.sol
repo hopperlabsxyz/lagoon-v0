@@ -113,4 +113,16 @@ contract VaultHelper is Vault {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
         return $erc7540.depositSettleId;
     }
+
+    function epochSettleId(uint40 epochId) public view returns (uint40) {
+        return _getERC7540Storage().epochs[epochId].settleId;
+    }
+
+    function depositEpochId() public view returns (uint40) {
+        return _getERC7540Storage().depositEpochId;
+    }
+
+    function redeemEpochId() public view returns (uint40) {
+        return _getERC7540Storage().redeemEpochId;
+    }
 }
