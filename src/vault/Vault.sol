@@ -300,8 +300,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @notice Initiates the closing of the vault. Can only be called by the owner.
     function initiateClosing() external onlyOwner onlyOpen {
         ERC7540Storage storage $ = _getERC7540Storage();
-
-        _updateNewTotalAssets($.newTotalAssets);
+        if ($.newTotalAssets != type(uint256).max)
+            _updateNewTotalAssets($.newTotalAssets);
         _getVaultStorage().state = State.Closing;
         emit StateUpdated(State.Closing);
     }
