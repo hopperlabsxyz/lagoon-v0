@@ -138,8 +138,14 @@ contract BaseTest is Test, Constants {
         uint256 assetsBeforeReceiver = assetBalance(receiver);
         uint256 assetsBeforeController = assetBalance(controller);
         uint256 assetsBeforeOperator = assetBalance(operator);
+        uint256 maxWithdraw = vault.maxWithdraw(controller);
         vm.prank(operator);
         uint256 assets = vault.redeem(amount, receiver, controller);
+        uint256 assetsAfterReceiver = assetBalance(receiver);
+
+        assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxWithdraw, "wrong maxWithdraw");
+        assertLe(assets, maxWithdraw, "maxWithdraw != assets redeemed");
+
         assertEq(
             assetsBeforeReceiver + assets, assetBalance(receiver), "Receiver assets balance did not increase properly"
         );
@@ -195,7 +201,9 @@ contract BaseTest is Test, Constants {
         return shares;
     }
 
-    function updateNewTotalAssets(uint256 newTotalAssets) internal {
+    function updateNewTotalAssets(
+        uint256 newTotalAssets
+    ) internal {
         vm.prank(vault.valuationManager());
         vault.updateNewTotalAssets(newTotalAssets);
     }
@@ -272,25 +280,33 @@ contract BaseTest is Test, Constants {
         }
     }
 
-    function updateAndSettle(uint256 newTotalAssets) internal {
+    function updateAndSettle(
+        uint256 newTotalAssets
+    ) internal {
         updateNewTotalAssets(newTotalAssets);
         vm.warp(block.timestamp + 1 days);
         settle();
     }
 
-    function updateAndSettleRedeem(uint256 newTotalAssets) internal {
+    function updateAndSettleRedeem(
+        uint256 newTotalAssets
+    ) internal {
         updateNewTotalAssets(newTotalAssets);
         vm.warp(block.timestamp + 1 days);
         settleRedeem();
     }
 
-    function updateAndClose(uint256 newTotalAssets) internal {
+    function updateAndClose(
+        uint256 newTotalAssets
+    ) internal {
         updateNewTotalAssets(newTotalAssets);
         vm.warp(block.timestamp + 1 days);
         close();
     }
 
-    function dealAndApproveAndWhitelist(address user) public {
+    function dealAndApproveAndWhitelist(
+        address user
+    ) public {
         dealAmountAndApprove(user, 100_000 * 10 ** vault.underlyingDecimals());
         whitelist(user);
     }
@@ -300,7 +316,9 @@ contract BaseTest is Test, Constants {
         whitelist(user);
     }
 
-    function dealAndApprove(address user) public {
+    function dealAndApprove(
+        address user
+    ) public {
         dealAmountAndApprove(user, 100_000 * 10 ** vault.underlyingDecimals());
     }
 
@@ -312,40 +330,54 @@ contract BaseTest is Test, Constants {
         IERC4626(asset).approve(address(vault), UINT256_MAX);
     }
 
-    function assetBalance(address user) public view returns (uint256) {
+    function assetBalance(
+        address user
+    ) public view returns (uint256) {
         return IERC4626(vault.asset()).balanceOf(user);
     }
 
-    function whitelist(address user) public {
+    function whitelist(
+        address user
+    ) public {
         address[] memory users = new address[](1);
         users[0] = user;
         vm.prank(vault.whitelistManager());
         vault.addToWhitelist(users);
     }
 
-    function whitelist(address[] memory users) public {
+    function whitelist(
+        address[] memory users
+    ) public {
         vm.prank(vault.whitelistManager());
         vault.addToWhitelist(users);
     }
 
-    function unwhitelist(address[] memory users) public {
+    function unwhitelist(
+        address[] memory users
+    ) public {
         vm.prank(vault.whitelistManager());
         vault.revokeFromWhitelist(users);
     }
 
-    function unwhitelist(address user) public {
+    function unwhitelist(
+        address user
+    ) public {
         address[] memory users = new address[](1);
         users[0] = user;
         vm.prank(vault.whitelistManager());
         vault.revokeFromWhitelist(users);
     }
 
-    function updateRates(Rates memory newRates) public {
+    function updateRates(
+        Rates memory newRates
+    ) public {
         vm.prank(vault.owner());
         vault.updateRates(newRates);
     }
 
-    function balance(address user) public view returns (uint256) {
+    function balance(
+        address user
+    ) public view returns (uint256) {
         return vault.balanceOf(user);
     }
 }
