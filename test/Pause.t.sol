@@ -182,4 +182,10 @@ contract TestPause is BaseTest {
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vault.settleRedeem();
     }
+
+    function test_claimSharesAndRequestRedeem_whenPaused_shouldFail() public {
+        vm.prank(user1.addr);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.claimSharesAndRequestRedeem(2);
+    }
 }
