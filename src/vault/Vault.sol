@@ -175,6 +175,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         return _requestRedeem(shares, controller, owner);
     }
 
+    /// @notice Function to bundle a claim of shares and a request redeem. It can be convenient for UX.
+    /// @dev if claimable == 0, it has the same behavior as requestRedeem function.
+    /// @dev if claimable > 0, user shares follow this path: vault --> user ; user --> pendingSilo
     function claimSharesAndRequestRedeem(uint256 sharesToRedeem) public onlyOpen whenNotPaused returns (uint40 requestId) {
         uint256 claimable = claimableDepositRequest(0, msg.sender);
         if (claimable > 0) _deposit(claimable, msg.sender, msg.sender);
@@ -298,6 +301,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /////////////////////////////
 
     /// @notice Initiates the closing of the vault. Can only be called by the owner.
+    /// @dev we make sure that initiate closing will make an epoch changement if the variable newTotalAssets is "defined" 
+    /// @dev (!= type(uint256).max). This guarantee that no userShares will be locked in a pending state.
     function initiateClosing() external onlyOwner onlyOpen {
         ERC7540Storage storage $ = _getERC7540Storage();
         if ($.newTotalAssets != type(uint256).max)
@@ -368,12 +373,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         $._symbol = symbol;
     }
 
-
     // MAX FUNCTIONS OVERRIDE //
 
     /// @notice Returns the maximum redeemable shares for a controller.
     /// @param controller The controller.
     /// @return shares The maximum redeemable shares.
+    /// @dev When the vault is closed, users may claim there assets (erc7540.redeem style) or redeem there assets in a sync manner.
+    /// this is why when they have nothing to claim and the vault is closed, we return their shares balance
     function maxRedeem(address controller) public view override(IERC4626, ERC4626Upgradeable) returns (uint256 shares) {
         if (paused()) return 0;
         shares = claimableRedeemRequest(0, controller);
@@ -384,20 +390,24 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @notice Returns the amount of assets a controller will get if he redeem.
     /// @param controller The controller.
     /// @return The maximum amount of assets to get.
+    /// @dev This is the same philosophy as maxRedeem, except that we take care to convertToAssets the value before returning it
     function maxWithdraw(
         address controller
     ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         uint256 lastRedeemId = _getERC7540Storage().lastRedeemRequestId[
             controller
         ];
-        uint256 claimable = claimableRedeemRequest(0, controller);
-        if (claimable != 0)
-            return convertToAssets(claimable, lastRedeemId);
-        else if (_getVaultStorage().state != State.Open)
+        uint256 assets = claimableRedeemRequest(0, controller);
+        if (assets != 0)
+            return convertToAssets(assets, lastRedeemId);
+        else if (_getVaultStorage().state == State.Closed)
             return convertToAssets(balanceOf(controller));
         return 0;
     }
 
+    /// @notice Returns the amount of assets a controller will get if he redeem.
+    /// @param  controller address to check
+    /// @dev    If the contract is paused no deposit/claims are possible.
     function maxDeposit(address controller) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         if (paused()) return 0;
         return claimableDepositRequest(0, controller);
@@ -405,6 +415,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     /// @notice Returns the amount of sharres a controller will get if he calls Deposit.
     /// @param controller The controller.
+    /// @dev    If the contract is paused no deposit/claims are possible.
+    /// @dev    We read the claimableDepositRequest of the controller then convert it to shares using the convertToShares 
+    /// of the related epochId
     /// @return The maximum amount of shares to get.
     function maxMint(
         address controller
