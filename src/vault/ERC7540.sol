@@ -15,7 +15,8 @@ import {
     NewTotalAssetsMissing,
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
-    RequestNotCancelable
+    RequestNotCancelable,
+    WrongNewTotalAssets
 } from "./primitives/Errors.sol";
 import {
     DepositRequestCanceled,
@@ -533,7 +534,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     }
 
     /// @dev Updates the totalAssets variable with the newTotalAssets variable.
-    function _updateTotalAssets() internal whenNotPaused {
+    function _updateTotalAssets(uint256 _newTotalAssets) internal whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 newTotalAssets = $.newTotalAssets;
@@ -541,6 +542,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         if (
             newTotalAssets == type(uint256).max // it means newTotalAssets has not been updated
         ) revert NewTotalAssetsMissing();
+
+        if (_newTotalAssets != newTotalAssets)
+            revert WrongNewTotalAssets();
+
 
         $.totalAssets = newTotalAssets;
         $.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
@@ -703,10 +708,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @dev Settles deposit requests by transferring assets from the pendingSilo to the safe
     /// and minting the corresponding shares to vault.
     /// The function is not implemented here and must be implemented.
-    function settleDeposit() public virtual;
+    function settleDeposit(uint256 _newTotalAssets) public virtual;
 
     /// @dev Settles redeem requests by transferring assets from the safe to the vault
     /// and burning the corresponding shares from the pending silo.
     /// The function is not implemented here and must be implemented.
-    function settleRedeem() public virtual;
+    function settleRedeem(uint256 _newTotalAssets) public virtual;
 }

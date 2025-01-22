@@ -588,21 +588,21 @@ contract TestFeeManager is BaseTest {
         updateNewTotalAssets(0);
 
         vm.startPrank(safe.addr);
-        vault.settleDeposit();
+        vault.settleDeposit(vault.newTotalAssets());
 
         vm.expectRevert(abi.encodeWithSelector(NewTotalAssetsMissing.selector));
-        vault.settleDeposit();
+        vault.settleDeposit(1);
         vm.stopPrank();
 
         vm.prank(vault.safe());
         vm.expectRevert(abi.encodeWithSelector(NewTotalAssetsMissing.selector));
-        vault.settleRedeem();
+        vault.settleRedeem(1);
 
         vm.prank(vault.owner());
         vault.initiateClosing();
 
         vm.prank(vault.safe());
         vm.expectRevert(abi.encodeWithSelector(NewTotalAssetsMissing.selector));
-        vault.close();
+        vault.close(1);
     }
 }

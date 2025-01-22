@@ -275,10 +275,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
     /// If possible, it also settles redeem requests.
     /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
-    function settleDeposit() public override onlySafe onlyOpen {
+    function settleDeposit(uint256 _newTotalAssets) public override onlySafe onlyOpen {
         RolesStorage storage $roles = _getRolesStorage();
 
-        _updateTotalAssets();
+        _updateTotalAssets(_newTotalAssets);
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
         _settleDeposit(msg.sender);
         _settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
@@ -288,10 +288,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
     /// @dev After updating totalAssets, it takes fees, updates highWaterMark and finally settles redeem requests.
     /// @inheritdoc ERC7540
-    function settleRedeem() public override onlySafe onlyOpen {
+    function settleRedeem(uint256 _newTotalAssets) public override onlySafe onlyOpen {
         RolesStorage storage $roles = _getRolesStorage();
 
-        _updateTotalAssets();
+        _updateTotalAssets(_newTotalAssets);
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
         _settleRedeem(msg.sender);
     }
@@ -313,10 +313,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.
     /// @dev Users can still requestDeposit but it can't be settled.
-    function close() external onlySafe onlyClosing {
+    function close(uint256 _newTotalAssets) external onlySafe onlyClosing {
         
         RolesStorage storage $roles = _getRolesStorage();
-        _updateTotalAssets();
+        _updateTotalAssets(_newTotalAssets);
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
 
         _settleDeposit(msg.sender);
@@ -344,33 +344,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @notice Resumes core operations of the vault. Can only be called by the owner.
     function unpause() public onlyOwner {
         _unpause();
-    }
-
-    
-    ////////////////////////////////////////////
-    // ## ERC20 METADATA UPDATES FUNCTIONS ## //
-    ////////////////////////////////////////////
-
-    // Since OZ contracts make the function to access ERC20 storage private we have to bypass it.
-
-    bytes32 private constant ERC20StorageLocation = 0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00;
-    
-    /// @param name The new name.
-    function updateName(string memory name) onlyOwner public  {
-         ERC20Storage storage $;
-        assembly {
-            $.slot := ERC20StorageLocation
-        }
-        $._name = name;
-    }
-
-    /// @param symbol The new symbol.
-    function updateSymbol(string memory symbol) onlyOwner public  {
-         ERC20Storage storage $;
-        assembly {
-            $.slot := ERC20StorageLocation
-        }
-        $._symbol = symbol;
     }
 
     // MAX FUNCTIONS OVERRIDE //

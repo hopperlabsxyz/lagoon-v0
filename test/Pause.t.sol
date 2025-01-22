@@ -132,8 +132,9 @@ contract TestPause is BaseTest {
         vault.initiateClosing();
 
         dealAmountAndApprove(vault.safe(), vault.totalAssets());
-        vm.prank(vault.safe());
-        vault.close();
+        vm.startPrank(vault.safe());
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
 
         vm.prank(vault.owner());
         vault.pause();
@@ -164,7 +165,7 @@ contract TestPause is BaseTest {
 
         vm.prank(vault.safe());
         vm.expectRevert(Pausable.EnforcedPause.selector);
-        vault.settleDeposit();
+        vault.settleDeposit(1);
     }
 
     function test_settleRedeem_whenPaused_shouldFail() public {
@@ -180,7 +181,7 @@ contract TestPause is BaseTest {
 
         vm.prank(vault.safe());
         vm.expectRevert(Pausable.EnforcedPause.selector);
-        vault.settleRedeem();
+        vault.settleRedeem(1);
     }
 
     function test_claimSharesAndRequestRedeem_whenPaused_shouldFail() public {

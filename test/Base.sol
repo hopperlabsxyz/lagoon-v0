@@ -304,7 +304,7 @@ contract BaseTest is Test, Constants {
         uint256 pendingRedeemAmount = vault.pendingRedeem();
 
         vm.startPrank(vault.safe());
-        vault.settleDeposit();
+        vault.settleDeposit(vault.newTotalAssets());
         vm.stopPrank();
 
         uint256 depositSettleIdAfter = vault.depositSettleId();
@@ -331,7 +331,7 @@ contract BaseTest is Test, Constants {
         uint256 pendingRedeemAmount = vault.pendingRedeem();
 
         vm.startPrank(vault.safe());
-        vault.close();
+        vault.close(vault.newTotalAssets());
         vm.stopPrank();
 
         uint256 depositSettleIdAfter = vault.depositSettleId();
@@ -355,7 +355,7 @@ contract BaseTest is Test, Constants {
         uint256 pendingRedeemAmount = vault.pendingRedeem();
 
         vm.startPrank(vault.safe());
-        vault.settleRedeem();
+        vault.settleRedeem(vault.newTotalAssets());
         vm.stopPrank();
 
         uint256 redeemSettleIdAfter = vault.redeemSettleId();

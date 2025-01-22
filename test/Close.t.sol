@@ -8,6 +8,8 @@ import {ERC7540InvalidOperator} from "@src/vault/ERC7540.sol";
 import {Closed, NotClosing, NotOpen, State, Vault} from "@src/vault/Vault.sol";
 import "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
+import { WrongNewTotalAssets} from "@src/vault/primitives/Errors.sol";
+
 
 contract TestInitiateClosing is BaseTest {
     uint256 user1AssetsBeginning = 0;
@@ -67,7 +69,7 @@ contract TestInitiateClosing is BaseTest {
         // Invariant: We can't call close without initiating close
         vm.prank(safe.addr);
         vm.expectRevert(abi.encodeWithSelector(NotClosing.selector, State.Open));
-        vault.close();
+        vault.close(1);
 
         // user 3 request deposit before vault goes into closing state
         requestDeposit(user3Assets / 2, user3.addr); // 50k assets
@@ -102,8 +104,9 @@ contract TestInitiateClosing is BaseTest {
     }
 
     function test_closingVaultMarkTheVaultAsClosed() public {
-        vm.prank(safe.addr);
-        vault.close();
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
 
         assertEq(uint256(vault.state()), uint256(State.Closed));
     }
@@ -111,7 +114,9 @@ contract TestInitiateClosing is BaseTest {
     function test_newSettleDepositAreForbiddenButClaimsAreAvailable() public {
         vm.prank(vault.safe());
         vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closing));
-        vault.settleDeposit();
+        vault.settleDeposit(1);
+
+
 
         // previous settled deposit request are still claimable in State.Closing
         vm.prank(user1.addr);
@@ -119,8 +124,9 @@ contract TestInitiateClosing is BaseTest {
 
         assertEq(vault.balanceOf(user1.addr), 1 * 10 ** vault.decimalsOffset(), "user1 wrong balance");
 
-        vm.prank(safe.addr);
-        vault.close();
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
 
         // previous settled deposit request are still claimable in State.Closed
         vm.prank(user1.addr);
@@ -142,8 +148,9 @@ contract TestInitiateClosing is BaseTest {
 
         vm.stopPrank();
 
-        vm.prank(safe.addr);
-        vault.close();
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
 
         vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closed));
         vault.requestRedeem(user1Shares / 2, user1.addr, user1.addr);
@@ -161,8 +168,9 @@ contract TestInitiateClosing is BaseTest {
 
         vm.stopPrank();
 
-        vm.prank(safe.addr);
-        vault.close();
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
 
         vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closed));
         vault.claimSharesAndRequestRedeem(2);
@@ -182,8 +190,9 @@ contract TestInitiateClosing is BaseTest {
 
         console.log("safe balance: ", IERC20(vault.asset()).balanceOf(safe.addr));
 
-        vm.prank(safe.addr);
-        vault.close();
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
 
         vm.startPrank(user1.addr);
         uint256 amountFirstRedeem = vault.redeem(vault.balanceOf(user1.addr) / 2, user1.addr, user1.addr);
@@ -200,8 +209,9 @@ contract TestInitiateClosing is BaseTest {
     function test_close_onPendingDeposit() public {
         assertEq(vault.pendingDepositRequest(0, user3.addr), 50_000 * 10 ** vault.underlyingDecimals());
 
-        vm.prank(safe.addr);
-        vault.close();
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
 
         assertEq(vault.pendingDepositRequest(0, user3.addr), 0);
         assertEq(vault.claimableDepositRequest(0, user3.addr), 50_000 * 10 ** vault.underlyingDecimals());
@@ -210,8 +220,9 @@ contract TestInitiateClosing is BaseTest {
     function test_close_onPendingRedeem() public {
         assertEq(vault.pendingRedeemRequest(0, user3.addr), 25_000 * 10 ** vault.decimals());
 
-        vm.prank(safe.addr);
-        vault.close();
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
 
         assertEq(vault.pendingRedeemRequest(0, user3.addr), 0);
         assertEq(vault.claimableRedeemRequest(0, user3.addr), 25_000 * 10 ** vault.decimals());
@@ -225,7 +236,7 @@ contract TestInitiateClosing is BaseTest {
 
         vm.expectRevert();
         vm.prank(safe.addr);
-        vault.close();
+        vault.close(1);
     }
 
     function logUserInfo(VmSafe.Wallet memory user) internal view {
@@ -268,8 +279,9 @@ contract TestInitiateClosing is BaseTest {
             vault.balanceOf(user1.addr), user1ClaimableAssets * 10 ** vault.decimalsOffset(), "wrong balance of shares"
         );
 
-        vm.prank(safe.addr);
-        vault.close();
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
 
         console.log("total assets       ", vault.totalAssets());
         console.log("asset balance vault", assetBalance(address(vault)));
@@ -350,24 +362,28 @@ contract TestInitiateClosing is BaseTest {
 
         assertEq(asset.balanceOf(safe.addr), 1);
         assertEq(vault.totalAssets(), 125_000 * 10 ** vault.underlyingDecimals());
+        uint256 newTTA =vault.newTotalAssets();
         if (vault.asset() == WRAPPED_NATIVE_TOKEN) {
             vm.expectRevert(0x1425ea42);
         } else {
             vm.expectRevert(bytes("ERC20: transfer amount exceeds balance"));
         }
-        vm.prank(safe.addr);
-        vault.close();
-
+        vm.startPrank(safe.addr);
+        vault.close(newTTA);
+        vm.stopPrank();
         assertEq(asset.balanceOf(safe.addr), 1);
     }
 
     function test_CloseCantBeCalledAfterVaultIsClosed() public {
-        vm.prank(safe.addr);
-        vault.close();
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
+
 
         vm.prank(safe.addr);
         vm.expectRevert(abi.encodeWithSelector(NotClosing.selector, State.Closed));
-        vault.close();
+        vault.close(1);
+        
     }
 
     function test_redeemSharesWithClaimableRedeem() public {
@@ -377,8 +393,10 @@ contract TestInitiateClosing is BaseTest {
         // user 2 here has 50_000 underlying, 25_000 claimableRedeem and 25_000 shares
         updateNewTotalAssets(vault.totalAssets());
         vm.warp(block.timestamp + 1 days);
-        vm.prank(safe.addr);
-        vault.close();
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
+
         uint256 firstRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
         assertEq(firstRedeem, (25_000 / 2) * 10 ** vault.underlyingDecimals(), "did not received expected assets");
         uint256 secondRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
@@ -412,8 +430,10 @@ contract TestInitiateClosing is BaseTest {
         updateNewTotalAssets(vault.totalAssets() * multi);
         vm.warp(block.timestamp + 1 days);
         deal(vault.asset(), safe.addr, vault.totalAssets() * multi);
-        vm.prank(safe.addr);
-        vault.close();
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
+
         assertEq(vault.totalAssets() / 10 ** vault.underlyingDecimals(), 250_000, "wrong total assets");
 
         uint256 firstRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
@@ -490,8 +510,9 @@ contract TestInitiateClosing is BaseTest {
 
     // @dev The vault is State.Closed => sync path is used after all async claims are claimed
     function test_inClosedStateCanWithdrawAndRedeemIfOperatorOrEnoughAllowance() public {
-        vm.prank(safe.addr);
-        vault.close();
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
 
         uint256 decimalsOffset = vault.decimalsOffset();
         uint256 sharesClaimable = vault.claimableRedeemRequest(0, user2.addr);
@@ -560,12 +581,14 @@ contract TestInitiateClosing is BaseTest {
     }
 
     function test_cantUpdateNewTotalAssetsWhenClosed() public {
-        vm.prank(safe.addr);
-        vault.close();
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
 
         vm.startPrank(vault.valuationManager());
         uint256 totalAssets = vault.totalAssets();
         vm.expectRevert(abi.encodeWithSelector(Closed.selector));
         vault.updateNewTotalAssets(totalAssets);
     }
+
 }

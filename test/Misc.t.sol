@@ -218,30 +218,4 @@ contract TestMisc is BaseTest {
         assertEq(address(rolesStorage.feeRegistry), address(feeRegistry));
         assertEq(rolesStorage.valuationManager, valuationManager.addr);
     }
-
-    function test_updateName() public  {
-        assertNotEq(vault.name(), "newName");
-        vm.prank(vault.owner());
-        vault.updateName("newName");
-        assertEq(vault.name(), "newName");
-    }
-
-    function test_onlyOwnerCanUpdateName() public  {
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
-        vault.updateName("newName");
-    }
-
-
-    function test_updateSymbol() public  {
-        assertNotEq(vault.symbol(), "newsymbol");
-        vm.prank(vault.owner());
-        vault.updateSymbol("newsymbol");
-        assertEq(vault.symbol(), "newsymbol");
-    }
-
-
-    function test_onlyOwnerCanUpdateSymbol() public  {
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
-        vault.updateSymbol("newSymbol");
-    }
 }

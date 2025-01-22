@@ -65,9 +65,11 @@ contract TestInitiateClosing is BaseTest {
         assertEq(uint256(vault.state()), uint256(State.Open));
 
         // Invariant: We can't call close without initiating close
-        vm.prank(safe.addr);
+        uint256 newTotalAssets = vault.newTotalAssets();
+        vm.startPrank(safe.addr);
         vm.expectRevert(abi.encodeWithSelector(NotClosing.selector, State.Open));
-        vault.close();
+        vault.close(newTotalAssets);
+        vm.stopPrank();
 
         // user 3 request deposit before vault goes into closing state
         requestDeposit(user3Assets / 2, user3.addr); // 50k assets
@@ -83,9 +85,9 @@ contract TestInitiateClosing is BaseTest {
         vm.prank(admin.addr);
         vault.initiateClosing();
 
-        vm.prank(safe.addr);
-        vault.close();
-
+        vm.startPrank(safe.addr);
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
 
         assertNotEq(vault.claimableRedeemRequest(0, user2.addr), 0);
         assertEq(vault.claimableRedeemRequest(0, user2.addr), userShares);
@@ -108,9 +110,9 @@ contract TestInitiateClosing is BaseTest {
 
         uint256 depositIdAfter = vault.depositEpochId();
         assertEq(depositIdBefore, depositIdAfter); // we are sure no epoch increased, so it means not _updateTotalAssetsCalled
-
-        vm.prank(safe.addr);
+        uint256 newTTA = vault.newTotalAssets();
+        vm.startPrank(safe.addr);
         vm.expectRevert(NewTotalAssetsMissing.selector); // cant close without nav
-        vault.close();
+        vault.close(newTTA);
     }
 }
