@@ -82,23 +82,82 @@ contract BaseTest is Test, Constants {
         address operator,
         address receiver
     ) internal returns (uint256) {
+        uint256 sharesBefore = vault.balanceOf(receiver);
+
+        uint256 lastRequestId = vault.lastDepositRequestId(controller);
+        uint256 maxDeposit = vault.convertToShares(vault.maxDeposit(controller), lastRequestId);
+        uint256 maxMint = vault.maxMint(controller);
+
         vm.prank(operator);
-        return vault.deposit(amount, receiver, controller);
+        uint256 shares = vault.deposit(amount, receiver, controller);
+
+        uint256 sharesAfter = vault.balanceOf(receiver);
+
+        assertLe(sharesAfter - sharesBefore, maxDeposit, "maxDeposit invariant does not hold [1]");
+        assertLe(sharesAfter - sharesBefore, maxMint, "maxMint invariant does not hold [1]");
+        assertEq(sharesAfter - sharesBefore, shares);
+
+        return shares;
     }
 
     function deposit(uint256 amount, address user) internal returns (uint256) {
+        address receiver = user;
+        address controller = user;
+
+        uint256 sharesBefore = vault.balanceOf(receiver);
+
+        uint256 lastRequestId = vault.lastDepositRequestId(user);
+        uint256 maxDeposit = vault.convertToShares(vault.maxDeposit(controller), lastRequestId);
+        uint256 maxMint = vault.maxMint(controller);
+
         vm.prank(user);
-        return vault.deposit(amount, user);
+        uint256 shares = vault.deposit(amount, user);
+
+        uint256 sharesAfter = vault.balanceOf(receiver);
+
+        assertLe(sharesAfter - sharesBefore, maxDeposit, "maxDeposit invariant does not hold [1]");
+        assertLe(sharesAfter - sharesBefore, maxMint, "maxMint invariant does not hold [1]");
+        assertEq(sharesAfter - sharesBefore, shares);
+
+        return shares;
     }
 
     function mint(uint256 amount, address controller, address operator, address receiver) internal returns (uint256) {
+        uint256 sharesBefore = vault.balanceOf(receiver);
+
+        uint256 lastRequestId = vault.lastDepositRequestId(controller);
+        uint256 maxDeposit = vault.convertToShares(vault.maxDeposit(controller), lastRequestId);
+        uint256 maxMint = vault.maxMint(controller);
+
         vm.prank(operator);
-        return vault.mint(amount, receiver, controller);
+        uint256 assets = vault.mint(amount, receiver, controller);
+
+        uint256 sharesAfter = vault.balanceOf(receiver);
+
+        assertLe(sharesAfter - sharesBefore, maxDeposit, "maxDeposit invariant does not hold [1]");
+        assertLe(sharesAfter - sharesBefore, maxMint, "maxMint invariant does not hold [1]");
+
+        return assets;
     }
 
     function mint(uint256 amount, address user) internal returns (uint256) {
+        address receiver = msg.sender;
+        address controller = user;
+        uint256 sharesBefore = vault.balanceOf(receiver);
+
+        uint256 lastRequestId = vault.lastDepositRequestId(user);
+        uint256 maxDeposit = vault.convertToShares(vault.maxDeposit(controller), lastRequestId);
+        uint256 maxMint = vault.maxMint(controller);
+
         vm.prank(user);
-        return vault.mint(amount, user);
+        uint256 assets = vault.mint(amount, user);
+
+        uint256 sharesAfter = vault.balanceOf(receiver);
+
+        assertLe(sharesAfter - sharesBefore, maxDeposit, "maxDeposit invariant does not hold [1]");
+        assertLe(sharesAfter - sharesBefore, maxMint, "maxMint invariant does not hold [1]");
+
+        return assets;
     }
 
     function requestRedeem(uint256 amount, address controller, address owner) internal returns (uint256) {
@@ -135,16 +194,33 @@ contract BaseTest is Test, Constants {
         address operator,
         address receiver
     ) internal returns (uint256) {
+        uint256 lastRequestId = vault.lastRedeemRequestId(controller);
+        // console.log("---------");
+        // console.log("total assets         ", vault.totalAssets());
+        // console.log("asset balance vault  ", assetBalance(address(vault)));
+        // console.log("asset balance safe   ", assetBalance(safe.addr));
+        // console.log("current epoch id     ", vault.redeemSettleId());
+        // console.log("redeem id            ", lastRequestId);
+        // console.log("claimable redeems    ", vault.claimableRedeemRequest(lastRequestId, controller));
+        // console.log("max redeem           ", vault.maxRedeem(controller));
+        // console.log("max redeem converted ", vault.convertToAssets(vault.maxRedeem(controller), lastRequestId));
+        // console.log("max withdraw         ", vault.maxWithdraw(controller));
+        // console.log("user bal             ", vault.balanceOf(controller));
+        // console.log("---------");
         uint256 assetsBeforeReceiver = assetBalance(receiver);
         uint256 assetsBeforeController = assetBalance(controller);
         uint256 assetsBeforeOperator = assetBalance(operator);
+
         uint256 maxWithdraw = vault.maxWithdraw(controller);
+
+        uint256 maxRedeem = vault.convertToAssets(vault.maxRedeem(controller), lastRequestId);
+
         vm.prank(operator);
         uint256 assets = vault.redeem(amount, receiver, controller);
         uint256 assetsAfterReceiver = assetBalance(receiver);
 
         assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxWithdraw, "wrong maxWithdraw");
-        assertLe(assets, maxWithdraw, "maxWithdraw != assets redeemed");
+        // assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxRedeem, "wrong maxRedeem");
 
         assertEq(
             assetsBeforeReceiver + assets, assetBalance(receiver), "Receiver assets balance did not increase properly"
@@ -179,8 +255,19 @@ contract BaseTest is Test, Constants {
         uint256 assetsBeforeReceiver = assetBalance(receiver);
         uint256 assetsBeforeController = assetBalance(controller);
         uint256 assetsBeforeOperator = assetBalance(operator);
+
+        uint256 lastRequestId = vault.lastRedeemRequestId(controller);
+        uint256 maxWithdraw = vault.maxWithdraw(controller);
+        uint256 maxRedeem = vault.convertToAssets(vault.maxRedeem(controller), lastRequestId);
+
         vm.prank(operator);
         uint256 shares = vault.withdraw(amount, receiver, controller);
+
+        uint256 assetsAfterReceiver = assetBalance(receiver);
+
+        assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxWithdraw, "wrong maxWithdraw");
+        assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxRedeem, "wrong maxRedeem");
+
         assertEq(
             assetsBeforeReceiver + amount, assetBalance(receiver), "Receiver assets balance did not increase properly"
         );
