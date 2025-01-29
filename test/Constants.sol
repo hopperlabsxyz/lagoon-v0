@@ -11,7 +11,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
-import {Vault} from "@src/vault/Vault.sol";
+import {Vault} from "@src/vault0.1/Vault.sol";
 import {Test} from "forge-std/Test.sol";
 
 import {VmSafe} from "forge-std/Vm.sol";

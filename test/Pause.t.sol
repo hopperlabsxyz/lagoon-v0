@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {Vault} from "@src/vault/Vault.sol";
+import {Vault} from "@src/vault0.1/Vault.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";

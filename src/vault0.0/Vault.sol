@@ -17,7 +17,7 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 
 using SafeERC20 for IERC20;
 
-contract Vault is ERC7540, Whitelistable, FeeManager {
+contract VaultLegacy is ERC7540, Whitelistable, FeeManager {
     /// @custom:storage-definition erc7201:hopper.storage.vault
     /// @param underlying The address of the underlying asset.
     /// @param name The name of the vault and by extension the ERC20 token.
@@ -73,13 +73,17 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
-    constructor(bool disable) {
+    constructor(
+        bool disable
+    ) {
         if (disable) _disableInitializers();
     }
 
     /// @notice Initializes the vault.
     /// @param init The initialization parameters of the vault.
-    function initialize(InitStruct memory init) public virtual initializer {
+    function initialize(
+        InitStruct memory init
+    ) public virtual initializer {
         __ERC4626_init(init.underlying);
         __ERC20_init(init.name, init.symbol);
         __ERC20Pausable_init();
@@ -250,7 +254,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @notice Function to propose a new valuation for the vault.
     /// @notice It can only be called by the ValueManager.
     /// @param _newTotalAssets The new total assets of the vault.
-    function updateNewTotalAssets(uint256 _newTotalAssets) public onlyValuationManager {
+    function updateNewTotalAssets(
+        uint256 _newTotalAssets
+    ) public onlyValuationManager {
         if (_getVaultStorage().state == State.Closed) revert Closed();
         _updateNewTotalAssets(_newTotalAssets);
     }

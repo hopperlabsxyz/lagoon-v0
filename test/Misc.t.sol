@@ -9,9 +9,9 @@ import {
     ERC7540PreviewRedeemDisabled,
     ERC7540PreviewWithdrawDisabled,
     IERC165
-} from "@src/vault/ERC7540.sol";
-import {Roles} from "@src/vault/Roles.sol";
-import {Vault} from "@src/vault/Vault.sol";
+} from "@src/vault0.1/ERC7540.sol";
+import {Roles} from "@src/vault0.1/Roles.sol";
+import {Vault} from "@src/vault0.1/Vault.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";

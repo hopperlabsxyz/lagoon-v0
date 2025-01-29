@@ -4,12 +4,12 @@ pragma solidity 0.8.26;
 import {BaseTest} from "./Base.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ERC7540InvalidOperator} from "@src/vault/ERC7540.sol";
-import {Closed, NotClosing, NotOpen, State, Vault} from "@src/vault/Vault.sol";
+import {ERC7540InvalidOperator} from "@src/vault0.1/ERC7540.sol";
+import {Closed, NotClosing, NotOpen, State, Vault} from "@src/vault0.1/Vault.sol";
+
+import {WrongNewTotalAssets} from "@src/vault0.1/primitives/Errors.sol";
 import "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
-import { WrongNewTotalAssets} from "@src/vault/primitives/Errors.sol";
-
 
 contract TestInitiateClosing is BaseTest {
     uint256 user1AssetsBeginning = 0;
@@ -115,8 +115,6 @@ contract TestInitiateClosing is BaseTest {
         vm.prank(vault.safe());
         vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closing));
         vault.settleDeposit(1);
-
-
 
         // previous settled deposit request are still claimable in State.Closing
         vm.prank(user1.addr);
@@ -239,7 +237,9 @@ contract TestInitiateClosing is BaseTest {
         vault.close(1);
     }
 
-    function logUserInfo(VmSafe.Wallet memory user) internal view {
+    function logUserInfo(
+        VmSafe.Wallet memory user
+    ) internal view {
         uint256 userPendingAssets = vault.pendingDepositRequest(0, user.addr);
         uint256 userPendingShares = vault.pendingRedeemRequest(0, user.addr);
         uint256 userClaimableAssets = vault.claimableDepositRequest(0, user.addr);
@@ -362,7 +362,7 @@ contract TestInitiateClosing is BaseTest {
 
         assertEq(asset.balanceOf(safe.addr), 1);
         assertEq(vault.totalAssets(), 125_000 * 10 ** vault.underlyingDecimals());
-        uint256 newTTA =vault.newTotalAssets();
+        uint256 newTTA = vault.newTotalAssets();
         if (vault.asset() == WRAPPED_NATIVE_TOKEN) {
             vm.expectRevert(0x1425ea42);
         } else {
@@ -379,11 +379,9 @@ contract TestInitiateClosing is BaseTest {
         vault.close(vault.newTotalAssets());
         vm.stopPrank();
 
-
         vm.prank(safe.addr);
         vm.expectRevert(abi.encodeWithSelector(NotClosing.selector, State.Closed));
         vault.close(1);
-        
     }
 
     function test_redeemSharesWithClaimableRedeem() public {
@@ -590,5 +588,4 @@ contract TestInitiateClosing is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(Closed.selector));
         vault.updateNewTotalAssets(totalAssets);
     }
-
 }

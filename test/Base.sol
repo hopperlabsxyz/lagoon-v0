@@ -4,8 +4,8 @@ pragma solidity 0.8.26;
 import {Constants} from "./Constants.sol";
 
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Rates} from "@src/vault/FeeManager.sol";
-import {Vault} from "@src/vault/Vault.sol";
+import {Rates} from "@src/vault0.1/FeeManager.sol";
+import {Vault} from "@src/vault0.1/Vault.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
 import "forge-std/Test.sol";

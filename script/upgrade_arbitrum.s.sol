@@ -6,7 +6,7 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
-import {Vault} from "@src/vault/Vault.sol";
+import {Vault} from "@src/vault0.1/Vault.sol";
 import {Script, console} from "forge-std/Script.sol";
 
 import {DefenderOptions} from "openzeppelin-foundry-upgrades/Options.sol";
