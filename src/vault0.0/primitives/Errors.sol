@@ -49,9 +49,6 @@ error CantDepositNativeToken();
 /// @notice Indicates that a new total assets value was not provided by the valuation manager.
 error NewTotalAssetsMissing();
 
-/// @notice Indicates that the new total assets value is not the one expected.
-error WrongNewTotalAssets();
-
 // ********************* FEE MANAGER ********************* //
 
 /// @notice Indicates that the provided rate exceeds the maximum allowed rate.
