@@ -20,6 +20,7 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 
 using SafeERC20 for IERC20;
 
+/// @custom:oz-upgrades-from VaultLegacy
 contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @custom:storage-definition erc7201:hopper.storage.vault
     /// @param underlying The address of the underlying asset.
@@ -86,31 +87,33 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @param init The initialization parameters of the vault.
     function initialize(
         InitStruct memory init
-    ) public virtual initializer {
-        __ERC4626_init(init.underlying);
-        __ERC20_init(init.name, init.symbol);
-        __ERC20Pausable_init();
-        __FeeManager_init(
-            init.feeRegistry,
-            init.managementRate,
-            init.performanceRate,
-            IERC20Metadata(address(init.underlying)).decimals(),
-            init.rateUpdateCooldown
-        );
-        __ERC7540_init(init.underlying, init.wrappedNativeToken);
-        __Whitelistable_init(init.enableWhitelist, FeeRegistry(init.feeRegistry).protocolFeeReceiver());
-        __Roles_init(
-            Roles.RolesStorage({
-                whitelistManager: init.whitelistManager,
-                feeReceiver: init.feeReceiver,
-                safe: init.safe,
-                feeRegistry: FeeRegistry(init.feeRegistry),
-                valuationManager: init.valuationManager
-            })
-        );
-        __Ownable_init(init.admin); // initial vault owner
+    ) public virtual 
+    /* initializer */
+    {
+        // __ERC4626_init(init.underlying);
+        // __ERC20_init(init.name, init.symbol);
+        // __ERC20Pausable_init();
+        // __FeeManager_init(
+        //     init.feeRegistry,
+        //     init.managementRate,
+        //     init.performanceRate,
+        //     IERC20Metadata(address(init.underlying)).decimals(),
+        //     init.rateUpdateCooldown
+        // );
+        // __ERC7540_init(init.underlying, init.wrappedNativeToken);
+        // __Whitelistable_init(init.enableWhitelist, FeeRegistry(init.feeRegistry).protocolFeeReceiver());
+        // __Roles_init(
+        //     Roles.RolesStorage({
+        //         whitelistManager: init.whitelistManager,
+        //         feeReceiver: init.feeReceiver,
+        //         safe: init.safe,
+        //         feeRegistry: FeeRegistry(init.feeRegistry),
+        //         valuationManager: init.valuationManager
+        //     })
+        // );
+        // __Ownable_init(init.admin); // initial vault owner
 
-        emit StateUpdated(State.Open);
+        // emit StateUpdated(State.Open);
     }
 
     /////////////////////
