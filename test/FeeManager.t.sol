@@ -5,10 +5,10 @@ import {BaseTest} from "./Base.sol";
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {AboveMaxRate, FeeManager, Rates} from "@src/vault0.1/FeeManager.sol";
-import {Vault} from "@src/vault0.1/Vault.sol";
-import {NewTotalAssetsMissing} from "@src/vault0.1/primitives/Errors.sol";
-import {Rates} from "@src/vault0.1/primitives/Struct.sol";
+import {AboveMaxRate, FeeManager, Rates} from "@src/vault/FeeManager.sol";
+import {Vault} from "@src/vault/Vault.sol";
+import {NewTotalAssetsMissing} from "@src/vault/primitives/Errors.sol";
+import {Rates} from "@src/vault/primitives/Struct.sol";
 import "forge-std/Test.sol";
 
 contract TestFeeManager is BaseTest {

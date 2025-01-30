@@ -3,8 +3,8 @@ pragma solidity 0.8.26;
 
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ERC7540InvalidOperator, RequestIdNotClaimable} from "@src/vault0.1/ERC7540.sol";
-import {Vault} from "@src/vault0.1/Vault.sol";
+import {ERC7540InvalidOperator, RequestIdNotClaimable} from "@src/vault/ERC7540.sol";
+import {Vault} from "@src/vault/Vault.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";

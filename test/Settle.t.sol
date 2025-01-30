@@ -3,13 +3,13 @@ pragma solidity 0.8.26;
 
 import {BaseTest} from "./Base.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SettleDeposit, SettleRedeem} from "@src/vault0.1/primitives/Events.sol";
+import {SettleDeposit, SettleRedeem} from "@src/vault/primitives/Events.sol";
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {NewTotalAssetsMissing} from "@src/vault0.1/ERC7540.sol";
-import {Vault} from "@src/vault0.1/Vault.sol";
-import {OnlySafe, OnlyValuationManager, WrongNewTotalAssets} from "@src/vault0.1/primitives/Errors.sol";
+import {NewTotalAssetsMissing} from "@src/vault/ERC7540.sol";
+import {Vault} from "@src/vault/Vault.sol";
+import {OnlySafe, OnlyValuationManager, WrongNewTotalAssets} from "@src/vault/primitives/Errors.sol";
 import "forge-std/Test.sol";
 
 using Math for uint256;

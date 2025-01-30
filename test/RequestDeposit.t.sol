@@ -5,8 +5,8 @@ import {BaseTest} from "./Base.sol";
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {CantDepositNativeToken, ERC7540InvalidOperator, OnlyOneRequestAllowed} from "@src/vault0.1/ERC7540.sol";
-import {Vault} from "@src/vault0.1/Vault.sol";
+import {CantDepositNativeToken, ERC7540InvalidOperator, OnlyOneRequestAllowed} from "@src/vault/ERC7540.sol";
+import {Vault} from "@src/vault/Vault.sol";
 import "forge-std/Test.sol";
 
 contract TestRequestDeposit is BaseTest {
