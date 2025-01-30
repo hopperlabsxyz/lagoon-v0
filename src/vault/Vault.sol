@@ -370,12 +370,14 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// this is why when they have nothing to claim and the vault is closed, we return their shares balance
     function maxRedeem(
         address controller
-    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256 shares) {
+    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         if (paused()) return 0;
-        shares = claimableRedeemRequest(0, controller);
+        uint256 shares = claimableRedeemRequest(0, controller);
         if (shares == 0 && _getVaultStorage().state == State.Closed) {
-            shares = balanceOf(controller);
+            // controller has no redeem claimable, we will use the synchronous flow
+            return balanceOf(controller);
         }
+        return shares;
     }
 
     /// @notice Returns the amount of assets a controller will get if he redeem.
@@ -386,14 +388,15 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     function maxWithdraw(
         address controller
     ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
-        uint256 lastRedeemId = _getERC7540Storage().lastRedeemRequestId[controller];
+        if (paused()) return 0;
+
         uint256 shares = claimableRedeemRequest(0, controller);
-        if (shares != 0) {
-            return convertToAssets(shares, lastRedeemId);
-        } else if (_getVaultStorage().state == State.Closed) {
+        if (shares == 0 && _getVaultStorage().state == State.Closed) {
+            // controller has no redeem claimable, we will use the synchronous flow
             return convertToAssets(balanceOf(controller));
         }
-        return 0;
+        uint256 lastRedeemId = _getERC7540Storage().lastRedeemRequestId[controller];
+        return convertToAssets(shares, lastRedeemId);
     }
 
     /// @notice Returns the amount of assets a controller will get if he redeem.
