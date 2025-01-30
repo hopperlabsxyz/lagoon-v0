@@ -8,7 +8,6 @@ import {Whitelistable} from "./Whitelistable.sol";
 import {State} from "./primitives/Enums.sol";
 import {Closed, ERC7540InvalidOperator, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
 
-import {OnlyOneRequestAllowed, RequestIdNotClaimable} from "./primitives/Errors.sol";
 import {Referral, StateUpdated} from "./primitives/Events.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
