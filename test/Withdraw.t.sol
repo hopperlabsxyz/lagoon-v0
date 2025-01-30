@@ -16,6 +16,7 @@ contract TestWithdraw is BaseTest {
 
     function test_withdraw() public {
         uint256 userBalance = assetBalance(user1.addr);
+        assertEq(vault.maxWithdraw(user1.addr), 0);
         requestDeposit(userBalance, user1.addr);
         console.log("here");
         updateAndSettle(0);
@@ -26,8 +27,10 @@ contract TestWithdraw is BaseTest {
         assertEq(sharesObtained, userBalance * 10 ** vault.decimalsOffset(), "wrong amount of shares obtained 2");
         requestRedeem(sharesObtained, user1.addr);
 
+        assertApproxEqAbs(vault.maxWithdraw(user1.addr), 0, 100, "wrong maxWithdraw");
         assertEq(vault.claimableRedeemRequest(vault.redeemEpochId(), user1.addr), 0, "wrong claimable redeem amount");
         updateAndSettle(userBalance + 100);
+        assertApproxEqAbs(vault.maxWithdraw(user1.addr), userBalance, 100, "wrong maxWithdraw");
         assertEq(vault.maxRedeem(user1.addr), sharesObtained, "user1 should be able to redeem all his shares");
         uint256 assetsToWithdraw = vault.convertToAssets(sharesObtained, vault.redeemEpochId() - 2);
 

@@ -49,7 +49,7 @@ contract TestPause is BaseTest {
     }
 
     function test_deposit_whenPaused_shouldFail() public {
-        vm.assertNotEq(vault.maxDeposit(user1.addr), 0);
+        vm.assertNotEq(vault.claimableDepositRequest(0, user1.addr), 0);
 
         vm.startPrank(user1.addr);
 
@@ -61,7 +61,7 @@ contract TestPause is BaseTest {
     }
 
     function test_mint_whenPaused_shouldFail() public {
-        vm.assertNotEq(vault.maxMint(user1.addr), 0);
+        vm.assertNotEq(vault.claimableDepositRequest(0, user1.addr), 0);
         vm.startPrank(user1.addr);
 
         vm.expectRevert(Pausable.EnforcedPause.selector);
@@ -132,8 +132,9 @@ contract TestPause is BaseTest {
         vault.initiateClosing();
 
         dealAmountAndApprove(vault.safe(), vault.totalAssets());
-        vm.prank(vault.safe());
-        vault.close();
+        vm.startPrank(vault.safe());
+        vault.close(vault.newTotalAssets());
+        vm.stopPrank();
 
         vm.prank(vault.owner());
         vault.pause();
@@ -164,7 +165,7 @@ contract TestPause is BaseTest {
 
         vm.prank(vault.safe());
         vm.expectRevert(Pausable.EnforcedPause.selector);
-        vault.settleDeposit();
+        vault.settleDeposit(1);
     }
 
     function test_settleRedeem_whenPaused_shouldFail() public {
@@ -180,6 +181,12 @@ contract TestPause is BaseTest {
 
         vm.prank(vault.safe());
         vm.expectRevert(Pausable.EnforcedPause.selector);
-        vault.settleRedeem();
+        vault.settleRedeem(1);
+    }
+
+    function test_claimSharesAndRequestRedeem_whenPaused_shouldFail() public {
+        vm.prank(user1.addr);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.claimSharesAndRequestRedeem(2);
     }
 }

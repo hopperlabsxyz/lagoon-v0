@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
-import {Vault} from "../src/vault/Vault.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Vault} from "@src/vault/Vault.sol";
 
 import {DeployBeacon} from "./deploy_beacon.s.sol";
 import {DeployProtocol} from "./deploy_protocol.s.sol";

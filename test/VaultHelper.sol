@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import "../src/vault/ERC7540.sol";
-import "../src/vault/Vault.sol";
+import "@src/vault/ERC7540.sol";
+import "@src/vault/Vault.sol";
 import "forge-std/Test.sol";
 
 contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
-    constructor(bool disable) Vault(disable) {}
+    constructor(
+        bool disable
+    ) Vault(disable) {}
 
-    function totalSupply(uint256 epochId) public view returns (uint256) {
+    function totalSupply(
+        uint256 epochId
+    ) public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
         return $.settles[$.epochs[uint40(epochId)].settleId].totalSupply;
     }
@@ -24,7 +28,9 @@ contract VaultHelper is Vault {
     //     return $.epochs[$.epochId - 1].totalSupply;
     // }
 
-    function totalAssets(uint256 epochId) public view returns (uint256) {
+    function totalAssets(
+        uint256 epochId
+    ) public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
         return $.settles[$.epochs[uint40(epochId)].settleId].totalAssets;
     }
@@ -56,7 +62,9 @@ contract VaultHelper is Vault {
         return _getERC7540Storage().lastDepositEpochIdSettled;
     }
 
-    function lastDepositRequestId_debug(address controller) public view returns (uint256) {
+    function lastDepositRequestId_debug(
+        address controller
+    ) public view returns (uint256) {
         return _getERC7540Storage().lastDepositRequestId[controller];
     }
 
@@ -112,5 +120,19 @@ contract VaultHelper is Vault {
     function depositSettleId() public view returns (uint256) {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
         return $erc7540.depositSettleId;
+    }
+
+    function epochSettleId(
+        uint40 epochId
+    ) public view returns (uint40) {
+        return _getERC7540Storage().epochs[epochId].settleId;
+    }
+
+    function depositEpochId() public view returns (uint40) {
+        return _getERC7540Storage().depositEpochId;
+    }
+
+    function redeemEpochId() public view returns (uint40) {
+        return _getERC7540Storage().redeemEpochId;
     }
 }

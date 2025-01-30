@@ -15,8 +15,7 @@ import {
     NewTotalAssetsMissing,
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
-    RequestNotCancelable,
-    WrongNewTotalAssets
+    RequestNotCancelable
 } from "./primitives/Errors.sol";
 import {
     DepositRequestCanceled,
@@ -534,7 +533,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     }
 
     /// @dev Updates the totalAssets variable with the newTotalAssets variable.
-    function _updateTotalAssets(uint256 _newTotalAssets) internal whenNotPaused {
+    function _updateTotalAssets() internal whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 newTotalAssets = $.newTotalAssets;
@@ -542,10 +541,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         if (
             newTotalAssets == type(uint256).max // it means newTotalAssets has not been updated
         ) revert NewTotalAssetsMissing();
-
-        if (_newTotalAssets != newTotalAssets)
-            revert WrongNewTotalAssets();
-
 
         $.totalAssets = newTotalAssets;
         $.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
@@ -641,6 +636,13 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
     }
 
+    /// @notice Returns the maximum redeemable shares for a controller.
+    /// @param controller The controller.
+    /// @return The maximum redeemable shares.
+    function maxRedeem(address controller) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+        return claimableRedeemRequest(0, controller);
+    }
+
     /// @notice Returns the amount of assets that are pending to be deposited for a controller. For a specific request
     /// ID.
     /// @param requestId The request ID.
@@ -668,8 +670,16 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
     }
 
+    function maxDeposit(address controller) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+        return claimableDepositRequest(0, controller);
+    }
+
     function pendingSilo() public view returns (address) {
         return address(_getERC7540Storage().pendingSilo);
+    }
+
+    function epochSettleId(uint40 epochId) public view returns (uint40) {
+        return _getERC7540Storage().epochs[epochId].settleId;
     }
 
     function lastRedeemRequestId(address controller) public view returns (uint40) {
@@ -678,6 +688,14 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     function lastDepositRequestId(address controller) public view returns (uint40) {
         return _getERC7540Storage().lastDepositRequestId[controller];
+    }
+
+    function depositEpochId() public view returns (uint40) {
+        return _getERC7540Storage().depositEpochId;
+    }
+
+    function redeemEpochId() public view returns (uint40) {
+        return _getERC7540Storage().redeemEpochId;
     }
 
     ///////////////////
@@ -708,10 +726,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @dev Settles deposit requests by transferring assets from the pendingSilo to the safe
     /// and minting the corresponding shares to vault.
     /// The function is not implemented here and must be implemented.
-    function settleDeposit(uint256 _newTotalAssets) public virtual;
+    function settleDeposit() public virtual;
 
     /// @dev Settles redeem requests by transferring assets from the safe to the vault
     /// and burning the corresponding shares from the pending silo.
     /// The function is not implemented here and must be implemented.
-    function settleRedeem(uint256 _newTotalAssets) public virtual;
+    function settleRedeem() public virtual;
 }
