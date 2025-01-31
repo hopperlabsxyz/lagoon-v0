@@ -4,6 +4,8 @@ pragma solidity 0.8.26;
 import {Constants} from "./Constants.sol";
 
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Rates} from "@src/vault/FeeManager.sol";
 import {Vault} from "@src/vault/Vault.sol";
 import {VmSafe} from "forge-std/Vm.sol";
@@ -11,6 +13,8 @@ import {VmSafe} from "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 
 contract BaseTest is Test, Constants {
+    using SafeERC20 for IERC20;
+
     function requestDeposit(uint256 amount, address controller, address owner) internal returns (uint256) {
         vm.prank(owner);
         return vault.requestDeposit(amount, controller, owner);
@@ -414,7 +418,7 @@ contract BaseTest is Test, Constants {
         deal(user, type(uint256).max);
         deal(vault.asset(), user, amount);
         vm.prank(user);
-        IERC4626(asset).approve(address(vault), UINT256_MAX);
+        IERC20(asset).forceApprove(address(vault), UINT256_MAX);
     }
 
     function assetBalance(

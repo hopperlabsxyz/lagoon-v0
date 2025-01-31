@@ -2,7 +2,9 @@
 pragma solidity 0.8.26;
 
 import {BaseTest} from "./Base.sol";
+
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC7540InvalidOperator} from "@src/vault/ERC7540.sol";
 import {Closed, NotClosing, NotOpen, State, Vault} from "@src/vault/Vault.sol";
@@ -12,6 +14,8 @@ import "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
 contract TestInitiateClosing is BaseTest {
+    using SafeERC20 for IERC20;
+
     uint256 user1AssetsBeginning = 0;
     uint256 user2AssetsBeginning = 0;
     uint256 user3AssetsBeginning = 0;
@@ -358,13 +362,15 @@ contract TestInitiateClosing is BaseTest {
         IERC20 asset = IERC20(vault.asset());
         uint256 safeBalance = asset.balanceOf(safe.addr);
         vm.prank(safe.addr);
-        asset.transfer(address(0x1), safeBalance - 1);
+        asset.safeTransfer(address(0x1), safeBalance - 1);
 
         assertEq(asset.balanceOf(safe.addr), 1);
         assertEq(vault.totalAssets(), 125_000 * 10 ** vault.underlyingDecimals());
         uint256 newTTA = vault.newTotalAssets();
         if (vault.asset() == WRAPPED_NATIVE_TOKEN) {
             vm.expectRevert(0x1425ea42);
+        } else if (keccak256(abi.encode(IERC20Metadata(vault.asset()).symbol())) == keccak256(abi.encode("USDT"))) {
+            vm.expectRevert();
         } else {
             vm.expectRevert(bytes("ERC20: transfer amount exceeds balance"));
         }
