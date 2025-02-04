@@ -97,7 +97,7 @@ contract TestMisc is BaseTest {
 
     function test_contractSize() public {
         uint256 size;
-        address vaultAddr = address(new Vault(false));
+        address vaultAddr = address(new Vault(true));
         assembly {
             size := extcodesize(vaultAddr)
         }
