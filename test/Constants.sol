@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {VaultHelper} from "./VaultHelper.sol";
+import {VaultLegacyHelper} from "./VaultLegacyHelper.sol";
 
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 
@@ -130,11 +131,21 @@ abstract contract Constants is Test {
             rateUpdateCooldown: rateUpdateCooldown,
             enableWhitelist: enableWhitelist
         });
+        // function upgradeBeacon(address beacon, string memory contractName) internal {
+        //         Options memory opts;
+        //         Core.upgradeBeacon(beacon, contractName, opts);
+        //     }
+
         if (proxy) {
             Options memory opts;
             opts.constructorData = abi.encode(true);
-            beacon = _beaconDeploy("VaultHelper.sol", owner.addr, opts);
+            beacon = _beaconDeploy("VaultLegacyHelper.sol", owner.addr, opts);
             vault = _proxyDeploy(beacon, v);
+            opts.constructorData = abi.encode(false);
+            vm.startPrank(owner.addr);
+            Upgrades.upgradeBeacon(address(beacon), "VaultHelper.sol", opts);
+            vm.stopPrank();
+            VaultLegacyHelper(address(vault));
         } else {
             vm.startPrank(owner.addr);
 

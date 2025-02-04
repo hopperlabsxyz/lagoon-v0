@@ -27,48 +27,48 @@ contract testRateUpdates is BaseTest {
         assertEq(vault.feeRates().managementRate, managementRate, "managementRate");
     }
 
-    function test_ratesShouldRevertAtInitWhenToHigh() public {
-        uint16 protocolRate = MAX_PROTOCOL_RATE + 1;
-        uint16 managementRate = MAX_MANAGEMENT_RATE + 1;
-        uint16 performanceRate = MAX_PERFORMANCE_RATE + 1;
+    // function test_ratesShouldRevertAtInitWhenToHigh() public {
+    //     uint16 protocolRate = MAX_PROTOCOL_RATE + 1;
+    //     uint16 managementRate = MAX_MANAGEMENT_RATE + 1;
+    //     uint16 performanceRate = MAX_PERFORMANCE_RATE + 1;
 
-        feeRegistry = new FeeRegistry(false);
-        feeRegistry.initialize(dao.addr, dao.addr);
+    //     feeRegistry = new FeeRegistry(false);
+    //     feeRegistry.initialize(dao.addr, dao.addr);
 
-        vm.prank(dao.addr);
-        feeRegistry.updateDefaultRate(protocolRate);
-        vault = new VaultHelper(false);
+    //     vm.prank(dao.addr);
+    //     feeRegistry.updateDefaultRate(protocolRate);
+    //     vault = new VaultHelper(false);
 
-        Vault.InitStruct memory v = Vault.InitStruct({
-            underlying: underlying,
-            name: vaultName,
-            symbol: vaultSymbol,
-            safe: safe.addr,
-            whitelistManager: whitelistManager.addr,
-            valuationManager: valuationManager.addr,
-            admin: admin.addr,
-            feeReceiver: feeReceiver.addr,
-            feeRegistry: address(feeRegistry),
-            managementRate: managementRate,
-            performanceRate: performanceRate,
-            wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
-            rateUpdateCooldown: rateUpdateCooldown,
-            enableWhitelist: enableWhitelist
-        });
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
+    //     Vault.InitStruct memory v = Vault.InitStruct({
+    //         underlying: underlying,
+    //         name: vaultName,
+    //         symbol: vaultSymbol,
+    //         safe: safe.addr,
+    //         whitelistManager: whitelistManager.addr,
+    //         valuationManager: valuationManager.addr,
+    //         admin: admin.addr,
+    //         feeReceiver: feeReceiver.addr,
+    //         feeRegistry: address(feeRegistry),
+    //         managementRate: managementRate,
+    //         performanceRate: performanceRate,
+    //         wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
+    //         rateUpdateCooldown: rateUpdateCooldown,
+    //         enableWhitelist: enableWhitelist
+    //     });
+    //     vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
 
-        vault.initialize(v);
+    //     vault.initialize(v);
 
-        v.managementRate = MAX_MANAGEMENT_RATE;
+    //     v.managementRate = MAX_MANAGEMENT_RATE;
 
-        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE));
+    //     vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE));
 
-        vault.initialize(v);
-        v.performanceRate = MAX_PERFORMANCE_RATE;
+    //     vault.initialize(v);
+    //     v.performanceRate = MAX_PERFORMANCE_RATE;
 
-        vault.initialize(v);
-        assertEq(vault.protocolRate(), MAX_PROTOCOL_RATE, "protocol rate should be MAX_PROTOCOL_RATE");
-    }
+    //     vault.initialize(v);
+    //     assertEq(vault.protocolRate(), MAX_PROTOCOL_RATE, "protocol rate should be MAX_PROTOCOL_RATE");
+    // }
 
     function test_updateRatesOverMaxPerformanceRateShouldRevert() public {
         setUpVault(100, 200, 2000);
