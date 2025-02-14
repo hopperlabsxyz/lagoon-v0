@@ -2,7 +2,7 @@ ARG NODE_VERSION=22.11.0
 FROM node:${NODE_VERSION}-alpine AS node
 
 # Use the latest foundry image
-FROM ghcr.io/foundry-rs/foundry
+FROM ghcr.io/foundry-rs/foundry:v0.3.0
 
 RUN apk add --no-cache git
 
@@ -30,7 +30,7 @@ ARG VAULT_SYMBOL="MVP"
 # clone vault repo
 RUN --mount=type=secret,id=PERSONAL_ACCESS_TOKEN \
   PERSONAL_ACCESS_TOKEN=$(cat /run/secrets/PERSONAL_ACCESS_TOKEN) && \
-  git clone "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/vault"
+  git clone --branch v1.1.0 "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/lagoon-v0" vault
 
 # Copy our source code into the container
 WORKDIR /vault
