@@ -6,6 +6,8 @@ services:
     entrypoint: anvil --host 0.0.0.0 --fork-url $FORK_RPC_URL
     networks:
       - local-fork-network
+    ports:
+      - "8545:8545"
 
 networks:
   local-fork-network:
