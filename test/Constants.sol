@@ -141,9 +141,10 @@ abstract contract Constants is Test {
             opts.constructorData = abi.encode(true);
             beacon = _beaconDeploy("VaultLegacyHelper.sol", owner.addr, opts);
             vault = _proxyDeploy(beacon, v);
-            opts.constructorData = abi.encode(false);
+
+            address newImpl = address(new VaultHelper(true));
             vm.startPrank(owner.addr);
-            Upgrades.upgradeBeacon(address(beacon), "VaultHelper.sol", opts);
+            beacon.upgradeTo(newImpl);
             vm.stopPrank();
             VaultLegacyHelper(address(vault));
         } else {

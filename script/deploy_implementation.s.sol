@@ -6,23 +6,24 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+
+import {Vault} from "@src/vault/Vault.sol";
+import {VaultLegacy} from "@src/vault0.0/VaultLegacy.sol";
 import {Script, console} from "forge-std/Script.sol";
 
 import {DefenderOptions} from "openzeppelin-foundry-upgrades/Options.sol";
 import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 contract Deploy is Script {
-    // upgrade info from previous deployment
-    address beacon = 0x1E80d1127bD34e003aadd1005b6Da3c96563C764;
-
     function run() external {
+        // VaultLegacy;
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        Options memory opts;
-        opts.constructorData = abi.encode(false);
+        // Options memory opts;
+        // opts.constructorData = abi.encode(false);
         vm.startBroadcast(deployerPrivateKey);
 
-        Upgrades.upgradeBeacon(beacon, "Vault.sol:Vault", opts);
+        new Vault(true);
 
         vm.stopBroadcast();
 
