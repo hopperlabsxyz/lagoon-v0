@@ -13,8 +13,8 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 
-import {Vault0_2_0} from "@src/vault0.2.0/Vault0.2.0.sol";
-import {Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
+import {InitStruct, Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
+
 import {Test} from "forge-std/Test.sol";
 
 import {VmSafe} from "forge-std/Vm.sol";
@@ -100,12 +100,9 @@ abstract contract Constants is Test {
         return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner, opts));
     }
 
-    function _proxyDeploy(
-        UpgradeableBeacon beacon,
-        Vault0_2_0.InitStruct memory v
-    ) internal returns (Vault0_2_1Helper) {
+    function _proxyDeploy(UpgradeableBeacon beacon, InitStruct memory v) internal returns (Vault0_2_1Helper) {
         BeaconProxy proxy =
-            BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault0_2_0.initialize, v))));
+            BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault0_2_1.initialize, v))));
 
         return Vault0_2_1Helper(address(proxy));
     }
@@ -120,7 +117,7 @@ abstract contract Constants is Test {
         feeRegistry.updateDefaultRate(_protocolRate);
 
         UpgradeableBeacon beacon;
-        Vault0_2_0.InitStruct memory v = Vault0_2_0.InitStruct({
+        InitStruct memory v = InitStruct({
             underlying: underlying,
             name: vaultName,
             symbol: vaultSymbol,

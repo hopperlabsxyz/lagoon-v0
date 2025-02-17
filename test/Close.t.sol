@@ -6,11 +6,11 @@ import {BaseTest} from "./Base.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ERC7540InvalidOperator} from "@src/vault0.2.0/ERC7540.sol";
-import {Closed, NotClosing, NotOpen, State} from "@src/vault0.2.0/Vault0.2.0.sol";
+import {ERC7540InvalidOperator} from "@src/vault0.2.1/ERC7540.sol";
+import {Closed, NotClosing, NotOpen, State} from "@src/vault0.2.1/Vault0.2.1.sol";
 import {Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
 
-import {WrongNewTotalAssets} from "@src/vault0.2.0/primitives/Errors.sol";
+import {WrongNewTotalAssets} from "@src/vault0.2.1/primitives/Errors.sol";
 import "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 

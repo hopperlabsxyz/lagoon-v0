@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
-import {Vault0_2_0} from "@src/vault0.2.0/Vault0.2.0.sol";
-import {Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
+import {InitStruct, Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
 
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -15,7 +14,7 @@ import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 */
 
 contract DeployVault is Script {
-    function _loadInitStructFromEnv() internal view returns (Vault0_2_1.InitStruct memory v, address beacon) {
+    function _loadInitStructFromEnv() internal view returns (InitStruct memory v, address beacon) {
         // General
         address UNDERLYING = vm.envAddress("UNDERLYING");
         address WRAPPED_NATIVE_TOKEN = vm.envAddress("WRAPPED_NATIVE_TOKEN");
@@ -36,7 +35,7 @@ contract DeployVault is Script {
         address ADMIN = vm.envAddress("ADMIN");
         address WHITELIST_MANAGER = vm.envAddress("WHITELIST_MANAGER");
         address VALUATION_MANAGER = vm.envAddress("VALUATION_MANAGER");
-        v = Vault0_2_0.InitStruct({
+        v = InitStruct({
             underlying: IERC20(UNDERLYING),
             name: NAME,
             symbol: SYMBOL,
@@ -54,7 +53,7 @@ contract DeployVault is Script {
         });
     }
 
-    function deployVault(Vault0_2_1.InitStruct memory init, address beacon) internal returns (address) {
+    function deployVault(InitStruct memory init, address beacon) internal returns (address) {
         console.log("--- deployVault() ---");
 
         console.log("Beacon:              ", beacon);
@@ -74,7 +73,7 @@ contract DeployVault is Script {
         console.log("Valuation_manager:   ", init.valuationManager);
 
         BeaconProxy proxy = BeaconProxy(
-            payable(Upgrades.deployBeaconProxy(beacon, abi.encodeWithSelector(Vault0_2_0.initialize.selector, init)))
+            payable(Upgrades.deployBeaconProxy(beacon, abi.encodeWithSelector(Vault0_2_1.initialize.selector, init)))
         );
 
         // todo
@@ -90,7 +89,7 @@ contract DeployVault is Script {
 
     function run() external virtual {
         vm.startBroadcast();
-        (Vault0_2_1.InitStruct memory v, address beacon) = _loadInitStructFromEnv();
+        (InitStruct memory v, address beacon) = _loadInitStructFromEnv();
         deployVault(v, beacon);
         vm.stopBroadcast();
     }

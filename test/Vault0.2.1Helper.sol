@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import "@src/vault0.2.0/ERC7540.sol";
-import "@src/vault0.2.0/Vault0.2.0.sol";
 import "@src/vault0.2.1/Vault0.2.1.sol";
 import "forge-std/Test.sol";
 

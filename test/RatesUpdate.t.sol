@@ -7,8 +7,8 @@ import {Vault0_2_1Helper} from "./Vault0.2.1Helper.sol";
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
-import {AboveMaxRate, FeeManager} from "@src/vault0.2.0/FeeManager.sol";
-import {Rates} from "@src/vault0.2.0/FeeManager.sol";
+import {AboveMaxRate, FeeManager} from "@src/vault0.2.1/FeeManager.sol";
+import {Rates} from "@src/vault0.2.1/FeeManager.sol";
 import {Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
 import "forge-std/Test.sol";
 
