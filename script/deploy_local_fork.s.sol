@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Vault} from "@src/vault/Vault.sol";
+import {InitStruct, Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
 
 import {DeployBeacon} from "./deploy_beacon.s.sol";
 import {DeployProtocol} from "./deploy_protocol.s.sol";
@@ -43,7 +43,7 @@ contract DeployFull is DeployProtocol, DeployBeacon, DeployVault {
         vm.startBroadcast();
         address feeRegistry = deployFeeRegistry(DAO, PROTOCOL_FEE_RECEIVER, PROXY_ADMIN);
         address beacon = deployBeacon(BEACON_OWNER);
-        Vault.InitStruct memory v = Vault.InitStruct({
+        InitStruct memory v = InitStruct({
             underlying: IERC20(UNDERLYING),
             name: NAME,
             symbol: SYMBOL,

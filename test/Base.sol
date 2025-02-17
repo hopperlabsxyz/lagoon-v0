@@ -6,8 +6,8 @@ import {Constants} from "./Constants.sol";
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Rates} from "@src/vault/FeeManager.sol";
-import {Vault} from "@src/vault/Vault.sol";
+import {Rates} from "@src/vault0.2.1/FeeManager.sol";
+import {Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
 import "forge-std/Test.sol";

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
-import {Vault} from "@src/vault/Vault.sol";
+import {InitStruct, Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
 
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -50,7 +50,7 @@ contract LocalDeploy is Script {
         FeeRegistry feeRegistry = new FeeRegistry(false);
         feeRegistry.initialize(DAO, DAO);
 
-        Vault.InitStruct memory v = Vault.InitStruct({
+        InitStruct memory v = InitStruct({
             underlying: underlying,
             name: VAULT_NAME,
             symbol: VAULT_SYMBOL,
@@ -69,7 +69,9 @@ contract LocalDeploy is Script {
 
         TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
             payable(
-                Upgrades.deployTransparentProxy("Vault.sol:Vault", PROXY_ADMIN, abi.encodeCall(Vault.initialize, v))
+                Upgrades.deployTransparentProxy(
+                    "Vault0.2.1.sol:Vault0_2_1", PROXY_ADMIN, abi.encodeCall(Vault0_2_1.initialize, v)
+                )
             )
         );
 

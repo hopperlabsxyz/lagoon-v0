@@ -3,11 +3,11 @@ pragma solidity 0.8.26;
 
 import {BaseTest} from "./Base.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {NotWhitelisted} from "@src/vault/primitives/Errors.sol";
-import {WhitelistUpdated} from "@src/vault/primitives/Events.sol";
+import {NotWhitelisted} from "@src/vault0.2.1/primitives/Errors.sol";
+import {WhitelistUpdated} from "@src/vault0.2.1/primitives/Events.sol";
 
-import {OnlyWhitelistManager} from "@src/vault/Roles.sol";
-import {Vault} from "@src/vault/Vault.sol";
+import {OnlyWhitelistManager} from "@src/vault0.2.1/Roles.sol";
+import {Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
 import "forge-std/Test.sol";
 
 contract TestWhitelist is BaseTest {
