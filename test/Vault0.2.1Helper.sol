@@ -6,13 +6,21 @@ import "@src/vault0.2.0/Vault0.2.0.sol";
 import "@src/vault0.2.1/Vault0.2.1.sol";
 import "forge-std/Test.sol";
 
-/// @custom:oz-upgrades-from VaultLegacyHelper
+/// @custom:oz-upgrades-from Vault0_1_0Helper
 contract Vault0_2_1Helper is Vault0_2_1 {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
     constructor(
         bool disable
     ) Vault0_2_1(disable) {}
+
+    /// @notice Initializes the vault.
+    /// @param init The initialization parameters of the vault.
+    function initialize(
+        InitStruct memory init
+    ) public virtual override initializer {
+        super.initialize(init);
+    }
 
     function totalSupply(
         uint256 epochId
