@@ -20,7 +20,7 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 using SafeERC20 for IERC20;
 
 /// @custom:oz-upgrades-from VaultLegacy
-contract Vault is ERC7540, Whitelistable, FeeManager {
+contract Vault0_2_0 is ERC7540, Whitelistable, FeeManager {
     /// @custom:storage-definition erc7201:hopper.storage.vault
     /// @param underlying The address of the underlying asset.
     /// @param name The name of the vault and by extension the ERC20 token.
@@ -422,9 +422,5 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 lastDepositId = _getERC7540Storage().lastDepositRequestId[controller];
         uint256 claimable = claimableDepositRequest(lastDepositId, controller);
         return convertToShares(claimable, lastDepositId);
-    }
-
-    function version() public pure returns (string memory) {
-        return "v0.2.0";
     }
 }

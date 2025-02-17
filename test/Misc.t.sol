@@ -9,9 +9,9 @@ import {
     ERC7540PreviewRedeemDisabled,
     ERC7540PreviewWithdrawDisabled,
     IERC165
-} from "@src/vault/ERC7540.sol";
-import {Roles} from "@src/vault/Roles.sol";
-import {Vault} from "@src/vault/Vault.sol";
+} from "@src/vault0.2.0/ERC7540.sol";
+import {Roles} from "@src/vault0.2.0/Roles.sol";
+import {Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
@@ -97,7 +97,7 @@ contract TestMisc is BaseTest {
 
     function test_contractSize() public {
         uint256 size;
-        address vaultAddr = address(new Vault(true));
+        address vaultAddr = address(new Vault0_2_1(true));
         assembly {
             size := extcodesize(vaultAddr)
         }

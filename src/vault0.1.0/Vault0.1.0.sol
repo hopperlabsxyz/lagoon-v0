@@ -17,7 +17,7 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 
 using SafeERC20 for IERC20;
 
-contract VaultLegacy is ERC7540, Whitelistable, FeeManager {
+contract Vault0_1_0 is ERC7540, Whitelistable, FeeManager {
     /// @custom:storage-definition erc7201:hopper.storage.vault
     /// @param underlying The address of the underlying asset.
     /// @param name The name of the vault and by extension the ERC20 token.

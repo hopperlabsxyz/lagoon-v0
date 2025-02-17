@@ -4,8 +4,9 @@ pragma solidity 0.8.26;
 import {BaseTest} from "./Base.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ERC7540InvalidOperator, NewTotalAssetsMissing} from "@src/vault/ERC7540.sol";
-import {Closed, NotClosing, NotOpen, State, Vault} from "@src/vault/Vault.sol";
+import {ERC7540InvalidOperator, NewTotalAssetsMissing} from "@src/vault0.2.0/ERC7540.sol";
+import {Closed, NotClosing, NotOpen, State} from "@src/vault0.2.0/Vault0.2.0.sol";
+import {Vault0_2_0} from "@src/vault0.2.0/Vault0.2.0.sol";
 import "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 

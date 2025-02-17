@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import "@src/vault/ERC7540.sol";
-import "@src/vault/Vault.sol";
+import "@src/vault0.2.0/ERC7540.sol";
+import "@src/vault0.2.0/Vault0.2.0.sol";
+import "@src/vault0.2.1/Vault0.2.1.sol";
 import "forge-std/Test.sol";
 
 /// @custom:oz-upgrades-from VaultLegacyHelper
-contract VaultHelper is Vault {
+contract Vault0_2_1Helper is Vault0_2_1 {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
     constructor(
         bool disable
-    ) Vault(disable) {}
+    ) Vault0_2_1(disable) {}
 
     function totalSupply(
         uint256 epochId
