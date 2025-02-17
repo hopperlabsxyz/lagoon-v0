@@ -28,7 +28,7 @@ contract DeployBeacon is Script {
         address BEACON_OWNER = vm.envAddress("BEACON_OWNER");
         string memory tag = vm.envString("VERSION_TAG");
 
-        require(keccak256(abi.encode(tag)) == keccak256("v0.2.1"), "Can only deploy v0.2.1 vault for now");
+        require(keccak256(abi.encode(tag)) == keccak256(abi.encode("v0.2.1")), "Can only deploy v0.2.1 vault for now");
 
         vm.startBroadcast();
         deployBeacon(BEACON_OWNER);
