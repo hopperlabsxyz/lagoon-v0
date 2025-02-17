@@ -15,9 +15,6 @@ COPY --from=node /usr/local/bin /usr/local/bin
 # Verify installation
 RUN node -v && npm -v && npx -v
 
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
-
 
 # dev env
 ARG FOUNDRY_FFI=false
@@ -38,6 +35,8 @@ RUN --mount=type=secret,id=PERSONAL_ACCESS_TOKEN \
 
 # Copy our source code into the container
 WORKDIR /vault
+
+RUN npm install
 
 # build vault
 RUN forge build
