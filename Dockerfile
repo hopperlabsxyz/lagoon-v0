@@ -15,6 +15,10 @@ COPY --from=node /usr/local/bin /usr/local/bin
 # Verify installation
 RUN node -v && npm -v && npx -v
 
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+
+
 # dev env
 ARG FOUNDRY_FFI=false
 ARG PROXY=false
