@@ -73,6 +73,7 @@ build-image: load_dev_env
 		--secret "id=PERSONAL_ACCESS_TOKEN" \
 		--platform linux/x86_64 \
 		--no-cache \
+		--progress=plain \
 		-t $(IMAGE_NAME) \
 		. # < do not remove the dot
 

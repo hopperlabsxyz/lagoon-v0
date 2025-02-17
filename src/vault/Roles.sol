@@ -9,7 +9,7 @@ import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/acces
 /// @title RolesUpgradeable
 /// @dev This contract is used to define the various roles needed for a vault to operate.
 /// @dev It also defines the modifiers used to check functions' caller.
-contract Roles is Ownable2StepUpgradeable {
+abstract contract Roles is Ownable2StepUpgradeable {
     /// @notice Stores the various roles responsible of managing the vault.
     /// @param whitelistManager The address responsible of managing the whitelist.
     /// @param feeReceiver The address that will receive the fees generated.
@@ -30,7 +30,9 @@ contract Roles is Ownable2StepUpgradeable {
     /// @dev Initializes the roles of the vault.
     /// @param roles The roles to be initialized.
     // solhint-disable-next-line func-name-mixedcase
-    function __Roles_init(RolesStorage memory roles) internal onlyInitializing {
+    function __Roles_init(
+        RolesStorage memory roles
+    ) internal onlyInitializing {
         RolesStorage storage $ = _getRolesStorage();
 
         $.whitelistManager = roles.whitelistManager;
@@ -88,7 +90,9 @@ contract Roles is Ownable2StepUpgradeable {
     /// @notice Updates the address of the whitelist manager.
     /// @param _whitelistManager The new address of the whitelist manager.
     /// @dev Only the owner can call this function.
-    function updateWhitelistManager(address _whitelistManager) external onlyOwner {
+    function updateWhitelistManager(
+        address _whitelistManager
+    ) external onlyOwner {
         emit WhitelistManagerUpdated(_getRolesStorage().whitelistManager, _whitelistManager);
         _getRolesStorage().whitelistManager = _whitelistManager;
     }
@@ -96,7 +100,9 @@ contract Roles is Ownable2StepUpgradeable {
     /// @notice Updates the address of the valuation manager.
     /// @param _valuationManager The new address of the valuation manager.
     /// @dev Only the owner can call this function.
-    function updateValuationManager(address _valuationManager) external onlyOwner {
+    function updateValuationManager(
+        address _valuationManager
+    ) external onlyOwner {
         emit ValuationManagerUpdated(_getRolesStorage().valuationManager, _valuationManager);
         _getRolesStorage().valuationManager = _valuationManager;
     }
@@ -104,7 +110,9 @@ contract Roles is Ownable2StepUpgradeable {
     /// @notice Updates the address of the fee receiver.
     /// @param _feeReceiver The new address of the fee receiver.
     /// @dev Only the owner can call this function.
-    function updateFeeReceiver(address _feeReceiver) external onlyOwner {
+    function updateFeeReceiver(
+        address _feeReceiver
+    ) external onlyOwner {
         emit FeeReceiverUpdated(_getRolesStorage().feeReceiver, _feeReceiver);
         _getRolesStorage().feeReceiver = _feeReceiver;
     }

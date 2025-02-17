@@ -15,6 +15,7 @@ COPY --from=node /usr/local/bin /usr/local/bin
 # Verify installation
 RUN node -v && npm -v && npx -v
 
+
 # dev env
 ARG FOUNDRY_FFI=false
 ARG PROXY=false
@@ -34,6 +35,8 @@ RUN --mount=type=secret,id=PERSONAL_ACCESS_TOKEN \
 
 # Copy our source code into the container
 WORKDIR /vault
+
+RUN npm install
 
 # build vault
 RUN forge build
