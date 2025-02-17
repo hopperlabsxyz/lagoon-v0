@@ -12,14 +12,6 @@ contract Vault0_2_1Helper is Vault0_2_1 {
         bool disable
     ) Vault0_2_1(disable) {}
 
-    /// @notice Initializes the vault.
-    /// @param init The initialization parameters of the vault.
-    function initialize(
-        InitStruct memory init
-    ) public virtual override initializer {
-        super.initialize(init);
-    }
-
     function totalSupply(
         uint256 epochId
     ) public view returns (uint256) {

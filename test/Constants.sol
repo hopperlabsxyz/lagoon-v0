@@ -150,9 +150,7 @@ abstract contract Constants is Test {
             Vault0_1_0Helper(address(vault));
         } else {
             vm.startPrank(owner.addr);
-
             vault = new Vault0_2_1Helper(false);
-
             vault.initialize(v);
             vm.stopPrank();
         }
