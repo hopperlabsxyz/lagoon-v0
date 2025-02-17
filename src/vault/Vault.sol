@@ -423,4 +423,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 claimable = claimableDepositRequest(lastDepositId, controller);
         return convertToShares(claimable, lastDepositId);
     }
+
+    function version() public pure returns (string memory) {
+        return "v0.2.0";
+    }
 }
