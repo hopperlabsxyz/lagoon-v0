@@ -69,6 +69,7 @@ clean-docker:
 
 build-image: load_dev_env
 	docker build \
+		--build-arg VERSION_TAG=$(VERSION_TAG) \
 		--secret "id=RPC_URL" \
 		--secret "id=PERSONAL_ACCESS_TOKEN" \
 		--platform linux/x86_64 \
