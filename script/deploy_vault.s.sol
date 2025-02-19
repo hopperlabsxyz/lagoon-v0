@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
-import {InitStruct, Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
+import {InitStruct, Vault} from "@src/vault0.2.1/Vault.sol";
 
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -73,7 +73,7 @@ contract DeployVault is Script {
         console.log("Valuation_manager:   ", init.valuationManager);
 
         BeaconProxy proxy = BeaconProxy(
-            payable(Upgrades.deployBeaconProxy(beacon, abi.encodeWithSelector(Vault0_2_1.initialize.selector, init)))
+            payable(Upgrades.deployBeaconProxy(beacon, abi.encodeWithSelector(Vault.initialize.selector, init)))
         );
 
         // todo

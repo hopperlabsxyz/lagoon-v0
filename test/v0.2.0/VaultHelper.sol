@@ -6,17 +6,17 @@ import "forge-std/Test.sol";
 import "@src/vault0.2.0/ERC7540.sol";
 import "@src/vault0.2.0/FeeManager.sol";
 import "@src/vault0.2.0/Roles.sol";
-import "@src/vault0.2.0/Vault0.2.0.sol";
+import "@src/vault0.2.0/Vault.sol";
 import "@src/vault0.2.0/primitives/Errors.sol";
 import "@src/vault0.2.0/primitives/Events.sol";
 import "@src/vault0.2.0/primitives/Struct.sol";
 
-contract VaultHelper is Vault0_2_0 {
+contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
     constructor(
         bool disable
-    ) Vault0_2_0(disable) {}
+    ) Vault(disable) {}
 
     function totalSupply(
         uint256 epochId

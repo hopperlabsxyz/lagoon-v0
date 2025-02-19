@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-// import {Vault0_1_0Helper} from "./Vault0.1.0Helper.sol";
-// import {Vault0_2_1Helper} from "./Vault0.2.1Helper.sol";
-
 import "./VaultHelper.sol";
-import "forge-std/console.sol";
 
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 
@@ -102,7 +98,7 @@ abstract contract Constants is Test {
 
     function _proxyDeploy(UpgradeableBeacon beacon, InitStruct memory v) internal returns (VaultHelper) {
         BeaconProxy proxy =
-            BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault0_3_0.initialize, v))));
+            BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault.initialize, v))));
 
         return VaultHelper(address(proxy));
     }

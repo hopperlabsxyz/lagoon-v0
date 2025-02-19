@@ -4,18 +4,18 @@ pragma solidity "0.8.26";
 import "@src/vault0.1.0/ERC7540.sol";
 import "@src/vault0.1.0/FeeManager.sol";
 import "@src/vault0.1.0/Roles.sol";
-import "@src/vault0.1.0/Vault0.1.0.sol";
+import "@src/vault0.1.0/Vault.sol";
 import "@src/vault0.1.0/primitives/Errors.sol";
 import "@src/vault0.1.0/primitives/Events.sol";
 import "@src/vault0.1.0/primitives/Struct.sol";
 import "forge-std/Test.sol";
 
-contract VaultHelper is Vault0_1_0 {
+contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
     constructor(
         bool disable
-    ) Vault0_1_0(disable) {}
+    ) Vault(disable) {}
 
     function totalSupply(
         uint256 epochId

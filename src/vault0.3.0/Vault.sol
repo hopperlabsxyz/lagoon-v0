@@ -51,8 +51,8 @@ struct InitStruct {
     uint256 rateUpdateCooldown;
 }
 
-/// @custom:oz-upgrades-from Vault0_2_0
-contract Vault0_2_1 is ERC7540, Whitelistable, FeeManager {
+/// @custom:oz-upgrades-from ../vault0.2.1/Vault.sol:Vault
+contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @custom:storage-location erc7201:hopper.storage.vault
     /// @param newTotalAssets The new total assets of the vault. It is used to update the totalAssets variable.
     /// @param state The state of the vault. It can be Open, Closing, or Closed.
@@ -425,6 +425,6 @@ contract Vault0_2_1 is ERC7540, Whitelistable, FeeManager {
     }
 
     function version() public pure returns (string memory) {
-        return "v0.2.1";
+        return "v0.3.0";
     }
 }

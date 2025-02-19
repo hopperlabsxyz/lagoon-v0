@@ -38,7 +38,7 @@ contract testRateUpdates is BaseTest {
         feeRegistry.updateDefaultRate(protocolRate);
         vault = new VaultHelper(false);
 
-        Vault0_1_0.InitStruct memory v = Vault0_1_0.InitStruct({
+        Vault.InitStruct memory v = Vault.InitStruct({
             underlying: underlying,
             name: vaultName,
             symbol: vaultSymbol,

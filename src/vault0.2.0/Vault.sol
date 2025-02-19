@@ -7,7 +7,9 @@ import {Roles} from "./Roles.sol";
 import {Whitelistable} from "./Whitelistable.sol";
 import {State} from "./primitives/Enums.sol";
 import {Closed, ERC7540InvalidOperator, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
+
 import {Referral, StateUpdated} from "./primitives/Events.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -17,39 +19,40 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 
 using SafeERC20 for IERC20;
 
-contract Vault0_1_0 is ERC7540, Whitelistable, FeeManager {
-    /// @custom:storage-definition erc7201:hopper.storage.vault
-    /// @param underlying The address of the underlying asset.
-    /// @param name The name of the vault and by extension the ERC20 token.
-    /// @param symbol The symbol of the vault and by extension the ERC20 token.
-    /// @param safe The address of the safe smart contract.
-    /// @param whitelistManager The address of the whitelist manager.
-    /// @param valuationManager The address of the valuation manager.
-    /// @param admin The address of the owner of the vault.
-    /// @param feeReceiver The address of the fee receiver.
-    /// @param feeRegistry The address of the fee registry.
-    /// @param wrappedNativeToken The address of the wrapped native token.
-    /// @param managementRate The management fee rate.
-    /// @param performanceRate The performance fee rate.
-    /// @param rateUpdateCooldown The cooldown period for updating the fee rates.
-    /// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
-    struct InitStruct {
-        IERC20 underlying;
-        string name;
-        string symbol;
-        address safe;
-        address whitelistManager;
-        address valuationManager;
-        address admin;
-        address feeReceiver;
-        address feeRegistry;
-        address wrappedNativeToken;
-        uint16 managementRate;
-        uint16 performanceRate;
-        bool enableWhitelist;
-        uint256 rateUpdateCooldown;
-    }
+/// @custom:storage-definition erc7201:hopper.storage.vault
+/// @param underlying The address of the underlying asset.
+/// @param name The name of the vault and by extension the ERC20 token.
+/// @param symbol The symbol of the vault and by extension the ERC20 token.
+/// @param safe The address of the safe smart contract.
+/// @param whitelistManager The address of the whitelist manager.
+/// @param valuationManager The address of the valuation manager.
+/// @param admin The address of the owner of the vault.
+/// @param feeReceiver The address of the fee receiver.
+/// @param feeRegistry The address of the fee registry.
+/// @param wrappedNativeToken The address of the wrapped native token.
+/// @param managementRate The management fee rate.
+/// @param performanceRate The performance fee rate.
+/// @param rateUpdateCooldown The cooldown period for updating the fee rates.
+/// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
+struct InitStruct {
+    IERC20 underlying;
+    string name;
+    string symbol;
+    address safe;
+    address whitelistManager;
+    address valuationManager;
+    address admin;
+    address feeReceiver;
+    address feeRegistry;
+    address wrappedNativeToken;
+    uint16 managementRate;
+    uint16 performanceRate;
+    bool enableWhitelist;
+    uint256 rateUpdateCooldown;
+}
 
+/// @custom:oz-upgrades-from ../vault0.1.0/Vault.sol:Vault
+contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @custom:storage-location erc7201:hopper.storage.vault
     /// @param newTotalAssets The new total assets of the vault. It is used to update the totalAssets variable.
     /// @param state The state of the vault. It can be Open, Closing, or Closed.
@@ -84,18 +87,7 @@ contract Vault0_1_0 is ERC7540, Whitelistable, FeeManager {
     function initialize(
         InitStruct memory init
     ) public virtual initializer {
-        __ERC4626_init(init.underlying);
-        __ERC20_init(init.name, init.symbol);
-        __ERC20Pausable_init();
-        __FeeManager_init(
-            init.feeRegistry,
-            init.managementRate,
-            init.performanceRate,
-            IERC20Metadata(address(init.underlying)).decimals(),
-            init.rateUpdateCooldown
-        );
-        __ERC7540_init(init.underlying, init.wrappedNativeToken);
-        __Whitelistable_init(init.enableWhitelist, FeeRegistry(init.feeRegistry).protocolFeeReceiver());
+        __Ownable_init(init.admin); // initial vault owner
         __Roles_init(
             Roles.RolesStorage({
                 whitelistManager: init.whitelistManager,
@@ -105,7 +97,18 @@ contract Vault0_1_0 is ERC7540, Whitelistable, FeeManager {
                 valuationManager: init.valuationManager
             })
         );
-        __Ownable_init(init.admin); // initial vault owner
+        __ERC20_init(init.name, init.symbol);
+        __ERC20Pausable_init();
+        __ERC4626_init(init.underlying);
+        __ERC7540_init(init.underlying, init.wrappedNativeToken);
+        __Whitelistable_init(init.enableWhitelist, FeeRegistry(init.feeRegistry).protocolFeeReceiver());
+        __FeeManager_init(
+            init.feeRegistry,
+            init.managementRate,
+            init.performanceRate,
+            IERC20Metadata(address(init.underlying)).decimals(),
+            init.rateUpdateCooldown
+        );
 
         emit StateUpdated(State.Open);
     }
@@ -172,6 +175,20 @@ contract Vault0_1_0 is ERC7540, Whitelistable, FeeManager {
     ) public onlyOpen whenNotPaused returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         return _requestRedeem(shares, controller, owner);
+    }
+
+    /// @notice Function to bundle a claim of shares and a request redeem. It can be convenient for UX.
+    /// @dev if claimable == 0, it has the same behavior as requestRedeem function.
+    /// @dev if claimable > 0, user shares follow this path: vault --> user ; user --> pendingSilo
+    function claimSharesAndRequestRedeem(
+        uint256 sharesToRedeem
+    ) public onlyOpen whenNotPaused returns (uint40 requestId) {
+        uint256 claimable = claimableDepositRequest(0, msg.sender);
+        if (claimable > 0) _deposit(claimable, msg.sender, msg.sender);
+
+        uint256 redeemId = _requestRedeem(sharesToRedeem, msg.sender, msg.sender);
+
+        return uint40(redeemId);
     }
 
     /// @dev Unusable when paused.
@@ -264,10 +281,12 @@ contract Vault0_1_0 is ERC7540, Whitelistable, FeeManager {
     /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
     /// If possible, it also settles redeem requests.
     /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
-    function settleDeposit() public override onlySafe onlyOpen {
+    function settleDeposit(
+        uint256 _newTotalAssets
+    ) public override onlySafe onlyOpen {
         RolesStorage storage $roles = _getRolesStorage();
 
-        _updateTotalAssets();
+        _updateTotalAssets(_newTotalAssets);
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
         _settleDeposit(msg.sender);
         _settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
@@ -277,10 +296,12 @@ contract Vault0_1_0 is ERC7540, Whitelistable, FeeManager {
     /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
     /// @dev After updating totalAssets, it takes fees, updates highWaterMark and finally settles redeem requests.
     /// @inheritdoc ERC7540
-    function settleRedeem() public override onlySafe onlyOpen {
+    function settleRedeem(
+        uint256 _newTotalAssets
+    ) public override onlySafe onlyOpen {
         RolesStorage storage $roles = _getRolesStorage();
 
-        _updateTotalAssets();
+        _updateTotalAssets(_newTotalAssets);
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
         _settleRedeem(msg.sender);
     }
@@ -290,16 +311,25 @@ contract Vault0_1_0 is ERC7540, Whitelistable, FeeManager {
     /////////////////////////////
 
     /// @notice Initiates the closing of the vault. Can only be called by the owner.
+    /// @dev we make sure that initiate closing will make an epoch changement if the variable newTotalAssets is
+    /// "defined"
+    /// @dev (!= type(uint256).max). This guarantee that no userShares will be locked in a pending state.
     function initiateClosing() external onlyOwner onlyOpen {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        if ($.newTotalAssets != type(uint256).max) {
+            _updateNewTotalAssets($.newTotalAssets);
+        }
         _getVaultStorage().state = State.Closing;
         emit StateUpdated(State.Closing);
     }
 
     /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.
     /// @dev Users can still requestDeposit but it can't be settled.
-    function close() external onlySafe onlyClosing {
+    function close(
+        uint256 _newTotalAssets
+    ) external onlySafe onlyClosing {
         RolesStorage storage $roles = _getRolesStorage();
-        _updateTotalAssets();
+        _updateTotalAssets(_newTotalAssets);
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
 
         _settleDeposit(msg.sender);
@@ -327,5 +357,70 @@ contract Vault0_1_0 is ERC7540, Whitelistable, FeeManager {
     /// @notice Resumes core operations of the vault. Can only be called by the owner.
     function unpause() public onlyOwner {
         _unpause();
+    }
+
+    // MAX FUNCTIONS OVERRIDE //
+
+    /// @notice Returns the maximum redeemable shares for a controller.
+    /// @param controller The controller.
+    /// @return shares The maximum redeemable shares.
+    /// @dev When the vault is closed, users may claim there assets (erc7540.redeem style) or redeem there assets in a
+    /// sync manner.
+    /// this is why when they have nothing to claim and the vault is closed, we return their shares balance
+    function maxRedeem(
+        address controller
+    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+        if (paused()) return 0;
+        uint256 shares = claimableRedeemRequest(0, controller);
+        if (shares == 0 && _getVaultStorage().state == State.Closed) {
+            // controller has no redeem claimable, we will use the synchronous flow
+            return balanceOf(controller);
+        }
+        return shares;
+    }
+
+    /// @notice Returns the amount of assets a controller will get if he redeem.
+    /// @param controller The controller.
+    /// @return The maximum amount of assets to get.
+    /// @dev This is the same philosophy as maxRedeem, except that we take care to convertToAssets the value before
+    /// returning it
+    function maxWithdraw(
+        address controller
+    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+        if (paused()) return 0;
+
+        uint256 shares = claimableRedeemRequest(0, controller);
+        if (shares == 0 && _getVaultStorage().state == State.Closed) {
+            // controller has no redeem claimable, we will use the synchronous flow
+            return convertToAssets(balanceOf(controller));
+        }
+        uint256 lastRedeemId = _getERC7540Storage().lastRedeemRequestId[controller];
+        return convertToAssets(shares, lastRedeemId);
+    }
+
+    /// @notice Returns the amount of assets a controller will get if he redeem.
+    /// @param  controller address to check
+    /// @dev    If the contract is paused no deposit/claims are possible.
+    function maxDeposit(
+        address controller
+    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+        if (paused()) return 0;
+        return claimableDepositRequest(0, controller);
+    }
+
+    /// @notice Returns the amount of sharres a controller will get if he calls Deposit.
+    /// @param controller The controller.
+    /// @dev    If the contract is paused no deposit/claims are possible.
+    /// @dev    We read the claimableDepositRequest of the controller then convert it to shares using the
+    /// convertToShares
+    /// of the related epochId
+    /// @return The maximum amount of shares to get.
+    function maxMint(
+        address controller
+    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+        if (paused()) return 0;
+        uint256 lastDepositId = _getERC7540Storage().lastDepositRequestId[controller];
+        uint256 claimable = claimableDepositRequest(lastDepositId, controller);
+        return convertToShares(claimable, lastDepositId);
     }
 }

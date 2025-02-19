@@ -97,9 +97,9 @@ abstract contract Constants is Test {
         return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner, opts));
     }
 
-    function _proxyDeploy(UpgradeableBeacon beacon, Vault0_1_0.InitStruct memory v) internal returns (VaultHelper) {
+    function _proxyDeploy(UpgradeableBeacon beacon, Vault.InitStruct memory v) internal returns (VaultHelper) {
         BeaconProxy proxy =
-            BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault0_1_0.initialize, v))));
+            BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault.initialize, v))));
 
         return VaultHelper(address(proxy));
     }
@@ -114,7 +114,7 @@ abstract contract Constants is Test {
         feeRegistry.updateDefaultRate(_protocolRate);
 
         UpgradeableBeacon beacon;
-        Vault0_1_0.InitStruct memory v = Vault0_1_0.InitStruct({
+        Vault.InitStruct memory v = Vault.InitStruct({
             underlying: underlying,
             name: vaultName,
             symbol: vaultSymbol,
