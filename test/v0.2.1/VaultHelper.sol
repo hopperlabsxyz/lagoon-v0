@@ -11,7 +11,6 @@ import "@src/vault0.2.1/primitives/Errors.sol";
 import "@src/vault0.2.1/primitives/Events.sol";
 import "@src/vault0.2.1/primitives/Struct.sol";
 
-/// @custom:oz-upgrades-from Vault0_2_0Helper
 contract VaultHelper is Vault0_2_1 {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
