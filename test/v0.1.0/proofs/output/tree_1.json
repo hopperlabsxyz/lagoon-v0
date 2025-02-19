@@ -1,0 +1,73 @@
+{
+  "format": "standard-v1",
+  "leafEncoding": [
+    "address"
+  ],
+  "tree": [
+    "0xd6905bdc8c0390c0187456d6886a1207730153217e2bc656c9dc401de44e0cd7",
+    "0x72c5cb55821ffa3a472753ea63162ffacdc19a656349486989d541c071065825",
+    "0x0ea3f17ff2aa4255fd0c1d09179c86932c96a096b3d902df3c0de5d11d4fc51e",
+    "0x4def983b1fa1238ca778e385d60f889cc3d23cde123a1472cb72da2bc1b59978",
+    "0xd0253db49f24d0557365888727e0ea4ed5a54f338584eff6a7ad138f528d4bf1",
+    "0x4f235fe991b99c3918e09d25d0f1643e19c961366590fd8d6ef30aca60da5da9",
+    "0x5b7d063ab15522ec31610447c88e098f640122c333d68804d3b1a0321c992331",
+    "0xf51aa45f108e56f325c9d845dd138933d8b7ddb75d84824a758bd9bcddbdffbf",
+    "0xd48cea564ea46629b54633befda84f21f1c646f38a779e4368126dc517ae6a01",
+    "0x9abe6538df951915d55c9917d0f7e1aa3bb7be7dcdb0adec0025066572b270b2",
+    "0x98e785f2eec5f05400ee359d7b7779c73637782f248c99f9abc974247b0e1b38",
+    "0x97a30234e50a063e840cca4e95aa838a23ffd1e3c6b29655dad0caa758bb0c03",
+    "0x81f0c1ec20a4aa26396a38d89b80f3da02ffc7daea74e308de6b6042f7b94060",
+    "0x13dc877dbbab458d4358c1950ddd8adebe20408229476f43550679706e5f7248",
+    "0x023d3d4af21dad031582bd65655577c9f15e795a97ea041638335e6bbee7dd34"
+  ],
+  "values": [
+    {
+      "value": [
+        "0x344ef496b004663a04d70B427a78E33cC3E9f619"
+      ],
+      "treeIndex": 10
+    },
+    {
+      "value": [
+        "0x952687863142ce6f9cFE7D264C5AF405642F6AA8"
+      ],
+      "treeIndex": 12
+    },
+    {
+      "value": [
+        "0x42188104f27FeaAB648388227ae3C5C7cB16Ca6e"
+      ],
+      "treeIndex": 13
+    },
+    {
+      "value": [
+        "0xB670F3Bf357A4cC997eCb663E8BFF04e27A10c5D"
+      ],
+      "treeIndex": 7
+    },
+    {
+      "value": [
+        "0x058e2D3ed069dfB9B76dA682c7842F5a27a94767"
+      ],
+      "treeIndex": 11
+    },
+    {
+      "value": [
+        "0xaA10a84CE7d9AE517a52c6d5cA153b369Af99ecF"
+      ],
+      "treeIndex": 14
+    },
+    {
+      "value": [
+        "0xf801f3A6F4e09F82D6008505C67a0A5b39842406"
+      ],
+      "treeIndex": 8
+    },
+    {
+      "value": [
+        "0x29E3b139f4393aDda86303fcdAa35F60Bb7092bF"
+      ],
+      "treeIndex": 9
+    }
+  ]
+}
