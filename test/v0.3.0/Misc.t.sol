@@ -210,4 +210,8 @@ contract TestMisc is BaseTest {
         assertEq(address(rolesStorage.feeRegistry), address(feeRegistry));
         assertEq(rolesStorage.valuationManager, valuationManager.addr);
     }
+
+    function test_version() public view {
+        assertEq(keccak256(abi.encode(vault.version())), keccak256(abi.encode("v0.3.0")));
+    }
 }

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {Vault0_1_0Helper} from "./Vault0.1.0Helper.sol";
-import {Vault0_2_1Helper} from "./Vault0.2.1Helper.sol";
+import "./VaultHelper.sol";
+import "forge-std/console.sol";
 
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 
@@ -13,12 +13,8 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 
-import {InitStruct, Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
-
 import {Test} from "forge-std/Test.sol";
-
 import {VmSafe} from "forge-std/Vm.sol";
-import "forge-std/console.sol";
 
 abstract contract Constants is Test {
     // ERC20 tokens
@@ -32,7 +28,8 @@ abstract contract Constants is Test {
     uint8 decimalsOffset = 0;
 
     string underlyingName = vm.envString("UNDERLYING_NAME");
-    Vault0_2_1Helper vault;
+
+    VaultHelper vault;
     FeeRegistry feeRegistry;
     string vaultName = "vault_";
     string vaultSymbol = "hop_vault_";
@@ -100,11 +97,11 @@ abstract contract Constants is Test {
         return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner, opts));
     }
 
-    function _proxyDeploy(UpgradeableBeacon beacon, InitStruct memory v) internal returns (Vault0_2_1Helper) {
+    function _proxyDeploy(UpgradeableBeacon beacon, InitStruct memory v) internal returns (VaultHelper) {
         BeaconProxy proxy =
             BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault0_2_1.initialize, v))));
 
-        return Vault0_2_1Helper(address(proxy));
+        return VaultHelper(address(proxy));
     }
 
     function setUpVault(uint16 _protocolRate, uint16 _managementRate, uint16 _performanceRate) internal {
@@ -141,16 +138,16 @@ abstract contract Constants is Test {
         if (proxy) {
             Options memory opts;
             opts.constructorData = abi.encode(true);
-            beacon = _beaconDeploy("Vault0.1.0Helper.sol:Vault0_1_0Helper", owner.addr, opts);
+            beacon = _beaconDeploy("Vault0.2.1Helper.sol:Vault0_2_1Helper", owner.addr, opts);
             vault = _proxyDeploy(beacon, v);
             opts.constructorData = abi.encode(false);
             vm.startPrank(owner.addr);
-            Upgrades.upgradeBeacon(address(beacon), "Vault0.2.1Helper.sol:Vault0_2_1Helper", opts);
+            Upgrades.upgradeBeacon(address(beacon), "Vault0.3.0Helper.sol:Vault0_3_0Helper", opts);
             vm.stopPrank();
-            Vault0_1_0Helper(address(vault));
+            VaultHelper(address(vault));
         } else {
             vm.startPrank(owner.addr);
-            vault = new Vault0_2_1Helper(false);
+            vault = new VaultHelper(false);
             vault.initialize(v);
             vm.stopPrank();
         }

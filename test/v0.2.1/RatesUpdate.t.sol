@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {BaseTest} from "./Base.sol";
+import "./VaultHelper.sol";
+import "forge-std/Test.sol";
 
-import {Vault0_2_1Helper} from "./Vault0.2.1Helper.sol";
+import {BaseTest} from "./Base.sol";
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
-import {AboveMaxRate, FeeManager} from "@src/vault0.2.1/FeeManager.sol";
-import {Rates} from "@src/vault0.2.1/FeeManager.sol";
-import {Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
-import "forge-std/Test.sol";
 
 contract testRateUpdates is BaseTest {
     uint16 public constant MAX_MANAGEMENT_RATE = 1000; // 10 %
