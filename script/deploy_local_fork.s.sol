@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {InitStruct, Vault} from "@src/v0.2.1/Vault.sol";
 import {IVersion} from "@test/IVersion.sol";
 
-import {DeployBeacon} from "./deploy_beacon.s.sol";
+import {DeployBeacon, IBeacon} from "./deploy_beacon.s.sol";
 import {DeployProtocol} from "./deploy_protocol.s.sol";
 import {DeployVault} from "./deploy_vault.s.sol";
 import {Script, console} from "forge-std/Script.sol";
@@ -45,8 +45,10 @@ contract DeployFull is DeployProtocol, DeployBeacon, DeployVault {
         vm.startBroadcast();
         address feeRegistry = deployFeeRegistry(DAO, PROTOCOL_FEE_RECEIVER, PROXY_ADMIN);
         address beacon = deployBeacon(BEACON_OWNER, tag);
+        // todo: add try execpt
+        // since <v0.2.1 does not implement version() this will revert without info
         require(
-            keccak256(abi.encode(tag)) == keccak256(abi.encode(IVersion(beacon).version())),
+            keccak256(abi.encode(tag)) == keccak256(abi.encode(IVersion(IBeacon(beacon).implementation()).version())),
             "Wrong beacon version deployed"
         );
         InitStruct memory v = InitStruct({
