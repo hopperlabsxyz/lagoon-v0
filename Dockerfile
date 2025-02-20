@@ -4,7 +4,7 @@ FROM node:${NODE_VERSION}-alpine AS node
 # Use the latest foundry image
 FROM ghcr.io/foundry-rs/foundry:v0.3.0
 
-RUN apk add --no-cache git
+RUN apk add --no-cache git bash
 
 # OZ scripts expect npx; we take it from official node image
 COPY --from=node /usr/lib /usr/lib
