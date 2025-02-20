@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
+import "@src/v0.1.0/ERC7540.sol";
+import "@src/v0.1.0/FeeManager.sol";
+import "@src/v0.1.0/Roles.sol";
+import "@src/v0.1.0/Vault.sol";
+import "@src/v0.1.0/primitives/Errors.sol";
+import "@src/v0.1.0/primitives/Events.sol";
+import "@src/v0.1.0/primitives/Struct.sol";
 import "forge-std/Test.sol";
-
-import "@src/v0.2.1/ERC7540.sol";
-import "@src/v0.2.1/FeeManager.sol";
-import "@src/v0.2.1/Roles.sol";
-import "@src/v0.2.1/Vault.sol";
-import "@src/v0.2.1/primitives/Errors.sol";
-import "@src/v0.2.1/primitives/Events.sol";
-import "@src/v0.2.1/primitives/Struct.sol";
 
 contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -126,19 +125,5 @@ contract VaultHelper is Vault {
     function depositSettleId() public view returns (uint256) {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
         return $erc7540.depositSettleId;
-    }
-
-    function epochSettleId(
-        uint40 epochId
-    ) public view returns (uint40) {
-        return _getERC7540Storage().epochs[epochId].settleId;
-    }
-
-    function depositEpochId() public view returns (uint40) {
-        return _getERC7540Storage().depositEpochId;
-    }
-
-    function redeemEpochId() public view returns (uint40) {
-        return _getERC7540Storage().redeemEpochId;
     }
 }

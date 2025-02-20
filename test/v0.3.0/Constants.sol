@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-// import {Vault0_1_0Helper} from "./Vault0.1.0Helper.sol";
-// import {Vault0_2_1Helper} from "./Vault0.2.1Helper.sol";
-
 import "./VaultHelper.sol";
-import "forge-std/console.sol";
 
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 
@@ -19,7 +15,7 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
-abstract contract Constants is Test {
+contract Constants is Test {
     // ERC20 tokens
     string network = vm.envString("NETWORK");
     ERC20Permit immutable USDC = ERC20Permit(vm.envAddress(string.concat("USDC_", network)));
@@ -102,7 +98,7 @@ abstract contract Constants is Test {
 
     function _proxyDeploy(UpgradeableBeacon beacon, InitStruct memory v) internal returns (VaultHelper) {
         BeaconProxy proxy =
-            BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault0_3_0.initialize, v))));
+            BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault.initialize, v))));
 
         return VaultHelper(address(proxy));
     }
@@ -141,12 +137,12 @@ abstract contract Constants is Test {
         if (proxy) {
             Options memory opts;
             opts.constructorData = abi.encode(true);
-            beacon = _beaconDeploy("Vault0.2.1Helper.sol:Vault0_2_1Helper", owner.addr, opts);
+            beacon = _beaconDeploy("v0.3.0/VaultHelper.sol:VaultHelper", owner.addr, opts);
             vault = _proxyDeploy(beacon, v);
-            opts.constructorData = abi.encode(false);
-            vm.startPrank(owner.addr);
-            Upgrades.upgradeBeacon(address(beacon), "Vault0.3.0Helper.sol:Vault0_3_0Helper", opts);
-            vm.stopPrank();
+            // opts.constructorData = abi.encode(false);
+            // vm.startPrank(owner.addr);
+            // Upgrades.upgradeBeacon(address(beacon), "../v0.3.0/VaultHelper.sol:VaultHelper", opts);
+            // vm.stopPrank();
             VaultHelper(address(vault));
         } else {
             vm.startPrank(owner.addr);

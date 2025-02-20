@@ -5,7 +5,6 @@ import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract TestMisc is BaseTest {
@@ -89,7 +88,7 @@ contract TestMisc is BaseTest {
 
     function test_contractSize() public {
         uint256 size;
-        address vaultAddr = address(new Vault(true));
+        address vaultAddr = address(new Vault(false));
         assembly {
             size := extcodesize(vaultAddr)
         }
@@ -209,9 +208,5 @@ contract TestMisc is BaseTest {
         assertEq(rolesStorage.safe, safe.addr);
         assertEq(address(rolesStorage.feeRegistry), address(feeRegistry));
         assertEq(rolesStorage.valuationManager, valuationManager.addr);
-    }
-
-    function test_version() public view {
-        assertEq(keccak256(abi.encode(vault.version())), keccak256(abi.encode("v0.3.0")));
     }
 }

@@ -4,7 +4,7 @@ FROM node:${NODE_VERSION}-alpine AS node
 # Use the latest foundry image
 FROM ghcr.io/foundry-rs/foundry:v0.3.0
 
-RUN apk add --no-cache git
+RUN apk add --no-cache git bash
 
 # OZ scripts expect npx; we take it from official node image
 COPY --from=node /usr/lib /usr/lib
@@ -16,12 +16,14 @@ COPY --from=node /usr/local/bin /usr/local/bin
 RUN node -v && npm -v && npx -v
 
 
-# default code used
-ARG VERSION_TAG="v0.2.1"
+# Can be overriden through .env.dev (default env is set in Makefile)
+ARG GH_BRANCH="main"
+ARG FOUNDRY_FFI=true
+ARG PROXY=true
 
-# dev env
-ARG FOUNDRY_FFI=false
-ARG PROXY=false
+RUN echo "Branch: ${GH_BRANCH}"
+
+# Not meant to be overriden
 ARG NETWORK=MAINNET
 ARG USDC_MAINNET=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
 ARG WETH_MAINNET=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
@@ -34,7 +36,7 @@ ARG VAULT_SYMBOL="MVP"
 # clone vault repo
 RUN --mount=type=secret,id=PERSONAL_ACCESS_TOKEN \
   PERSONAL_ACCESS_TOKEN=$(cat /run/secrets/PERSONAL_ACCESS_TOKEN) && \
-  git clone --branch ${VERSION_TAG} "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/lagoon-v0" vault
+  git clone --branch ${GH_BRANCH} "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/lagoon-v0" vault
 
 # Copy our source code into the container
 WORKDIR /vault
@@ -42,6 +44,7 @@ WORKDIR /vault
 RUN npm install
 
 # build vault
+RUN forge clean
 RUN forge build
 RUN --mount=type=secret,id=RPC_URL \
   FOUNDRY_ETH_RPC_URL=$(cat /run/secrets/RPC_URL) \

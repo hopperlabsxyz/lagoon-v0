@@ -137,11 +137,11 @@ contract Constants is Test {
         if (proxy) {
             Options memory opts;
             opts.constructorData = abi.encode(true);
-            beacon = _beaconDeploy("v0.2.1/VaultHelper.sol:VaultHelper", owner.addr, opts);
+            beacon = _beaconDeploy("v0.2.0/VaultHelper.sol:VaultHelper", owner.addr, opts);
             vault = _proxyDeploy(beacon, v);
             // opts.constructorData = abi.encode(false);
             // vm.startPrank(owner.addr);
-            // Upgrades.upgradeBeacon(address(beacon), "../v0.2.1/VaultHelper.sol:VaultHelper", opts);
+            // Upgrades.upgradeBeacon(address(beacon), "../v0.2.0/VaultHelper.sol:VaultHelper", opts);
             // vm.stopPrank();
             VaultHelper(address(vault));
         } else {

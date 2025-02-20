@@ -2,9 +2,10 @@
 pragma solidity 0.8.26;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {InitStruct, Vault0_2_1} from "@src/vault0.2.1/Vault0.2.1.sol";
+import {InitStruct, Vault} from "@src/v0.2.1/Vault.sol";
+import {IVersion} from "@test/IVersion.sol";
 
-import {DeployBeacon} from "./deploy_beacon.s.sol";
+import {DeployBeacon, IBeacon} from "./deploy_beacon.s.sol";
 import {DeployProtocol} from "./deploy_protocol.s.sol";
 import {DeployVault} from "./deploy_vault.s.sol";
 import {Script, console} from "forge-std/Script.sol";
@@ -40,9 +41,16 @@ contract DeployFull is DeployProtocol, DeployBeacon, DeployVault {
     address VALUATION_MANAGER = vm.envAddress("VALUATION_MANAGER");
 
     function run() external override(DeployProtocol, DeployBeacon, DeployVault) {
+        string memory tag = vm.envString("VERSION_TAG");
         vm.startBroadcast();
         address feeRegistry = deployFeeRegistry(DAO, PROTOCOL_FEE_RECEIVER, PROXY_ADMIN);
-        address beacon = deployBeacon(BEACON_OWNER);
+        address beacon = deployBeacon(BEACON_OWNER, tag);
+        try IVersion(IBeacon(beacon).implementation()).version() returns (string memory version) {
+            require(keccak256(abi.encode(tag)) == keccak256(abi.encode(version)), "Wrong beacon version deployed");
+            console.log(string.concat(string.concat("Beacon ", version), " deployed."));
+        } catch (bytes memory) {
+            console.log("\x1b[33mWarning!\x1b[0m There is no `version()` on the contract deployed");
+        }
         InitStruct memory v = InitStruct({
             underlying: IERC20(UNDERLYING),
             name: NAME,

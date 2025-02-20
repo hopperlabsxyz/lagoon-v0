@@ -11,8 +11,8 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
-
 import {Test} from "forge-std/Test.sol";
+
 import {VmSafe} from "forge-std/Vm.sol";
 
 contract Constants is Test {
@@ -27,7 +27,6 @@ contract Constants is Test {
     uint8 decimalsOffset = 0;
 
     string underlyingName = vm.envString("UNDERLYING_NAME");
-
     VaultHelper vault;
     FeeRegistry feeRegistry;
     string vaultName = "vault_";
@@ -96,7 +95,7 @@ contract Constants is Test {
         return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner, opts));
     }
 
-    function _proxyDeploy(UpgradeableBeacon beacon, InitStruct memory v) internal returns (VaultHelper) {
+    function _proxyDeploy(UpgradeableBeacon beacon, Vault.InitStruct memory v) internal returns (VaultHelper) {
         BeaconProxy proxy =
             BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault.initialize, v))));
 
@@ -113,7 +112,7 @@ contract Constants is Test {
         feeRegistry.updateDefaultRate(_protocolRate);
 
         UpgradeableBeacon beacon;
-        InitStruct memory v = InitStruct({
+        Vault.InitStruct memory v = Vault.InitStruct({
             underlying: underlying,
             name: vaultName,
             symbol: vaultSymbol,
@@ -129,24 +128,16 @@ contract Constants is Test {
             rateUpdateCooldown: rateUpdateCooldown,
             enableWhitelist: enableWhitelist
         });
-        // function upgradeBeacon(address beacon, string memory contractName) internal {
-        //         Options memory opts;
-        //         Core.upgradeBeacon(beacon, contractName, opts);
-        //     }
-
         if (proxy) {
             Options memory opts;
             opts.constructorData = abi.encode(true);
-            beacon = _beaconDeploy("v0.2.1/VaultHelper.sol:VaultHelper", owner.addr, opts);
+            beacon = _beaconDeploy("v0.1.0/VaultHelper.sol:VaultHelper", owner.addr, opts);
             vault = _proxyDeploy(beacon, v);
-            // opts.constructorData = abi.encode(false);
-            // vm.startPrank(owner.addr);
-            // Upgrades.upgradeBeacon(address(beacon), "../v0.2.1/VaultHelper.sol:VaultHelper", opts);
-            // vm.stopPrank();
-            VaultHelper(address(vault));
         } else {
             vm.startPrank(owner.addr);
+
             vault = new VaultHelper(false);
+
             vault.initialize(v);
             vm.stopPrank();
         }
