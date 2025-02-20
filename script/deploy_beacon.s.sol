@@ -33,12 +33,11 @@ contract DeployBeacon is Script {
         vm.startBroadcast();
         address beacon = deployBeacon(BEACON_OWNER, tag);
 
-        // todo: add try execpt
-        // since <v0.2.1 does not implement version() this will revert without info
-        require(
-            keccak256(abi.encode(tag)) == keccak256(abi.encode(IVersion(IBeacon(beacon).implementation()).version())),
-            "Wrong beacon version deployed"
-        );
+        try IVersion(IBeacon(beacon).implementation()).version() returns (string memory version) {
+            require(keccak256(abi.encode(tag)) == keccak256(abi.encode(version)), "Wrong beacon version deployed");
+        } catch (bytes memory) {
+            console.log("\x1b[33mWarning!\x1b[0m There is no `version()` on the contract deployed");
+        }
         vm.stopBroadcast();
     }
 }
