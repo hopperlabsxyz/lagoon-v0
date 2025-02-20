@@ -41,16 +41,6 @@ contract Upgradable is Test {
     ERC20Permit immutable underlyingPermit;
 
     // Users
-    VmSafe.Wallet user1 = vm.createWallet("user1");
-    VmSafe.Wallet user2 = vm.createWallet("user2");
-    VmSafe.Wallet user3 = vm.createWallet("user3");
-    VmSafe.Wallet user4 = vm.createWallet("user4");
-    VmSafe.Wallet user5 = vm.createWallet("user5");
-    VmSafe.Wallet user6 = vm.createWallet("user6");
-    VmSafe.Wallet user7 = vm.createWallet("user7");
-    VmSafe.Wallet user8 = vm.createWallet("user8");
-    VmSafe.Wallet user9 = vm.createWallet("user9");
-    VmSafe.Wallet user10 = vm.createWallet("user10");
     VmSafe.Wallet owner = vm.createWallet("owner");
     VmSafe.Wallet safe = vm.createWallet("safe");
     VmSafe.Wallet valuationManager = vm.createWallet("valuationManager");
@@ -72,22 +62,6 @@ contract Upgradable is Test {
     constructor() {
         vaultName = string.concat(vaultName, underlyingName);
         vaultSymbol = string.concat(vaultSymbol, underlyingName);
-
-        vm.label(address(USDC), "USDC");
-        vm.label(address(WETH), "WETH");
-        vm.label(address(ETH), "ETH");
-        vm.label(address(WBTC), "WBTC");
-
-        users.push(user1);
-        users.push(user2);
-        users.push(user3);
-        users.push(user4);
-        users.push(user5);
-        users.push(user6);
-        users.push(user7);
-        users.push(user8);
-        users.push(user9);
-        users.push(user10);
     }
 
     function _beaconDeploy(
@@ -134,7 +108,7 @@ contract Upgradable is Test {
         opts.constructorData = abi.encode(true);
         beacon = _beaconDeploy("vault0.1.0/Vault.sol:Vault", owner.addr, opts);
         address vault = _proxyDeploy(beacon, v);
-        console.log("vault address:", vault);
+
         opts.constructorData = abi.encode(false);
         vm.startPrank(owner.addr);
         Upgrades.upgradeBeacon(address(beacon), "vault0.2.0/Vault.sol:Vault", opts);
