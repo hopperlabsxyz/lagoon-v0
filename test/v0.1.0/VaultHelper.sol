@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import "@src/vault0.1.0/ERC7540.sol";
-import "@src/vault0.1.0/FeeManager.sol";
-import "@src/vault0.1.0/Roles.sol";
-import "@src/vault0.1.0/Vault.sol";
-import "@src/vault0.1.0/primitives/Errors.sol";
-import "@src/vault0.1.0/primitives/Events.sol";
-import "@src/vault0.1.0/primitives/Struct.sol";
+import "@src/v0.1.0/ERC7540.sol";
+import "@src/v0.1.0/FeeManager.sol";
+import "@src/v0.1.0/Roles.sol";
+import "@src/v0.1.0/Vault.sol";
+import "@src/v0.1.0/primitives/Errors.sol";
+import "@src/v0.1.0/primitives/Events.sol";
+import "@src/v0.1.0/primitives/Struct.sol";
 import "forge-std/Test.sol";
 
 contract VaultHelper is Vault {

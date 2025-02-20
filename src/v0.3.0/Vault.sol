@@ -51,7 +51,7 @@ struct InitStruct {
     uint256 rateUpdateCooldown;
 }
 
-/// @custom:oz-upgrades-from src/vault0.2.1/Vault.sol:Vault
+/// @custom:oz-upgrades-from src/v0.2.1/Vault.sol:Vault
 contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @custom:storage-location erc7201:hopper.storage.vault
     /// @param newTotalAssets The new total assets of the vault. It is used to update the totalAssets variable.

@@ -34,7 +34,7 @@ ARG VAULT_SYMBOL="MVP"
 # clone vault repo
 RUN --mount=type=secret,id=PERSONAL_ACCESS_TOKEN \
   PERSONAL_ACCESS_TOKEN=$(cat /run/secrets/PERSONAL_ACCESS_TOKEN) && \
-  git clone --branch ${VERSION_TAG} "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/lagoon-v0" vault
+  git clone --branch feat/v0.3.0 "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/lagoon-v0" vault
 
 # Copy our source code into the container
 WORKDIR /vault

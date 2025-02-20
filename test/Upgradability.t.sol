@@ -3,15 +3,14 @@ pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 
-import {Vault} from "@src/vault0.1.0/Vault.sol";
-import {Vault as Vault0_2_1} from "@src/vault0.2.1/Vault.sol";
+import {IVersion} from "./IVersion.sol";
 
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
+import {Vault} from "@src/v0.1.0/Vault.sol";
 
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 
@@ -106,16 +105,16 @@ contract Upgradable is Test {
 
         Options memory opts;
         opts.constructorData = abi.encode(true);
-        beacon = _beaconDeploy("vault0.1.0/Vault.sol:Vault", owner.addr, opts);
+        beacon = _beaconDeploy("v0.1.0/Vault.sol:Vault", owner.addr, opts);
         address vault = _proxyDeploy(beacon, v);
 
         opts.constructorData = abi.encode(false);
         vm.startPrank(owner.addr);
-        Upgrades.upgradeBeacon(address(beacon), "vault0.2.0/Vault.sol:Vault", opts);
-        Upgrades.upgradeBeacon(address(beacon), "vault0.2.1/Vault.sol:Vault", opts);
-        assertEq(keccak256(abi.encode(Vault0_2_1(vault).version())), keccak256(abi.encode("v0.2.1")));
-        Upgrades.upgradeBeacon(address(beacon), "vault0.3.0/Vault.sol:Vault", opts);
-        assertEq(keccak256(abi.encode(Vault0_2_1(vault).version())), keccak256(abi.encode("v0.3.0")));
+        Upgrades.upgradeBeacon(address(beacon), "v0.2.0/Vault.sol:Vault", opts);
+        Upgrades.upgradeBeacon(address(beacon), "v0.2.1/Vault.sol:Vault", opts);
+        assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.2.1")));
+        Upgrades.upgradeBeacon(address(beacon), "v0.3.0/Vault.sol:Vault", opts);
+        assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.3.0")));
         vm.stopPrank();
     }
 }
