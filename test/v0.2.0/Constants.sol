@@ -15,7 +15,7 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
-abstract contract Constants is Test {
+contract Constants is Test {
     // ERC20 tokens
     string network = vm.envString("NETWORK");
     ERC20Permit immutable USDC = ERC20Permit(vm.envAddress(string.concat("USDC_", network)));
@@ -137,12 +137,12 @@ abstract contract Constants is Test {
         if (proxy) {
             Options memory opts;
             opts.constructorData = abi.encode(true);
-            beacon = _beaconDeploy("../v0.1.0/VaultHelper.sol:VaultHelper", owner.addr, opts);
+            beacon = _beaconDeploy("v0.2.0/VaultHelper.sol:VaultHelper", owner.addr, opts);
             vault = _proxyDeploy(beacon, v);
-            opts.constructorData = abi.encode(false);
-            vm.startPrank(owner.addr);
-            Upgrades.upgradeBeacon(address(beacon), "../v0.2.0/VaultHelper.sol:VaultHelper", opts);
-            vm.stopPrank();
+            // opts.constructorData = abi.encode(false);
+            // vm.startPrank(owner.addr);
+            // Upgrades.upgradeBeacon(address(beacon), "../v0.2.0/VaultHelper.sol:VaultHelper", opts);
+            // vm.stopPrank();
             VaultHelper(address(vault));
         } else {
             vm.startPrank(owner.addr);

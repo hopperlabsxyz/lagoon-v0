@@ -4,7 +4,7 @@ pragma solidity "0.8.26";
 import {Roles} from "./Roles.sol";
 import {WhitelistDisabled, WhitelistUpdated} from "./primitives/Events.sol";
 
-contract Whitelistable is Roles {
+abstract contract Whitelistable is Roles {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))
     /// @custom:storage-location erc7201:hopper.storage.Whitelistable
     // solhint-disable-next-line const-name-snakecase
@@ -53,13 +53,17 @@ contract Whitelistable is Roles {
     /// @notice Checks if an account is whitelisted
     /// @param account The address of the account to check
     /// @return True if the account is whitelisted, false otherwise
-    function isWhitelisted(address account) public view returns (bool) {
+    function isWhitelisted(
+        address account
+    ) public view returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         return $.isActivated ? $.isWhitelisted[account] : true;
     }
 
     /// @notice Adds multiple accounts to the whitelist
-    function addToWhitelist(address[] memory accounts) external onlyWhitelistManager {
+    function addToWhitelist(
+        address[] memory accounts
+    ) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
 
         for (uint256 i = 0; i < accounts.length; i++) {
@@ -70,7 +74,9 @@ contract Whitelistable is Roles {
 
     /// @notice Removes multiple accounts from the whitelist
     /// @param accounts The addresses of the accounts to remove
-    function revokeFromWhitelist(address[] memory accounts) external onlyWhitelistManager {
+    function revokeFromWhitelist(
+        address[] memory accounts
+    ) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
         uint256 i = 0;
         for (; i < accounts.length;) {
