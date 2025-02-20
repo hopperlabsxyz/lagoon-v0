@@ -35,6 +35,7 @@ contract DeployBeacon is Script {
 
         try IVersion(IBeacon(beacon).implementation()).version() returns (string memory version) {
             require(keccak256(abi.encode(tag)) == keccak256(abi.encode(version)), "Wrong beacon version deployed");
+            console.log(string.concat(string.concat("Beacon ", version), " deployed."));
         } catch (bytes memory) {
             console.log("\x1b[33mWarning!\x1b[0m There is no `version()` on the contract deployed");
         }

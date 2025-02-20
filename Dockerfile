@@ -16,12 +16,12 @@ COPY --from=node /usr/local/bin /usr/local/bin
 RUN node -v && npm -v && npx -v
 
 
-# default code used
-ARG VERSION_TAG="v0.2.1"
-
-# dev env
+# Can be overriden through .env
+ARG BRANCH="main"
 ARG FOUNDRY_FFI=true
 ARG PROXY=true
+
+# Not meant to be overriden
 ARG NETWORK=MAINNET
 ARG USDC_MAINNET=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
 ARG WETH_MAINNET=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
@@ -34,7 +34,7 @@ ARG VAULT_SYMBOL="MVP"
 # clone vault repo
 RUN --mount=type=secret,id=PERSONAL_ACCESS_TOKEN \
   PERSONAL_ACCESS_TOKEN=$(cat /run/secrets/PERSONAL_ACCESS_TOKEN) && \
-  git clone --branch feat/v0.3.0 "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/lagoon-v0" vault
+  git clone --branch ${BRANCH} "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/lagoon-v0" vault
 
 # Copy our source code into the container
 WORKDIR /vault
