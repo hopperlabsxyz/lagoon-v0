@@ -17,9 +17,11 @@ RUN node -v && npm -v && npx -v
 
 
 # Can be overriden through .env
-ARG BRANCH="main"
+ARG GH_BRANCH="main"
 ARG FOUNDRY_FFI=true
 ARG PROXY=true
+
+RUN echo "Branch: ${GH_BRANCH}"
 
 # Not meant to be overriden
 ARG NETWORK=MAINNET
@@ -34,7 +36,7 @@ ARG VAULT_SYMBOL="MVP"
 # clone vault repo
 RUN --mount=type=secret,id=PERSONAL_ACCESS_TOKEN \
   PERSONAL_ACCESS_TOKEN=$(cat /run/secrets/PERSONAL_ACCESS_TOKEN) && \
-  git clone --branch ${BRANCH} "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/lagoon-v0" vault
+  git clone --branch ${GH_BRANCH} "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/lagoon-v0" vault
 
 # Copy our source code into the container
 WORKDIR /vault
