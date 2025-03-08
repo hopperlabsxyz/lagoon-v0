@@ -1,11 +1,11 @@
 IMAGE_NAME := lagoon-deployer
 
-ifeq ($(ENV_TEST),)
-	ENV_TEST := .env.dev
+ifeq ($(ENV_BUILD),)
+	ENV_BUILD := .env.build
 endif
 
 ifeq ($(ENV_DEPLOY),)
-	ENV_DEPLOY := .env.local-fork # local fork rpc-url
+	ENV_DEPLOY := .env.deploy
 endif
 
 ifeq ($(NETWORK_DOCKER),)
@@ -49,9 +49,9 @@ VAULT_SCRIPT := script/deploy_vault.s.sol:DeployVault
 #################### UTILS #####################
 
 load_dev_env:
-	@echo "Using $(ENV_TEST) environment"
-	$(eval include $(ENV_TEST))
-	$(eval export $(set -a && source $(ENV_TEST) && set +a))
+	@echo "Using $(ENV_BUILD) environment"
+	$(eval include $(ENV_BUILD))
+	$(eval export $(set -a && source $(ENV_BUILD) && set +a))
 
 load_prod_env:
 	@echo "Using $(ENV_DEPLOY) environment"
