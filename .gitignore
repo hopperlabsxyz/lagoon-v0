@@ -13,6 +13,8 @@ docs/
 # Dotenv file
 .env*
 !.env.example
+!.env.deploy.example
+!.env.build.example
 !.env.prod-example
 
 # Node modules
