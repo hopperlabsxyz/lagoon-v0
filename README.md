@@ -16,7 +16,7 @@ You need
 
 ## Repository Structure
 
-The repository is split in two parts, [`protocol`]('./src/protocol') and [`vault`]('./src/v0.2.0'). The vault repository contains most of the code of the Lagoon vault logic. You will mainly be interested in `Vault.sol` and `ERC7540.sol` files.
+The repository is split in two parts, [`protocol`]('./src/protocol') and [`vault`]('./src/v0.2.0'). You will mainly be interested in `Vault.sol` and `ERC7540.sol` files.
 
 ```bash
 src
@@ -117,7 +117,7 @@ First make sure you have a newly created Safe address available.
 
 You can create one using the [safe-cli](https://github.com/safe-global/safe-cli) or through the [Safe UI](https://safe.global/)
 
-## Get deploy docker image
+## How to get the docker image to deploy
 
 Pull the image from Github packages.
 
