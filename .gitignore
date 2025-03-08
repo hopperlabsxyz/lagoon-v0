@@ -15,7 +15,6 @@ docs/
 !.env.example
 !.env.deploy.example
 !.env.build.example
-!.env.prod-example
 
 # Node modules
 node_modules/
