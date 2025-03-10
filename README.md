@@ -181,7 +181,7 @@ If you want to deploy the vault on mainnet you can change `RPC_URL` to point to 
 
 ## Audits
 
-The audit is stored in the [audits](./audits/)' folder.
+The audit is stored in the [audits](https://docs.lagoon.finance/resources/audits)' folder.
 
 ## Licences
 
