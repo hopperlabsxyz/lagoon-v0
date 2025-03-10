@@ -16,7 +16,7 @@ COPY --from=node /usr/local/bin /usr/local/bin
 RUN node -v && npm -v && npx -v
 
 
-# Can be overriden through .env.dev (default env is set in Makefile)
+# Can be overriden through .env.build (default env is set in Makefile)
 ARG GH_BRANCH="main"
 ARG FOUNDRY_FFI=true
 ARG PROXY=true
