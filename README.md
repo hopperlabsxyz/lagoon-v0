@@ -125,6 +125,14 @@ Pull the image from Github packages.
 docker pull --platform linux/x86_64 ghcr.io/hopperlabsxyz/lagoon-v0:v0.2.0
 ```
 
+Make sure to be logged in with your docker cli
+
+```bash
+echo $GH_ACCESS_TOKEN | docker login ghcr.io -u $USER --password-stdin
+```
+
+Your access token needs `read:packages` access.
+
 Alternatively, create a `.env.build` file.
 
 ```bash
