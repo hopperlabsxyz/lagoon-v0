@@ -1,5 +1,11 @@
 IMAGE_NAME := lagoon-v0
 
+ifeq ($(VERSION_TAG),)
+	VERSION_TAG := latest
+endif
+
+IMAGE := ghcr.io/hopperlabsxyz/$(IMAGE_NAME):$(VERSION_TAG)
+
 ifeq ($(ENV_BUILD),)
 	ENV_BUILD := .env.build
 endif
@@ -65,7 +71,7 @@ build:
 	@forge build
 
 clean-docker:
-	docker rmi $(IMAGE_NAME) || true
+	docker rmi $(IMAGE) || true
 
 build-image: load_dev_env
 	docker build \
@@ -77,7 +83,7 @@ build-image: load_dev_env
 		--platform linux/x86_64 \
 		--no-cache \
 		--progress=plain \
-		-t $(IMAGE_NAME) \
+		-t $(IMAGE) \
 		. # < do not remove the dot
 
 test-image: build-image
@@ -107,12 +113,12 @@ stop-fork: load_prod_env
 # simulation
 full: load_prod_env
 		@echo "Deploying FeeRegistry + Beacon + Vault..."
-		@$(DOCKER_RUN) $(IMAGE_NAME) $(DEPLOYER_FLAGS) $(FULL_SCRIPT)
+		@$(DOCKER_RUN) $(IMAGE) $(DEPLOYER_FLAGS) $(FULL_SCRIPT)
 
 # pk broadcast
 deploy-full-pk: load_prod_env
 		@echo "Deploying FeeRegistry + Beacon + Vault..."
-		@$(DOCKER_RUN) $(IMAGE_NAME) $(PK_FLAGS) $(VERIFY_FLAGS) $(FULL_SCRIPT)
+		@$(DOCKER_RUN) $(IMAGE) $(PK_FLAGS) $(VERIFY_FLAGS) $(FULL_SCRIPT)
 
 # ledger broadcast
 deploy-full-ledger: load_prod_env clean
@@ -124,12 +130,12 @@ deploy-full-ledger: load_prod_env clean
 # simulation
 protocol: load_prod_env clean
 	@echo "Deploying FeeRegistry..."
-	@$(DOCKER_RUN) $(IMAGE_NAME) $(DEPLOYER_FLAGS) $(PROTOCOL_SCRIPT)
+	@$(DOCKER_RUN) $(IMAGE) $(DEPLOYER_FLAGS) $(PROTOCOL_SCRIPT)
  
 # pk broadcast
 deploy-protocol-pk: load_prod_env
 	@echo "Deploying FeeRegistry..."
-	@$(DOCKER_RUN) $(IMAGE_NAME) $(PK_FLAGS) $(VERIFY_FLAGS) $(PROTOCOL_SCRIPT)
+	@$(DOCKER_RUN) $(IMAGE) $(PK_FLAGS) $(VERIFY_FLAGS) $(PROTOCOL_SCRIPT)
 
 # ledger broadcast
 deploy-protocol-ledger: load_prod_env clean
@@ -141,12 +147,12 @@ deploy-protocol-ledger: load_prod_env clean
 # simulation
 beacon: load_prod_env clean
 	@echo "Deploying Beacon..."
-	@$(DOCKER_RUN) $(IMAGE_NAME) $(DEPLOYER_FLAGS) $(BEACON_SCRIPT)
+	@$(DOCKER_RUN) $(IMAGE) $(DEPLOYER_FLAGS) $(BEACON_SCRIPT)
 
 # pk broadcast 
 deploy-beacon-pk: load_prod_env
 	@echo "Deploying Beacon..."
-	@$(DOCKER_RUN) $(IMAGE_NAME) $(PK_FLAGS) $(VERIFY_FLAGS) $(BEACON_SCRIPT)
+	@$(DOCKER_RUN) $(IMAGE) $(PK_FLAGS) $(VERIFY_FLAGS) $(BEACON_SCRIPT)
 
 # ledger broadcast
 deploy-beacon-ledger: load_prod_env clean
@@ -158,12 +164,12 @@ deploy-beacon-ledger: load_prod_env clean
 # simulation
 vault: load_prod_env
 	@echo "Deploying Vault..."
-	@$(DOCKER_RUN) $(IMAGE_NAME) $(DEPLOYER_FLAGS) $(VAULT_SCRIPT)
+	@$(DOCKER_RUN) $(IMAGE) $(DEPLOYER_FLAGS) $(VAULT_SCRIPT)
 
 # pk broadcast 
 deploy-vault-pk: load_prod_env
 	@echo "Deploying Vault..."
-	@$(DOCKER_RUN) $(IMAGE_NAME) $(PK_FLAGS) $(VERIFY_FLAGS) $(VAULT_SCRIPT)
+	@$(DOCKER_RUN) $(IMAGE) $(PK_FLAGS) $(VERIFY_FLAGS) $(VAULT_SCRIPT)
 
 # ledger broadcast
 deploy-vault-ledger: load_prod_env clean
