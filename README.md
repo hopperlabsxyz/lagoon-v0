@@ -122,7 +122,7 @@ You can create one using the [safe-cli](https://github.com/safe-global/safe-cli)
 Pull the image from Github packages.
 
 ```
-TODO:
+docker pull --platform linux/x86_64 ghcr.io/hopperlabsxyz/lagoon-v0:v0.2.0
 ```
 
 Alternatively, create a `.env.build` file.
@@ -172,7 +172,8 @@ ENV_DEPLOY=.env.deploy.mainnet make deploy-beacon-pk
 The same apply to deploy a vault proxy using the `vault` script.
 
 ```bash
-ENV_DEPLOY=.env.deploy.mainnet make deploy-vault-pk
+ENV_DEPLOY=.env.deploy.mainnet make vault # simulation
+ENV_DEPLOY=.env.deploy.mainnet make deploy-vault-pk # broadcast to network
 ```
 
 Make sure the `RPC_URL` variable points to the correct domain, when deploying from another container the domain should map to the container's local fork name. (example: `RPC_URL="http://local-fork:8545"`)

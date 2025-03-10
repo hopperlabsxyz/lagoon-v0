@@ -1,5 +1,6 @@
 IMAGE_NAME := lagoon-v0
 
+# only used if you want to build docker image
 ifeq ($(VERSION_TAG),)
 	VERSION_TAG := latest
 endif
