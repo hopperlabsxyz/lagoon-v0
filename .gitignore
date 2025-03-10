@@ -26,5 +26,6 @@ lcov.info
 # Mac files
 .DS_Store
 
+.vscode/
 
 lib
