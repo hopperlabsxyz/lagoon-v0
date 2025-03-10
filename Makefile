@@ -1,4 +1,4 @@
-IMAGE_NAME := lagoon-deployer
+IMAGE_NAME := lagoon-v0
 
 ifeq ($(ENV_BUILD),)
 	ENV_BUILD := .env.build
