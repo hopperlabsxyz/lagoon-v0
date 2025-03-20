@@ -7,6 +7,8 @@ import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol"
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 contract BeaconProxyFactory is UpgradeableBeacon {
+    event BeaconProxyDeployed(address proxy, address deployer);
+
     address public immutable REGISTRY;
 
     address public immutable WRAPPED_NATIVE;
@@ -35,6 +37,8 @@ contract BeaconProxyFactory is UpgradeableBeacon {
         );
         isInstance[proxy] = true;
         instances.push(proxy);
+
+        emit BeaconProxyDeployed(proxy, msg.sender);
 
         return address(proxy);
     }
