@@ -15,7 +15,7 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
-import {FactoryBeacon} from "@src/FactoryBeacon.sol";
+import {BeaconProxyFactory} from "@src/BeaconProxyFactory.sol";
 
 contract Constants is Test {
     // ERC20 tokens
@@ -26,7 +26,7 @@ contract Constants is Test {
     ERC20 immutable WBTC = ERC20(vm.envAddress(string.concat("WBTC_", network)));
     ERC20 immutable ETH = ERC20(vm.envAddress(string.concat("ETH_", network)));
 
-    FactoryBeacon factory;
+    BeaconProxyFactory factory;
 
     uint8 decimalsOffset = 0;
 
@@ -102,7 +102,7 @@ contract Constants is Test {
         Options memory opts;
         opts.constructorData = abi.encode(true);
         address implementation = Upgrades.deployImplementation("v0.3.0/VaultHelper.sol:VaultHelper", opts);
-        factory = new FactoryBeacon(address(feeRegistry), implementation, dao.addr, WRAPPED_NATIVE_TOKEN);
+        factory = new BeaconProxyFactory(address(feeRegistry), implementation, dao.addr, WRAPPED_NATIVE_TOKEN);
 
         InitStruct memory initStruct = InitStruct({
             underlying: underlying,

@@ -81,12 +81,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     }
 
     /// @notice Initializes the vault.
-    /// @param init The initialization parameters of the vault.
+    /// @param data The encoded initialization parameters of the vault.
     function initialize(
-        InitStruct memory init,
+        bytes memory data,
         address feeRegistry,
         address wrappedNativeToken
     ) public virtual initializer {
+        InitStruct memory init = abi.decode(data, (InitStruct));
         __Ownable_init(init.admin); // initial vault owner
         __Roles_init(
             Roles.RolesStorage({
