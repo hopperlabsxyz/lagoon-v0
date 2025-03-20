@@ -43,8 +43,6 @@ struct InitStruct {
     address valuationManager;
     address admin;
     address feeReceiver;
-    address feeRegistry;
-    address wrappedNativeToken;
     uint16 managementRate;
     uint16 performanceRate;
     bool enableWhitelist;
@@ -85,7 +83,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @notice Initializes the vault.
     /// @param init The initialization parameters of the vault.
     function initialize(
-        InitStruct memory init
+        InitStruct memory init,
+        address feeRegistry,
+        address wrappedNativeToken
     ) public virtual initializer {
         __Ownable_init(init.admin); // initial vault owner
         __Roles_init(
@@ -93,17 +93,17 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
                 whitelistManager: init.whitelistManager,
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
-                feeRegistry: FeeRegistry(init.feeRegistry),
+                feeRegistry: FeeRegistry(feeRegistry),
                 valuationManager: init.valuationManager
             })
         );
         __ERC20_init(init.name, init.symbol);
         __ERC20Pausable_init();
         __ERC4626_init(init.underlying);
-        __ERC7540_init(init.underlying, init.wrappedNativeToken);
-        __Whitelistable_init(init.enableWhitelist, FeeRegistry(init.feeRegistry).protocolFeeReceiver());
+        __ERC7540_init(init.underlying, wrappedNativeToken);
+        __Whitelistable_init(init.enableWhitelist, FeeRegistry(feeRegistry).protocolFeeReceiver());
         __FeeManager_init(
-            init.feeRegistry,
+            feeRegistry,
             init.managementRate,
             init.performanceRate,
             IERC20Metadata(address(init.underlying)).decimals(),

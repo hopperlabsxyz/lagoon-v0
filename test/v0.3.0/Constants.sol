@@ -15,6 +15,8 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
+import {FactoryBeacon} from "@src/FactoryBeacon.sol";
+
 contract Constants is Test {
     // ERC20 tokens
     string network = vm.envString("NETWORK");
@@ -24,10 +26,12 @@ contract Constants is Test {
     ERC20 immutable WBTC = ERC20(vm.envAddress(string.concat("WBTC_", network)));
     ERC20 immutable ETH = ERC20(vm.envAddress(string.concat("ETH_", network)));
 
+    FactoryBeacon factory;
+
     uint8 decimalsOffset = 0;
 
     string underlyingName = vm.envString("UNDERLYING_NAME");
-    // Vault0_2_1Helper vault;
+
     VaultHelper vault;
     FeeRegistry feeRegistry;
     string vaultName = "vault_";
@@ -88,32 +92,19 @@ contract Constants is Test {
         users.push(user10);
     }
 
-    function _beaconDeploy(
-        string memory contractName,
-        address _owner,
-        Options memory opts
-    ) internal returns (UpgradeableBeacon) {
-        return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner, opts));
-    }
-
-    function _proxyDeploy(UpgradeableBeacon beacon, InitStruct memory v) internal returns (VaultHelper) {
-        BeaconProxy proxy =
-            BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault.initialize, v))));
-
-        return VaultHelper(address(proxy));
-    }
-
     function setUpVault(uint16 _protocolRate, uint16 _managementRate, uint16 _performanceRate) internal {
-        bool proxy = vm.envBool("PROXY");
-
         feeRegistry = new FeeRegistry(false);
         feeRegistry.initialize(dao.addr, dao.addr);
 
         vm.prank(dao.addr);
         feeRegistry.updateDefaultRate(_protocolRate);
 
-        UpgradeableBeacon beacon;
-        InitStruct memory v = InitStruct({
+        Options memory opts;
+        opts.constructorData = abi.encode(true);
+        address implementation = Upgrades.deployImplementation("v0.3.0/VaultHelper.sol:VaultHelper", opts);
+        factory = new FactoryBeacon(address(feeRegistry), implementation, dao.addr, WRAPPED_NATIVE_TOKEN);
+
+        InitStruct memory initStruct = InitStruct({
             underlying: underlying,
             name: vaultName,
             symbol: vaultSymbol,
@@ -122,34 +113,14 @@ contract Constants is Test {
             valuationManager: valuationManager.addr,
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
-            feeRegistry: address(feeRegistry),
             managementRate: _managementRate,
             performanceRate: _performanceRate,
-            wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
             rateUpdateCooldown: rateUpdateCooldown,
             enableWhitelist: enableWhitelist
         });
-        // function upgradeBeacon(address beacon, string memory contractName) internal {
-        //         Options memory opts;
-        //         Core.upgradeBeacon(beacon, contractName, opts);
-        //     }
+        address vaultHelper = factory.createVaultProxy(initStruct);
+        vault = VaultHelper(vaultHelper);
 
-        if (proxy) {
-            Options memory opts;
-            opts.constructorData = abi.encode(true);
-            beacon = _beaconDeploy("v0.3.0/VaultHelper.sol:VaultHelper", owner.addr, opts);
-            vault = _proxyDeploy(beacon, v);
-            // opts.constructorData = abi.encode(false);
-            // vm.startPrank(owner.addr);
-            // Upgrades.upgradeBeacon(address(beacon), "../v0.3.0/VaultHelper.sol:VaultHelper", opts);
-            // vm.stopPrank();
-            VaultHelper(address(vault));
-        } else {
-            vm.startPrank(owner.addr);
-            vault = new VaultHelper(false);
-            vault.initialize(v);
-            vm.stopPrank();
-        }
         if (enableWhitelist) {
             whitelistInit.push(feeReceiver.addr);
             whitelistInit.push(dao.addr);
