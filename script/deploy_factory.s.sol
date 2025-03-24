@@ -32,7 +32,7 @@ contract DeployBeaconProxyFactory is Script {
     }
 
     function run() external virtual {
-        address PROTOCOL_REGISTRY = vm.envAddress("PROTOCOL_REGISTRY");
+        address FEE_REGISTRY = vm.envAddress("FEE_REGISTRY");
         address BEACON_OWNER = vm.envAddress("BEACON_OWNER");
         address WRAPPED_NATIVE_TOKEN = vm.envAddress("WRAPPED_NATIVE_TOKEN");
 
@@ -54,14 +54,14 @@ contract DeployBeaconProxyFactory is Script {
 
         BeaconProxyFactory beaconProxyFactory = BeaconProxyFactory(
             deployBeaconProxyFactory({
-                _registry: PROTOCOL_REGISTRY,
+                _registry: FEE_REGISTRY,
                 _implementation: IMPLEMENTATION,
                 _owner: BEACON_OWNER,
                 _wrappedNativeToken: WRAPPED_NATIVE_TOKEN
             })
         );
 
-        require(beaconProxyFactory.REGISTRY() == PROTOCOL_REGISTRY, "wrong registry address");
+        require(beaconProxyFactory.REGISTRY() == FEE_REGISTRY, "wrong registry address");
         require(beaconProxyFactory.WRAPPED_NATIVE() == WRAPPED_NATIVE_TOKEN, "wrong wrapped native token");
         require(beaconProxyFactory.owner() == BEACON_OWNER, "wrong beacon owner");
 
