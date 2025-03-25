@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {InitStruct, Vault} from "@src/v0.2.1/Vault.sol";
+import {InitStruct, Vault} from "@src/v0.2.0/Vault.sol";
 import {IVersion} from "@test/IVersion.sol";
 
 import {DeployBeacon, IBeacon} from "./deploy_beacon.s.sol";

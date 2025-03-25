@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
-import {Vault} from "@src/v0.2.1/Vault.sol";
-
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 import {Script, console} from "forge-std/Script.sol";

@@ -42,18 +42,3 @@ contract DeployBeacon is Script {
         vm.stopBroadcast();
     }
 }
-
-// Use carefully /!\
-//
-// This script just change the beacon implementation pointer and does not check for compabitibility between upgrades.
-// contract UpgradeBeaconImplementation is Script {
-//     function run() external {
-//         vm.startBroadcast();
-//         Options memory opts;
-//         opts.constructorData = abi.encode(true);
-//         address implementation = Upgrades.deployImplementation("v0.2.1/Vault.sol:Vault", opts);
-//         vm.stopBroadcast();
-//
-//         console.log("implementation address:", implementation);
-//     }
-// }
