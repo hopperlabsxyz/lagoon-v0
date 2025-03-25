@@ -110,24 +110,7 @@ start-fork: load_prod_env
 stop-fork: load_prod_env
 	docker compose --env-file $$ENV_DEPLOY down local-fork
 
-########## PROTOCOL + BEACON + VAULT ############
-
-# simulation
-full: load_prod_env
-		@echo "Deploying FeeRegistry + Beacon + Vault..."
-		@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(DEPLOYER_FLAGS) $(FULL_SCRIPT)
-
-# pk broadcast
-deploy-full-pk: load_prod_env
-		@echo "Deploying FeeRegistry + Beacon + Vault..."
-		@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(PK_FLAGS) $(VERIFY_FLAGS) $(FULL_SCRIPT)
-
-# ledger broadcast
-deploy-full-ledger: load_prod_env clean
-	@echo "Deploying FeeRegistry + Beacon + Vault..."
-	@forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(FULL_SCRIPT)
-
-################### PROTOCOL ONLY ################### 
+################### PROTOCOL #################### 
 
 # simulation
 protocol: load_prod_env clean
@@ -144,24 +127,7 @@ deploy-protocol-ledger: load_prod_env clean
 	@echo "Deploying FeeRegistry..."
 	forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(PROTOCOL_SCRIPT)
 
-################### BEACON ONLY ################### 
-
-# simulation
-beacon: load_prod_env clean
-	@echo "Deploying Beacon..."
-	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(DEPLOYER_FLAGS) $(BEACON_SCRIPT)
-
-# pk broadcast 
-deploy-beacon-pk: load_prod_env
-	@echo "Deploying Beacon..."
-	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(PK_FLAGS) $(VERIFY_FLAGS) $(BEACON_SCRIPT)
-
-# ledger broadcast
-deploy-beacon-ledger: load_prod_env clean
-	@echo "Deploying Beacon..."
-	@forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(BEACON_SCRIPT)
-
-################### VAULT ONLY ################### 
+################### VAULT ##################### 
 
 # simulation
 vault: load_prod_env
