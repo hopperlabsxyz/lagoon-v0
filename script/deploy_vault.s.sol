@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
-import {InitStruct, Vault} from "@src/v0.2.0/Vault.sol";
+import {BeaconProxyFactory, InitStruct} from "@src/BeaconProxyFactory.sol";
 
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -14,12 +14,9 @@ import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 */
 
 contract DeployVault is Script {
-    function _loadInitStructFromEnv() internal view returns (InitStruct memory v, address beacon) {
+    function _loadInitStructFromEnv() internal view returns (InitStruct memory v) {
         // General
         address UNDERLYING = vm.envAddress("UNDERLYING");
-        address WRAPPED_NATIVE_TOKEN = vm.envAddress("WRAPPED_NATIVE_TOKEN");
-        address FEE_REGISTRY = vm.envAddress("FEE_REGISTRY");
-        beacon = vm.envAddress("BEACON");
         string memory NAME = vm.envString("NAME");
         string memory SYMBOL = vm.envString("SYMBOL");
         bool ENABLE_WHITELIST = vm.envBool("ENABLE_WHITELIST");
@@ -36,7 +33,7 @@ contract DeployVault is Script {
         address WHITELIST_MANAGER = vm.envAddress("WHITELIST_MANAGER");
         address VALUATION_MANAGER = vm.envAddress("VALUATION_MANAGER");
         v = InitStruct({
-            underlying: IERC20(UNDERLYING),
+            underlying: UNDERLYING,
             name: NAME,
             symbol: SYMBOL,
             safe: SAFE,
@@ -44,22 +41,22 @@ contract DeployVault is Script {
             valuationManager: VALUATION_MANAGER,
             admin: ADMIN,
             feeReceiver: FEE_RECEIVER,
-            feeRegistry: FEE_REGISTRY,
             managementRate: MANAGEMENT_RATE,
             performanceRate: PERFORMANCE_RATE,
-            wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
             enableWhitelist: ENABLE_WHITELIST,
             rateUpdateCooldown: RATE_UPDATE_COOLDOWN
         });
     }
 
-    function deployVault(InitStruct memory init, address beacon) internal returns (address) {
+    function run() external virtual {
+        vm.startBroadcast();
+        InitStruct memory init = _loadInitStructFromEnv();
+        BeaconProxyFactory beacon = BeaconProxyFactory(vm.envAddress("BEACON"));
+
         console.log("--- deployVault() ---");
 
-        console.log("Beacon:              ", beacon);
+        console.log("Beacon:              ", address(beacon));
         console.log("Underlying:          ", address(init.underlying));
-        console.log("Wrapped_native_token:", init.wrappedNativeToken);
-        console.log("Fee_registry:        ", init.feeRegistry);
         console.log("Name:                ", init.name);
         console.log("Symbol:              ", init.symbol);
         console.log("Enable_whitelist:    ", init.enableWhitelist);
@@ -72,25 +69,9 @@ contract DeployVault is Script {
         console.log("Whitelist_manager:   ", init.whitelistManager);
         console.log("Valuation_manager:   ", init.valuationManager);
 
-        BeaconProxy proxy = BeaconProxy(
-            payable(Upgrades.deployBeaconProxy(beacon, abi.encodeWithSelector(Vault.initialize.selector, init)))
-        );
+        address proxy = beacon.createBeaconProxy(abi.encode(init));
 
-        // todo
-        // whitelist the following addresses:
-        // - feeReceiver
-        // - protocolFeeReceiver
-        // - safe
-        // - pendingSilo
-
-        console.log("Vault proxy address: ", address(proxy));
-        return address(proxy);
-    }
-
-    function run() external virtual {
-        vm.startBroadcast();
-        (InitStruct memory v, address beacon) = _loadInitStructFromEnv();
-        deployVault(v, beacon);
+        console.log("Vault proxy address: ", proxy);
         vm.stopBroadcast();
     }
 }

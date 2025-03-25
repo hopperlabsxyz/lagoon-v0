@@ -1,10 +1,27 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import {InitStruct, Vault} from "@src/v0.3.0/Vault.sol";
-
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+
+struct InitStruct {
+    address underlying;
+    string name;
+    string symbol;
+    address safe;
+    address whitelistManager;
+    address valuationManager;
+    address admin;
+    address feeReceiver;
+    uint16 managementRate;
+    uint16 performanceRate;
+    bool enableWhitelist;
+    uint256 rateUpdateCooldown;
+}
+
+interface IVault {
+    function initialize(bytes memory data, address feeRegistry, address wrappedNativeToken) external;
+}
 
 contract BeaconProxyFactory is UpgradeableBeacon {
     event BeaconProxyDeployed(address proxy, address deployer);
@@ -32,7 +49,7 @@ contract BeaconProxyFactory is UpgradeableBeacon {
     ) public returns (address) {
         address proxy = address(
             new BeaconProxy(
-                address(this), abi.encodeWithSelector(Vault.initialize.selector, init, REGISTRY, WRAPPED_NATIVE)
+                address(this), abi.encodeWithSelector(IVault.initialize.selector, init, REGISTRY, WRAPPED_NATIVE)
             )
         );
         isInstance[proxy] = true;
