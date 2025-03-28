@@ -51,7 +51,6 @@ contract DeployVault is Script {
     function run() external virtual {
         InitStruct memory init = _loadInitStructFromEnv();
         BeaconProxyFactory beacon = BeaconProxyFactory(vm.envAddress("BEACON"));
-        bytes32 salt = vm.envBytes32("SALT");
 
         console.log("--- deployVault() ---");
 
@@ -68,6 +67,9 @@ contract DeployVault is Script {
         console.log("Admin:               ", init.admin);
         console.log("Whitelist_manager:   ", init.whitelistManager);
         console.log("Valuation_manager:   ", init.valuationManager);
+
+        console.log(block.timestamp);
+        bytes32 salt = keccak256(abi.encode(init.symbol, block.timestamp));
         console.log("Salt:   ");
         console.logBytes32(salt);
 

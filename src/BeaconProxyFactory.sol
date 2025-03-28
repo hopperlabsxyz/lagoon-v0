@@ -46,7 +46,7 @@ contract BeaconProxyFactory is UpgradeableBeacon {
 
     function createBeaconProxy(bytes memory init, bytes32 salt) public returns (address) {
         address proxy = address(
-            new BeaconProxy{salt: salt}(
+            new BeaconProxy{salt: keccak256(abi.encode(block.chainid, salt))}(
                 address(this), abi.encodeWithSelector(IVault.initialize.selector, init, REGISTRY, WRAPPED_NATIVE)
             )
         );
