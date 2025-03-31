@@ -49,7 +49,6 @@ contract DeployVault is Script {
     }
 
     function run() external virtual {
-        vm.startBroadcast();
         InitStruct memory init = _loadInitStructFromEnv();
         BeaconProxyFactory beacon = BeaconProxyFactory(vm.envAddress("BEACON"));
 
@@ -69,9 +68,15 @@ contract DeployVault is Script {
         console.log("Whitelist_manager:   ", init.whitelistManager);
         console.log("Valuation_manager:   ", init.valuationManager);
 
-        address proxy = beacon.createBeaconProxy(abi.encode(init));
+        console.log(block.timestamp);
+        bytes32 salt = keccak256(abi.encode(init.symbol, block.timestamp));
+        console.log("Salt:   ");
+        console.logBytes32(salt);
+
+        vm.startBroadcast();
+        address proxy = beacon.createBeaconProxy(abi.encode(init), salt);
+        vm.stopBroadcast();
 
         console.log("Vault proxy address: ", proxy);
-        vm.stopBroadcast();
     }
 }

@@ -44,11 +44,9 @@ contract BeaconProxyFactory is UpgradeableBeacon {
         WRAPPED_NATIVE = _wrappedNativeToken;
     }
 
-    function createBeaconProxy(
-        bytes memory init
-    ) public returns (address) {
+    function createBeaconProxy(bytes memory init, bytes32 salt) public returns (address) {
         address proxy = address(
-            new BeaconProxy(
+            new BeaconProxy{salt: salt}(
                 address(this), abi.encodeWithSelector(IVault.initialize.selector, init, REGISTRY, WRAPPED_NATIVE)
             )
         );
@@ -60,9 +58,7 @@ contract BeaconProxyFactory is UpgradeableBeacon {
         return address(proxy);
     }
 
-    function createVaultProxy(
-        InitStruct calldata init
-    ) external returns (address) {
-        return createBeaconProxy(abi.encode(init));
+    function createVaultProxy(InitStruct calldata init, bytes32 salt) external returns (address) {
+        return createBeaconProxy(abi.encode(init), salt);
     }
 }
