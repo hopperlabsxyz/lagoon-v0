@@ -195,7 +195,7 @@ contract BaseTest is Test, Constants {
         address operator,
         address receiver
     ) internal returns (uint256) {
-        uint256 lastRequestId = vault.lastRedeemRequestId(controller);
+        // uint256 lastRequestId = vault.lastRedeemRequestId(controller);
         // console.log("---------");
         // console.log("total assets         ", vault.totalAssets());
         // console.log("asset balance vault  ", assetBalance(address(vault)));
@@ -214,7 +214,7 @@ contract BaseTest is Test, Constants {
 
         uint256 maxWithdraw = vault.maxWithdraw(controller);
 
-        uint256 maxRedeem = vault.convertToAssets(vault.maxRedeem(controller), lastRequestId);
+        // uint256 maxRedeem = vault.convertToAssets(vault.maxRedeem(controller), lastRequestId);
 
         vm.prank(operator);
         uint256 assets = vault.redeem(amount, receiver, controller);

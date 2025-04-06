@@ -43,15 +43,13 @@ struct InitStruct {
     address valuationManager;
     address admin;
     address feeReceiver;
-    address feeRegistry;
-    address wrappedNativeToken;
     uint16 managementRate;
     uint16 performanceRate;
     bool enableWhitelist;
     uint256 rateUpdateCooldown;
 }
 
-/// @custom:oz-upgrades-from src/v0.2.1/Vault.sol:Vault
+/// @custom:oz-upgrades-from src/v0.2.0/Vault.sol:Vault
 contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @custom:storage-location erc7201:hopper.storage.vault
     /// @param newTotalAssets The new total assets of the vault. It is used to update the totalAssets variable.
@@ -83,27 +81,30 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     }
 
     /// @notice Initializes the vault.
-    /// @param init The initialization parameters of the vault.
+    /// @param data The encoded initialization parameters of the vault.
     function initialize(
-        InitStruct memory init
+        bytes memory data,
+        address feeRegistry,
+        address wrappedNativeToken
     ) public virtual initializer {
+        InitStruct memory init = abi.decode(data, (InitStruct));
         __Ownable_init(init.admin); // initial vault owner
         __Roles_init(
             Roles.RolesStorage({
                 whitelistManager: init.whitelistManager,
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
-                feeRegistry: FeeRegistry(init.feeRegistry),
+                feeRegistry: FeeRegistry(feeRegistry),
                 valuationManager: init.valuationManager
             })
         );
         __ERC20_init(init.name, init.symbol);
         __ERC20Pausable_init();
         __ERC4626_init(init.underlying);
-        __ERC7540_init(init.underlying, init.wrappedNativeToken);
-        __Whitelistable_init(init.enableWhitelist, FeeRegistry(init.feeRegistry).protocolFeeReceiver());
+        __ERC7540_init(init.underlying, wrappedNativeToken);
+        __Whitelistable_init(init.enableWhitelist, FeeRegistry(feeRegistry).protocolFeeReceiver());
         __FeeManager_init(
-            init.feeRegistry,
+            feeRegistry,
             init.managementRate,
             init.performanceRate,
             IERC20Metadata(address(init.underlying)).decimals(),

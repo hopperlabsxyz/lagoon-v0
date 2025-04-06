@@ -52,6 +52,7 @@ FULL_SCRIPT := script/deploy_local_fork.s.sol:DeployFull
 PROTOCOL_SCRIPT := script/deploy_protocol.s.sol:DeployProtocol
 BEACON_SCRIPT := script/deploy_beacon.s.sol:DeployBeacon
 VAULT_SCRIPT := script/deploy_vault.s.sol:DeployVault 
+FACTORY_SCRIPT := script/deploy_factory.s.sol:DeployBeaconProxyFactory 
 
 #################### UTILS #####################
 
@@ -109,24 +110,7 @@ start-fork: load_prod_env
 stop-fork: load_prod_env
 	docker compose --env-file $$ENV_DEPLOY down local-fork
 
-########## PROTOCOL + BEACON + VAULT ############
-
-# simulation
-full: load_prod_env
-		@echo "Deploying FeeRegistry + Beacon + Vault..."
-		@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(DEPLOYER_FLAGS) $(FULL_SCRIPT)
-
-# pk broadcast
-deploy-full-pk: load_prod_env
-		@echo "Deploying FeeRegistry + Beacon + Vault..."
-		@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(PK_FLAGS) $(VERIFY_FLAGS) $(FULL_SCRIPT)
-
-# ledger broadcast
-deploy-full-ledger: load_prod_env clean
-	@echo "Deploying FeeRegistry + Beacon + Vault..."
-	@forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(FULL_SCRIPT)
-
-################### PROTOCOL ONLY ################### 
+################### PROTOCOL #################### 
 
 # simulation
 protocol: load_prod_env clean
@@ -143,24 +127,7 @@ deploy-protocol-ledger: load_prod_env clean
 	@echo "Deploying FeeRegistry..."
 	forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(PROTOCOL_SCRIPT)
 
-################### BEACON ONLY ################### 
-
-# simulation
-beacon: load_prod_env clean
-	@echo "Deploying Beacon..."
-	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(DEPLOYER_FLAGS) $(BEACON_SCRIPT)
-
-# pk broadcast 
-deploy-beacon-pk: load_prod_env
-	@echo "Deploying Beacon..."
-	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(PK_FLAGS) $(VERIFY_FLAGS) $(BEACON_SCRIPT)
-
-# ledger broadcast
-deploy-beacon-ledger: load_prod_env clean
-	@echo "Deploying Beacon..."
-	@forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(BEACON_SCRIPT)
-
-################### VAULT ONLY ################### 
+################### VAULT ##################### 
 
 # simulation
 vault: load_prod_env
@@ -176,6 +143,23 @@ deploy-vault-pk: load_prod_env
 deploy-vault-ledger: load_prod_env clean
 	@echo "Deploying Vault..."
 	@forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(VAULT_SCRIPT)
+
+####################### FACTORY #####################
+
+# simulation
+factory: load_prod_env
+	@echo "Deploying Factory..."
+	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(DEPLOYER_FLAGS) $(FACTORY_SCRIPT)
+
+# pk broadcast 
+deploy-factory-pk: load_prod_env
+	@echo "Deploying Factory..."
+	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(PK_FLAGS) $(VERIFY_FLAGS) $(FACTORY_SCRIPT)
+
+# ledger broadcast
+deploy-factory-ledger: load_prod_env clean
+	@echo "Deploying Factory..."
+	@forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(FACTORY_SCRIPT)
 
 
 .PHONY: load_dev_env \
@@ -202,4 +186,7 @@ deploy-vault-ledger: load_prod_env clean
 	deploy-beacon-pk \
 	vault\
 	deploy-vault-ledger \
-	deploy-vault-pk
+	deploy-vault-pk \
+	factory\
+	deploy-factory-ledger \
+	deploy-factory-pk

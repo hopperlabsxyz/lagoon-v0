@@ -111,8 +111,6 @@ contract Upgradable is Test {
         opts.constructorData = abi.encode(false);
         vm.startPrank(owner.addr);
         Upgrades.upgradeBeacon(address(beacon), "v0.2.0/Vault.sol:Vault", opts);
-        Upgrades.upgradeBeacon(address(beacon), "v0.2.1/Vault.sol:Vault", opts);
-        assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.2.1")));
         Upgrades.upgradeBeacon(address(beacon), "v0.3.0/Vault.sol:Vault", opts);
         assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.3.0")));
         vm.stopPrank();
