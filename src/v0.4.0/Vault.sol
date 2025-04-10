@@ -265,6 +265,17 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         emit Withdraw(caller, receiver, owner, assets, shares);
     }
 
+    /// @notice Claims all available shares for a list of controller addresses.
+    /// @dev Iterates over each controller address, checks for claimable deposits, and deposits them on their behalf.
+    /// @param controllers The list of controller addresses for which to claim shares.
+    function claimSharesOnBehalf(address[] memory controllers) external onlySafe {
+        for (uint256 i = 0; i < controllers.length; i++) {
+    	    uint256 claimable = claimableDepositRequest(0, controllers[i]);
+    	    if (claimable > 0)
+    	        _deposit(claimable, controllers[i], controllers[i]);
+        }
+    }
+
     ///////////////////////////////////////////////////////
     // ## VALUATION UPDATING AND SETTLEMENT FUNCTIONS ## //
     ///////////////////////////////////////////////////////
