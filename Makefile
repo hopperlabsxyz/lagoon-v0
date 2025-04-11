@@ -53,7 +53,7 @@ PROTOCOL_SCRIPT := script/deploy_protocol.s.sol:DeployProtocol
 BEACON_SCRIPT := script/deploy_beacon.s.sol:DeployBeacon
 VAULT_SCRIPT := script/deploy_vault.s.sol:DeployVault 
 FACTORY_SCRIPT := script/deploy_factory.s.sol:DeployBeaconProxyFactory 
-FACTORY_SCRIPT := script/deploy_implementation.s.sol:DeployBeaconProxyFactory 
+IMPLEMENTATION_SCRIPT := script/deploy_implementation.s.sol:DeployImplementation
 
 #################### UTILS #####################
 
