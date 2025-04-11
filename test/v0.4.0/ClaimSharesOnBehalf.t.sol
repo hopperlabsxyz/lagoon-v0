@@ -16,6 +16,15 @@ contract TestClaimSharesOnBehalf is BaseTest {
         dealAndApproveAndWhitelist(user3.addr);
         dealAndApproveAndWhitelist(user4.addr);
         dealAndApproveAndWhitelist(user5.addr);
+        dealAndApproveAndWhitelist(user6.addr);
+    }
+
+    function test_claimSharesOnBehalf_onlySafe() public {
+        address[] memory controllers = new address[](0);
+        vm.expectRevert(
+            abi.encodeWithSelector(OnlySafe.selector, vault.safe())
+        );
+        vault.claimSharesOnBehalf(controllers);
     }
 
     function test_claimSharesOnBehalf() public {
@@ -71,13 +80,14 @@ contract TestClaimSharesOnBehalf is BaseTest {
             "wrong maxDeposit on user 5"
         );
 
-        address[] memory controllers = new address[](5);
+        address[] memory controllers = new address[](6);
 
         controllers[0] = user1.addr;
         controllers[1] = user2.addr;
         controllers[2] = user3.addr;
         controllers[3] = user4.addr;
         controllers[4] = user5.addr;
+        controllers[5] = user6.addr; // nothing to claim on user 6
 
         // Claiming all users shares all at once
         vm.prank(safe.addr);
@@ -141,5 +151,7 @@ contract TestClaimSharesOnBehalf is BaseTest {
             "user5 balance is wrong"
         );
         assertEq(user5Shares, user5Balance * 10 ** vault.decimalsOffset());
+
+        assertEq(0, vault.balanceOf(user6.addr), "user6 balance is wrong");
     }
 }
