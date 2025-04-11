@@ -12,10 +12,11 @@ import {IVersion} from "@test/IVersion.sol";
   run `make implementation` to deploy this script
 */
 
-contract DeployBeaconProxyFactory is Script {
+contract DeployImplementation is Script {
     function run() external virtual {
         // ex: v0.3.0
         string memory tag = vm.envString("VERSION_TAG");
+        console.log(tag);
 
         vm.startBroadcast();
         Options memory opts;
