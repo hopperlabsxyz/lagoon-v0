@@ -101,7 +101,7 @@ contract Constants is Test {
 
         Options memory opts;
         opts.constructorData = abi.encode(true);
-        address implementation = Upgrades.deployImplementation("v0.3.0/VaultHelper.sol:VaultHelper", opts);
+        address implementation = Upgrades.deployImplementation("v0.4.0/VaultHelper.sol:VaultHelper", opts);
         factory = new BeaconProxyFactory(address(feeRegistry), implementation, dao.addr, WRAPPED_NATIVE_TOKEN);
 
         BeaconProxyInitStruct memory initStruct = BeaconProxyInitStruct({

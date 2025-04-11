@@ -2,7 +2,7 @@ ARG NODE_VERSION=22.11.0
 FROM node:${NODE_VERSION}-alpine AS node
 
 # Use the latest foundry image
-FROM ghcr.io/foundry-rs/foundry:v0.3.0
+FROM ghcr.io/foundry-rs/foundry:v0.4.0
 
 RUN apk add --no-cache git bash
 
