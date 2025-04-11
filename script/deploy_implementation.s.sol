@@ -16,7 +16,6 @@ contract DeployImplementation is Script {
     function run() external virtual {
         // ex: v0.3.0
         string memory tag = vm.envString("VERSION_TAG");
-        console.log(tag);
 
         vm.startBroadcast();
         Options memory opts;
