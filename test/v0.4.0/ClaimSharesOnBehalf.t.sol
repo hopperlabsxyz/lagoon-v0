@@ -8,7 +8,7 @@ import {BaseTest} from "./Base.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract TestDeposit is BaseTest {
+contract TestClaimSharesOnBehalf is BaseTest {
     function setUp() public {
         setUpVault(0, 0, 0);
         dealAndApproveAndWhitelist(user1.addr);
@@ -40,7 +40,7 @@ contract TestDeposit is BaseTest {
         uint256 user5Balance = assetBalance(user5.addr);
         uint256 user5RequestId = requestDeposit(user5Balance, user5.addr);
 
-        // Thirs settlement
+        // Third settlement
         updateAndSettle(
             user1Balance + user2Balance + user3Balance + user4Balance
         );
