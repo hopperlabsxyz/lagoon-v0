@@ -17,6 +17,7 @@ contract DeployBeaconProxyFactory is Script {
         // ex: v0.3.0
         string memory tag = vm.envString("VERSION_TAG");
 
+        vm.startBroadcast();
         Options memory opts;
         opts.constructorData = abi.encode(true);
         address IMPLEMENTATION = Upgrades.deployImplementation(
@@ -24,7 +25,6 @@ contract DeployBeaconProxyFactory is Script {
             opts
         );
 
-        vm.startBroadcast();
 
         try IVersion(IMPLEMENTATION).version() returns (string memory version) {
             require(
