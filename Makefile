@@ -53,6 +53,7 @@ PROTOCOL_SCRIPT := script/deploy_protocol.s.sol:DeployProtocol
 BEACON_SCRIPT := script/deploy_beacon.s.sol:DeployBeacon
 VAULT_SCRIPT := script/deploy_vault.s.sol:DeployVault 
 FACTORY_SCRIPT := script/deploy_factory.s.sol:DeployBeaconProxyFactory 
+IMPLEMENTATION_SCRIPT := script/deploy_implementation.s.sol:DeployImplementation
 
 #################### UTILS #####################
 
@@ -160,6 +161,18 @@ deploy-factory-pk: load_prod_env
 deploy-factory-ledger: load_prod_env clean
 	@echo "Deploying Factory..."
 	@forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(FACTORY_SCRIPT)
+	
+####################### IMPLEMENTATION #####################
+
+# simulation
+implementation: load_prod_env
+	@echo "Deploying Implementation..."
+	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(DEPLOYER_FLAGS) $(IMPLEMENTATION_SCRIPT)
+
+# pk broadcast 
+deploy-implementation-pk: load_prod_env
+	@echo "Deploying Implementation..."
+	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(PK_FLAGS) $(VERIFY_FLAGS) $(IMPLEMENTATION_SCRIPT)
 
 
 .PHONY: load_dev_env \
