@@ -3,13 +3,13 @@ pragma solidity "0.8.26";
 
 import "forge-std/Test.sol";
 
-import "@src/v0.4.0/ERC7540.sol";
-import "@src/v0.4.0/FeeManager.sol";
-import "@src/v0.4.0/Roles.sol";
-import "@src/v0.4.0/Vault.sol";
-import "@src/v0.4.0/primitives/Errors.sol";
-import "@src/v0.4.0/primitives/Events.sol";
-import "@src/v0.4.0/primitives/Struct.sol";
+import "@src/v0.5.0/ERC7540.sol";
+import "@src/v0.5.0/FeeManager.sol";
+import "@src/v0.5.0/Roles.sol";
+import "@src/v0.5.0/Vault.sol";
+import "@src/v0.5.0/primitives/Errors.sol";
+import "@src/v0.5.0/primitives/Events.sol";
+import "@src/v0.5.0/primitives/Struct.sol";
 
 contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor

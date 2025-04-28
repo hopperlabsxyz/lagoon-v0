@@ -92,3 +92,8 @@ event NewTotalAssetsUpdated(uint256 totalAssets);
 /// @param requestId The ID of the canceled request.
 /// @param controller The address of the controller of the canceled request.
 event DepositRequestCanceled(uint256 indexed requestId, address indexed controller);
+
+/// @notice Emitted when the lifespan is updated.
+/// @param oldLifespan The old lifespan.
+/// @param newLifespan The new lifespan.
+event LifespanUpdated(uint128 oldLifespan, uint128 newLifespan);

@@ -268,11 +268,14 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @notice Claims all available shares for a list of controller addresses.
     /// @dev Iterates over each controller address, checks for claimable deposits, and deposits them on their behalf.
     /// @param controllers The list of controller addresses for which to claim shares.
-    function claimSharesOnBehalf(address[] memory controllers) external onlySafe {
+    function claimSharesOnBehalf(
+        address[] memory controllers
+    ) external onlySafe {
         for (uint256 i = 0; i < controllers.length; i++) {
-    	    uint256 claimable = claimableDepositRequest(0, controllers[i]);
-    	    if (claimable > 0)
-    	        _deposit(claimable, controllers[i], controllers[i]);
+            uint256 claimable = claimableDepositRequest(0, controllers[i]);
+            if (claimable > 0) {
+                _deposit(claimable, controllers[i], controllers[i]);
+            }
         }
     }
 
@@ -434,6 +437,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 lastDepositId = _getERC7540Storage().lastDepositRequestId[controller];
         uint256 claimable = claimableDepositRequest(lastDepositId, controller);
         return convertToShares(claimable, lastDepositId);
+    }
+
+    function _safe() internal view override returns (address) {
+        return _getRolesStorage().safe;
     }
 
     function version() public pure returns (string memory) {

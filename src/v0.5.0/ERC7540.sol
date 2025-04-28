@@ -16,10 +16,12 @@ import {
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
     RequestNotCancelable,
+    TotalAssetsExpired,
     WrongNewTotalAssets
 } from "./primitives/Errors.sol";
 import {
     DepositRequestCanceled,
+    LifespanUpdated,
     NewTotalAssetsUpdated,
     SettleDeposit,
     SettleRedeem,
@@ -79,6 +81,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         IWETH9 wrappedNativeToken;
         uint8 decimals;
         uint8 decimalsOffset;
+        // New variables introduce with v0.5.0
+        uint128 expiration;
+        uint128 lifespan;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
@@ -129,7 +134,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @notice Make sure the caller is an operator or the controller.
     /// @param controller The controller.
-    modifier onlyOperator(address controller) {
+    modifier onlyOperator(
+        address controller
+    ) {
         if (controller != msg.sender && !isOperator(controller, msg.sender)) {
             revert ERC7540InvalidOperator();
         }
@@ -184,19 +191,27 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return true;
     }
 
-    function previewDeposit(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    function previewDeposit(
+        uint256
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         revert ERC7540PreviewDepositDisabled();
     }
 
-    function previewMint(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    function previewMint(
+        uint256
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         revert ERC7540PreviewMintDisabled();
     }
 
-    function previewRedeem(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    function previewRedeem(
+        uint256
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         revert ERC7540PreviewRedeemDisabled();
     }
 
-    function previewWithdraw(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    function previewWithdraw(
+        uint256
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         revert ERC7540PreviewWithdrawDisabled();
     }
 
@@ -249,7 +264,12 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 assets,
         address receiver
     ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        return _deposit(assets, receiver, msg.sender);
+        (uint256 sharesClaimed, uint256 assetsRemaining) = _deposit(assets, receiver, msg.sender);
+        uint256 sharesMinted;
+        if (assetsRemaining != 0) {
+            sharesMinted = _syncDeposit(assetsRemaining, receiver, msg.sender);
+        }
+        return sharesClaimed + sharesMinted;
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
@@ -263,7 +283,27 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address receiver,
         address controller
     ) external virtual onlyOperator(controller) returns (uint256) {
-        return _deposit(assets, receiver, controller);
+        (uint256 sharesClaimed,) = _deposit(assets, receiver, controller);
+        return sharesClaimed;
+    }
+
+    /// @notice Deposit in a sychronous fashion into the vault.
+    /// @param assets The assets to deposit.
+    /// @param receiver The receiver of the shares.
+    /// @param owner The owner of the assets.
+    /// @return shares The resulting shares.
+    function _syncDeposit(uint256 assets, address receiver, address owner) internal virtual returns (uint256 shares) {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        if ($.expiration >= block.timestamp) {
+            revert TotalAssetsExpired();
+        }
+
+        shares = _convertToShares(assets, Math.Rounding.Floor);
+        SafeERC20.safeTransferFrom(IERC20(asset()), owner, _safe(), assets);
+        _mint(receiver, shares);
+        $.totalAssets += assets;
+
+        emit Deposit(owner, receiver, assets, shares);
     }
 
     /// @notice Claim the assets from the vault after a request has been settled.
@@ -271,20 +311,28 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param receiver The receiver of the shares.
     /// @param controller The controller, who owns the deposit request.
     /// @return shares The corresponding shares.
-    function _deposit(uint256 assets, address receiver, address controller) internal virtual returns (uint256 shares) {
+    function _deposit(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) internal virtual returns (uint256 shares, uint256 assetsRemaining) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastDepositRequestId[controller];
         if (requestId > $.lastDepositEpochIdSettled) {
-            revert RequestIdNotClaimable();
+            return (0, assets);
+            // revert RequestIdNotClaimable();
         }
+        uint256 claimable = $.epochs[requestId].depositRequest[controller];
+        uint256 toClaim = Math.min(claimable, assets);
 
-        $.epochs[requestId].depositRequest[controller] -= assets;
-        shares = convertToShares(assets, requestId);
+        $.epochs[requestId].depositRequest[controller] -= toClaim;
+        shares = convertToShares(toClaim, requestId);
 
         _transfer(address(this), receiver, shares);
 
-        emit Deposit(controller, receiver, assets, shares);
+        emit Deposit(controller, receiver, toClaim, shares);
+        return (shares, assets - toClaim);
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
@@ -424,7 +472,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @dev This function will deposit the pending assets of the pendingSilo.
     /// and save the deposit parameters in the settleData.
     /// @param assetsCustodian The address that will hold the assets.
-    function _settleDeposit(address assetsCustodian) internal {
+    function _settleDeposit(
+        address assetsCustodian
+    ) internal {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         uint40 depositSettleId = $erc7540.depositSettleId;
@@ -463,7 +513,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @dev This function will redeem the pending shares of the pendingSilo.
     /// and save the redeem parameters in the settleData.
     /// @param assetsCustodian The address that holds the assets.
-    function _settleRedeem(address assetsCustodian) internal {
+    function _settleRedeem(
+        address assetsCustodian
+    ) internal {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         uint40 redeemSettleId = $erc7540.redeemSettleId;
@@ -509,7 +561,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @notice Update newTotalAssets variable in order to update totalAssets.
     /// @param _newTotalAssets The new total assets of the vault.
-    function _updateNewTotalAssets(uint256 _newTotalAssets) internal whenNotPaused {
+    function _updateNewTotalAssets(
+        uint256 _newTotalAssets
+    ) internal whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         $.epochs[$.depositEpochId].settleId = $.depositSettleId;
@@ -534,7 +588,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     }
 
     /// @dev Updates the totalAssets variable with the newTotalAssets variable.
-    function _updateTotalAssets(uint256 _newTotalAssets) internal whenNotPaused {
+    function _updateTotalAssets(
+        uint256 _newTotalAssets
+    ) internal whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 newTotalAssets = $.newTotalAssets;
@@ -543,13 +599,24 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             newTotalAssets == type(uint256).max // it means newTotalAssets has not been updated
         ) revert NewTotalAssetsMissing();
 
-        if (_newTotalAssets != newTotalAssets)
+        if (_newTotalAssets != newTotalAssets) {
             revert WrongNewTotalAssets();
-
+        }
 
         $.totalAssets = newTotalAssets;
         $.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
+
+        $.expiration = uint128(block.timestamp) + $.lifespan;
         emit TotalAssetsUpdated(newTotalAssets);
+    }
+
+    function _updateTotalAssetsLifespan(
+        uint128 lifespan
+    ) internal {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        uint128 oldLifespan = $.lifespan;
+        $.lifespan = lifespan;
+        emit LifespanUpdated(oldLifespan, lifespan);
     }
 
     //////////////////////////
@@ -672,11 +739,15 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return address(_getERC7540Storage().pendingSilo);
     }
 
-    function lastRedeemRequestId(address controller) public view returns (uint40) {
+    function lastRedeemRequestId(
+        address controller
+    ) public view returns (uint40) {
         return _getERC7540Storage().lastRedeemRequestId[controller];
     }
 
-    function lastDepositRequestId(address controller) public view returns (uint40) {
+    function lastDepositRequestId(
+        address controller
+    ) public view returns (uint40) {
         return _getERC7540Storage().lastDepositRequestId[controller];
     }
 
@@ -692,7 +763,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     // ## EIP165 ## //
     //////////////////
 
-    function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual returns (bool) {
         return interfaceId == 0x2f0a18c5 // IERC7575
             || interfaceId == 0xf815c03d // IERC7575 shares
             || interfaceId == 0xce3bbe50 // IERC7540Deposit
@@ -708,10 +781,16 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @dev Settles deposit requests by transferring assets from the pendingSilo to the safe
     /// and minting the corresponding shares to vault.
     /// The function is not implemented here and must be implemented.
-    function settleDeposit(uint256 _newTotalAssets) public virtual;
+    function settleDeposit(
+        uint256 _newTotalAssets
+    ) public virtual;
 
     /// @dev Settles redeem requests by transferring assets from the safe to the vault
     /// and burning the corresponding shares from the pending silo.
     /// The function is not implemented here and must be implemented.
-    function settleRedeem(uint256 _newTotalAssets) public virtual;
+    function settleRedeem(
+        uint256 _newTotalAssets
+    ) public virtual;
+
+    function _safe() internal view virtual returns (address);
 }

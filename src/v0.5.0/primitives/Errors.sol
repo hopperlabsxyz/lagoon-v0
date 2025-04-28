@@ -52,6 +52,9 @@ error NewTotalAssetsMissing();
 /// @notice Indicates that the new total assets value is not the one expected.
 error WrongNewTotalAssets();
 
+/// @notice Indicates that the total assets are outdated and that synchronous deposits are not allowed.
+error TotalAssetsExpired();
+
 // ********************* FEE MANAGER ********************* //
 
 /// @notice Indicates that the provided rate exceeds the maximum allowed rate.

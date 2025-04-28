@@ -28,7 +28,9 @@ contract FeeRegistry is Ownable2StepUpgradeable {
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
-    constructor(bool disable) {
+    constructor(
+        bool disable
+    ) {
         if (disable) _disableInitializers();
     }
 
@@ -50,14 +52,18 @@ contract FeeRegistry is Ownable2StepUpgradeable {
 
     /// @notice Updates the address of the protocol fee receiver.
     /// @param _protocolFeeReceiver The new protocol fee receiver address.
-    function updateProtocolFeeReceiver(address _protocolFeeReceiver) external onlyOwner {
+    function updateProtocolFeeReceiver(
+        address _protocolFeeReceiver
+    ) external onlyOwner {
         emit ProtocolFeeReceiverUpdated(_getFeeRegistryStorage().protocolFeeReceiver, _protocolFeeReceiver);
         _getFeeRegistryStorage().protocolFeeReceiver = _protocolFeeReceiver;
     }
 
     /// @notice Sets the default protocol fee rate.
     /// @param rate The new default protocol fee rate.
-    function updateDefaultRate(uint16 rate) external onlyOwner {
+    function updateDefaultRate(
+        uint16 rate
+    ) external onlyOwner {
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
         emit DefaultRateUpdated($.defaultRate, rate);
         $.defaultRate = rate;
@@ -75,7 +81,9 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     /// @notice Checks if a custom fee rate is activated for a specific vault.
     /// @param vault The address of the vault.
     /// @return True if the vault has a custom fee rate, false otherwise.
-    function isCustomRate(address vault) external view returns (bool) {
+    function isCustomRate(
+        address vault
+    ) external view returns (bool) {
         return _getFeeRegistryStorage().customRate[vault].isActivated;
     }
 
@@ -89,7 +97,9 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     /// representing the percentage of the fees taken by the asset manager.
     /// @param vault The address of the vault.
     /// @return rate The protocol fee rate for the vault.
-    function protocolRate(address vault) external view returns (uint256 rate) {
+    function protocolRate(
+        address vault
+    ) external view returns (uint256 rate) {
         return _protocolRate(vault);
     }
 
@@ -102,7 +112,9 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     /// @notice Returns the protocol fee rate for a specific vault.
     /// @param vault The address of the vault.
     /// @return rate The protocol fee rate for the vault, considering custom rates.
-    function _protocolRate(address vault) internal view returns (uint256 rate) {
+    function _protocolRate(
+        address vault
+    ) internal view returns (uint256 rate) {
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
         if ($.customRate[vault].isActivated) {
             return $.customRate[vault].rate;

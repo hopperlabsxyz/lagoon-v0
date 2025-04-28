@@ -20,27 +20,13 @@ contract DeployImplementation is Script {
         vm.startBroadcast();
         Options memory opts;
         opts.constructorData = abi.encode(true);
-        address IMPLEMENTATION = Upgrades.deployImplementation(
-            string.concat(tag, "/Vault.sol:Vault"),
-            opts
-        );
-
+        address IMPLEMENTATION = Upgrades.deployImplementation(string.concat(tag, "/Vault.sol:Vault"), opts);
 
         try IVersion(IMPLEMENTATION).version() returns (string memory version) {
-            require(
-                keccak256(abi.encode(tag)) == keccak256(abi.encode(version)),
-                "Wrong beacon version deployed"
-            );
-            console.log(
-                string.concat(
-                    string.concat("Implementation ", version),
-                    " deployed."
-                )
-            );
+            require(keccak256(abi.encode(tag)) == keccak256(abi.encode(version)), "Wrong beacon version deployed");
+            console.log(string.concat(string.concat("Implementation ", version), " deployed."));
         } catch (bytes memory) {
-            console.log(
-                "\x1b[33mWarning!\x1b[0m There is no `version()` on the contract deployed"
-            );
+            console.log("\x1b[33mWarning!\x1b[0m There is no `version()` on the contract deployed");
         }
 
         vm.stopBroadcast();
