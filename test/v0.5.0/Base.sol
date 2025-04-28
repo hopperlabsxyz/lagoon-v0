@@ -335,6 +335,8 @@ contract BaseTest is Test, Constants {
         vault.close(vault.newTotalAssets());
         vm.stopPrank();
 
+        checkTotalAssetsExpiration();
+
         uint256 depositSettleIdAfter = vault.depositSettleId();
         uint256 redeemSettleIdAfter = vault.redeemSettleId();
 
@@ -358,6 +360,8 @@ contract BaseTest is Test, Constants {
         vm.startPrank(vault.safe());
         vault.settleRedeem(vault.newTotalAssets());
         vm.stopPrank();
+
+        checkTotalAssetsExpiration();
 
         uint256 redeemSettleIdAfter = vault.redeemSettleId();
 
@@ -467,5 +471,12 @@ contract BaseTest is Test, Constants {
         address user
     ) public view returns (uint256) {
         return vault.balanceOf(user);
+    }
+
+    function checkTotalAssetsExpiration() public view {
+        uint256 totalAssetsExpiration = vault.totalAssetsExpiration();
+        uint256 totalAssetsLifespan = vault.totalAssetsLifespan();
+
+        assertEq(totalAssetsExpiration, block.timestamp + totalAssetsLifespan);
     }
 }

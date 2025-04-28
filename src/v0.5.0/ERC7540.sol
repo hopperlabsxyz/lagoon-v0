@@ -21,11 +21,11 @@ import {
 } from "./primitives/Errors.sol";
 import {
     DepositRequestCanceled,
-    LifespanUpdated,
     NewTotalAssetsUpdated,
     SettleDeposit,
     SettleRedeem,
-    TotalAssetsUpdated
+    TotalAssetsUpdated,
+    TotalAssetsLifespanUpdated
 } from "./primitives/Events.sol";
 import {EpochData, SettleData} from "./primitives/Struct.sol";
 import {
@@ -82,8 +82,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint8 decimals;
         uint8 decimalsOffset;
         // New variables introduce with v0.5.0
-        uint128 expiration;
-        uint128 lifespan;
+        uint128 totalAssetsExpiration;
+        uint128 totalAssetsLifespan;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
@@ -294,7 +294,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @return shares The resulting shares.
     function _syncDeposit(uint256 assets, address receiver, address owner) internal virtual returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
-        if ($.expiration >= block.timestamp) {
+        if ($.totalAssetsExpiration >= block.timestamp) {
             revert TotalAssetsExpired();
         }
 
@@ -606,7 +606,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         $.totalAssets = newTotalAssets;
         $.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
 
-        $.expiration = uint128(block.timestamp) + $.lifespan;
+        $.totalAssetsExpiration = uint128(block.timestamp) + $.totalAssetsLifespan;
         emit TotalAssetsUpdated(newTotalAssets);
     }
 
@@ -614,9 +614,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint128 lifespan
     ) internal {
         ERC7540Storage storage $ = _getERC7540Storage();
-        uint128 oldLifespan = $.lifespan;
-        $.lifespan = lifespan;
-        emit LifespanUpdated(oldLifespan, lifespan);
+        uint128 oldLifespan = $.totalAssetsLifespan;
+        $.totalAssetsLifespan = lifespan;
+        emit TotalAssetsLifespanUpdated(oldLifespan, lifespan);
     }
 
     //////////////////////////

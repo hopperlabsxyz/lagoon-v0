@@ -141,4 +141,12 @@ contract VaultHelper is Vault {
     function redeemEpochId() public view returns (uint40) {
         return _getERC7540Storage().redeemEpochId;
     }
+
+    function totalAssetsExpiration() public view returns (uint256) {
+        return _getERC7540Storage().totalAssetsExpiration;
+    }
+
+    function totalAssetsLifespan() public view returns (uint256) {
+        return _getERC7540Storage().totalAssetsLifespan;
+    }
 }

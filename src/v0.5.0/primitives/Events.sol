@@ -96,4 +96,4 @@ event DepositRequestCanceled(uint256 indexed requestId, address indexed controll
 /// @notice Emitted when the lifespan is updated.
 /// @param oldLifespan The old lifespan.
 /// @param newLifespan The new lifespan.
-event LifespanUpdated(uint128 oldLifespan, uint128 newLifespan);
+event TotalAssetsLifespanUpdated(uint128 oldLifespan, uint128 newLifespan);
