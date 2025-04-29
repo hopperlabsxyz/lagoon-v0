@@ -98,10 +98,10 @@ contract VaultHelper is Vault {
         return _getRolesStorage().feeReceiver;
     }
 
-    /// @notice Returns the address of protocol fee receiver.
-    function protocolFeeReceiver() public view returns (address) {
-        return FeeRegistry(_getRolesStorage().feeRegistry).protocolFeeReceiver();
-    }
+    // /// @notice Returns the address of protocol fee receiver.
+    // function protocolFeeReceiver() public view returns (address) {
+    //     return FeeRegistry(_getRolesStorage().feeRegistry).protocolFeeReceiver();
+    // }
 
     /// @notice Returns the address of the safe associated with the vault.
     function safe() public view returns (address) {
@@ -148,5 +148,9 @@ contract VaultHelper is Vault {
 
     function totalAssetsLifespan() public view returns (uint256) {
         return _getERC7540Storage().totalAssetsLifespan;
+    }
+
+    function activateWhitelist() public {
+        _getWhitelistableStorage().isActivated = true;
     }
 }

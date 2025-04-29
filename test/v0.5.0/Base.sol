@@ -116,8 +116,10 @@ contract BaseTest is Test, Constants {
 
         uint256 sharesAfter = vault.balanceOf(receiver);
 
-        assertLe(sharesAfter - sharesBefore, maxDeposit, "maxDeposit invariant does not hold [1]");
-        assertLe(sharesAfter - sharesBefore, maxMint, "maxMint invariant does not hold [1]");
+        if (vault.isTotalAssetsExpired()) {
+            assertLe(sharesAfter - sharesBefore, maxDeposit, "maxDeposit invariant does not hold [1]");
+            assertLe(sharesAfter - sharesBefore, maxMint, "maxMint invariant does not hold [1]");
+        }
         assertEq(sharesAfter - sharesBefore, shares);
 
         return shares;

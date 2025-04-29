@@ -55,6 +55,13 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_FeesAreTakenAfterFreeride() public {
+        vault.activateWhitelist();
+        address[] memory wl = new address[](3);
+        wl[0] = user1.addr;
+        wl[1] = user2.addr;
+        wl[2] = vault.feeReceiver();
+        vm.prank(vault.whitelistManager());
+        vault.addToWhitelist(wl);
         uint256 newTotalAssets = 0;
 
         // new airdrop !
