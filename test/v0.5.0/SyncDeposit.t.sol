@@ -22,7 +22,6 @@ contract TestDeposit is BaseTest {
         // for the next 1000 seconds, we will use the sync deposit flow
         uint256 userBalance = assetBalance(user1.addr);
         // it will be equal since pps is 1:1
-        assertEq(vault.previewDeposit(userBalance), userBalance * 10 ** vault.decimalsOffset());
 
         vm.prank(user1.addr);
         uint256 shares = vault.syncDeposit(userBalance, user1.addr);
@@ -60,7 +59,8 @@ contract TestDeposit is BaseTest {
         test_syncDeposit();
         dealAndApproveAndWhitelist(user1.addr);
         uint256 userBalance = assetBalance(user1.addr);
-        vm.expectRevert(NotWhitelisted.selector);
+        vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidReceiver.selector, address(0)));
+
         vm.prank(user1.addr);
         vault.syncDeposit(userBalance, address(0));
     }

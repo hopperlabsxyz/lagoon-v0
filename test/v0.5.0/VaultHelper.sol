@@ -103,11 +103,6 @@ contract VaultHelper is Vault {
     //     return FeeRegistry(_getRolesStorage().feeRegistry).protocolFeeReceiver();
     // }
 
-    /// @notice Returns the address of the safe associated with the vault.
-    function safe() public view returns (address) {
-        return _getRolesStorage().safe;
-    }
-
     /// @notice Returns the address of the valuation manager.
     function valuationManager() public view returns (address) {
         return _getRolesStorage().valuationManager;

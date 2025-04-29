@@ -16,7 +16,6 @@ import {
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
     RequestNotCancelable,
-    TotalAssetsExpired,
     WrongNewTotalAssets
 } from "./primitives/Errors.sol";
 import {
@@ -24,8 +23,8 @@ import {
     NewTotalAssetsUpdated,
     SettleDeposit,
     SettleRedeem,
-    TotalAssetsUpdated,
-    TotalAssetsLifespanUpdated
+    TotalAssetsLifespanUpdated,
+    TotalAssetsUpdated
 } from "./primitives/Events.sol";
 import {EpochData, SettleData} from "./primitives/Struct.sol";
 import {
@@ -264,12 +263,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 assets,
         address receiver
     ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        (uint256 sharesClaimed, uint256 assetsRemaining) = _deposit(assets, receiver, msg.sender);
-        uint256 sharesMinted;
-        if (assetsRemaining != 0) {
-            sharesMinted = _syncDeposit(assetsRemaining, receiver, msg.sender);
-        }
-        return sharesClaimed + sharesMinted;
+        return _deposit(assets, receiver, msg.sender);
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
@@ -283,27 +277,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address receiver,
         address controller
     ) external virtual onlyOperator(controller) returns (uint256) {
-        (uint256 sharesClaimed,) = _deposit(assets, receiver, controller);
-        return sharesClaimed;
-    }
-
-    /// @notice Deposit in a sychronous fashion into the vault.
-    /// @param assets The assets to deposit.
-    /// @param receiver The receiver of the shares.
-    /// @param owner The owner of the assets.
-    /// @return shares The resulting shares.
-    function _syncDeposit(uint256 assets, address receiver, address owner) internal virtual returns (uint256 shares) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        if ($.totalAssetsExpiration >= block.timestamp) {
-            revert TotalAssetsExpired();
-        }
-
-        shares = _convertToShares(assets, Math.Rounding.Floor);
-        SafeERC20.safeTransferFrom(IERC20(asset()), owner, _safe(), assets);
-        _mint(receiver, shares);
-        $.totalAssets += assets;
-
-        emit Deposit(owner, receiver, assets, shares);
+        return _deposit(assets, receiver, controller);
     }
 
     /// @notice Claim the assets from the vault after a request has been settled.
@@ -311,28 +285,20 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param receiver The receiver of the shares.
     /// @param controller The controller, who owns the deposit request.
     /// @return shares The corresponding shares.
-    function _deposit(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) internal virtual returns (uint256 shares, uint256 assetsRemaining) {
+    function _deposit(uint256 assets, address receiver, address controller) internal virtual returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastDepositRequestId[controller];
         if (requestId > $.lastDepositEpochIdSettled) {
-            return (0, assets);
-            // revert RequestIdNotClaimable();
+            revert RequestIdNotClaimable();
         }
-        uint256 claimable = $.epochs[requestId].depositRequest[controller];
-        uint256 toClaim = Math.min(claimable, assets);
 
-        $.epochs[requestId].depositRequest[controller] -= toClaim;
-        shares = convertToShares(toClaim, requestId);
+        $.epochs[requestId].depositRequest[controller] -= assets;
+        shares = convertToShares(assets, requestId);
 
         _transfer(address(this), receiver, shares);
 
-        emit Deposit(controller, receiver, toClaim, shares);
-        return (shares, assets - toClaim);
+        emit Deposit(controller, receiver, assets, shares);
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
@@ -792,5 +758,5 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 _newTotalAssets
     ) public virtual;
 
-    function _safe() internal view virtual returns (address);
+    function safe() public view virtual returns (address);
 }

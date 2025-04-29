@@ -6,7 +6,14 @@ import {FeeManager} from "./FeeManager.sol";
 import {Roles} from "./Roles.sol";
 import {Whitelistable} from "./Whitelistable.sol";
 import {State} from "./primitives/Enums.sol";
-import {Closed, ERC7540InvalidOperator, NotClosing, NotOpen, NotWhitelisted} from "./primitives/Errors.sol";
+import {
+    Closed,
+    ERC7540InvalidOperator,
+    NotClosing,
+    NotOpen,
+    NotWhitelisted,
+    TotalAssetsExpired
+} from "./primitives/Errors.sol";
 
 import {Referral, StateUpdated} from "./primitives/Events.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
@@ -102,7 +109,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         __ERC20Pausable_init();
         __ERC4626_init(init.underlying);
         __ERC7540_init(init.underlying, wrappedNativeToken);
-        __Whitelistable_init(init.enableWhitelist, FeeRegistry(feeRegistry).protocolFeeReceiver());
+        __Whitelistable_init(init.enableWhitelist);
         __FeeManager_init(
             feeRegistry,
             init.managementRate,
@@ -279,6 +286,25 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         }
     }
 
+    /// @notice Deposit in a sychronous fashion into the vault.
+    /// @param assets The assets to deposit.
+    /// @param receiver The receiver of the shares.
+    /// @return shares The resulting shares.
+    function syncDeposit(uint256 assets, address receiver) public returns (uint256 shares) {
+        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
+        ERC7540Storage storage $ = _getERC7540Storage();
+        if (isTotalAssetsExpired()) {
+            revert TotalAssetsExpired();
+        }
+
+        shares = _convertToShares(assets, Math.Rounding.Floor);
+        SafeERC20.safeTransferFrom(IERC20(asset()), msg.sender, safe(), assets);
+        _mint(receiver, shares);
+        $.totalAssets += assets;
+
+        emit Deposit(msg.sender, receiver, assets, shares);
+    }
+
     ///////////////////////////////////////////////////////
     // ## VALUATION UPDATING AND SETTLEMENT FUNCTIONS ## //
     ///////////////////////////////////////////////////////
@@ -445,8 +471,16 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         return convertToShares(claimable, lastDepositId);
     }
 
-    function _safe() internal view override returns (address) {
+    function isTotalAssetsExpired() public view returns (bool) {
+        return block.timestamp >= _getERC7540Storage().totalAssetsExpiration;
+    }
+
+    function safe() public view override returns (address) {
         return _getRolesStorage().safe;
+    }
+
+    function protocolFeeReceiver() public view returns (address) {
+        return _getRolesStorage().feeRegistry.protocolFeeReceiver();
     }
 
     function version() public pure returns (string memory) {

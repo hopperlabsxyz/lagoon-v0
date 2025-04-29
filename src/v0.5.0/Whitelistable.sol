@@ -30,11 +30,12 @@ abstract contract Whitelistable is Roles {
     /// @dev Initializes the whitelist.
     /// @param activate if the whitelist should be activated.
     // solhint-disable-next-line func-name-mixedcase
-    function __Whitelistable_init(bool activate, address protocolFeeReceiver) internal onlyInitializing {
+    function __Whitelistable_init(
+        bool activate
+    ) internal onlyInitializing {
         if (activate) {
             WhitelistableStorage storage $ = _getWhitelistableStorage();
             $.isActivated = true;
-            $.isWhitelisted[protocolFeeReceiver] = true;
         }
     }
 
@@ -57,6 +58,9 @@ abstract contract Whitelistable is Roles {
         address account
     ) public view returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
+        if (_getRolesStorage().feeRegistry.protocolFeeReceiver() == account) {
+            return true;
+        }
         return $.isActivated ? $.isWhitelisted[account] : true;
     }
 

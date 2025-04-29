@@ -15,9 +15,8 @@ contract TestMisc is BaseTest {
     }
 
     function test_previewDeposit() public {
-        // vm.expectRevert(ERC7540PreviewDepositDisabled.selector);
-        uint256 shares = vault.previewDeposit(0);
-        assertEq(shares, 0);
+        vm.expectRevert(ERC7540PreviewDepositDisabled.selector);
+        vault.previewDeposit(0);
     }
 
     function test_previewWithdraw() public {
@@ -88,20 +87,20 @@ contract TestMisc is BaseTest {
         assertTrue(vault.supportsInterface(type(IERC165).interfaceId), "interface IERC165 not supported");
     }
 
-    // function test_contractSize() public {
-    //     uint256 size;
-    //     address vaultAddr = address(new Vault(true));
-    //     assembly {
-    //         size := extcodesize(vaultAddr)
-    //     }
-    //     console.log("Vault size: %d", size);
-    //     if (size > 24_576) {
-    //         console.log("Size diff: %d", size - 24_576);
-    //     } else {
-    //         console.log("Size diff: %d", 24_576 - size);
-    //     }
-    //     assertLt(size, 24_576, "Contract size is too large");
-    // }
+    function test_contractSize() public {
+        uint256 size;
+        address vaultAddr = address(new Vault(true));
+        assembly {
+            size := extcodesize(vaultAddr)
+        }
+        console.log("Vault size: %d", size);
+        if (size > 24_576) {
+            console.log("Size diff: %d", size - 24_576);
+        } else {
+            console.log("Size diff: %d", 24_576 - size);
+        }
+        assertLt(size, 24_576, "Contract size is too large");
+    }
 
     function test_epochSettleId() public {
         assertEq(vault.epochSettleId(0), 0);
