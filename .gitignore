@@ -18,7 +18,7 @@ docs/
 
 
 
-!.env.ci
+!.env.ci.*
 
 # Node modules
 node_modules/
