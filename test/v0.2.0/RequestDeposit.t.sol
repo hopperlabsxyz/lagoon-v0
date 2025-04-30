@@ -28,8 +28,7 @@ contract TestRequestDeposit is BaseTest {
 
     function test_requestDeposit_with_eth() public {
         uint256 userBalance = 10e18;
-        string memory wtoken = "WRAPPED_NATIVE_TOKEN";
-        bool shouldFail = keccak256(abi.encode(underlyingName)) != keccak256(abi.encode(wtoken));
+        bool shouldFail = address(underlying) != address(WRAPPED_NATIVE_TOKEN);
         if (shouldFail) {
             vm.startPrank(user1.addr);
             vm.expectRevert(CantDepositNativeToken.selector);
@@ -51,8 +50,7 @@ contract TestRequestDeposit is BaseTest {
     function test_requestDeposit_with_eth_and_wrong_userBalance() public {
         uint256 userBalance = 10e18;
 
-        string memory wtoken = "WRAPPED_NATIVE_TOKEN";
-        bool isNative = keccak256(abi.encode(underlyingName)) == keccak256(abi.encode(wtoken));
+        bool isNative = address(underlying) == address(WRAPPED_NATIVE_TOKEN);
         console.log("isNative", isNative);
         if (isNative) {
             vm.startPrank(user1.addr);
@@ -136,9 +134,8 @@ contract TestRequestDeposit is BaseTest {
 
     function test_requestDeposit_withClaimableBalance_with_eth() public {
         uint256 userBalance = 10e18;
-        string memory wtoken = "WRAPPED_NATIVE_TOKEN";
 
-        bool shouldWork = keccak256(abi.encode(underlyingName)) == keccak256(abi.encode(wtoken));
+        bool shouldWork = address(underlying) == address(WRAPPED_NATIVE_TOKEN);
         if (shouldWork) {
             requestDeposit(userBalance / 2, user1.addr);
             updateAndSettle(0);
