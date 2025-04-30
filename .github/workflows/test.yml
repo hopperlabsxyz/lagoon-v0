@@ -9,14 +9,12 @@ env:
   FOUNDRY_PROFILE: ci
 
 jobs:
-  check:
-    strategy:
-      fail-fast: true
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
     env:
       ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
-
-    name: Foundry project
-    runs-on: ubuntu-latest
+      PROXY: TRUE
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,51 +24,87 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Show Forge version
-        run: |
-          forge --version
+        run: forge --version
+
       - name: Run Soldeer install
-        run: |
-          forge soldeer install
-        id: install
+        run: forge soldeer install
 
       - name: Run Forge build
-        run: |
-          forge build
-        id: build
+        run: forge build
 
-      - name: Export Mainnet env variables
-        run: |
-          echo "FOUNDRY_ETH_RPC_URL=https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}" >> $GITHUB_ENV
-          echo "WRAPPED_NATIVE_TOKEN=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" >> $GITHUB_ENV
+  # Mainnet Tests (run in parallel)
+  test-usdc-mainnet:
+    needs: setup
+    name: USDC Mainnet
+    runs-on: ubuntu-latest
+    env:
+      FOUNDRY_ETH_RPC_URL: https://eth-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
+      WRAPPED_NATIVE_TOKEN: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+      UNDERLYING: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test -vvv
 
-      - name: Tests USDC Mainnet
-        run: |
-          export UNDERLYING=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 
-          forge test -vvv
-        id: testusdcmainnet
-      - name: Tests USDT Mainnet
-        run: |
-          export UNDERLYING=0xdAC17F958D2ee523a2206206994597C13D831ec7 
-          forge test -vvv
-        id: testusdtmainnet
-      - name: Tests WETH Mainnet
-        run: |
-          export UNDERLYING=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 
-          forge test -vvv
-        id: testwethmainnet
-      - name: Tests WBTC Mainnet
-        run: |
-          export UNDERLYING=0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599 
-          forge test -vvv
-        id: testwbtcmainnet
+  test-usdt-mainnet:
+    needs: setup
+    name: USDT Mainnet
+    runs-on: ubuntu-latest
+    env:
+      FOUNDRY_ETH_RPC_URL: https://eth-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
+      WRAPPED_NATIVE_TOKEN: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+      UNDERLYING: 0xdAC17F958D2ee523a2206206994597C13D831ec7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test -vvv
 
-      - name: Export Mantle env variables
-        run: |
-          echo "FOUNDRY_ETH_RPC_URL=https://mantle-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}" >> $GITHUB_ENV
-          echo "WRAPPED_NATIVE_TOKEN=0x4200000000000000000000000000000000000006" >> $GITHUB_ENV
+  test-weth-mainnet:
+    needs: setup
+    name: WETH Mainnet
+    runs-on: ubuntu-latest
+    env:
+      FOUNDRY_ETH_RPC_URL: https://eth-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
+      WRAPPED_NATIVE_TOKEN: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+      UNDERLYING: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test -vvv
 
-      - name: Tests WMantle Mantle
-        run: |
-          export UNDERLYING=0x4200000000000000000000000000000000000006
-          forge test -vvv
-        id: testusdcmantle
+  test-wbtc-mainnet:
+    needs: setup
+    name: WBTC Mainnet
+    runs-on: ubuntu-latest
+    env:
+      FOUNDRY_ETH_RPC_URL: https://eth-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
+      WRAPPED_NATIVE_TOKEN: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+      UNDERLYING: 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test -vvv
+
+  # Mantle Tests (run in parallel with Mainnet tests)
+  test-wmantle-mantle:
+    needs: setup
+    name: WMantle Mantle
+    runs-on: ubuntu-latest
+    env:
+      FOUNDRY_ETH_RPC_URL: https://mantle-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
+      WRAPPED_NATIVE_TOKEN: 0x4200000000000000000000000000000000000006
+      UNDERLYING: 0x4200000000000000000000000000000000000006
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test -vvv
