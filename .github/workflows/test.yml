@@ -43,7 +43,7 @@ jobs:
         with:
           submodules: recursive
       - uses: foundry-rs/foundry-toolchain@v1
-      - run: forge test -vvv
+      - run: forge clean && forge build && forge test -vvv
 
   test-usdt-mainnet:
     needs: setup
@@ -59,7 +59,7 @@ jobs:
         with:
           submodules: recursive
       - uses: foundry-rs/foundry-toolchain@v1
-      - run: forge test -vvv
+      - run: forge clean && forge build && forge test -vvv
 
   test-weth-mainnet:
     needs: setup
@@ -75,7 +75,7 @@ jobs:
         with:
           submodules: recursive
       - uses: foundry-rs/foundry-toolchain@v1
-      - run: forge test -vvv
+      - run: forge clean && forge build && forge test -vvv
 
   # Mantle Tests (run in parallel with Mainnet tests)
   test-wmantle-mantle:
@@ -92,4 +92,4 @@ jobs:
         with:
           submodules: recursive
       - uses: foundry-rs/foundry-toolchain@v1
-      - run: forge test -vvv
+      - run: forge clean && forge build && forge test -vvv
