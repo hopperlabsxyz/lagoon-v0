@@ -39,15 +39,6 @@ contract TestDeposit is BaseTest {
         vault.deposit(userBalance, user1.addr, user1.addr);
     }
 
-    // function test_deposit_revertIfTotalAssetsExpired() public {
-    //     // uint256 userBalance = assetBalance(user1.addr);
-    //     // requestDeposit(userBalance, user1.addr);
-    //     console.log("totalAssetsExpiration", vault.totalAssetsExpiration());
-    //     console.log("block.timestamp", block.timestamp);
-    //     vm.expectRevert(TotalAssetsExpired.selector);
-    //     vault.deposit(userBalance + 1, user1.addr);
-    // }
-
     function test_deposit_shouldRevertIfInvalidReceiver() public {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance, user1.addr);
