@@ -23,7 +23,6 @@ contract Constants is Test {
 
     uint8 decimalsOffset = 0;
 
-    string underlyingName = vm.envString("UNDERLYING_NAME");
     FeeRegistry feeRegistry;
     string vaultName = "vault";
     string vaultSymbol = "hop_vault";
