@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+    env:
+      ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Show Forge version
+        run: |
+          forge --version
+      - name: Run Soldeer install
+        run: |
+          forge soldeer install
+        id: install
+
+      - name: Run Forge build
+        run: |
+          forge build
+        id: build
+
+      - name: Export env variables
+        run: |
+          source .env.ci.mainnet
+      - name: Tests USDC Mainnet
+        run: UNDERLYING=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48  forge test -vvv
+        id: testusdcmainnet
+      - name: Tests USDT Mainnet
+        run: |
+          UNDERLYING=0xdAC17F958D2ee523a2206206994597C13D831ec7 forge test -vvv
+        id: testusdtmainnet
+      - name: Tests WETH Mainnet
+        run: |
+          UNDERLYING=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 forge test -vvv
+        id: testwethmainnet

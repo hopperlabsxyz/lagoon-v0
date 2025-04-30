@@ -16,6 +16,10 @@ docs/
 !.env.deploy.example
 !.env.build.example
 
+
+
+!.env.ci
+
 # Node modules
 node_modules/
 node_modules

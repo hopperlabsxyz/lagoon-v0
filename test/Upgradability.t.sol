@@ -17,31 +17,20 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
-contract Upgradable is Test {
+contract Constants is Test {
     // ERC20 tokens
-    string network = vm.envString("NETWORK");
-    ERC20Permit immutable USDC =
-        ERC20Permit(vm.envAddress(string.concat("USDC_", network)));
-    ERC20 immutable WETH =
-        ERC20(vm.envAddress(string.concat("WETH_", network)));
-    address immutable WRAPPED_NATIVE_TOKEN =
-        vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
-    ERC20 immutable WBTC =
-        ERC20(vm.envAddress(string.concat("WBTC_", network)));
-    ERC20 immutable ETH = ERC20(vm.envAddress(string.concat("ETH_", network)));
+    address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress("WRAPPED_NATIVE_TOKEN");
 
     uint8 decimalsOffset = 0;
 
     string underlyingName = vm.envString("UNDERLYING_NAME");
-
     FeeRegistry feeRegistry;
-    string vaultName = "vault_";
-    string vaultSymbol = "hop_vault_";
+    string vaultName = "vault";
+    string vaultSymbol = "hop_vault";
     uint256 rateUpdateCooldown = 1 days;
 
     //Underlying
-    ERC20 underlying =
-        ERC20(vm.envAddress(string.concat(underlyingName, "_", network)));
+    ERC20 underlying = ERC20(vm.envAddress("UNDERLYING"));
     ERC20Permit immutable underlyingPermit;
 
     // Users
@@ -59,13 +48,7 @@ contract Upgradable is Test {
     bool enableWhitelist = true;
 
     // Wallet
-    VmSafe.Wallet address0 =
-        VmSafe.Wallet({
-            addr: address(0),
-            publicKeyX: 0,
-            publicKeyY: 0,
-            privateKey: 0
-        });
+    VmSafe.Wallet address0 = VmSafe.Wallet({addr: address(0), publicKeyX: 0, publicKeyY: 0, privateKey: 0});
 
     int256 immutable bipsDividerSigned = 10_000;
 
@@ -79,24 +62,12 @@ contract Upgradable is Test {
         address _owner,
         Options memory opts
     ) internal returns (UpgradeableBeacon) {
-        return
-            UpgradeableBeacon(
-                Upgrades.deployBeacon(contractName, _owner, opts)
-            );
+        return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner, opts));
     }
 
-    function _proxyDeploy(
-        UpgradeableBeacon beacon,
-        Vault.InitStruct memory v
-    ) internal returns (address) {
-        BeaconProxy proxy = BeaconProxy(
-            payable(
-                Upgrades.deployBeaconProxy(
-                    address(beacon),
-                    abi.encodeCall(Vault.initialize, v)
-                )
-            )
-        );
+    function _proxyDeploy(UpgradeableBeacon beacon, Vault.InitStruct memory v) internal returns (address) {
+        BeaconProxy proxy =
+            BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault.initialize, v))));
 
         return address(proxy);
     }
@@ -135,15 +106,9 @@ contract Upgradable is Test {
         vm.startPrank(owner.addr);
         Upgrades.upgradeBeacon(address(beacon), "v0.2.0/Vault.sol:Vault", opts);
         Upgrades.upgradeBeacon(address(beacon), "v0.3.0/Vault.sol:Vault", opts);
-        assertEq(
-            keccak256(abi.encode(IVersion(vault).version())),
-            keccak256(abi.encode("v0.3.0"))
-        );
+        assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.3.0")));
         Upgrades.upgradeBeacon(address(beacon), "v0.4.0/Vault.sol:Vault", opts);
-        assertEq(
-            keccak256(abi.encode(IVersion(vault).version())),
-            keccak256(abi.encode("v0.4.0"))
-        );
+        assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.4.0")));
         vm.stopPrank();
     }
 }

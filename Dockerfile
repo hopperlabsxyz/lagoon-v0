@@ -15,7 +15,6 @@ COPY --from=node /usr/local/bin /usr/local/bin
 # Verify installation
 RUN node -v && npm -v && npx -v
 
-
 # Can be overriden through .env.build (default env is set in Makefile)
 ARG GH_BRANCH="main"
 ARG FOUNDRY_FFI=true
