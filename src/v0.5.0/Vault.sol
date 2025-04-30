@@ -290,7 +290,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @param assets The assets to deposit.
     /// @param receiver The receiver of the shares.
     /// @return shares The resulting shares.
-    function syncDeposit(uint256 assets, address receiver) public returns (uint256 shares) {
+    function syncDeposit(uint256 assets, address receiver) public onlyOpen returns (uint256 shares) {
         if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
         ERC7540Storage storage $ = _getERC7540Storage();
         if (isTotalAssetsExpired()) {
@@ -298,9 +298,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         }
 
         shares = _convertToShares(assets, Math.Rounding.Floor);
+        $.totalAssets += assets;
         SafeERC20.safeTransferFrom(IERC20(asset()), msg.sender, safe(), assets);
         _mint(receiver, shares);
-        $.totalAssets += assets;
 
         emit Deposit(msg.sender, receiver, assets, shares);
     }
