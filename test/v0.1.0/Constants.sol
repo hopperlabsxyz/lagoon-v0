@@ -22,7 +22,6 @@ contract Constants is Test {
 
     uint8 decimalsOffset = 0;
 
-    string underlyingName = vm.envString("UNDERLYING_NAME");
     VaultHelper vault;
     FeeRegistry feeRegistry;
     string vaultName = "vault";
@@ -63,8 +62,8 @@ contract Constants is Test {
     int256 immutable bipsDividerSigned = 10_000;
 
     constructor() {
-        vaultName = string.concat(vaultName, underlyingName);
-        vaultSymbol = string.concat(vaultSymbol, underlyingName);
+        vaultName = string.concat(vaultName, "asset");
+        vaultSymbol = string.concat(vaultSymbol, "asset");
 
         users.push(user1);
         users.push(user2);
