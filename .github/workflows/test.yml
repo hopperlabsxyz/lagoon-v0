@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
-      PROXY: "true"
+      PROXY: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,9 +28,6 @@ jobs:
 
       - name: Run Soldeer install
         run: forge soldeer install
-
-      - name: Run Forge build
-        run: forge build
 
   # Mainnet Tests (run in parallel)
   test-usdc-mainnet:
@@ -56,7 +53,7 @@ jobs:
       FOUNDRY_ETH_RPC_URL: https://eth-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
       WRAPPED_NATIVE_TOKEN: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
       UNDERLYING: "0xdAC17F958D2ee523a2206206994597C13D831ec7"
-      PROXY: "true"
+      PROXY: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -72,7 +69,7 @@ jobs:
       FOUNDRY_ETH_RPC_URL: https://eth-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
       WRAPPED_NATIVE_TOKEN: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
       UNDERLYING: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-      PROXY: "true"
+      PROXY: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -89,7 +86,7 @@ jobs:
       FOUNDRY_ETH_RPC_URL: https://mantle-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
       WRAPPED_NATIVE_TOKEN: "0x4200000000000000000000000000000000000006"
       UNDERLYING: "0x4200000000000000000000000000000000000006"
-      PROXY: "true"
+      PROXY: true
     steps:
       - uses: actions/checkout@v4
         with:
