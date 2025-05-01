@@ -15,7 +15,7 @@ import {
     TotalAssetsExpired
 } from "./primitives/Errors.sol";
 
-import {Referral, StateUpdated} from "./primitives/Events.sol";
+import {DepositSync, Referral, StateUpdated} from "./primitives/Events.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
@@ -302,7 +302,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         SafeERC20.safeTransferFrom(IERC20(asset()), msg.sender, safe(), assets);
         _mint(receiver, shares);
 
-        emit Deposit(msg.sender, receiver, assets, shares);
+        emit DepositSync(msg.sender, receiver, assets, shares);
     }
 
     ///////////////////////////////////////////////////////

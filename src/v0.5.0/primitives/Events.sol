@@ -97,3 +97,10 @@ event DepositRequestCanceled(uint256 indexed requestId, address indexed controll
 /// @param oldLifespan The old lifespan.
 /// @param newLifespan The new lifespan.
 event TotalAssetsLifespanUpdated(uint128 oldLifespan, uint128 newLifespan);
+
+/// @notice Same as a 4626 Deposit evnt
+/// @param sender The address who gave its assets
+/// @param owner The receiver of the shares
+/// @param assets Amount of assets deposit
+/// @param shares Amount of shares minted to owner
+event DepositSync(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
