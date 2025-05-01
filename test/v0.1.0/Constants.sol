@@ -18,11 +18,7 @@ import {VmSafe} from "forge-std/Vm.sol";
 contract Constants is Test {
     // ERC20 tokens
     string network = vm.envString("NETWORK");
-    ERC20Permit immutable USDC = ERC20Permit(vm.envAddress(string.concat("USDC_", network)));
-    ERC20 immutable WETH = ERC20(vm.envAddress(string.concat("WETH_", network)));
     address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
-    ERC20 immutable WBTC = ERC20(vm.envAddress(string.concat("WBTC_", network)));
-    ERC20 immutable ETH = ERC20(vm.envAddress(string.concat("ETH_", network)));
 
     uint8 decimalsOffset = 0;
 
@@ -69,11 +65,6 @@ contract Constants is Test {
     constructor() {
         vaultName = string.concat(vaultName, underlyingName);
         vaultSymbol = string.concat(vaultSymbol, underlyingName);
-
-        vm.label(address(USDC), "USDC");
-        vm.label(address(WETH), "WETH");
-        vm.label(address(ETH), "ETH");
-        vm.label(address(WBTC), "WBTC");
 
         users.push(user1);
         users.push(user2);
