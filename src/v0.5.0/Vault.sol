@@ -406,7 +406,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _unpause();
     }
 
-    function burn(uint256 shares, address owner) public {
+    function burn(uint256 shares, address owner) public onlyOpen {
         if (msg.sender != owner) {
             _spendAllowance(owner, msg.sender, shares);
         }
