@@ -148,4 +148,18 @@ contract VaultHelper is Vault {
     function activateWhitelist() public {
         _getWhitelistableStorage().isActivated = true;
     }
+
+    function protocolFeeReceiver() public view returns (address) {
+        return _getRolesStorage().feeRegistry.protocolFeeReceiver();
+    }
+
+    /// @notice value of the high water mark, the highest price per share ever reached
+    function highWaterMark() public view returns (uint256) {
+        return _getFeeManagerStorage().highWaterMark;
+    }
+
+    /// @notice the time of the last fee calculation
+    function lastFeeTime() public view returns (uint256) {
+        return _getFeeManagerStorage().lastFeeTime;
+    }
 }

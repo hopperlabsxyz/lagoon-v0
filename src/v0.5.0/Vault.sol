@@ -406,6 +406,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _unpause();
     }
 
+    function burn(uint256 shares, address owner) public {
+        if (msg.sender != owner) {
+            _spendAllowance(owner, msg.sender, shares);
+        }
+        _burn(owner, shares);
+    }
+
     // MAX FUNCTIONS OVERRIDE //
 
     /// @notice Returns the maximum redeemable shares for a controller.
@@ -477,10 +484,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     function safe() public view override returns (address) {
         return _getRolesStorage().safe;
-    }
-
-    function protocolFeeReceiver() public view returns (address) {
-        return _getRolesStorage().feeRegistry.protocolFeeReceiver();
     }
 
     function version() public pure returns (string memory) {
