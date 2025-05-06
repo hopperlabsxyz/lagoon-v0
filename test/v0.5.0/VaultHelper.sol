@@ -162,4 +162,22 @@ contract VaultHelper is Vault {
     function lastFeeTime() public view returns (uint256) {
         return _getFeeManagerStorage().lastFeeTime;
     }
+
+    /// @notice Returns if the whitelist is activated
+    /// @return True if the whitelist is activated, false otherwise
+    function isWhitelistActivated() public view returns (bool) {
+        return _getWhitelistableStorage().isActivated;
+    }
+
+    function lastRedeemRequestId(
+        address controller
+    ) public view returns (uint40) {
+        return _getERC7540Storage().lastRedeemRequestId[controller];
+    }
+
+    function lastDepositRequestId(
+        address controller
+    ) public view returns (uint40) {
+        return _getERC7540Storage().lastDepositRequestId[controller];
+    }
 }

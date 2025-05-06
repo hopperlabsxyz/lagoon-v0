@@ -705,18 +705,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return address(_getERC7540Storage().pendingSilo);
     }
 
-    function lastRedeemRequestId(
-        address controller
-    ) public view returns (uint40) {
-        return _getERC7540Storage().lastRedeemRequestId[controller];
-    }
-
-    function lastDepositRequestId(
-        address controller
-    ) public view returns (uint40) {
-        return _getERC7540Storage().lastDepositRequestId[controller];
-    }
-
     ///////////////////
     // ## EIP7575 ## //
     ///////////////////
