@@ -16,6 +16,9 @@ error NotClosing(State currentState);
 /// @notice Indicates that the vault is Closed.
 error Closed();
 
+/// @notice No new valuation proposition is allowed
+error ValuationUpdateNotAllowed();
+
 // ********************* ERC7540 ********************* //
 
 /// @notice Indicates that preview deposit is disabled.

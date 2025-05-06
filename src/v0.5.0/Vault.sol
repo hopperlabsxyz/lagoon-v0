@@ -12,7 +12,8 @@ import {
     NotClosing,
     NotOpen,
     NotWhitelisted,
-    TotalAssetsExpired
+    TotalAssetsExpired,
+    ValuationUpdateNotAllowed
 } from "./primitives/Errors.sol";
 
 import {DepositSync, Referral, StateUpdated} from "./primitives/Events.sol";
@@ -322,6 +323,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) public onlyValuationManager {
         if (_getVaultStorage().state == State.Closed) revert Closed();
+
+        // if totalAssets is not expired yet it means syncDeposit are allowed
+        // in this case we do not allow onlyValuationManager to propose a new nav
+        // he must call haltSyncDeposit first.
+        if (block.timestamp < _getERC7540Storage().totalAssetsExpiration) {
+            revert ValuationUpdateNotAllowed();
+        }
         _updateNewTotalAssets(_newTotalAssets);
     }
 
@@ -411,6 +419,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             _spendAllowance(owner, msg.sender, shares);
         }
         _burn(owner, shares);
+    }
+
+    function haltSyncDeposit() public onlyValuationManager {
+        _getERC7540Storage().totalAssetsExpiration = 0;
     }
 
     // MAX FUNCTIONS OVERRIDE //
