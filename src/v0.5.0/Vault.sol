@@ -153,7 +153,11 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address owner
     ) public payable override onlyOperator(owner) whenNotPaused returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
-        return _requestDeposit(assets, controller, owner);
+        if (isTotalAssetsExpired()) {
+            requestId = _requestDeposit(assets, controller, owner);
+        } else {
+            syncDeposit(assets, controller);
+        }
     }
 
     /// @notice Requests a deposit of assets, subject to whitelist validation.
@@ -168,8 +172,41 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address referral
     ) public payable onlyOperator(owner) whenNotPaused returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
-        requestId = _requestDeposit(assets, controller, owner);
+        if (isTotalAssetsExpired()) {
+            requestId = _requestDeposit(assets, controller, owner);
+        } else {
+            syncDeposit(assets, controller);
+        }
+
         emit Referral(referral, owner, requestId, assets);
+    }
+
+    /// @notice Deposit in a sychronous fashion into the vault.
+    /// @param assets The assets to deposit.
+    /// @param receiver The receiver of the shares.
+    /// @return shares The resulting shares.
+    function _syncDeposit(uint256 assets, address receiver, address owner) private returns (uint256 shares) {
+        ERC7540Storage storage $ = _getERC7540Storage();
+
+        shares = _convertToShares(assets, Math.Rounding.Floor);
+        $.totalAssets += assets;
+        SafeERC20.safeTransferFrom(IERC20(asset()), owner, safe(), assets);
+        _mint(receiver, shares);
+
+        emit DepositSync(msg.sender, receiver, assets, shares);
+    }
+
+    /// @notice Deposit in a sychronous fashion into the vault.
+    /// @param assets The assets to deposit.
+    /// @param receiver The receiver of the shares.
+    /// @return shares The resulting shares.
+    function syncDeposit(uint256 assets, address receiver) public onlyOpen returns (uint256) {
+        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
+        if (isTotalAssetsExpired()) {
+            revert TotalAssetsExpired();
+        }
+
+        return _syncDeposit(assets, receiver, msg.sender);
     }
 
     /// @notice Requests the redemption of tokens, subject to whitelist validation.
@@ -287,25 +324,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         }
     }
 
-    /// @notice Deposit in a sychronous fashion into the vault.
-    /// @param assets The assets to deposit.
-    /// @param receiver The receiver of the shares.
-    /// @return shares The resulting shares.
-    function syncDeposit(uint256 assets, address receiver) public onlyOpen returns (uint256 shares) {
-        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
-        ERC7540Storage storage $ = _getERC7540Storage();
-        if (isTotalAssetsExpired()) {
-            revert TotalAssetsExpired();
-        }
-
-        shares = _convertToShares(assets, Math.Rounding.Floor);
-        $.totalAssets += assets;
-        SafeERC20.safeTransferFrom(IERC20(asset()), msg.sender, safe(), assets);
-        _mint(receiver, shares);
-
-        emit DepositSync(msg.sender, receiver, assets, shares);
-    }
-
     ///////////////////////////////////////////////////////
     // ## VALUATION UPDATING AND SETTLEMENT FUNCTIONS ## //
     ///////////////////////////////////////////////////////
@@ -414,7 +432,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _unpause();
     }
 
-    function burn(uint256 shares, address owner) public {
+    function burn(uint256 shares, address owner) public onlyOpen {
         if (msg.sender != owner) {
             _spendAllowance(owner, msg.sender, shares);
         }

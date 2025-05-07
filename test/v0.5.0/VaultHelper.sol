@@ -169,6 +169,11 @@ contract VaultHelper is Vault {
         return _getWhitelistableStorage().isActivated;
     }
 
+    function pendingSilo() public view returns (address) {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        return address($.pendingSilo);
+    }
+
     function lastRedeemRequestId(
         address controller
     ) public view returns (uint40) {
