@@ -150,12 +150,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address controller,
         address owner
-    ) public payable override onlyOperator(owner) whenNotPaused returns (uint256 requestId) {
+    ) public payable override onlyOperator(owner) whenNotPaused onlyOpen returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         if (isTotalAssetsExpired()) {
             requestId = _requestDeposit(assets, controller, owner);
         } else {
             syncDeposit(assets, controller);
+            return 0;
         }
     }
 
@@ -169,12 +170,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller,
         address owner,
         address referral
-    ) public payable onlyOperator(owner) whenNotPaused returns (uint256 requestId) {
+    ) public payable onlyOperator(owner) whenNotPaused onlyOpen returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         if (isTotalAssetsExpired()) {
             requestId = _requestDeposit(assets, controller, owner);
         } else {
             syncDeposit(assets, controller);
+            return 0;
         }
 
         emit Referral(referral, owner, requestId, assets);
