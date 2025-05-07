@@ -353,7 +353,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
         uint256 requestedAmount = $.epochs[requestId].depositRequest[msg.sender];
         $.epochs[requestId].depositRequest[msg.sender] = 0;
-        IERC20(asset()).safeTransferFrom(pendingSilo(), msg.sender, requestedAmount);
+        IERC20(asset()).safeTransferFrom(address($.pendingSilo), msg.sender, requestedAmount);
 
         emit DepositRequestCanceled(requestId, msg.sender);
     }
@@ -469,7 +469,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         $erc7540.depositSettleId = depositSettleId + 2;
         $erc7540.lastDepositEpochIdSettled = lastDepositEpochIdSettled;
 
-        IERC20(asset()).safeTransferFrom(pendingSilo(), assetsCustodian, _pendingAssets);
+        IERC20(asset()).safeTransferFrom(address($erc7540.pendingSilo), assetsCustodian, _pendingAssets);
 
         emit SettleDeposit(
             lastDepositEpochIdSettled, depositSettleId, _totalAssets, _totalSupply, _pendingAssets, shares
@@ -504,7 +504,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         settleData.totalAssets = _totalAssets;
         settleData.totalSupply = _totalSupply;
 
-        _burn(pendingSilo(), pendingShares);
+        _burn(address($erc7540.pendingSilo), pendingShares);
 
         _totalAssets -= assetsToWithdraw;
         _totalSupply -= pendingShares;
@@ -535,7 +535,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         $.epochs[$.depositEpochId].settleId = $.depositSettleId;
         $.epochs[$.redeemEpochId].settleId = $.redeemSettleId;
 
-        address _pendingSilo = pendingSilo();
+        address _pendingSilo = address($.pendingSilo);
         uint256 pendingAssets = IERC20(asset()).balanceOf(_pendingSilo);
         uint256 pendingShares = balanceOf(_pendingSilo);
 
@@ -699,22 +699,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         if (requestId <= $.lastDepositEpochIdSettled) {
             return $.epochs[uint40(requestId)].depositRequest[controller];
         }
-    }
-
-    function pendingSilo() public view returns (address) {
-        return address(_getERC7540Storage().pendingSilo);
-    }
-
-    function lastRedeemRequestId(
-        address controller
-    ) public view returns (uint40) {
-        return _getERC7540Storage().lastRedeemRequestId[controller];
-    }
-
-    function lastDepositRequestId(
-        address controller
-    ) public view returns (uint40) {
-        return _getERC7540Storage().lastDepositRequestId[controller];
     }
 
     ///////////////////
