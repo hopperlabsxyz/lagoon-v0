@@ -162,4 +162,21 @@ contract VaultHelper is Vault {
     function lastFeeTime() public view returns (uint256) {
         return _getFeeManagerStorage().lastFeeTime;
     }
+
+    function pendingSilo() public view returns (address) {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        return address($.pendingSilo);
+    }
+
+    function lastRedeemRequestId(
+        address controller
+    ) public view returns (uint40) {
+        return _getERC7540Storage().lastRedeemRequestId[controller];
+    }
+
+    function lastDepositRequestId(
+        address controller
+    ) public view returns (uint40) {
+        return _getERC7540Storage().lastDepositRequestId[controller];
+    }
 }
