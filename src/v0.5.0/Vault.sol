@@ -151,12 +151,12 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address controller,
         address owner
-    ) public payable override onlyOperator(owner) whenNotPaused onlyOpen returns (uint256 requestId) {
+    ) public payable override onlyOperator(owner) whenNotPaused returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         if (isTotalAssetsExpired()) {
             requestId = _requestDeposit(assets, controller, owner);
         } else {
-            syncDeposit(assets, controller);
+            _syncDeposit(assets, controller, owner);
             return 0;
         }
     }
@@ -171,12 +171,12 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller,
         address owner,
         address referral
-    ) public payable onlyOperator(owner) whenNotPaused onlyOpen returns (uint256 requestId) {
+    ) public payable onlyOperator(owner) whenNotPaused returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         if (isTotalAssetsExpired()) {
             requestId = _requestDeposit(assets, controller, owner);
         } else {
-            syncDeposit(assets, controller);
+            _syncDeposit(assets, controller, owner);
             return 0;
         }
 
@@ -187,7 +187,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @param assets The assets to deposit.
     /// @param receiver The receiver of the shares.
     /// @return shares The resulting shares.
-    function _syncDeposit(uint256 assets, address receiver, address owner) private returns (uint256 shares) {
+    function _syncDeposit(uint256 assets, address receiver, address owner) internal onlyOpen returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         shares = _convertToShares(assets, Math.Rounding.Floor);
@@ -202,7 +202,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @param assets The assets to deposit.
     /// @param receiver The receiver of the shares.
     /// @return shares The resulting shares.
-    function syncDeposit(uint256 assets, address receiver) public onlyOpen returns (uint256) {
+    function syncDeposit(uint256 assets, address receiver) public returns (uint256) {
         if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
         if (isTotalAssetsExpired()) {
             revert TotalAssetsExpired();
