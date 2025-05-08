@@ -360,9 +360,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
         RolesStorage storage $roles = _getRolesStorage();
+        uint256 prevTotalAssets = totalAssets();
 
         _updateTotalAssets(_newTotalAssets);
-        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver(), prevTotalAssets);
         _settleDeposit(msg.sender);
         _settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
@@ -376,8 +377,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     ) public override onlySafe onlyOpen {
         RolesStorage storage $roles = _getRolesStorage();
 
+        uint256 prevTotalAssets = totalAssets();
+
         _updateTotalAssets(_newTotalAssets);
-        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver(), prevTotalAssets);
         _settleRedeem(msg.sender);
     }
 
@@ -404,8 +407,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) external onlySafe onlyClosing {
         RolesStorage storage $roles = _getRolesStorage();
+        uint256 prevTotalAssets = totalAssets();
+
         _updateTotalAssets(_newTotalAssets);
-        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver(), prevTotalAssets);
 
         _settleDeposit(msg.sender);
         _settleRedeem(msg.sender);
