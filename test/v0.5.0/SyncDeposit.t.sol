@@ -87,20 +87,26 @@ contract TestSyncDeposit is BaseTest {
     function test_syncDeposit_whenClosed() public {
         dealAndApproveAndWhitelist(user1.addr);
 
+        address[] memory wl = new address[](1);
+        wl[0] = user1.addr;
+        vm.prank(vault.whitelistManager());
+        vault.addToWhitelist(wl);
+
         // close the vault
         vm.prank(admin.addr);
         vault.initiateClosing();
         updateNewTotalAssets(vault.totalAssets());
         vm.stopPrank();
+
+        vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closed));
+        vm.prank(user1.addr);
+        vault.syncDeposit(1, user1.addr);
+
         vm.startPrank(safe.addr);
         vault.close(vault.newTotalAssets());
         vm.stopPrank();
 
         // make sure he is wl
-        address[] memory wl = new address[](1);
-        wl[0] = user1.addr;
-        vm.prank(vault.whitelistManager());
-        vault.addToWhitelist(wl);
 
         vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closed));
         vm.prank(user1.addr);
