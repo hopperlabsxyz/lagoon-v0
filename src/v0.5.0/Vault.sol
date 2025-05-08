@@ -359,11 +359,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     function settleDeposit(
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
-        RolesStorage storage $roles = _getRolesStorage();
-        uint256 prevTotalAssets = totalAssets();
-
-        _updateTotalAssets(_newTotalAssets);
-        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver(), prevTotalAssets);
+        _updateTotalAssetsAndTakeFees(_newTotalAssets);
         _settleDeposit(msg.sender);
         _settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
@@ -375,13 +371,21 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     function settleRedeem(
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
-        RolesStorage storage $roles = _getRolesStorage();
+        _updateTotalAssetsAndTakeFees(_newTotalAssets);
+        _settleRedeem(msg.sender);
+    }
 
-        uint256 prevTotalAssets = totalAssets();
+    /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
+    /// If possible, it also settles redeem requests.
+    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
+    function _updateTotalAssetsAndTakeFees(
+        uint256 _newTotalAssets
+    ) internal {
+        RolesStorage storage $roles = _getRolesStorage();
+        uint256 currentTotalAssets = totalAssets();
 
         _updateTotalAssets(_newTotalAssets);
-        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver(), prevTotalAssets);
-        _settleRedeem(msg.sender);
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver(), currentTotalAssets);
     }
 
     /////////////////////////////
