@@ -89,10 +89,11 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// @notice Take the fees by minting the manager and protocol shares
     /// @param feeReceiver the address that will receive the manager shares
     /// @param protocolFeeReceiver the address that will receive the protocol shares
-    function _takeFees(address feeReceiver, address protocolFeeReceiver) internal {
+    function _takeFees(address feeReceiver, address protocolFeeReceiver, uint256 prevTotalAssets) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
+        uint256 _totalAssetsAvg = totalAssets() + prevTotalAssets / 2;
 
-        (uint256 managerShares, uint256 protocolShares) = _calculateFees();
+        (uint256 managerShares, uint256 protocolShares) = _calculateFees(_totalAssetsAvg);
 
         if (managerShares > 0) {
             _mint(feeReceiver, managerShares);
@@ -183,7 +184,9 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// @dev protocol shares are the fees that go to the protocol
     /// @return managerShares the manager shares to be minted as fees
     /// @return protocolShares the protocol shares to be minted as fees
-    function _calculateFees() internal view returns (uint256 managerShares, uint256 protocolShares) {
+    function _calculateFees(
+        uint256 _totalAssets
+    ) internal view returns (uint256 managerShares, uint256 protocolShares) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 _decimals = decimals();
@@ -193,7 +196,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         /// Management fee computation ///
 
         uint256 timeElapsed = block.timestamp - $.lastFeeTime;
-        uint256 _totalAssets = totalAssets();
+        // uint256 _totalAssets = totalAssets();
         uint256 managementFees = _calculateManagementFee(_totalAssets, _rates.managementRate, timeElapsed);
 
         // by taking management fees the price per share decreases
