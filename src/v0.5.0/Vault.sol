@@ -142,14 +142,15 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     }
 
     modifier onlySyncDeposit() {
-        if (isTotalAssetsExpired() == false) {
-            revert OnlySyncDepositAllowed();
+        if (!isTotalAssetsValid()) {
+            revert OnlyAsyncDepositAllowed();
         }
         _;
     }
 
     modifier onlyAsyncDeposit() {
-        if (isTotalAssetsExpired()) {
+        // if total assets is valid we can only do synchronous deposit
+        if (isTotalAssetsValid()) {
             revert OnlySyncDepositAllowed();
         }
         _;
@@ -518,8 +519,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         return convertToShares(claimable, lastDepositId);
     }
 
-    function isTotalAssetsExpired() public view returns (bool) {
-        return block.timestamp >= _getERC7540Storage().totalAssetsExpiration;
+    function isTotalAssetsValid() public view returns (bool) {
+        return block.timestamp < _getERC7540Storage().totalAssetsExpiration;
     }
 
     function safe() public view override returns (address) {

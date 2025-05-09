@@ -25,7 +25,7 @@ contract TestSyncDeposit is BaseTest {
         // it will be equal since pps is 1:1
 
         vm.prank(user1.addr);
-        uint256 shares = vault.syncDeposit(userBalance, user1.addr);
+        uint256 shares = vault.syncDeposit(userBalance, user1.addr, address(0));
 
         assertEq(shares, vault.balanceOf(user1.addr));
         assertEq(shares, userBalance * 10 ** vault.decimalsOffset());
@@ -35,9 +35,9 @@ contract TestSyncDeposit is BaseTest {
         // we go one second after the expiration
         vm.warp(block.timestamp + 1001);
 
-        vm.expectRevert(TotalAssetsExpired.selector);
+        vm.expectRevert(OnlyAsyncDepositAllowed.selector);
         vm.prank(user1.addr);
-        vault.syncDeposit(1, user1.addr);
+        vault.syncDeposit(1, user1.addr, address(0));
     }
 
     function test_syncDeposit_differentReceiver() public {
@@ -51,7 +51,7 @@ contract TestSyncDeposit is BaseTest {
         vault.addToWhitelist(wl);
 
         vm.prank(user1.addr);
-        uint256 shares = vault.syncDeposit(userBalance, user2.addr);
+        uint256 shares = vault.syncDeposit(userBalance, user2.addr, address(0));
         assertEq(shares, vault.balanceOf(user2.addr));
         assertEq(shares, userBalance * 10 ** vault.decimalsOffset());
     }
@@ -62,7 +62,7 @@ contract TestSyncDeposit is BaseTest {
 
         vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidReceiver.selector, address(0)));
         vm.prank(user1.addr);
-        vault.syncDeposit(1, address(0));
+        vault.syncDeposit(1, address(0), address(0));
     }
 
     function test_syncDeposit_whenPaused() public {
@@ -81,7 +81,7 @@ contract TestSyncDeposit is BaseTest {
 
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vm.prank(user1.addr);
-        vault.syncDeposit(1, user1.addr);
+        vault.syncDeposit(1, user1.addr, address(0));
     }
 
     function test_syncDeposit_whenClosed() public {
@@ -100,7 +100,7 @@ contract TestSyncDeposit is BaseTest {
 
         vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closed));
         vm.prank(user1.addr);
-        vault.syncDeposit(1, user1.addr);
+        vault.syncDeposit(1, user1.addr, address(0));
 
         vm.startPrank(safe.addr);
         vault.close(vault.newTotalAssets());
@@ -110,7 +110,7 @@ contract TestSyncDeposit is BaseTest {
 
         vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closed));
         vm.prank(user1.addr);
-        vault.syncDeposit(1, user1.addr);
+        vault.syncDeposit(1, user1.addr, address(0));
     }
 
     function test_syncDeposit_whitelist() public {
@@ -118,6 +118,6 @@ contract TestSyncDeposit is BaseTest {
 
         vm.expectRevert(NotWhitelisted.selector);
         vm.prank(user2.addr);
-        vault.syncDeposit(1, user2.addr);
+        vault.syncDeposit(1, user2.addr, address(0));
     }
 }
