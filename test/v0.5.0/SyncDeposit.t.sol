@@ -95,10 +95,14 @@ contract TestSyncDeposit is BaseTest {
         // close the vault
         vm.prank(admin.addr);
         vault.initiateClosing();
+
+        vm.prank(safe.addr);
+        vault.unvalidateTotalAssets();
+
         updateNewTotalAssets(vault.totalAssets());
         vm.stopPrank();
 
-        vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closed));
+        vm.expectRevert(OnlyAsyncDepositAllowed.selector);
         vm.prank(user1.addr);
         vault.syncDeposit(1, user1.addr, address(0));
 

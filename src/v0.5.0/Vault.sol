@@ -184,8 +184,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address referral
     ) public payable onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
+        requestId = _requestDeposit(assets, controller, owner);
         emit Referral(referral, owner, requestId, assets);
-        return _requestDeposit(assets, controller, owner);
     }
 
     /// @notice Deposit in a sychronous fashion into the vault.
@@ -354,7 +354,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         // if totalAssets is not expired yet it means syncDeposit are allowed
         // in this case we do not allow onlyValuationManager to propose a new nav
         // he must call haltSyncDeposit first.
-        if (block.timestamp < _getERC7540Storage().totalAssetsExpiration) {
+        if (isTotalAssetsValid()) {
             revert ValuationUpdateNotAllowed();
         }
         _updateNewTotalAssets(_newTotalAssets);
@@ -392,7 +392,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 currentTotalAssets = totalAssets();
 
         _updateTotalAssets(_newTotalAssets);
-        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver(), currentTotalAssets);
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
     }
 
     /////////////////////////////
@@ -418,10 +418,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) external onlySafe onlyClosing {
         RolesStorage storage $roles = _getRolesStorage();
-        uint256 prevTotalAssets = totalAssets();
-
         _updateTotalAssets(_newTotalAssets);
-        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver(), prevTotalAssets);
+        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
 
         _settleDeposit(msg.sender);
         _settleRedeem(msg.sender);
@@ -450,7 +448,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _unpause();
     }
 
-    function haltSyncDeposit() public onlyValuationManager {
+    function unvalidateTotalAssets() public onlySafe {
         _getERC7540Storage().totalAssetsExpiration = 0;
     }
 

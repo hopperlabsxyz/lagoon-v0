@@ -89,14 +89,10 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// @notice Take the fees by minting the manager and protocol shares
     /// @param feeReceiver the address that will receive the manager shares
     /// @param protocolFeeReceiver the address that will receive the protocol shares
-    function _takeFees(address feeReceiver, address protocolFeeReceiver, uint256 prevTotalAssets) internal {
+    function _takeFees(address feeReceiver, address protocolFeeReceiver) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
-        uint256 _totalAssetsAvg = totalAssets() + prevTotalAssets / 2;
 
-        (uint256 managerShares, uint256 protocolShares) = _calculateFees({
-            _totalAssetsForManagementFee: _totalAssetsAvg,
-            _totalAssetsForPerformanceFee: totalAssets()
-        });
+        (uint256 managerShares, uint256 protocolShares) = _calculateFees();
 
         if (managerShares > 0) {
             _mint(feeReceiver, managerShares);
@@ -143,16 +139,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         return $.oldRates;
     }
 
-    // /// @notice the time of the last fee calculation
-    // function lastFeeTime() public view returns (uint256) {
-    //     return _getFeeManagerStorage().lastFeeTime;
-    // }
-
-    // /// @notice value of the high water mark, the highest price per share ever reached
-    // function highWaterMark() public view returns (uint256) {
-    //     return _getFeeManagerStorage().highWaterMark;
-    // }
-
     /// @dev Update the high water mark only if the new value is greater than the current one
     /// @dev The high water mark is the highest price per share ever reached
     /// @param _newHighWaterMark the new high water mark
@@ -187,10 +173,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// @dev protocol shares are the fees that go to the protocol
     /// @return managerShares the manager shares to be minted as fees
     /// @return protocolShares the protocol shares to be minted as fees
-    function _calculateFees(
-        uint256 _totalAssetsForManagementFee,
-        uint256 _totalAssetsForPerformanceFee
-    ) internal view returns (uint256 managerShares, uint256 protocolShares) {
+    function _calculateFees() internal view returns (uint256 managerShares, uint256 protocolShares) {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 _decimals = decimals();
@@ -200,14 +183,12 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         /// Management fee computation ///
 
         uint256 timeElapsed = block.timestamp - $.lastFeeTime;
-        uint256 managementFees =
-            _calculateManagementFee(_totalAssetsForManagementFee, _rates.managementRate, timeElapsed);
+        uint256 _totalAssets = totalAssets();
+        uint256 managementFees = _calculateManagementFee(_totalAssets, _rates.managementRate, timeElapsed);
 
         // by taking management fees the price per share decreases
         uint256 pricePerShare = (10 ** _decimals).mulDiv(
-            _totalAssetsForPerformanceFee + 1 - managementFees,
-            totalSupply() + 10 ** _decimalsOffset(),
-            Math.Rounding.Ceil
+            _totalAssets + 1 - managementFees, totalSupply() + 10 ** _decimalsOffset(), Math.Rounding.Ceil
         );
 
         /// Performance fee computation ///
@@ -217,13 +198,13 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
             _calculatePerformanceFee(_rates.performanceRate, _totalSupply, pricePerShare, $.highWaterMark, _decimals);
 
         /// Protocol fee computation & convertion to shares ///
+
         uint256 totalFees = managementFees + performanceFees;
 
         // since we are minting shares without actually increasing the totalAssets, we need to compensate the future
         // dilution of price per share by virtually decreasing totalAssets in our computation
-        uint256 totalShares = totalFees.mulDiv(
-            _totalSupply + 10 ** _decimalsOffset(), (_totalAssetsForPerformanceFee - totalFees) + 1, Math.Rounding.Ceil
-        );
+        uint256 totalShares =
+            totalFees.mulDiv(_totalSupply + 10 ** _decimalsOffset(), (_totalAssets - totalFees) + 1, Math.Rounding.Ceil);
 
         protocolShares = totalShares.mulDiv(_protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
         managerShares = totalShares - protocolShares;
