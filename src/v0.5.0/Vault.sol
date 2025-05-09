@@ -7,6 +7,7 @@ import {Roles} from "./Roles.sol";
 import {Whitelistable} from "./Whitelistable.sol";
 import {State} from "./primitives/Enums.sol";
 import {
+    CantDepositNativeToken,
     Closed,
     ERC7540InvalidOperator,
     NotClosing,
@@ -196,26 +197,30 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address receiver,
         address referral
-    ) public onlySyncDeposit returns (uint256 shares) {
-        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
-
-        shares = _syncDeposit(assets, receiver, msg.sender);
-        emit Referral(referral, msg.sender, 0, assets);
-    }
-
-    /// @notice Deposit in a sychronous fashion into the vault.
-    /// @param assets The assets to deposit.
-    /// @param receiver The receiver of the shares.
-    /// @return shares The resulting shares.
-    function _syncDeposit(uint256 assets, address receiver, address owner) internal onlyOpen returns (uint256 shares) {
+    ) public payable onlySyncDeposit returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        shares = _convertToShares(assets, Math.Rounding.Floor);
+        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
+
         $.totalAssets += assets;
-        SafeERC20.safeTransferFrom(IERC20(asset()), owner, safe(), assets);
+        if (msg.value != 0) {
+            // if user sends eth and the underlying is wETH we will wrap it for him
+            if (asset() == address($.wrappedNativeToken)) {
+                assets = msg.value;
+                $.pendingSilo.depositEth{value: msg.value}();
+                IERC20(asset()).safeTransferFrom(address($.pendingSilo), safe(), assets);
+            } else {
+                revert CantDepositNativeToken();
+            }
+        } else {
+            SafeERC20.safeTransferFrom(IERC20(asset()), msg.sender, safe(), assets);
+            // IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
+        }
+        shares = _convertToShares(assets, Math.Rounding.Floor);
         _mint(receiver, shares);
 
         emit DepositSync(msg.sender, receiver, assets, shares);
+        emit Referral(referral, msg.sender, 0, assets);
     }
 
     /// @notice Requests the redemption of tokens, subject to whitelist validation.
