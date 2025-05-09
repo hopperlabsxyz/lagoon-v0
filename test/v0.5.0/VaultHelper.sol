@@ -153,22 +153,6 @@ contract VaultHelper is Vault {
         return _getRolesStorage().feeRegistry.protocolFeeReceiver();
     }
 
-    /// @notice value of the high water mark, the highest price per share ever reached
-    function highWaterMark() public view returns (uint256) {
-        return _getFeeManagerStorage().highWaterMark;
-    }
-
-    /// @notice the time of the last fee calculation
-    function lastFeeTime() public view returns (uint256) {
-        return _getFeeManagerStorage().lastFeeTime;
-    }
-
-    /// @notice Returns if the whitelist is activated
-    /// @return True if the whitelist is activated, false otherwise
-    function isWhitelistActivated() public view returns (bool) {
-        return _getWhitelistableStorage().isActivated;
-    }
-
     function pendingSilo() public view returns (address) {
         ERC7540Storage storage $ = _getERC7540Storage();
         return address($.pendingSilo);

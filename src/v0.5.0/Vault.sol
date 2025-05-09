@@ -353,7 +353,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         // if totalAssets is not expired yet it means syncDeposit are allowed
         // in this case we do not allow onlyValuationManager to propose a new nav
-        // he must call haltSyncDeposit first.
+        // he must call unvalidateTotalAssets first.
         if (isTotalAssetsValid()) {
             revert ValuationUpdateNotAllowed();
         }
@@ -389,7 +389,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) internal {
         RolesStorage storage $roles = _getRolesStorage();
-        uint256 currentTotalAssets = totalAssets();
 
         _updateTotalAssets(_newTotalAssets);
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());

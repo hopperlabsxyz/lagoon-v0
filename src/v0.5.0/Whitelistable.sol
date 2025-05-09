@@ -58,6 +58,12 @@ abstract contract Whitelistable is Roles {
         return $.isActivated ? $.isWhitelisted[account] : true;
     }
 
+    /// @notice Returns if the whitelist is activated
+    /// @return True if the whitelist is activated, false otherwise
+    function isWhitelistActivated() public view returns (bool) {
+        return _getWhitelistableStorage().isActivated;
+    }
+
     /// @notice Adds multiple accounts to the whitelist
     function addToWhitelist(
         address[] memory accounts

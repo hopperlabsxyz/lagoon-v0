@@ -139,6 +139,16 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         return $.oldRates;
     }
 
+    /// @notice the time of the last fee calculation
+    function lastFeeTime() public view returns (uint256) {
+        return _getFeeManagerStorage().lastFeeTime;
+    }
+
+    /// @notice value of the high water mark, the highest price per share ever reached
+    function highWaterMark() public view returns (uint256) {
+        return _getFeeManagerStorage().highWaterMark;
+    }
+
     /// @dev Update the high water mark only if the new value is greater than the current one
     /// @dev The high water mark is the highest price per share ever reached
     /// @param _newHighWaterMark the new high water mark
