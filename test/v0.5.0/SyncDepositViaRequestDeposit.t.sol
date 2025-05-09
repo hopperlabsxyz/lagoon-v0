@@ -21,26 +21,24 @@ contract TestSyncDeposit is BaseTest {
     }
 
     function test_syncDeposit() public {
-        uint256 userBalance = assetBalance(user1.addr);
+        uint256 userBalanceBefore = assetBalance(user1.addr);
         // it will be equal since pps is 1:1
+        uint256 sharesBefore = vault.balanceOf(user1.addr);
+        assertEq(sharesBefore, 0, "asert 1");
 
         vm.prank(user1.addr);
-        uint256 shares = vault.syncDeposit(userBalance, user1.addr, address(0));
-
-
-
-        assertEq(shares, vault.balanceOf(user1.addr));
-        assertEq(shares, userBalance * 10 ** vault.decimalsOffset());
+        uint256 ret = vault.requestDeposit(userBalanceBefore, user1.addr, user1.addr);
+        assertEq(userBalanceBefore * 10 ** vault.decimalsOffset(), vault.balanceOf(user1.addr), "assert 2");
     }
 
     function test_syncDeposit_lifespanOutdate() public {
         // we go one second after the expiration
         vm.warp(block.timestamp + 1001);
 
-        vm.expectRevert(OnlyAsyncDepositAllowed.selector);
+        // vm.expectRevert(TotalAssetsExpired.selector);
         vm.prank(user1.addr);
-        vault.syncDeposit(1, user1.addr, address(0));
-
+        vault.requestDeposit(1, user1.addr, user1.addr);
+        assertEq(1, vault.pendingDepositRequest(0, user1.addr));
     }
 
     function test_syncDeposit_differentReceiver() public {
@@ -54,10 +52,9 @@ contract TestSyncDeposit is BaseTest {
         vault.addToWhitelist(wl);
 
         vm.prank(user1.addr);
-        uint256 shares = vault.syncDeposit(userBalance, user2.addr, address(0));
-
-        assertEq(shares, vault.balanceOf(user2.addr));
-        assertEq(shares, userBalance * 10 ** vault.decimalsOffset());
+        uint256 shares = vault.requestDeposit(userBalance, user2.addr, user1.addr);
+        assertEq(shares, 0);
+        assertEq(vault.balanceOf(user2.addr), userBalance * 10 ** vault.decimalsOffset());
     }
 
     function test_syncDeposit_addressZeroReceiver() public {
@@ -66,8 +63,7 @@ contract TestSyncDeposit is BaseTest {
 
         vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidReceiver.selector, address(0)));
         vm.prank(user1.addr);
-        vault.syncDeposit(1, address(0), address(0));
-
+        vault.requestDeposit(1, address(0), user1.addr);
     }
 
     function test_syncDeposit_whenPaused() public {
@@ -86,43 +82,30 @@ contract TestSyncDeposit is BaseTest {
 
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vm.prank(user1.addr);
-        vault.syncDeposit(1, user1.addr, address(0));
-
+        vault.requestDeposit(1, user1.addr, user1.addr);
     }
 
     function test_syncDeposit_whenClosed() public {
         dealAndApproveAndWhitelist(user1.addr);
 
-        address[] memory wl = new address[](1);
-        wl[0] = user1.addr;
-        vm.prank(vault.whitelistManager());
-        vault.addToWhitelist(wl);
-
         // close the vault
         vm.prank(admin.addr);
         vault.initiateClosing();
-
-        vm.prank(safe.addr);
-        vault.unvalidateTotalAssets();
-
         updateNewTotalAssets(vault.totalAssets());
         vm.stopPrank();
-
-        vm.expectRevert(OnlyAsyncDepositAllowed.selector);
-        vm.prank(user1.addr);
-        vault.syncDeposit(1, user1.addr, address(0));
-
-
         vm.startPrank(safe.addr);
         vault.close(vault.newTotalAssets());
         vm.stopPrank();
 
         // make sure he is wl
+        address[] memory wl = new address[](1);
+        wl[0] = user1.addr;
+        vm.prank(vault.whitelistManager());
+        vault.addToWhitelist(wl);
 
         vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closed));
         vm.prank(user1.addr);
-        vault.syncDeposit(1, user1.addr, address(0));
-
+        vault.requestDeposit(1, user1.addr, user1.addr);
     }
 
     function test_syncDeposit_whitelist() public {
@@ -130,8 +113,6 @@ contract TestSyncDeposit is BaseTest {
 
         vm.expectRevert(NotWhitelisted.selector);
         vm.prank(user2.addr);
-
-        vault.syncDeposit(1, user2.addr, address(0));
-
+        vault.requestDeposit(1, user2.addr, user2.addr);
     }
 }

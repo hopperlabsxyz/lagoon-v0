@@ -186,6 +186,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     ) public payable onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         requestId = _requestDeposit(assets, controller, owner);
+
         emit Referral(referral, owner, requestId, assets);
     }
 
@@ -198,6 +199,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address receiver,
         address referral
     ) public payable onlySyncDeposit onlyOpen returns (uint256 shares) {
+
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
@@ -219,7 +221,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _mint(receiver, shares);
 
         emit DepositSync(msg.sender, receiver, assets, shares);
+
         emit Referral(referral, msg.sender, 0, assets);
+
     }
 
     /// @notice Requests the redemption of tokens, subject to whitelist validation.
