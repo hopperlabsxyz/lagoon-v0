@@ -12,7 +12,8 @@ import {
     NotClosing,
     NotOpen,
     NotWhitelisted,
-    TotalAssetsExpired,
+    OnlyAsyncDepositAllowed,
+    OnlySyncDepositAllowed,
     ValuationUpdateNotAllowed
 } from "./primitives/Errors.sol";
 
@@ -140,6 +141,20 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _;
     }
 
+    modifier onlySyncDeposit() {
+        if (isTotalAssetsExpired() == false) {
+            revert OnlySyncDepositAllowed();
+        }
+        _;
+    }
+
+    modifier onlyAsyncDeposit() {
+        if (isTotalAssetsExpired()) {
+            revert OnlySyncDepositAllowed();
+        }
+        _;
+    }
+
     /////////////////////////////////////////////
     // ## DEPOSIT AND REDEEM FLOW FUNCTIONS ## //
     /////////////////////////////////////////////
@@ -151,13 +166,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address controller,
         address owner
-    ) public payable override onlyOperator(owner) whenNotPaused returns (uint256 requestId) {
+    ) public payable override onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
-        if (isTotalAssetsExpired()) {
-            requestId = _requestDeposit(assets, controller, owner);
-        } else {
-            _syncDeposit(assets, controller, owner);
-        }
+        return _requestDeposit(assets, controller, owner);
     }
 
     /// @notice Requests a deposit of assets, subject to whitelist validation.
@@ -170,15 +181,25 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller,
         address owner,
         address referral
-    ) public payable onlyOperator(owner) whenNotPaused returns (uint256 requestId) {
+    ) public payable onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
-        if (isTotalAssetsExpired()) {
-            requestId = _requestDeposit(assets, controller, owner);
-        } else {
-            _syncDeposit(assets, controller, owner);
-        }
-
         emit Referral(referral, owner, requestId, assets);
+        return _requestDeposit(assets, controller, owner);
+    }
+
+    /// @notice Deposit in a sychronous fashion into the vault.
+    /// @param assets The assets to deposit.
+    /// @param receiver The receiver of the shares.
+    /// @return shares The resulting shares.
+    function syncDeposit(
+        uint256 assets,
+        address receiver,
+        address referral
+    ) public onlySyncDeposit returns (uint256 shares) {
+        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
+
+        shares = _syncDeposit(assets, receiver, msg.sender);
+        emit Referral(referral, msg.sender, 0, assets);
     }
 
     /// @notice Deposit in a sychronous fashion into the vault.
@@ -194,22 +215,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _mint(receiver, shares);
 
         emit DepositSync(msg.sender, receiver, assets, shares);
-    }
-
-    /// @notice Deposit in a sychronous fashion into the vault.
-    /// @param assets The assets to deposit.
-    /// @param receiver The receiver of the shares.
-    /// @return shares The resulting shares.
-    function syncDeposit(uint256 assets, address receiver, address referral) public returns (uint256 shares) {
-        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
-        if (isTotalAssetsExpired()) {
-            revert TotalAssetsExpired();
-        }
-
-        shares = _syncDeposit(assets, receiver, msg.sender);
-        if (referral != address(0)) {
-            emit Referral(referral, msg.sender, 0, assets);
-        }
     }
 
     /// @notice Requests the redemption of tokens, subject to whitelist validation.
@@ -442,13 +447,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @notice Resumes core operations of the vault. Can only be called by the owner.
     function unpause() public onlyOwner {
         _unpause();
-    }
-
-    function burn(uint256 shares, address owner) public onlyOpen onlySafe {
-        if (msg.sender != owner) {
-            _spendAllowance(owner, msg.sender, shares);
-        }
-        _burn(owner, shares);
     }
 
     function haltSyncDeposit() public onlyValuationManager {
