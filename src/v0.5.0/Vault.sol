@@ -157,7 +157,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             requestId = _requestDeposit(assets, controller, owner);
         } else {
             _syncDeposit(assets, controller, owner);
-            return 0;
         }
     }
 
@@ -177,7 +176,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             requestId = _requestDeposit(assets, controller, owner);
         } else {
             _syncDeposit(assets, controller, owner);
-            return 0;
         }
 
         emit Referral(referral, owner, requestId, assets);
@@ -202,13 +200,16 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @param assets The assets to deposit.
     /// @param receiver The receiver of the shares.
     /// @return shares The resulting shares.
-    function syncDeposit(uint256 assets, address receiver) public returns (uint256) {
+    function syncDeposit(uint256 assets, address receiver, address referral) public returns (uint256 shares) {
         if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
         if (isTotalAssetsExpired()) {
             revert TotalAssetsExpired();
         }
 
-        return _syncDeposit(assets, receiver, msg.sender);
+        shares = _syncDeposit(assets, receiver, msg.sender);
+        if (referral != address(0)) {
+            emit Referral(referral, msg.sender, 0, assets);
+        }
     }
 
     /// @notice Requests the redemption of tokens, subject to whitelist validation.
@@ -443,7 +444,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _unpause();
     }
 
-    function burn(uint256 shares, address owner) public onlyOpen {
+    function burn(uint256 shares, address owner) public onlyOpen onlySafe {
         if (msg.sender != owner) {
             _spendAllowance(owner, msg.sender, shares);
         }
