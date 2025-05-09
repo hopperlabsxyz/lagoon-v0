@@ -197,12 +197,11 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address receiver,
         address referral
-    ) public payable onlySyncDeposit returns (uint256 shares) {
+    ) public payable onlySyncDeposit onlyOpen returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
 
-        $.totalAssets += assets;
         if (msg.value != 0) {
             // if user sends eth and the underlying is wETH we will wrap it for him
             if (asset() == address($.wrappedNativeToken)) {
@@ -214,9 +213,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             }
         } else {
             SafeERC20.safeTransferFrom(IERC20(asset()), msg.sender, safe(), assets);
-            // IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
         }
         shares = _convertToShares(assets, Math.Rounding.Floor);
+        $.totalAssets += assets;
         _mint(receiver, shares);
 
         emit DepositSync(msg.sender, receiver, assets, shares);

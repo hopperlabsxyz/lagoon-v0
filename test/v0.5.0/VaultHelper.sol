@@ -34,6 +34,12 @@ contract VaultHelper is Vault {
     //     return $.epochs[$.epochId - 1].totalSupply;
     // }
 
+    /// @notice Returns if the whitelist is activated
+    /// @return True if the whitelist is activated, false otherwise
+    function isWhitelistActivated() public view returns (bool) {
+        return _getWhitelistableStorage().isActivated;
+    }
+
     function totalAssets(
         uint256 epochId
     ) public view returns (uint256) {
@@ -168,5 +174,15 @@ contract VaultHelper is Vault {
         address controller
     ) public view returns (uint40) {
         return _getERC7540Storage().lastDepositRequestId[controller];
+    }
+
+    /// @notice the time of the last fee calculation
+    function lastFeeTime() public view returns (uint256) {
+        return _getFeeManagerStorage().lastFeeTime;
+    }
+
+    /// @notice value of the high water mark, the highest price per share ever reached
+    function highWaterMark() public view returns (uint256) {
+        return _getFeeManagerStorage().highWaterMark;
     }
 }
