@@ -248,6 +248,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     function claimSharesAndRequestRedeem(
         uint256 sharesToRedeem
     ) public onlyOpen whenNotPaused returns (uint40 requestId) {
+        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
+
         uint256 claimable = claimableDepositRequest(0, msg.sender);
         if (claimable > 0) _deposit(claimable, msg.sender, msg.sender);
 
