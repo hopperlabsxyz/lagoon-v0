@@ -7,12 +7,15 @@ import {Roles} from "./Roles.sol";
 import {Whitelistable} from "./Whitelistable.sol";
 import {State} from "./primitives/Enums.sol";
 import {
+    CantDepositNativeToken,
     Closed,
     ERC7540InvalidOperator,
     NotClosing,
     NotOpen,
     NotWhitelisted,
-    TotalAssetsExpired
+    OnlyAsyncDepositAllowed,
+    OnlySyncDepositAllowed,
+    ValuationUpdateNotAllowed
 } from "./primitives/Errors.sol";
 
 import {DepositSync, Referral, StateUpdated} from "./primitives/Events.sol";
@@ -139,6 +142,24 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _;
     }
 
+    // @notice Reverts if totalAssets is expired.
+    modifier onlySyncDeposit() {
+        // if total assets is not valid we can only do asynchronous deposit
+        if (!isTotalAssetsValid()) {
+            revert OnlyAsyncDepositAllowed();
+        }
+        _;
+    }
+
+    // @notice Reverts if totalAssets is valid.
+    modifier onlyAsyncDeposit() {
+        // if total assets is valid we can only do synchronous deposit
+        if (isTotalAssetsValid()) {
+            revert OnlySyncDepositAllowed();
+        }
+        _;
+    }
+
     /////////////////////////////////////////////
     // ## DEPOSIT AND REDEEM FLOW FUNCTIONS ## //
     /////////////////////////////////////////////
@@ -150,14 +171,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address controller,
         address owner
-    ) public payable override onlyOperator(owner) whenNotPaused returns (uint256 requestId) {
+    ) public payable override onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
-        if (isTotalAssetsExpired()) {
-            requestId = _requestDeposit(assets, controller, owner);
-        } else {
-            _syncDeposit(assets, controller, owner);
-            return 0;
-        }
+        return _requestDeposit(assets, controller, owner);
     }
 
     /// @notice Requests a deposit of assets, subject to whitelist validation.
@@ -170,14 +186,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller,
         address owner,
         address referral
-    ) public payable onlyOperator(owner) whenNotPaused returns (uint256 requestId) {
+    ) public payable onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
-        if (isTotalAssetsExpired()) {
-            requestId = _requestDeposit(assets, controller, owner);
-        } else {
-            _syncDeposit(assets, controller, owner);
-            return 0;
-        }
+        requestId = _requestDeposit(assets, controller, owner);
 
         emit Referral(referral, owner, requestId, assets);
     }
@@ -186,28 +197,35 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @param assets The assets to deposit.
     /// @param receiver The receiver of the shares.
     /// @return shares The resulting shares.
-    function _syncDeposit(uint256 assets, address receiver, address owner) internal onlyOpen returns (uint256 shares) {
+    function syncDeposit(
+        uint256 assets,
+        address receiver,
+        address referral
+    ) public payable onlySyncDeposit onlyOpen returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
+        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
+
+        if (msg.value != 0) {
+            // if user sends eth and the underlying is wETH we will wrap it for him
+            if (asset() == address($.wrappedNativeToken)) {
+                assets = msg.value;
+                // we do not send directly eth in case the safe is not payable
+                $.pendingSilo.depositEth{value: assets}();
+                IERC20(asset()).safeTransferFrom(address($.pendingSilo), safe(), assets);
+            } else {
+                revert CantDepositNativeToken();
+            }
+        } else {
+            IERC20(asset()).safeTransferFrom(msg.sender, safe(), assets);
+        }
         shares = _convertToShares(assets, Math.Rounding.Floor);
         $.totalAssets += assets;
-        SafeERC20.safeTransferFrom(IERC20(asset()), owner, safe(), assets);
         _mint(receiver, shares);
 
         emit DepositSync(msg.sender, receiver, assets, shares);
-    }
 
-    /// @notice Deposit in a sychronous fashion into the vault.
-    /// @param assets The assets to deposit.
-    /// @param receiver The receiver of the shares.
-    /// @return shares The resulting shares.
-    function syncDeposit(uint256 assets, address receiver) public returns (uint256) {
-        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
-        if (isTotalAssetsExpired()) {
-            revert TotalAssetsExpired();
-        }
-
-        return _syncDeposit(assets, receiver, msg.sender);
+        emit Referral(referral, msg.sender, 0, assets);
     }
 
     /// @notice Requests the redemption of tokens, subject to whitelist validation.
@@ -342,6 +360,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) public onlyValuationManager {
         if (_getVaultStorage().state == State.Closed) revert Closed();
+
+        // if totalAssets is not expired yet it means syncDeposit are allowed
+        // in this case we do not allow onlyValuationManager to propose a new nav
+        // he must call unvalidateTotalAssets first.
+        if (isTotalAssetsValid()) {
+            revert ValuationUpdateNotAllowed();
+        }
         _updateNewTotalAssets(_newTotalAssets);
     }
 
@@ -351,10 +376,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     function settleDeposit(
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
-        RolesStorage storage $roles = _getRolesStorage();
-
-        _updateTotalAssets(_newTotalAssets);
-        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+        _updateTotalAssetsAndTakeFees(_newTotalAssets);
         _settleDeposit(msg.sender);
         _settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
@@ -366,11 +388,20 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     function settleRedeem(
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
+        _updateTotalAssetsAndTakeFees(_newTotalAssets);
+        _settleRedeem(msg.sender);
+    }
+
+    /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
+    /// If possible, it also settles redeem requests.
+    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
+    function _updateTotalAssetsAndTakeFees(
+        uint256 _newTotalAssets
+    ) internal {
         RolesStorage storage $roles = _getRolesStorage();
 
         _updateTotalAssets(_newTotalAssets);
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
-        _settleRedeem(msg.sender);
     }
 
     /////////////////////////////
@@ -426,11 +457,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _unpause();
     }
 
-    function burn(uint256 shares, address owner) public onlyOpen {
-        if (msg.sender != owner) {
-            _spendAllowance(owner, msg.sender, shares);
-        }
-        _burn(owner, shares);
+    function expireTotalAssets() public onlySafe {
+        _getERC7540Storage().totalAssetsExpiration = 0;
     }
 
     // MAX FUNCTIONS OVERRIDE //
@@ -498,8 +526,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         return convertToShares(claimable, lastDepositId);
     }
 
-    function isTotalAssetsExpired() public view returns (bool) {
-        return block.timestamp >= _getERC7540Storage().totalAssetsExpiration;
+    function isTotalAssetsValid() public view returns (bool) {
+        return block.timestamp < _getERC7540Storage().totalAssetsExpiration;
     }
 
     function safe() public view override returns (address) {

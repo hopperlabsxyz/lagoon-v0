@@ -39,12 +39,6 @@ abstract contract Whitelistable is Roles {
         }
     }
 
-    /// @notice Returns if the whitelist is activated
-    /// @return True if the whitelist is activated, false otherwise
-    function isWhitelistActivated() public view returns (bool) {
-        return _getWhitelistableStorage().isActivated;
-    }
-
     /// @notice Deactivates the whitelist
     function disableWhitelist() public onlyOwner {
         _getWhitelistableStorage().isActivated = false;

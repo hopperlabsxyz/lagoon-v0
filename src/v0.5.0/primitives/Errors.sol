@@ -16,6 +16,9 @@ error NotClosing(State currentState);
 /// @notice Indicates that the vault is Closed.
 error Closed();
 
+/// @notice No new valuation proposition is allowed
+error ValuationUpdateNotAllowed();
+
 // ********************* ERC7540 ********************* //
 
 /// @notice Indicates that preview deposit is disabled.
@@ -52,8 +55,11 @@ error NewTotalAssetsMissing();
 /// @notice Indicates that the new total assets value is not the one expected.
 error WrongNewTotalAssets();
 
-/// @notice Indicates that the total assets are outdated and that synchronous deposits are not allowed.
-error TotalAssetsExpired();
+/// @notice Indicates that totalAssets value is outdated and that synchronous deposits are not allowed.
+error OnlyAsyncDepositAllowed();
+
+/// @notice Indicates that deposit can only happen via the synchronous path.
+error OnlySyncDepositAllowed();
 
 // ********************* FEE MANAGER ********************* //
 

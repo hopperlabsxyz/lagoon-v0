@@ -327,7 +327,7 @@ contract TestFeeManager is BaseTest {
         console.log("last request id", vault.lastRedeemRequestId(user1.addr));
         // the asset manager takes 10% management fees + 20% performance fees
         // vault valo went from 200K (pps = 1) to 400K (pps = 2)
-        // totalFees = 400K * 10% + [(400K - 40 - 200K) * 20%] = 40k + 32K = 72k
+        // totalFees = 400K * 10% + [(400K - 40k - 200K) * 20%] = 40k + 32K = 72k
         vm.prank(vault.owner());
         vault.initiateClosing();
         updateAndClose(4 * balance);
