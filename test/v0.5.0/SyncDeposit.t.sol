@@ -23,7 +23,9 @@ contract TestSyncDeposit is BaseTest {
     function test_syncDeposit() public {
         uint256 userBalance = assetBalance(user1.addr);
         // it will be equal since pps is 1:1
-
+        vm.expectEmit(true, true, true, true);
+        emit DepositSync(user1.addr, user1.addr, userBalance, userBalance);
+        emit Referral(address(0), user1.addr, 0, userBalance);
         vm.prank(user1.addr);
         uint256 shares = vault.syncDeposit(userBalance, user1.addr, address(0));
 
@@ -50,8 +52,14 @@ contract TestSyncDeposit is BaseTest {
         vm.prank(vault.whitelistManager());
         vault.addToWhitelist(wl);
 
+        vm.expectEmit(true, true, true, false);
+        emit DepositSync(user1.addr, user2.addr, userBalance, userBalance);
+        vm.expectEmit(true, true, true, false);
+
+        emit Referral(user2.addr, user1.addr, 0, userBalance);
+
         vm.prank(user1.addr);
-        uint256 shares = vault.syncDeposit(userBalance, user2.addr, address(0));
+        uint256 shares = vault.syncDeposit(userBalance, user2.addr, user2.addr);
 
         assertEq(shares, vault.balanceOf(user2.addr));
         assertEq(shares, userBalance * 10 ** vault.decimalsOffset());
