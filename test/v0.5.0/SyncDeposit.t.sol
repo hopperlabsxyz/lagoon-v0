@@ -103,7 +103,7 @@ contract TestSyncDeposit is BaseTest {
         vault.initiateClosing();
 
         vm.prank(safe.addr);
-        vault.unvalidateTotalAssets();
+        vault.expireTotalAssets();
 
         updateNewTotalAssets(vault.totalAssets());
         vm.stopPrank();
@@ -133,5 +133,46 @@ contract TestSyncDeposit is BaseTest {
 
         vault.syncDeposit(1, user2.addr, address(0));
 
+    }
+
+    function test_whenSyncDepositAllowed_asyncDepositIsForbidden() public {
+        dealAndApproveAndWhitelist(user1.addr);
+        vm.startPrank(user1.addr);
+        vm.expectRevert(OnlySyncDepositAllowed.selector);
+        vault.requestDeposit(12, user1.addr, user1.addr);
+    }
+
+    function test_syncDeposit_with_eth() public {
+        uint256 userBalance = 10e18;
+        bool shouldFail = vm.envAddress(string.concat(underlyingName, "_", network))
+            != vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
+
+        // checking initial state
+        uint256 safeAssetsBefore = assetBalance(address(vault.safe()));
+        assertEq(assetBalance(address(vault.pendingSilo())), 0, "pending silo asset balance is not 0"); // pendingSilo
+            // has 0 assets
+        uint256 safeEthBefore = address(vault.safe()).balance;
+
+        if (shouldFail) {
+            vm.startPrank(user1.addr);
+            vm.expectRevert(CantDepositNativeToken.selector);
+            vault.syncDeposit{value: 1}(userBalance, user1.addr, user1.addr);
+            vm.stopPrank();
+
+            setUpVault(0, 0, 0);
+            whitelist(user1.addr);
+        } else {
+            vm.startPrank(user1.addr);
+            // vm.expectRevert(CantDepositNativeToken.selector);
+            vault.syncDeposit{value: 1}(userBalance, user1.addr, user1.addr);
+            assertEq(assetBalance(address(vault.safe())), safeAssetsBefore + 1, "safe should have received the weth"); // safe
+                // has received
+                // the weth
+            assertEq(assetBalance(address(vault.pendingSilo())), 0, "silo should have receiver 0"); // silo has received
+                // 0
+            assertEq(address(vault.safe()).balance, safeEthBefore, "safe should have received 0 eth"); // safe has
+                // received 0 eth
+                // assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
+        }
     }
 }

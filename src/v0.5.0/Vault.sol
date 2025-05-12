@@ -455,7 +455,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _unpause();
     }
 
-    function unvalidateTotalAssets() public onlySafe {
+    function expireTotalAssets() public onlySafe {
         _getERC7540Storage().totalAssetsExpiration = 0;
     }
 
