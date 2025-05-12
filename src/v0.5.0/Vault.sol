@@ -142,13 +142,16 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         _;
     }
 
+    // @notice Reverts if totalAssets is expired.
     modifier onlySyncDeposit() {
+        // if total assets is not valid we can only do asynchronous deposit
         if (!isTotalAssetsValid()) {
             revert OnlyAsyncDepositAllowed();
         }
         _;
     }
 
+    // @notice Reverts if totalAssets is valid.
     modifier onlyAsyncDeposit() {
         // if total assets is valid we can only do synchronous deposit
         if (isTotalAssetsValid()) {
