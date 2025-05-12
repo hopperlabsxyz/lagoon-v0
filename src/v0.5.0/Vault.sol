@@ -210,6 +210,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             // if user sends eth and the underlying is wETH we will wrap it for him
             if (asset() == address($.wrappedNativeToken)) {
                 assets = msg.value;
+                // we do not send directly eth in case the safe is not payable
                 $.pendingSilo.depositEth{value: assets}();
                 IERC20(asset()).safeTransferFrom(address($.pendingSilo), safe(), assets);
             } else {

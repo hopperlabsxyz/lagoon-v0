@@ -22,7 +22,7 @@ contract TestTotalAssetsExpiry is BaseTest {
         updateAndSettle(0);
     }
 
-    function test_onlySafeCanExpireTotalAssets() public {
+    function test_whenSyncDepositPossible_cantUpdateNav() public {
         // uint256 userBalance = assetBalance(user1.addr);
         // it will be equal since pps is 1:1
 
@@ -31,7 +31,7 @@ contract TestTotalAssetsExpiry is BaseTest {
         vault.updateNewTotalAssets(1);
     }
 
-    function test_whenSyncDepositPossible_cantUpdateNav() public {
+    function test_onlySafeCanExpireTotalAssets() public {
         // uint256 userBalance = assetBalance(user1.addr);
         // it will be equal since pps is 1:1
 

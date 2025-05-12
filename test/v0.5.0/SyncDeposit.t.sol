@@ -24,7 +24,7 @@ contract TestSyncDeposit is BaseTest {
         uint256 userBalance = assetBalance(user1.addr);
         // it will be equal since pps is 1:1
         vm.expectEmit(true, true, true, true);
-        emit DepositSync(user1.addr, user1.addr, userBalance, userBalance);
+        emit DepositSync(user1.addr, user1.addr, userBalance, userBalance * 10 ** vault.decimalsOffset());
         emit Referral(address(0), user1.addr, 0, userBalance);
         vm.prank(user1.addr);
         uint256 shares = vault.syncDeposit(userBalance, user1.addr, address(0));
