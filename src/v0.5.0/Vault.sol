@@ -217,7 +217,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
                 revert CantDepositNativeToken();
             }
         } else {
-            SafeERC20.safeTransferFrom(IERC20(asset()), msg.sender, safe(), assets);
+            IERC20(asset()).safeTransferFrom(msg.sender, safe(), assets);
         }
         shares = _convertToShares(assets, Math.Rounding.Floor);
         $.totalAssets += assets;
