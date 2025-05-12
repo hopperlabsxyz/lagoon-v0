@@ -60,6 +60,22 @@ contract TestPause is BaseTest {
         vault.deposit(1, user1.addr, user1.addr);
     }
 
+    function test_syncDeposit_whenPaused_shouldFail() public {
+        vm.prank(vault.owner());
+        vault.unpause();
+        vm.prank(vault.safe());
+        vault.updateTotalAssetsLifespan(1000);
+        updateAndSettle(0);
+
+        vm.prank(vault.owner());
+        vault.pause();
+
+        vm.startPrank(user1.addr);
+
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.syncDeposit(100, user1.addr, address(0));
+    }
+
     function test_mint_whenPaused_shouldFail() public {
         vm.assertNotEq(vault.claimableDepositRequest(0, user1.addr), 0);
         vm.startPrank(user1.addr);
