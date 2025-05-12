@@ -353,15 +353,15 @@ contract TestFeeManager is BaseTest {
         uint256 amProfit = vault.convertToShares(64_800 * 10 ** vault.underlyingDecimals());
         uint256 daoProfit = vault.convertToShares(7200 * 10 ** vault.underlyingDecimals());
 
-        // assertApproxEqAbs(
-        //     assetBalance(address(vault)),
-        //     72_000 * 10 ** vault.underlyingDecimals(),
-        //     100_000,
-        //     "wrong vault asset balance"
-        // );
+        assertApproxEqAbs(
+            assetBalance(address(vault)),
+            72_000 * 10 ** vault.underlyingDecimals(),
+            100_000,
+            "wrong vault asset balance"
+        );
 
-        // assertApproxEqAbs(balance1After - balance1Before, user1Profit, 100_000, "user1: wrong profits");
-        // assertApproxEqAbs(balance2After - balance2Before, user2Profit, 100_000, "user2: wrong profits");
+        assertApproxEqAbs(balance1After - balance1Before, user1Profit, 100_000, "user1: wrong profits");
+        assertApproxEqAbs(balance2After - balance2Before, user2Profit, 100_000, "user2: wrong profits");
         assertApproxEqAbs(amSharesBalance, amProfit, vault.convertToShares(100_000), "am: wrong profits");
         assertApproxEqAbs(daoSharesBalance, daoProfit, vault.convertToShares(100_000), "dao: wrong profits");
     }

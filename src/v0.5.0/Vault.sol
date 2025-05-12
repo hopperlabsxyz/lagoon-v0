@@ -202,7 +202,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address receiver,
         address referral
     ) public payable onlySyncDeposit onlyOpen returns (uint256 shares) {
-
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
@@ -211,7 +210,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             // if user sends eth and the underlying is wETH we will wrap it for him
             if (asset() == address($.wrappedNativeToken)) {
                 assets = msg.value;
-                $.pendingSilo.depositEth{value: msg.value}();
+                $.pendingSilo.depositEth{value: assets}();
                 IERC20(asset()).safeTransferFrom(address($.pendingSilo), safe(), assets);
             } else {
                 revert CantDepositNativeToken();
@@ -226,7 +225,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         emit DepositSync(msg.sender, receiver, assets, shares);
 
         emit Referral(referral, msg.sender, 0, assets);
-
     }
 
     /// @notice Requests the redemption of tokens, subject to whitelist validation.
