@@ -129,7 +129,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @notice Make sure the caller is an operator or the controller.
     /// @param controller The controller.
-    modifier onlyOperator(address controller) {
+    modifier onlyOperator(
+        address controller
+    ) {
         if (controller != msg.sender && !isOperator(controller, msg.sender)) {
             revert ERC7540InvalidOperator();
         }
@@ -184,19 +186,27 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return true;
     }
 
-    function previewDeposit(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    function previewDeposit(
+        uint256
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         revert ERC7540PreviewDepositDisabled();
     }
 
-    function previewMint(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    function previewMint(
+        uint256
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         revert ERC7540PreviewMintDisabled();
     }
 
-    function previewRedeem(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    function previewRedeem(
+        uint256
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         revert ERC7540PreviewRedeemDisabled();
     }
 
-    function previewWithdraw(uint256) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+    function previewWithdraw(
+        uint256
+    ) public pure override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         revert ERC7540PreviewWithdrawDisabled();
     }
 
@@ -424,7 +434,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @dev This function will deposit the pending assets of the pendingSilo.
     /// and save the deposit parameters in the settleData.
     /// @param assetsCustodian The address that will hold the assets.
-    function _settleDeposit(address assetsCustodian) internal {
+    function _settleDeposit(
+        address assetsCustodian
+    ) internal {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         uint40 depositSettleId = $erc7540.depositSettleId;
@@ -463,7 +475,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @dev This function will redeem the pending shares of the pendingSilo.
     /// and save the redeem parameters in the settleData.
     /// @param assetsCustodian The address that holds the assets.
-    function _settleRedeem(address assetsCustodian) internal {
+    function _settleRedeem(
+        address assetsCustodian
+    ) internal {
         ERC7540Storage storage $erc7540 = _getERC7540Storage();
 
         uint40 redeemSettleId = $erc7540.redeemSettleId;
@@ -509,7 +523,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @notice Update newTotalAssets variable in order to update totalAssets.
     /// @param _newTotalAssets The new total assets of the vault.
-    function _updateNewTotalAssets(uint256 _newTotalAssets) internal whenNotPaused {
+    function _updateNewTotalAssets(
+        uint256 _newTotalAssets
+    ) internal whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         $.epochs[$.depositEpochId].settleId = $.depositSettleId;
@@ -534,7 +550,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     }
 
     /// @dev Updates the totalAssets variable with the newTotalAssets variable.
-    function _updateTotalAssets(uint256 _newTotalAssets) internal whenNotPaused {
+    function _updateTotalAssets(
+        uint256 _newTotalAssets
+    ) internal whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint256 newTotalAssets = $.newTotalAssets;
@@ -543,9 +561,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             newTotalAssets == type(uint256).max // it means newTotalAssets has not been updated
         ) revert NewTotalAssetsMissing();
 
-        if (_newTotalAssets != newTotalAssets)
+        if (_newTotalAssets != newTotalAssets) {
             revert WrongNewTotalAssets();
-
+        }
 
         $.totalAssets = newTotalAssets;
         $.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
@@ -672,11 +690,15 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return address(_getERC7540Storage().pendingSilo);
     }
 
-    function lastRedeemRequestId(address controller) public view returns (uint40) {
+    function lastRedeemRequestId(
+        address controller
+    ) public view returns (uint40) {
         return _getERC7540Storage().lastRedeemRequestId[controller];
     }
 
-    function lastDepositRequestId(address controller) public view returns (uint40) {
+    function lastDepositRequestId(
+        address controller
+    ) public view returns (uint40) {
         return _getERC7540Storage().lastDepositRequestId[controller];
     }
 
@@ -692,7 +714,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     // ## EIP165 ## //
     //////////////////
 
-    function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual returns (bool) {
         return interfaceId == 0x2f0a18c5 // IERC7575
             || interfaceId == 0xf815c03d // IERC7575 shares
             || interfaceId == 0xce3bbe50 // IERC7540Deposit
@@ -708,10 +732,14 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @dev Settles deposit requests by transferring assets from the pendingSilo to the safe
     /// and minting the corresponding shares to vault.
     /// The function is not implemented here and must be implemented.
-    function settleDeposit(uint256 _newTotalAssets) public virtual;
+    function settleDeposit(
+        uint256 _newTotalAssets
+    ) public virtual;
 
     /// @dev Settles redeem requests by transferring assets from the safe to the vault
     /// and burning the corresponding shares from the pending silo.
     /// The function is not implemented here and must be implemented.
-    function settleRedeem(uint256 _newTotalAssets) public virtual;
+    function settleRedeem(
+        uint256 _newTotalAssets
+    ) public virtual;
 }
