@@ -216,6 +216,7 @@ contract TestMisc is BaseTest {
     }
 
     function test_factory() public view {
+        if (!proxy) return;
         assertEq(factory.REGISTRY(), address(feeRegistry));
         assertEq(factory.WRAPPED_NATIVE(), address(WRAPPED_NATIVE_TOKEN));
         assertTrue(factory.isInstance(address(vault)));
