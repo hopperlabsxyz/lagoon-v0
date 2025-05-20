@@ -47,6 +47,7 @@ contract Upgradable is Test {
     VmSafe.Wallet feeReceiver = vm.createWallet("feeReceiver");
     VmSafe.Wallet dao = vm.createWallet("dao");
     VmSafe.Wallet whitelistManager = vm.createWallet("whitelistManager");
+    bool doProxy = vm.envBool("PROXY");
 
     VmSafe.Wallet[] users;
 
@@ -79,6 +80,7 @@ contract Upgradable is Test {
     }
 
     function test_upgradeable() public {
+        if (!doProxy) return;
         feeRegistry = new FeeRegistry(false);
         feeRegistry.initialize(dao.addr, dao.addr);
 

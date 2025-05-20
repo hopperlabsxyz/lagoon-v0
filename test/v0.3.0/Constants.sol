@@ -60,6 +60,7 @@ contract Constants is Test {
     VmSafe.Wallet feeReceiver = vm.createWallet("feeReceiver");
     VmSafe.Wallet dao = vm.createWallet("dao");
     VmSafe.Wallet whitelistManager = vm.createWallet("whitelistManager");
+    bool proxy = vm.envBool("PROXY");
 
     VmSafe.Wallet[] users;
 
@@ -100,8 +101,11 @@ contract Constants is Test {
         feeRegistry.updateDefaultRate(_protocolRate);
 
         Options memory opts;
-        opts.constructorData = abi.encode(true);
-        address implementation = Upgrades.deployImplementation("v0.3.0/VaultHelper.sol:VaultHelper", opts);
+        bool disableImplementationInit = proxy;
+        opts.constructorData = abi.encode(disableImplementationInit);
+        address implementation = address(new VaultHelper(disableImplementationInit));
+        // Upgrades.deployImplementation("v0.3.0/VaultHelper.sol:VaultHelper", opts);
+
         factory = new BeaconProxyFactory(address(feeRegistry), implementation, dao.addr, WRAPPED_NATIVE_TOKEN);
 
         BeaconProxyInitStruct memory initStruct = BeaconProxyInitStruct({
@@ -118,8 +122,13 @@ contract Constants is Test {
             rateUpdateCooldown: rateUpdateCooldown,
             enableWhitelist: enableWhitelist
         });
-        address vaultHelper = factory.createVaultProxy(initStruct, keccak256("42"));
-        vault = VaultHelper(vaultHelper);
+        if (proxy) {
+            address vaultHelper = factory.createVaultProxy(initStruct, keccak256("42"));
+            vault = VaultHelper(vaultHelper);
+        } else {
+            vault = VaultHelper(implementation);
+            vault.initialize(abi.encode(initStruct), address(feeRegistry), WRAPPED_NATIVE_TOKEN);
+        }
 
         if (enableWhitelist) {
             whitelistInit.push(feeReceiver.addr);
