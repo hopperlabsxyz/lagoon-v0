@@ -33,7 +33,7 @@ jobs:
         run: forge build
 
       - name: Save build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: foundry-build
           path: |
@@ -58,7 +58,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Restore build artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: foundry-build
           path: .
