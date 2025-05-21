@@ -64,7 +64,7 @@ jobs:
           path: .
       - run: forge test -vvv
         env:
-          PROXY: false
+          PROXY: true
   # Mainnet Tests (run in parallel)
   # test-usdt-mainnet:
   #   needs: setup
