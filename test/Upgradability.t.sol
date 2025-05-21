@@ -20,24 +20,18 @@ import {VmSafe} from "forge-std/Vm.sol";
 contract Upgradable is Test {
     // ERC20 tokens
     string network = vm.envString("NETWORK");
-    ERC20Permit immutable USDC = ERC20Permit(vm.envAddress(string.concat("USDC_", network)));
-    ERC20 immutable WETH = ERC20(vm.envAddress(string.concat("WETH_", network)));
+    ERC20 immutable underlying = ERC20(vm.envAddress("ASSET"));
     address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
-    ERC20 immutable WBTC = ERC20(vm.envAddress(string.concat("WBTC_", network)));
-    ERC20 immutable ETH = ERC20(vm.envAddress(string.concat("ETH_", network)));
+    bool underlyingIsNativeToken = address(underlying) == WRAPPED_NATIVE_TOKEN;
 
     uint8 decimalsOffset = 0;
 
-    string underlyingName = vm.envString("UNDERLYING_NAME");
-
     FeeRegistry feeRegistry;
-    string vaultName = "vault_";
-    string vaultSymbol = "hop_vault_";
+    string vaultName = "vault_name";
+    string vaultSymbol = "vault_symbol";
     uint256 rateUpdateCooldown = 1 days;
 
     //Underlying
-    ERC20 underlying = ERC20(vm.envAddress(string.concat(underlyingName, "_", network)));
-    ERC20Permit immutable underlyingPermit;
 
     // Users
     VmSafe.Wallet owner = vm.createWallet("owner");
@@ -58,11 +52,6 @@ contract Upgradable is Test {
     VmSafe.Wallet address0 = VmSafe.Wallet({addr: address(0), publicKeyX: 0, publicKeyY: 0, privateKey: 0});
 
     int256 immutable bipsDividerSigned = 10_000;
-
-    constructor() {
-        vaultName = string.concat(vaultName, underlyingName);
-        vaultSymbol = string.concat(vaultSymbol, underlyingName);
-    }
 
     function _beaconDeploy(
         string memory contractName,
