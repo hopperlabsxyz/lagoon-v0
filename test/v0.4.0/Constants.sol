@@ -19,10 +19,10 @@ import {BeaconProxyFactory, InitStruct as BeaconProxyInitStruct} from "@src/Beac
 
 contract Constants is Test {
     // ERC20 tokens
-    string network = vm.envString("NETWORK");
     ERC20 immutable underlying = ERC20(vm.envAddress("ASSET"));
-    address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
+    address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress("WRAPPED_NATIVE_TOKEN");
     bool underlyingIsNativeToken = address(underlying) == WRAPPED_NATIVE_TOKEN;
+
     bool proxy = vm.envBool("PROXY");
     BeaconProxyFactory factory;
 

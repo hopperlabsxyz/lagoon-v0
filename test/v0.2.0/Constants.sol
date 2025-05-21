@@ -17,9 +17,8 @@ import {VmSafe} from "forge-std/Vm.sol";
 
 contract Constants is Test {
     // ERC20 tokens
-    string network = vm.envString("NETWORK");
     ERC20 immutable underlying = ERC20(vm.envAddress("ASSET"));
-    address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
+    address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress("WRAPPED_NATIVE_TOKEN");
     bool underlyingIsNativeToken = address(underlying) == WRAPPED_NATIVE_TOKEN;
 
     uint8 decimalsOffset = 0;

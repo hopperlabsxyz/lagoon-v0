@@ -19,9 +19,8 @@ import {VmSafe} from "forge-std/Vm.sol";
 
 contract Upgradable is Test {
     // ERC20 tokens
-    string network = vm.envString("NETWORK");
     ERC20 immutable underlying = ERC20(vm.envAddress("ASSET"));
-    address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
+    address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress("WRAPPED_NATIVE_TOKEN");
     bool underlyingIsNativeToken = address(underlying) == WRAPPED_NATIVE_TOKEN;
 
     uint8 decimalsOffset = 0;
@@ -62,10 +61,10 @@ contract Upgradable is Test {
     }
 
     function _proxyDeploy(UpgradeableBeacon beacon, Vault.InitStruct memory v) internal returns (address) {
-        BeaconProxy proxy =
+        BeaconProxy _proxy =
             BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault.initialize, v))));
 
-        return address(proxy);
+        return address(_proxy);
     }
 
     function test_upgradeable() public {
