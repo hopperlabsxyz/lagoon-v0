@@ -18,25 +18,17 @@ import {VmSafe} from "forge-std/Vm.sol";
 contract Constants is Test {
     // ERC20 tokens
     string network = vm.envString("NETWORK");
-    ERC20Permit immutable USDC = ERC20Permit(vm.envAddress(string.concat("USDC_", network)));
-    ERC20 immutable WETH = ERC20(vm.envAddress(string.concat("WETH_", network)));
+    ERC20 immutable underlying = ERC20(vm.envAddress("ASSET"));
     address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
-    ERC20 immutable WBTC = ERC20(vm.envAddress(string.concat("WBTC_", network)));
-    ERC20 immutable ETH = ERC20(vm.envAddress(string.concat("ETH_", network)));
+    bool underlyingIsNativeToken = address(underlying) == WRAPPED_NATIVE_TOKEN;
 
     uint8 decimalsOffset = 0;
 
-    string underlyingName = vm.envString("UNDERLYING_NAME");
-
     VaultHelper vault;
     FeeRegistry feeRegistry;
-    string vaultName = "vault_";
-    string vaultSymbol = "hop_vault_";
+    string vaultName = "vault_name";
+    string vaultSymbol = "vault_symbol";
     uint256 rateUpdateCooldown = 1 days;
-
-    //Underlying
-    ERC20 underlying = ERC20(vm.envAddress(string.concat(underlyingName, "_", network)));
-    ERC20Permit immutable underlyingPermit;
 
     // Users
     VmSafe.Wallet user1 = vm.createWallet("user1");
@@ -68,14 +60,6 @@ contract Constants is Test {
     int256 immutable bipsDividerSigned = 10_000;
 
     constructor() {
-        vaultName = string.concat(vaultName, underlyingName);
-        vaultSymbol = string.concat(vaultSymbol, underlyingName);
-
-        vm.label(address(USDC), "USDC");
-        vm.label(address(WETH), "WETH");
-        vm.label(address(ETH), "ETH");
-        vm.label(address(WBTC), "WBTC");
-
         users.push(user1);
         users.push(user2);
         users.push(user3);
@@ -129,24 +113,16 @@ contract Constants is Test {
             rateUpdateCooldown: rateUpdateCooldown,
             enableWhitelist: enableWhitelist
         });
-        // function upgradeBeacon(address beacon, string memory contractName) internal {
-        //         Options memory opts;
-        //         Core.upgradeBeacon(beacon, contractName, opts);
-        //     }
-
         if (proxy) {
             Options memory opts;
             opts.constructorData = abi.encode(true);
             beacon = _beaconDeploy("v0.2.0/VaultHelper.sol:VaultHelper", owner.addr, opts);
             vault = _proxyDeploy(beacon, v);
-            // opts.constructorData = abi.encode(false);
-            // vm.startPrank(owner.addr);
-            // Upgrades.upgradeBeacon(address(beacon), "../v0.2.0/VaultHelper.sol:VaultHelper", opts);
-            // vm.stopPrank();
-            VaultHelper(address(vault));
         } else {
             vm.startPrank(owner.addr);
+
             vault = new VaultHelper(false);
+
             vault.initialize(v);
             vm.stopPrank();
         }
@@ -160,17 +136,7 @@ contract Constants is Test {
             vault.addToWhitelist(whitelistInit);
         }
 
-        // console.log(feeReceiver.addr);
-        // console.log(dao.addr);
-        // console.log(assetManager.addr);
-        // console.log(whitelistManager.addr);
-        // console.log(valuationManager.addr);
-        // console.log(admin.addr);
-        // console.log(vault.pendingSilo());
-        // console.log(address(0));
-
         vm.label(address(vault), vaultName);
         vm.label(vault.pendingSilo(), "vault.pendingSilo");
-        // vm.label(vault.claimableSilo(), "vault.claimableSilo");
     }
 }
