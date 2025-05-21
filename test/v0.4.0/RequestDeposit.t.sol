@@ -28,33 +28,28 @@ contract TestRequestDeposit is BaseTest {
 
     function test_requestDeposit_with_eth() public {
         uint256 userBalance = 10e18;
-        string memory wtoken = "WRAPPED_NATIVE_TOKEN";
-        bool shouldFail = keccak256(abi.encode(underlyingName)) != keccak256(abi.encode(wtoken));
-        if (shouldFail) {
+
+        if (!underlyingIsNativeToken) {
             vm.startPrank(user1.addr);
             vm.expectRevert(CantDepositNativeToken.selector);
             vault.requestDeposit{value: 1}(userBalance, user1.addr, user1.addr);
             vm.stopPrank();
 
-            underlying = ERC20(WRAPPED_NATIVE_TOKEN);
             setUpVault(0, 0, 0);
             whitelist(user1.addr);
+        } else {
+            requestDeposit(userBalance, user1.addr, true);
+            assertEq(assetBalance(address(vault)), 0);
+            assertEq(assetBalance(address(vault.pendingSilo())), userBalance);
+            assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance);
+            assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
         }
-
-        requestDeposit(userBalance, user1.addr, true);
-        assertEq(assetBalance(address(vault)), 0);
-        assertEq(assetBalance(address(vault.pendingSilo())), userBalance);
-        assertEq(vault.pendingDepositRequest(0, user1.addr), userBalance);
-        assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
     }
 
     function test_requestDeposit_with_eth_and_wrong_userBalance() public {
         uint256 userBalance = 10e18;
 
-        string memory wtoken = "WRAPPED_NATIVE_TOKEN";
-        bool isNative = keccak256(abi.encode(underlyingName)) == keccak256(abi.encode(wtoken));
-        console.log("isNative", isNative);
-        if (isNative) {
+        if (underlyingIsNativeToken) {
             vm.startPrank(user1.addr);
             uint256 requestId = vault.requestDeposit{value: userBalance}(0, user1.addr, user1.addr);
             console.log("requestId", requestId);
@@ -136,10 +131,8 @@ contract TestRequestDeposit is BaseTest {
 
     function test_requestDeposit_withClaimableBalance_with_eth() public {
         uint256 userBalance = 10e18;
-        string memory wtoken = "WRAPPED_NATIVE_TOKEN";
 
-        bool shouldWork = keccak256(abi.encode(underlyingName)) == keccak256(abi.encode(wtoken));
-        if (shouldWork) {
+        if (underlyingIsNativeToken) {
             requestDeposit(userBalance / 2, user1.addr);
             updateAndSettle(0);
             assertEq(vault.maxDeposit(user1.addr), userBalance / 2, "wrong claimable deposit value");

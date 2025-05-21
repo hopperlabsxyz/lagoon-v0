@@ -87,7 +87,6 @@ contract Constants is Test {
         bool disableImplementationInit = proxy;
         opts.constructorData = abi.encode(disableImplementationInit);
         address implementation = address(new VaultHelper(disableImplementationInit));
-        // Upgrades.deployImplementation("v0.3.0/VaultHelper.sol:VaultHelper", opts);
 
         factory = new BeaconProxyFactory(address(feeRegistry), implementation, dao.addr, WRAPPED_NATIVE_TOKEN);
 
