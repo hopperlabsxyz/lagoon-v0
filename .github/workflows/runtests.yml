@@ -71,7 +71,7 @@ jobs:
     name: WETH MAINNET
     runs-on: ubuntu-latest
     env:
-      FOUNDRY_ETH_RPC_URL: https://ethereum-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
+      FOUNDRY_ETH_RPC_URL: https://eth-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
       WRAPPED_NATIVE_TOKEN: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
       ASSET: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
     steps:
