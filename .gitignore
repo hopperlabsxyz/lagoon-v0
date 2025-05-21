@@ -29,3 +29,7 @@ lcov.info
 .vscode/
 
 lib
+
+
+# Soldeer
+/dependencies
