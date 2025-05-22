@@ -143,8 +143,6 @@ contract TestSyncDeposit is BaseTest {
 
     function test_syncDeposit_with_eth() public {
         uint256 userBalance = 10e18;
-        bool shouldFail = vm.envAddress(string.concat(underlyingName, "_", network))
-            != vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
 
         // checking initial state
         uint256 safeAssetsBefore = assetBalance(address(vault.safe()));
@@ -152,7 +150,7 @@ contract TestSyncDeposit is BaseTest {
             // has 0 assets
         uint256 safeEthBefore = address(vault.safe()).balance;
 
-        if (shouldFail) {
+        if (!underlyingIsNativeToken) {
             vm.startPrank(user1.addr);
             vm.expectRevert(CantDepositNativeToken.selector);
             vault.syncDeposit{value: 1}(userBalance, user1.addr, user1.addr);

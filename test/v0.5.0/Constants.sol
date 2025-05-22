@@ -19,28 +19,19 @@ import {BeaconProxyFactory, InitStruct as BeaconProxyInitStruct} from "@src/Beac
 
 contract Constants is Test {
     // ERC20 tokens
-    string network = vm.envString("NETWORK");
-    ERC20Permit immutable USDC = ERC20Permit(vm.envAddress(string.concat("USDC_", network)));
-    ERC20 immutable WETH = ERC20(vm.envAddress(string.concat("WETH_", network)));
-    address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress(string.concat("WRAPPED_NATIVE_TOKEN_", network));
-    ERC20 immutable WBTC = ERC20(vm.envAddress(string.concat("WBTC_", network)));
-    ERC20 immutable ETH = ERC20(vm.envAddress(string.concat("ETH_", network)));
+    ERC20 immutable underlying = ERC20(vm.envAddress("ASSET"));
+    address immutable WRAPPED_NATIVE_TOKEN = vm.envAddress("WRAPPED_NATIVE_TOKEN");
+    bool underlyingIsNativeToken = address(underlying) == WRAPPED_NATIVE_TOKEN;
 
+    bool proxy = vm.envBool("PROXY");
     BeaconProxyFactory factory;
 
     uint8 decimalsOffset = 0;
-
-    string underlyingName = vm.envString("UNDERLYING_NAME");
-
     VaultHelper vault;
     FeeRegistry feeRegistry;
-    string vaultName = "vault_";
-    string vaultSymbol = "hop_vault_";
+    string vaultName = "vault_name";
+    string vaultSymbol = "vault_symbol";
     uint256 rateUpdateCooldown = 1 days;
-
-    //Underlying
-    ERC20 underlying = ERC20(vm.envAddress(string.concat(underlyingName, "_", network)));
-    ERC20Permit immutable underlyingPermit;
 
     // Users
     VmSafe.Wallet user1 = vm.createWallet("user1");
@@ -60,7 +51,6 @@ contract Constants is Test {
     VmSafe.Wallet feeReceiver = vm.createWallet("feeReceiver");
     VmSafe.Wallet dao = vm.createWallet("dao");
     VmSafe.Wallet whitelistManager = vm.createWallet("whitelistManager");
-    bool proxy = vm.envBool("PROXY");
 
     VmSafe.Wallet[] users;
 
@@ -73,14 +63,6 @@ contract Constants is Test {
     int256 immutable bipsDividerSigned = 10_000;
 
     constructor() {
-        vaultName = string.concat(vaultName, underlyingName);
-        vaultSymbol = string.concat(vaultSymbol, underlyingName);
-
-        vm.label(address(USDC), "USDC");
-        vm.label(address(WETH), "WETH");
-        vm.label(address(ETH), "ETH");
-        vm.label(address(WBTC), "WBTC");
-
         users.push(user1);
         users.push(user2);
         users.push(user3);
@@ -101,10 +83,10 @@ contract Constants is Test {
         feeRegistry.updateDefaultRate(_protocolRate);
 
         Options memory opts;
-        opts.constructorData = abi.encode(true);
         bool disableImplementationInit = proxy;
         opts.constructorData = abi.encode(disableImplementationInit);
         address implementation = address(new VaultHelper(disableImplementationInit));
+        // Upgrades.deployImplementation("v0.3.0/VaultHelper.sol:VaultHelper", opts);
 
         factory = new BeaconProxyFactory(address(feeRegistry), implementation, dao.addr, WRAPPED_NATIVE_TOKEN);
 
@@ -140,17 +122,7 @@ contract Constants is Test {
             vault.addToWhitelist(whitelistInit);
         }
 
-        // console.log(feeReceiver.addr);
-        // console.log(dao.addr);
-        // console.log(assetManager.addr);
-        // console.log(whitelistManager.addr);
-        // console.log(valuationManager.addr);
-        // console.log(admin.addr);
-        // console.log(vault.pendingSilo());
-        // console.log(address(0));
-
         vm.label(address(vault), vaultName);
         vm.label(vault.pendingSilo(), "vault.pendingSilo");
-        // vm.label(vault.claimableSilo(), "vault.claimableSilo");
     }
 }
