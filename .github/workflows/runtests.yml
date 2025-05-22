@@ -64,7 +64,7 @@ jobs:
           path: .
       - run: forge test -vvv
         env:
-          PROXY: true
+          PROXY: false
 
   test-weth-mainnet:
     needs: setup
@@ -89,7 +89,7 @@ jobs:
           path: .
       - run: forge test -vvv
         env:
-          PROXY: true
+          PROXY: false
 
   # Mainnet Tests (run in parallel)
   # test-usdt-mainnet:
