@@ -30,4 +30,6 @@ ignore = ["./lib"]
 berachain = { key="", chain = 80094, url = "https://api.berascan.com/api" }
 unichain = { key="", chain = 130, url = "https://api.uniscan.xyz/api" }
 worldchain = { key="", chain = 480, url = "https://api.worldscan.org/api" }
+avalanche = { key="", chain = 43114, url = "https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan" }
+mantle = { key="", chain = 5000, url = "https://api.mantlescan.xyz/api" }
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
