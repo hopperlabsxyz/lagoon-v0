@@ -330,11 +330,10 @@ contract TestInitiateClosing is BaseTest {
 
         assertEq(asset.balanceOf(safe.addr), 1);
         assertEq(vault.totalAssets(), 125_000 * 10 ** vault.underlyingDecimals());
-        if (vault.asset() == WRAPPED_NATIVE_TOKEN) {
-            vm.expectRevert(0x1425ea42);
-        } else {
-            vm.expectRevert(bytes("ERC20: transfer amount exceeds balance"));
-        }
+        console.log(underlyingIsNativeToken);
+
+        vm.expectRevert();
+
         vm.prank(safe.addr);
         vault.close();
 

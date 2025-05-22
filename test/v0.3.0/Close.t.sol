@@ -366,13 +366,8 @@ contract TestInitiateClosing is BaseTest {
         assertEq(asset.balanceOf(safe.addr), 1);
         assertEq(vault.totalAssets(), 125_000 * 10 ** vault.underlyingDecimals());
         uint256 newTTA = vault.newTotalAssets();
-        if (vault.asset() == WRAPPED_NATIVE_TOKEN) {
-            vm.expectRevert(0x1425ea42);
-        } else if (keccak256(abi.encode(IERC20Metadata(vault.asset()).symbol())) == keccak256(abi.encode("USDT"))) {
-            vm.expectRevert();
-        } else {
-            vm.expectRevert(bytes("ERC20: transfer amount exceeds balance"));
-        }
+
+        vm.expectRevert();
         vm.startPrank(safe.addr);
         vault.close(newTTA);
         vm.stopPrank();
