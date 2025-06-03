@@ -1,8 +1,6 @@
 # Overview
 
-Welcome to the Lagoon Protocol Documentation! This page serves as a comprehensive introduction to the core concepts, components, and unique features that make Lagoon Protocol a powerful tool for decentralized asset management.
-
-Find more info about Lagoon Protocol in the [documentation](https://docs.lagoon.finance/)
+Welcome to Lagoon-v0 vault repository. In this repo, you will find the code source of Lagoon erc7540 vault. If you want to know more about the core concepts or how deploy your vaults, please read the [documentation](https://docs.lagoon.finance/). The following README is a guide to deploy the all infrastructure. If you are a curator or integrator you can ignore it.
 
 ---
 
