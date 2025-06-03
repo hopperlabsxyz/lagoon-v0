@@ -20,10 +20,12 @@ The repository is split in two parts, [`protocol`]('./src/protocol') and [`vault
 
 ```bash
 src
+├── BeaconProxyFactory.sol
+├── Vault.sol
 ├── protocol
 │   ├── Events.sol
 │   └── FeeRegistry.sol
-└── v0.2.0
+└── v0.5.0
     ├── ERC7540.sol
     ├── FeeManager.sol
     ├── Roles.sol
@@ -64,7 +66,7 @@ forge build
 ## How to test
 
 ```bash
-forge test --match-path "./test/v0.2.0/**/*.sol"
+forge test --match-path "./test/v0.5.0/**/*.sol"
 ```
 
 ## How to deploy
@@ -122,7 +124,7 @@ You can create one using the [safe-cli](https://github.com/safe-global/safe-cli)
 Pull the image from Github packages.
 
 ```
-docker pull --platform linux/x86_64 ghcr.io/hopperlabsxyz/lagoon-v0:v0.2.0
+docker pull --platform linux/x86_64 ghcr.io/hopperlabsxyz/lagoon-v0:v0.5.0
 ```
 
 Make sure to be logged in with your docker cli
