@@ -1,8 +1,6 @@
 # Overview
 
-Welcome to the Lagoon Protocol Documentation! This page serves as a comprehensive introduction to the core concepts, components, and unique features that make Lagoon Protocol a powerful tool for decentralized asset management.
-
-Find more info about Lagoon Protocol in the [documentation](https://docs.lagoon.finance/)
+Welcome to Lagoon-v0 vault repository. In this repo, you will find the code source of Lagoon erc7540 vault. If you want to know more about the core concepts or how deploy your vaults, please read the [documentation](https://docs.lagoon.finance/). The following README is a guide to deploy the all infrastructure. If you are a curator or integrator you can ignore it.
 
 ---
 
@@ -20,10 +18,12 @@ The repository is split in two parts, [`protocol`]('./src/protocol') and [`vault
 
 ```bash
 src
+├── BeaconProxyFactory.sol
+├── Vault.sol
 ├── protocol
 │   ├── Events.sol
 │   └── FeeRegistry.sol
-└── v0.2.0
+└── v0.5.0
     ├── ERC7540.sol
     ├── FeeManager.sol
     ├── Roles.sol
@@ -64,7 +64,7 @@ forge build
 ## How to test
 
 ```bash
-forge test --match-path "./test/v0.2.0/**/*.sol"
+forge test --match-path "./test/v0.5.0/**/*.sol"
 ```
 
 ## How to deploy
@@ -122,7 +122,7 @@ You can create one using the [safe-cli](https://github.com/safe-global/safe-cli)
 Pull the image from Github packages.
 
 ```
-docker pull --platform linux/x86_64 ghcr.io/hopperlabsxyz/lagoon-v0:v0.2.0
+docker pull --platform linux/x86_64 ghcr.io/hopperlabsxyz/lagoon-v0:v0.5.0
 ```
 
 Make sure to be logged in with your docker cli
