@@ -1,6 +1,9 @@
-@openzeppelin-foundry-upgrades=lib/openzeppelin-foundry-upgrades/src/
-@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
-@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+@openzeppelin/contracts-upgradeable/=dependencies/@openzeppelin-contracts-upgradeable-5.0.0/
+
+@openzeppelin-foundry-upgrades=dependencies/openzeppelin-foundry-upgrades-0.4.0/src
+
+@openzeppelin/contracts/=dependencies/@openzeppelin-contracts-5.0.0/
+
 @src=src/
 @test=test/
-forge-std-1.9.7/=dependencies/forge-std-1.9.7/
+forge-std/=dependencies/forge-std-1.9.7/src/

@@ -28,6 +28,9 @@ ignore = ["./lib"]
 
 [dependencies]
 forge-std = "1.9.7"
+openzeppelin-foundry-upgrades = "0.4.0"
+"@openzeppelin-contracts" = "5.0.0"
+"@openzeppelin-contracts-upgradeable" = "5.0.0"
 
 [etherscan]
 berachain = { key="", chain = 80094, url = "https://api.berascan.com/api" }
