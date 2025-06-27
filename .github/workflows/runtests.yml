@@ -28,16 +28,17 @@ jobs:
       - name: Run Soldeer install
         run: forge soldeer install
 
-      - name: Compile smart contracts and tests
+      - name: Compile smart contracts
         run: forge build
 
       - name: Save build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: foundry-build
+          name: foundry-install-build
           path: |
             out/
             cache/
+            dependencies/
 
   # Mantle Tests (run in parallel with Mainnet tests)
   test-wbtc-mantle:
