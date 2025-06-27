@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
-      PROXY: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,16 +28,17 @@ jobs:
       - name: Run Soldeer install
         run: forge soldeer install
 
-      - name: Compile smart contracts and tests
+      - name: Compile smart contracts
         run: forge build
 
-      - name: Save build artifacts
+      - name: Save build artifacts and install
         uses: actions/upload-artifact@v4
         with:
-          name: foundry-build
+          name: foundry-install-build
           path: |
             out/
             cache/
+            dependencies/
 
   # Mantle Tests (run in parallel with Mainnet tests)
   test-wbtc-mantle:
@@ -60,7 +60,7 @@ jobs:
       - name: Restore build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: foundry-build
+          name: foundry-install-build
           path: .
       - run: forge test -vvv
         env:
@@ -85,7 +85,7 @@ jobs:
       - name: Restore build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: foundry-build
+          name: foundry-install-build
           path: .
       - run: forge test -vvv
         env:
@@ -110,7 +110,7 @@ jobs:
       - name: Restore build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: foundry-build
+          name: foundry-install-build
           path: .
       - run: forge test -vvv
         env:
