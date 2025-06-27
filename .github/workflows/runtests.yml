@@ -31,7 +31,7 @@ jobs:
       - name: Compile smart contracts
         run: forge build
 
-      - name: Save build artifacts
+      - name: Save build artifacts and install
         uses: actions/upload-artifact@v4
         with:
           name: foundry-install-build
@@ -60,7 +60,7 @@ jobs:
       - name: Restore build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: foundry-build
+          name: foundry-install-build
           path: .
       - run: forge test -vvv
         env:
@@ -85,7 +85,7 @@ jobs:
       - name: Restore build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: foundry-build
+          name: foundry-install-build
           path: .
       - run: forge test -vvv
         env:
@@ -110,7 +110,7 @@ jobs:
       - name: Restore build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: foundry-build
+          name: foundry-install-build
           path: .
       - run: forge test -vvv
         env:
