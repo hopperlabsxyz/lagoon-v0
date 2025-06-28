@@ -28,9 +28,9 @@ declare -a CONTRACTS=(
   "./src/v0.5.0/Vault.sol:Vault"
   "./src/v0.5.0/Silo.sol:Silo"
   "./src/BeaconProxyFactory.sol:BeaconProxyFactory"
-  "./lib/openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol:BeaconProxy"
-  "./lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy"
-  "./lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin"
+  "./dependencies/@openzeppelin-contracts-5.0.0/proxy/beacon/BeaconProxy.sol:BeaconProxy"
+  "./dependencies/@openzeppelin-contracts-5.0.0/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy"
+  "./dependencies/@openzeppelin-contracts-5.0.0/proxy/transparent/ProxyAdmin.sol:ProxyAdmin"
   "./src/protocol/FeeRegistry.sol:FeeRegistry"
 )
 
