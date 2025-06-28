@@ -8,8 +8,8 @@ import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/acces
 abstract contract LogicRegistry is Ownable2StepUpgradeable, ILogicRegistry {
     /// @custom:storage-location erc7201:lagoon.storage.LogicRegistry
     struct LogicRegistryStorage {
-        mapping(string version => address logic) defaultLogic;
-        mapping(string version => mapping(address logic => bool)) whitelist;
+        mapping(string proxyVersion => address logic) defaultLogic;
+        mapping(string proxyVersion => mapping(address logic => bool)) whitelist;
     }
 
     // keccak256(abi.encode(uint256(keccak256("lagoon.storage.LogicRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -23,32 +23,32 @@ abstract contract LogicRegistry is Ownable2StepUpgradeable, ILogicRegistry {
         }
     }
 
-    function updateDefaultLogic(string calldata version, address _newLogic) public onlyOwner {
-        if (!_getLogicRegistryStorage().whitelist[version][_newLogic]) {
-            addLogic(version, _newLogic);
+    function updateDefaultLogic(string calldata proxyVersion, address _newLogic) public onlyOwner {
+        if (!_getLogicRegistryStorage().whitelist[proxyVersion][_newLogic]) {
+            addLogic(proxyVersion, _newLogic);
         }
-        address previous = _getLogicRegistryStorage().defaultLogic[version];
-        _getLogicRegistryStorage().defaultLogic[version] = _newLogic;
-        emit DefaultLogicUpdated(version, previous, _newLogic);
+        address previous = _getLogicRegistryStorage().defaultLogic[proxyVersion];
+        _getLogicRegistryStorage().defaultLogic[proxyVersion] = _newLogic;
+        emit DefaultLogicUpdated(proxyVersion, previous, _newLogic);
     }
 
-    function removeLogic(string calldata version, address _newLogic) public onlyOwner {
-        _getLogicRegistryStorage().whitelist[version][_newLogic] = false;
-        emit LogicRemoved(version, _newLogic);
+    function removeLogic(string calldata proxyVersion, address _newLogic) public onlyOwner {
+        _getLogicRegistryStorage().whitelist[proxyVersion][_newLogic] = false;
+        emit LogicRemoved(proxyVersion, _newLogic);
     }
 
-    function addLogic(string calldata version, address _newLogic) public onlyOwner {
-        _getLogicRegistryStorage().whitelist[version][_newLogic] = true;
-        emit LogicAdded(version, _newLogic);
+    function addLogic(string calldata proxyVersion, address _newLogic) public onlyOwner {
+        _getLogicRegistryStorage().whitelist[proxyVersion][_newLogic] = true;
+        emit LogicAdded(proxyVersion, _newLogic);
     }
 
-    function canUseLogic(string calldata version, address, address logic) public view returns (bool) {
-        return _getLogicRegistryStorage().whitelist[version][logic];
+    function canUseLogic(string calldata proxyVersion, address, address logic) public view returns (bool) {
+        return _getLogicRegistryStorage().whitelist[proxyVersion][logic];
     }
 
     function defaultLogic(
-        string calldata version
+        string calldata proxyVersion
     ) external view returns (address) {
-        return _getLogicRegistryStorage().defaultLogic[version];
+        return _getLogicRegistryStorage().defaultLogic[proxyVersion];
     }
 }
