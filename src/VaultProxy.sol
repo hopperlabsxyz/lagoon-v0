@@ -7,33 +7,38 @@ import {
     ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
 } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {console} from "forge-std/console.sol";
 
 contract VaultProxy is TransparentUpgradeableProxy {
-    ILogicRegistry public immutable implementationRegistry;
+    ILogicRegistry public immutable logicRegistry;
     string public version;
 
     constructor(
         string memory _version,
         address _logic,
+        address _logicRegistry,
         address initialOwner,
         bytes memory _data
-    ) TransparentUpgradeableProxy(_logicAtConstruction(_logic), initialOwner, _data) {
+    ) TransparentUpgradeableProxy(_logicAtConstruction(_logic, _version, _logicRegistry), initialOwner, _data) {
         version = _version;
+        logicRegistry = ILogicRegistry(_logicRegistry);
     }
 
     function _logicAtConstruction(
-        address _logic
+        address _logic,
+        string memory _version,
+        address _logicRegistry
     ) internal view returns (address) {
         if (_logic == address(0)) {
-            return implementation();
+            return ILogicRegistry(_logicRegistry).defaultLogic(_version);
         }
-        if (!implementationRegistry.canUseLogic(version, address(0), _logic)) revert("can't update");
+        if (!logicRegistry.canUseLogic(_version, _implementation(), _logic)) revert("can't update");
 
         return _logic;
     }
 
     function upgradeToAndCall(address logic, bytes calldata _data) external payable {
-        if (!implementationRegistry.canUseLogic(version, address(0), logic)) revert("can't update");
+        if (!logicRegistry.canUseLogic(version, implementation(), logic)) revert("can't update");
         ERC1967Utils.upgradeToAndCall(logic, _data);
     }
 

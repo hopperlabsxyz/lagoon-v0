@@ -9,7 +9,7 @@ import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/acces
 /// It allows the contract owner (the protocol) to set a default protocol fee rate, define custom fee rates
 /// for specific vaults, and manage the address that receives these protocol fees.
 /// Protocol fees represents a fraction (which is the rate) of the fees taken by the asset manager of the vault
-contract FeeRegistry is Ownable2StepUpgradeable {
+abstract contract FeeRegistry is Ownable2StepUpgradeable {
     struct CustomRate {
         bool isActivated;
         uint16 rate;
@@ -26,18 +26,10 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant feeRegistryStorage = 0xfae567c932a2d69f96a50330b7967af6689561bf72e1f4ad815fc97800b3f300;
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    // solhint-disable-next-line ignoreConstructors
-    constructor(
-        bool disable
-    ) {
-        if (disable) _disableInitializers();
-    }
-
     /// @notice Initializes the owner and protocol fee receiver.
     /// @param initialOwner The contract protocol address.
     /// @param _protocolFeeReceiver The protocol fee receiver.
-    function __FeeRegistry_init(address initialOwner, address _protocolFeeReceiver) public initializer {
+    function __FeeRegistry_init(address initialOwner, address _protocolFeeReceiver) public onlyInitializing {
         __Ownable_init(initialOwner);
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
         $.protocolFeeReceiver = _protocolFeeReceiver;

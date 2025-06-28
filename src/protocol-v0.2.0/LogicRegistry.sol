@@ -16,14 +16,6 @@ abstract contract LogicRegistry is Ownable2StepUpgradeable, ILogicRegistry {
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant logicRegistryStorage = 0xa63b9b2735273a8363378bc9a6a1619c72742579a0271bb71db3d083bb631c00;
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    // solhint-disable-next-line ignoreConstructors
-    constructor(
-        bool disable
-    ) {
-        if (disable) _disableInitializers();
-    }
-
     function _getLogicRegistryStorage() internal pure returns (LogicRegistryStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
@@ -33,7 +25,7 @@ abstract contract LogicRegistry is Ownable2StepUpgradeable, ILogicRegistry {
 
     function updateDefaultLogic(string calldata version, address _newLogic) public onlyOwner {
         if (!_getLogicRegistryStorage().whitelist[version][_newLogic]) {
-            revert LogicNotWhitelisted(_newLogic);
+            addLogic(version, _newLogic);
         }
         address previous = _getLogicRegistryStorage().defaultLogic[version];
         _getLogicRegistryStorage().defaultLogic[version] = _newLogic;
@@ -52,5 +44,11 @@ abstract contract LogicRegistry is Ownable2StepUpgradeable, ILogicRegistry {
 
     function canUseLogic(string calldata version, address, address logic) public view returns (bool) {
         return _getLogicRegistryStorage().whitelist[version][logic];
+    }
+
+    function defaultLogic(
+        string calldata version
+    ) external view returns (address) {
+        return _getLogicRegistryStorage().defaultLogic[version];
     }
 }

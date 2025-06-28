@@ -5,9 +5,13 @@ import {FeeRegistry} from "./FeeRegistry.sol";
 import {LogicRegistry} from "./LogicRegistry.sol";
 
 contract ProtocolRegistry is FeeRegistry, LogicRegistry {
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    // solhint-disable-next-line ignoreConstructors
     constructor(
         bool disable
-    ) FeeRegistry(disable) LogicRegistry(disable) {}
+    ) {
+        if (disable) _disableInitializers();
+    }
 
     function initialize(address initialOwner, address _protocolFeeReceiver) public initializer {
         __FeeRegistry_init(initialOwner, _protocolFeeReceiver);

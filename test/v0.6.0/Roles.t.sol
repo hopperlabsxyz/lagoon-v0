@@ -2,7 +2,6 @@
 pragma solidity 0.8.26;
 
 import "./VaultHelper.sol";
-
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
@@ -34,7 +33,7 @@ contract TestMint is BaseTest {
     }
 
     function test_feeRegistry() public view {
-        assertEq(vault.feeRegistry(), address(feeRegistry));
+        assertEq(vault.feeRegistry(), address(protocolRegistry));
     }
 
     function test_updateWhitelistManager() public {

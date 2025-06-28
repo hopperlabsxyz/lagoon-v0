@@ -32,10 +32,10 @@ contract ProxyFactory is OwnableUpgradeable {
     event BeaconProxyDeployed(address proxy, address deployer);
 
     /// @notice Address of the registry contract
-    address public immutable REGISTRY;
+    address public REGISTRY;
 
     /// @notice Address of the wrapped native token (e.g., WETH)
-    address public immutable WRAPPED_NATIVE;
+    address public WRAPPED_NATIVE;
 
     /// @notice Mapping to track whether an address is a proxy instance created by this factory
     mapping(address => bool) public isInstance;
@@ -48,37 +48,16 @@ contract ProxyFactory is OwnableUpgradeable {
     /// @notice Constructs the BeaconProxyFactory
     /// @param _registry Address of the registry contract
     /// @param _wrappedNativeToken Address of the wrapped native token (e.g., WETH)
-    constructor(address _registry, address _wrappedNativeToken, string memory _version) {
+    function initialize(
+        address _registry,
+        address _wrappedNativeToken,
+        address owner,
+        string memory _version
+    ) public initializer {
+        __Ownable_init(owner);
         REGISTRY = _registry;
         WRAPPED_NATIVE = _wrappedNativeToken;
         version = _version;
-    }
-
-    /// @notice Creates a new BeaconProxy instance
-    /// @dev Uses CREATE2 with provided salt for deterministic address calculation
-    /// @param init Initialization data for the proxy
-    /// @param salt Salt used for deterministic address calculation
-    /// @return The address of the newly created proxy
-    function createProxy(
-        address _logic,
-        address initialOwner,
-        bytes memory init,
-        bytes32 salt
-    ) public returns (address) {
-        address proxy = address(
-            new VaultProxy{salt: salt}(
-                version,
-                _logic,
-                initialOwner,
-                abi.encodeWithSelector(IVault.initialize.selector, init, REGISTRY, WRAPPED_NATIVE)
-            )
-        );
-        isInstance[proxy] = true;
-        instances.push(proxy);
-
-        emit BeaconProxyDeployed(proxy, msg.sender);
-
-        return address(proxy);
     }
 
     /// @notice Creates a new vault proxy with structured initialization data
@@ -92,6 +71,20 @@ contract ProxyFactory is OwnableUpgradeable {
         InitStruct calldata init,
         bytes32 salt
     ) external returns (address) {
-        return createProxy(_logic, initialOwner, abi.encode(init), salt);
+        address proxy = address(
+            new VaultProxy{salt: salt}(
+                version,
+                _logic,
+                REGISTRY,
+                initialOwner,
+                abi.encodeWithSelector(IVault.initialize.selector, abi.encode(init), REGISTRY, WRAPPED_NATIVE)
+            )
+        );
+        isInstance[proxy] = true;
+        instances.push(proxy);
+
+        emit BeaconProxyDeployed(proxy, msg.sender);
+
+        return address(proxy);
     }
 }

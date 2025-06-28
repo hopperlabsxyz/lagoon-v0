@@ -37,4 +37,8 @@ interface ILogicRegistry {
      * @return bool True if the logic is whitelisted for the version
      */
     function canUseLogic(string calldata version, address, address logic) external view returns (bool);
+
+    function defaultLogic(
+        string calldata version
+    ) external view returns (address);
 }
