@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import "./VaultHelper.sol";
+import {Vault, VaultHelper} from "./VaultHelper.sol";
 
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 
@@ -69,6 +69,8 @@ contract Constants is Test {
         users.push(user8);
         users.push(user9);
         users.push(user10);
+        new VaultHelper(false);
+        new Vault(false);
     }
 
     function _beaconDeploy(
@@ -115,7 +117,7 @@ contract Constants is Test {
         if (proxy) {
             Options memory opts;
             opts.constructorData = abi.encode(true);
-            beacon = _beaconDeploy("v0.1.0/VaultHelper.sol:VaultHelper", owner.addr, opts);
+            beacon = _beaconDeploy("test/v0.1.0/VaultHelper.sol:VaultHelper", owner.addr, opts);
             vault = _proxyDeploy(beacon, v);
         } else {
             vm.startPrank(owner.addr);
