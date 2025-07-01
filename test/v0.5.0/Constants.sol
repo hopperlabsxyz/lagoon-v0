@@ -10,12 +10,12 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
-import {BeaconProxyFactory, InitStruct as BeaconProxyInitStruct} from "@src/BeaconProxyFactory.sol";
+import {BeaconProxyFactory, InitStruct as BeaconProxyInitStruct} from "@src/protocol-v1/BeaconProxyFactory.sol";
 
 contract Constants is Test {
     // ERC20 tokens
@@ -86,7 +86,6 @@ contract Constants is Test {
         bool disableImplementationInit = proxy;
         opts.constructorData = abi.encode(disableImplementationInit);
         address implementation = address(new VaultHelper(disableImplementationInit));
-        // Upgrades.deployImplementation("v0.3.0/VaultHelper.sol:VaultHelper", opts);
 
         factory = new BeaconProxyFactory(address(feeRegistry), implementation, dao.addr, WRAPPED_NATIVE_TOKEN);
 

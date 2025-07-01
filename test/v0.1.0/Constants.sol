@@ -10,7 +10,7 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 import {Test} from "forge-std/Test.sol";
 
 import {VmSafe} from "forge-std/Vm.sol";
@@ -69,6 +69,8 @@ contract Constants is Test {
         users.push(user8);
         users.push(user9);
         users.push(user10);
+        new VaultHelper(false);
+        new Vault(false);
     }
 
     function _beaconDeploy(
@@ -115,6 +117,7 @@ contract Constants is Test {
         if (proxy) {
             Options memory opts;
             opts.constructorData = abi.encode(true);
+
             beacon = _beaconDeploy("v0.1.0/VaultHelper.sol:VaultHelper", owner.addr, opts);
             vault = _proxyDeploy(beacon, v);
         } else {
