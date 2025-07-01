@@ -15,7 +15,7 @@ import {ProtocolRegistry} from "@src/protocol-v0.2.0/protocolRegistry.sol";
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
-import {InitStruct as ProxyInitStruct, OptinProxyFactory} from "@src/protocol-v0.2.0/opt-inProxyFactory.sol";
+import {InitStruct as ProxyInitStruct, OptinProxyFactory} from "@src/protocol-v0.2.0/OptinProxyFactory.sol";
 
 contract Constants is Test {
     // ERC20 tokens

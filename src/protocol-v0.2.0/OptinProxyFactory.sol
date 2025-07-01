@@ -2,7 +2,7 @@
 pragma solidity "0.8.26";
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {OptinProxy} from "@src/Opt-inProxy.sol";
+import {OptinProxy} from "@src/OptinProxy.sol";
 
 struct InitStruct {
     address underlying;
@@ -33,7 +33,7 @@ struct OptinProxyFactoryStorage {
 }
 
 /// @title ProxyFactory
-/// @notice A factory contract for creating Opt-inProxy instances with upgradeable functionality
+/// @notice A factory contract for creating OptinProxy instances with upgradeable functionality
 /// @dev Inherits from UpgradeableBeacon to provide upgrade functionality for all created proxies
 contract OptinProxyFactory is OwnableUpgradeable {
     event ProxyDeployed(address proxy, address deployer);
