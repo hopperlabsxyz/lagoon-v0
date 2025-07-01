@@ -117,7 +117,8 @@ contract Constants is Test {
         if (proxy) {
             Options memory opts;
             opts.constructorData = abi.encode(true);
-            beacon = _beaconDeploy("test/v0.1.0/VaultHelper.sol:VaultHelper", owner.addr, opts);
+
+            beacon = _beaconDeploy("v0.1.0/VaultHelper.sol:VaultHelper", owner.addr, opts);
             vault = _proxyDeploy(beacon, v);
         } else {
             vm.startPrank(owner.addr);

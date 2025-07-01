@@ -88,7 +88,6 @@ contract Constants is Test {
         bool disableImplementationInit = proxy;
         opts.constructorData = abi.encode(disableImplementationInit);
         implementation = address(new VaultHelper(disableImplementationInit));
-        // Upgrades.deployImplementation("v0.3.0/VaultHelper.sol:VaultHelper", opts);
 
         // First we deploy the factory and initialize it
         factory = new ProxyFactory();
