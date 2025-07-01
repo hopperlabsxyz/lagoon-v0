@@ -26,11 +26,11 @@ abstract contract FeeRegistry is Ownable2StepUpgradeable {
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant feeRegistryStorage = 0xfae567c932a2d69f96a50330b7967af6689561bf72e1f4ad815fc97800b3f300;
 
-    /// @notice Initializes the owner and protocol fee receiver.
-    /// @param initialOwner The contract protocol address.
+    /// @notice Initializes the protocol fee receiver.
     /// @param _protocolFeeReceiver The protocol fee receiver.
-    function __FeeRegistry_init(address initialOwner, address _protocolFeeReceiver) public onlyInitializing {
-        __Ownable_init(initialOwner);
+    function __FeeRegistry_init(
+        address _protocolFeeReceiver
+    ) public onlyInitializing {
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
         $.protocolFeeReceiver = _protocolFeeReceiver;
     }

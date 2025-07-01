@@ -14,6 +14,7 @@ contract ProtocolRegistry is FeeRegistry, LogicRegistry {
     }
 
     function initialize(address initialOwner, address _protocolFeeReceiver) public initializer {
-        __FeeRegistry_init(initialOwner, _protocolFeeReceiver);
+        __Ownable_init(initialOwner);
+        __FeeRegistry_init(_protocolFeeReceiver);
     }
 }
