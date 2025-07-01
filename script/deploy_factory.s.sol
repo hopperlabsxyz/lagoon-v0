@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
-import {BeaconProxyFactory} from "@src/BeaconProxyFactory.sol";
+import {BeaconProxyFactory} from "@src/protocol/BeaconProxyFactory.sol";
 import {Script, console} from "forge-std/Script.sol";
 
 import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";

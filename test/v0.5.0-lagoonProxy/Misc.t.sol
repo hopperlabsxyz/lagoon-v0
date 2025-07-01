@@ -219,10 +219,9 @@ contract TestMisc is BaseTest {
     function test_factory() public view {
         if (!proxy) return;
 
-        assertEq(factory.REGISTRY(), address(protocolRegistry));
-        assertEq(factory.WRAPPED_NATIVE(), address(WRAPPED_NATIVE_TOKEN));
+        assertEq(factory.registry(), address(protocolRegistry));
+        assertEq(factory.wrappredNativeToken(), address(WRAPPED_NATIVE_TOKEN));
         assertTrue(factory.isInstance(address(vault)));
-        assertEq(factory.instances(0), address(vault));
     }
 
     function test_totalAssetsLifespan() public {

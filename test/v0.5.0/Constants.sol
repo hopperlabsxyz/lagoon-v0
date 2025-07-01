@@ -15,7 +15,7 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
-import {BeaconProxyFactory, InitStruct as BeaconProxyInitStruct} from "@src/BeaconProxyFactory.sol";
+import {BeaconProxyFactory, InitStruct as BeaconProxyInitStruct} from "@src/protocol/BeaconProxyFactory.sol";
 
 contract Constants is Test {
     // ERC20 tokens

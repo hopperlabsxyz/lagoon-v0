@@ -15,7 +15,7 @@ import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
-import {BeaconProxyFactory, InitStruct as BeaconProxyInitStruct} from "@src/BeaconProxyFactory.sol";
+import {BeaconProxyFactory, InitStruct as BeaconProxyInitStruct} from "@src/protocol/BeaconProxyFactory.sol";
 
 contract Constants is Test {
     // ERC20 tokens
@@ -87,7 +87,6 @@ contract Constants is Test {
         bool disableImplementationInit = proxy;
         opts.constructorData = abi.encode(disableImplementationInit);
         address implementation = address(new VaultHelper(disableImplementationInit));
-        // Upgrades.deployImplementation("v0.3.0/VaultHelper.sol:VaultHelper", opts);
 
         factory = new BeaconProxyFactory(address(feeRegistry), implementation, dao.addr, WRAPPED_NATIVE_TOKEN);
 

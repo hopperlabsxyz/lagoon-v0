@@ -6,15 +6,15 @@ import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/acces
 
 /// @title LogicRegistry
 abstract contract LogicRegistry is Ownable2StepUpgradeable, ILogicRegistry {
-    /// @custom:storage-location erc7201:lagoon.storage.LogicRegistry
+    /// @custom:storage-location erc7201:hopper.storage.LogicRegistry
     struct LogicRegistryStorage {
         address defaultLogic;
         mapping(address logic => bool) whitelist;
     }
 
-    // keccak256(abi.encode(uint256(keccak256("lagoon.storage.LogicRegistry")) - 1)) & ~bytes32(uint256(0xff));
+    // keccak256(abi.encode(uint256(keccak256("hopper.storage.LogicRegistry")) - 1)) & ~bytes32(uint256(0xff));
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant logicRegistryStorage = 0xa63b9b2735273a8363378bc9a6a1619c72742579a0271bb71db3d083bb631c00;
+    bytes32 private constant logicRegistryStorage = 0xe46ef3fb34f1d44d9ef7f251e8f9f48dd845992835333da9e2faaf14d73fd700;
 
     function _getLogicRegistryStorage() internal pure returns (LogicRegistryStorage storage $) {
         // solhint-disable-next-line no-inline-assembly

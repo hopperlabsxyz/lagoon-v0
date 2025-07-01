@@ -25,31 +25,41 @@ interface IVault {
     function initialize(bytes memory data, address feeRegistry, address wrappedNativeToken) external;
 }
 
+struct ProxyFactoryStorage {
+    /// @notice Address of the registry contract
+    address REGISTRY;
+    /// @notice Address of the wrapped native token (e.g., WETH)
+    address WRAPPED_NATIVE;
+    /// @notice Mapping to track whether an address is a proxy instance created by this factory
+    mapping(address => bool) isInstance;
+}
+
 /// @title BeaconProxyFactory
 /// @notice A factory contract for creating BeaconProxy instances with upgradeable functionality
 /// @dev Inherits from UpgradeableBeacon to provide upgrade functionality for all created proxies
 contract ProxyFactory is OwnableUpgradeable {
-    event BeaconProxyDeployed(address proxy, address deployer);
+    event ProxyDeployed(address proxy, address deployer);
 
-    /// @notice Address of the registry contract
-    address public REGISTRY;
+    // keccak256(abi.encode(uint256(keccak256("hopper.storage.proxyFactory")) - 1)) & ~bytes32(uint256(0xff));
+    // solhint-disable-next-line const-name-snakecase
+    bytes32 private constant proxyFactoryStorage = 0x6022dfecafcf543730e23a6c3d766f586d631ba88e19fd9ff2718f6cc4303000;
 
-    /// @notice Address of the wrapped native token (e.g., WETH)
-    address public WRAPPED_NATIVE;
-
-    /// @notice Mapping to track whether an address is a proxy instance created by this factory
-    mapping(address => bool) public isInstance;
-
-    /// @notice Array of all proxy instances created by this factory
-    address[] public instances;
+    function _getProxyFactoryStorage() internal pure returns (ProxyFactoryStorage storage $) {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            $.slot := proxyFactoryStorage
+        }
+    }
 
     /// @notice Constructs the BeaconProxyFactory
     /// @param _registry Address of the registry contract
     /// @param _wrappedNativeToken Address of the wrapped native token (e.g., WETH)
     function initialize(address _registry, address _wrappedNativeToken, address owner) public initializer {
         __Ownable_init(owner);
-        REGISTRY = _registry;
-        WRAPPED_NATIVE = _wrappedNativeToken;
+        ProxyFactoryStorage storage $ = _getProxyFactoryStorage();
+
+        $.REGISTRY = _registry;
+        $.WRAPPED_NATIVE = _wrappedNativeToken;
     }
 
     /// @notice Creates a new vault proxy with structured initialization data
@@ -63,19 +73,34 @@ contract ProxyFactory is OwnableUpgradeable {
         InitStruct calldata init,
         bytes32 salt
     ) external returns (address) {
+        ProxyFactoryStorage storage $ = _getProxyFactoryStorage();
+
         address proxy = address(
             new VaultProxy{salt: salt}(
                 _logic,
-                REGISTRY,
+                $.REGISTRY,
                 initialOwner,
-                abi.encodeWithSelector(IVault.initialize.selector, abi.encode(init), REGISTRY, WRAPPED_NATIVE)
+                abi.encodeWithSelector(IVault.initialize.selector, abi.encode(init), $.REGISTRY, $.WRAPPED_NATIVE)
             )
         );
-        isInstance[proxy] = true;
-        instances.push(proxy);
+        $.isInstance[proxy] = true;
 
-        emit BeaconProxyDeployed(proxy, msg.sender);
+        emit ProxyDeployed(proxy, msg.sender);
 
         return address(proxy);
+    }
+
+    function registry() external view returns (address) {
+        return _getProxyFactoryStorage().REGISTRY;
+    }
+
+    function wrappredNativeToken() external view returns (address) {
+        return _getProxyFactoryStorage().WRAPPED_NATIVE;
+    }
+
+    function isInstance(
+        address vault
+    ) external view returns (bool) {
+        return _getProxyFactoryStorage().isInstance[vault];
     }
 }

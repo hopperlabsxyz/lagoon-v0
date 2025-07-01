@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {Vault, VaultHelper} from "./VaultHelper.sol";
+import "./VaultHelper.sol";
 
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 
