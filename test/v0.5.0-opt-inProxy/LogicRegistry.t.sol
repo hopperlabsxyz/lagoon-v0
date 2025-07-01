@@ -3,11 +3,11 @@ pragma solidity ^0.8.26;
 
 import {BaseTest} from "./Base.sol";
 
-import {ILogicRegistry} from "@src/protocol-v0.2.0/ILogicRegistry.sol";
+import {ILogicRegistry} from "@src/protocol-v2/ILogicRegistry.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-import {LogicRegistry, ProtocolRegistry} from "@src/protocol-v0.2.0/ProtocolRegistry.sol";
+import {LogicRegistry, ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 
 import {Test} from "forge-std/Test.sol";
 

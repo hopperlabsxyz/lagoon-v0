@@ -31,7 +31,7 @@ declare -a CONTRACTS=(
   "./dependencies/@openzeppelin-contracts-5.0.0/proxy/beacon/BeaconProxy.sol:BeaconProxy"
   "./dependencies/@openzeppelin-contracts-5.0.0/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy"
   "./dependencies/@openzeppelin-contracts-5.0.0/proxy/transparent/ProxyAdmin.sol:ProxyAdmin"
-  "./src/protocol/FeeRegistry.sol:FeeRegistry"
+  "./src/protocol-v1/FeeRegistry.sol:FeeRegistry"
 )
 
 # Function to display help

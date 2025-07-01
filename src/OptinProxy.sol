@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import {ILogicRegistry} from "./protocol-v0.2.0/ILogicRegistry.sol";
+import {ILogicRegistry} from "./protocol-v2/ILogicRegistry.sol";
 import {
     ERC1967Utils,
     TransparentUpgradeableProxy

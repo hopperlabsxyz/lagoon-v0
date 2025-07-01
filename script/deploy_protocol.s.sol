@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 import {Script, console} from "forge-std/Script.sol";
 
 import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
