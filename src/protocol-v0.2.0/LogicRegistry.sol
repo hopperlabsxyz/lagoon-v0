@@ -14,7 +14,7 @@ abstract contract LogicRegistry is Ownable2StepUpgradeable, ILogicRegistry {
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.LogicRegistry")) - 1)) & ~bytes32(uint256(0xff));
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant logicRegistryStorage = 0xe46ef3fb34f1d44d9ef7f251e8f9f48dd845992835333da9e2faaf14d73fd700;
+    bytes32 private constant logicRegistryStorage = 0x1f7af4bd0bb99469a9721ca3a846842162947039ac74427c73a74c47aae0d400;
 
     function _getLogicRegistryStorage() internal pure returns (LogicRegistryStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
