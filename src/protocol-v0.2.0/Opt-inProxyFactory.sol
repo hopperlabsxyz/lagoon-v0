@@ -2,7 +2,7 @@
 pragma solidity "0.8.26";
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {OptinProxy} from "@src/OptinProxy.sol";
+import {OptinProxy} from "@src/Opt-inProxy.sol";
 
 struct InitStruct {
     address underlying;
@@ -23,7 +23,7 @@ interface IVault {
     function initialize(bytes memory data, address feeRegistry, address wrappedNativeToken) external;
 }
 
-struct ProxyFactoryStorage {
+struct OptinProxyFactoryStorage {
     /// @notice Address of the registry contract
     address REGISTRY;
     /// @notice Address of the wrapped native token (e.g. WETH)
@@ -35,14 +35,14 @@ struct ProxyFactoryStorage {
 /// @title ProxyFactory
 /// @notice A factory contract for creating Opt-inProxy instances with upgradeable functionality
 /// @dev Inherits from UpgradeableBeacon to provide upgrade functionality for all created proxies
-contract ProxyFactory is OwnableUpgradeable {
+contract OptinProxyFactory is OwnableUpgradeable {
     event ProxyDeployed(address proxy, address deployer);
 
-    // keccak256(abi.encode(uint256(keccak256("hopper.storage.proxyFactory")) - 1)) & ~bytes32(uint256(0xff));
+    // keccak256(abi.encode(uint256(keccak256("hopper.storage.opt-inProxyFactory")) - 1)) & ~bytes32(uint256(0xff));
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant proxyFactoryStorage = 0x6022dfecafcf543730e23a6c3d766f586d631ba88e19fd9ff2718f6cc4303000;
+    bytes32 private constant proxyFactoryStorage = 0xda29f9cce8913a5999de49b73cd9d621b583d9cae78170dc4846b93899df8600;
 
-    function _getProxyFactoryStorage() internal pure returns (ProxyFactoryStorage storage $) {
+    function _getProxyFactoryStorage() internal pure returns (OptinProxyFactoryStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := proxyFactoryStorage
@@ -54,7 +54,7 @@ contract ProxyFactory is OwnableUpgradeable {
     /// @param _wrappedNativeToken Address of the wrapped native token (e.g., WETH)
     function initialize(address _registry, address _wrappedNativeToken, address owner) public initializer {
         __Ownable_init(owner);
-        ProxyFactoryStorage storage $ = _getProxyFactoryStorage();
+        OptinProxyFactoryStorage storage $ = _getProxyFactoryStorage();
 
         $.REGISTRY = _registry;
         $.WRAPPED_NATIVE = _wrappedNativeToken;
@@ -71,7 +71,7 @@ contract ProxyFactory is OwnableUpgradeable {
         InitStruct calldata init,
         bytes32 salt
     ) external returns (address) {
-        ProxyFactoryStorage storage $ = _getProxyFactoryStorage();
+        OptinProxyFactoryStorage storage $ = _getProxyFactoryStorage();
 
         address proxy = address(
             new OptinProxy{salt: salt}(

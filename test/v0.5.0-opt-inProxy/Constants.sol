@@ -15,7 +15,7 @@ import {ProtocolRegistry} from "@src/protocol-v0.2.0/protocolRegistry.sol";
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
-import {InitStruct as ProxyInitStruct, ProxyFactory} from "@src/protocol-v0.2.0/ProxyFactory.sol";
+import {InitStruct as ProxyInitStruct, OptinProxyFactory} from "@src/protocol-v0.2.0/opt-inProxyFactory.sol";
 
 contract Constants is Test {
     // ERC20 tokens
@@ -24,7 +24,7 @@ contract Constants is Test {
     bool underlyingIsNativeToken = address(underlying) == WRAPPED_NATIVE_TOKEN;
 
     bool proxy = vm.envBool("PROXY");
-    ProxyFactory factory;
+    OptinProxyFactory factory;
 
     uint8 decimalsOffset = 0;
     VaultHelper vault;
@@ -89,7 +89,7 @@ contract Constants is Test {
         implementation = address(new VaultHelper(disableImplementationInit));
 
         // First we deploy the factory and initialize it
-        factory = new ProxyFactory();
+        factory = new OptinProxyFactory();
         factory.initialize(address(protocolRegistry), WRAPPED_NATIVE_TOKEN, dao.addr);
 
         // we add an implementation
