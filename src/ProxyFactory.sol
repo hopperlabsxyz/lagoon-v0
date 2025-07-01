@@ -43,21 +43,13 @@ contract ProxyFactory is OwnableUpgradeable {
     /// @notice Array of all proxy instances created by this factory
     address[] public instances;
 
-    string public version;
-
     /// @notice Constructs the BeaconProxyFactory
     /// @param _registry Address of the registry contract
     /// @param _wrappedNativeToken Address of the wrapped native token (e.g., WETH)
-    function initialize(
-        address _registry,
-        address _wrappedNativeToken,
-        address owner,
-        string memory _version
-    ) public initializer {
+    function initialize(address _registry, address _wrappedNativeToken, address owner) public initializer {
         __Ownable_init(owner);
         REGISTRY = _registry;
         WRAPPED_NATIVE = _wrappedNativeToken;
-        version = _version;
     }
 
     /// @notice Creates a new vault proxy with structured initialization data
@@ -73,7 +65,6 @@ contract ProxyFactory is OwnableUpgradeable {
     ) external returns (address) {
         address proxy = address(
             new VaultProxy{salt: salt}(
-                version,
                 _logic,
                 REGISTRY,
                 initialOwner,

@@ -12,31 +12,25 @@ contract VaultProxy is TransparentUpgradeableProxy {
     string public proxyVersion;
 
     constructor(
-        string memory _proxyVersion,
         address _logic,
         address _logicRegistry,
         address initialOwner,
         bytes memory _data
-    ) TransparentUpgradeableProxy(_logicAtConstruction(_logic, _proxyVersion, _logicRegistry), initialOwner, _data) {
-        proxyVersion = _proxyVersion;
+    ) TransparentUpgradeableProxy(_logicAtConstruction(_logic, _logicRegistry), initialOwner, _data) {
         REGISTRY = ILogicRegistry(_logicRegistry);
     }
 
-    function _logicAtConstruction(
-        address _logic,
-        string memory _proxyVersion,
-        address _logicRegistry
-    ) internal view returns (address) {
+    function _logicAtConstruction(address _logic, address _logicRegistry) internal view returns (address) {
         if (_logic == address(0)) {
-            return ILogicRegistry(_logicRegistry).defaultLogic(_proxyVersion);
+            return ILogicRegistry(_logicRegistry).defaultLogic();
         }
-        if (!REGISTRY.canUseLogic(_proxyVersion, _implementation(), _logic)) revert("can't update");
+        if (!REGISTRY.canUseLogic(_implementation(), _logic)) revert("can't update");
 
         return _logic;
     }
 
     function upgradeToAndCall(address logic, bytes calldata _data) external payable {
-        if (!REGISTRY.canUseLogic(proxyVersion, implementation(), logic)) revert("can't update");
+        if (!REGISTRY.canUseLogic(implementation(), logic)) revert("can't update");
         ERC1967Utils.upgradeToAndCall(logic, _data);
     }
 

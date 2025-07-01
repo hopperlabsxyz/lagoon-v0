@@ -92,11 +92,11 @@ contract Constants is Test {
 
         // First we deploy the factory and initialize it
         factory = new ProxyFactory();
-        factory.initialize(address(protocolRegistry), WRAPPED_NATIVE_TOKEN, dao.addr, "v0.1.0");
+        factory.initialize(address(protocolRegistry), WRAPPED_NATIVE_TOKEN, dao.addr);
 
         // we add an implementation
         vm.prank(dao.addr);
-        protocolRegistry.updateDefaultLogic("v0.1.0", implementation);
+        protocolRegistry.updateDefaultLogic(implementation);
         ProxyInitStruct memory initStruct = ProxyInitStruct({
             underlying: address(underlying),
             name: vaultName,

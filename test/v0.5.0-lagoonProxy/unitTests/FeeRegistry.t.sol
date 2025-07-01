@@ -15,7 +15,7 @@ contract TestprotocolRegistry is BaseTest {
         protocolRegistry = new ProtocolRegistry(false);
         protocolRegistry.initialize(dao.addr, dao.addr);
         vm.prank(dao.addr);
-        protocolRegistry.addLogic("V0", implementation);
+        protocolRegistry.addLogic(implementation);
     }
 
     function test_init() public view {
