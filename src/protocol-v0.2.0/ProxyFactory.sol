@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-// import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
-
-import {VaultProxy} from "./VaultProxy.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {OptinProxy} from "@src/OptinProxy.sol";
 
 struct InitStruct {
     address underlying;
@@ -28,14 +26,14 @@ interface IVault {
 struct ProxyFactoryStorage {
     /// @notice Address of the registry contract
     address REGISTRY;
-    /// @notice Address of the wrapped native token (e.g., WETH)
+    /// @notice Address of the wrapped native token (e.g. WETH)
     address WRAPPED_NATIVE;
     /// @notice Mapping to track whether an address is a proxy instance created by this factory
     mapping(address => bool) isInstance;
 }
 
-/// @title BeaconProxyFactory
-/// @notice A factory contract for creating BeaconProxy instances with upgradeable functionality
+/// @title ProxyFactory
+/// @notice A factory contract for creating Opt-inProxy instances with upgradeable functionality
 /// @dev Inherits from UpgradeableBeacon to provide upgrade functionality for all created proxies
 contract ProxyFactory is OwnableUpgradeable {
     event ProxyDeployed(address proxy, address deployer);
@@ -76,7 +74,7 @@ contract ProxyFactory is OwnableUpgradeable {
         ProxyFactoryStorage storage $ = _getProxyFactoryStorage();
 
         address proxy = address(
-            new VaultProxy{salt: salt}(
+            new OptinProxy{salt: salt}(
                 _logic,
                 $.REGISTRY,
                 initialOwner,

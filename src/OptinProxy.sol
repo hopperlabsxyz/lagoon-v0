@@ -7,7 +7,7 @@ import {
     TransparentUpgradeableProxy
 } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-contract VaultProxy is TransparentUpgradeableProxy {
+contract OptinProxy is TransparentUpgradeableProxy {
     ILogicRegistry public immutable REGISTRY;
     string public proxyVersion;
 
