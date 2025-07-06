@@ -39,6 +39,8 @@ contract OptinProxy is TransparentUpgradeableProxy {
             if (msg.sig != ITransparentUpgradeableProxy.upgradeToAndCall.selector) {
                 revert ProxyDeniedAdminAccess();
             } else {
+                // equivalent to TransparentUpgradeableProxy.dispatchUpgradeToAndCall
+                // with a check to the registry first.
                 (address newImplementation, bytes memory data) = abi.decode(msg.data[4:], (address, bytes));
                 if (!REGISTRY.canUseLogic(_implementation(), newImplementation)) revert UpdateNotAllowed();
                 ERC1967Utils.upgradeToAndCall(newImplementation, data);
