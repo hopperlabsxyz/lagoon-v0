@@ -5,24 +5,35 @@ import {ILogicRegistry} from "./ILogicRegistry.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 /// @title LogicRegistry
+/// @notice Abstract contract for managing whitelisted logic implementations and default logic
+/// @dev Inherits from Ownable2StepUpgradeable to provide ownership functionality with 2-step transfer
+/// @dev Implements ILogicRegistry interface for standard registry functions
 abstract contract LogicRegistry is Ownable2StepUpgradeable, ILogicRegistry {
     /// @custom:storage-location erc7201:hopper.storage.LogicRegistry
+    /// @notice Storage layout for the LogicRegistry contract
     struct LogicRegistryStorage {
+        /// @notice Address of the default logic implementation
         address defaultLogic;
+        /// @notice Mapping of logic addresses to their whitelist status
         mapping(address logic => bool) whitelist;
     }
 
+    // Storage slot for LogicRegistryStorage
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.LogicRegistry")) - 1)) & ~bytes32(uint256(0xff));
-    // solhint-disable-next-line const-name-snakecase
     bytes32 private constant logicRegistryStorage = 0x1f7af4bd0bb99469a9721ca3a846842162947039ac74427c73a74c47aae0d400;
 
+    /// @notice Returns the storage struct at the predefined slot
+    /// @dev Uses assembly to access storage at a specific slot
+    /// @return $ The storage struct
     function _getLogicRegistryStorage() internal pure returns (LogicRegistryStorage storage $) {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := logicRegistryStorage
         }
     }
 
+    /// @notice Updates the default logic implementation
+    /// @dev Only callable by owner. Automatically adds new logic to whitelist if not already present
+    /// @param _newLogic Address of the new default logic implementation
     function updateDefaultLogic(
         address _newLogic
     ) public onlyOwner {
@@ -34,6 +45,9 @@ abstract contract LogicRegistry is Ownable2StepUpgradeable, ILogicRegistry {
         emit DefaultLogicUpdated(previous, _newLogic);
     }
 
+    /// @notice Removes a logic implementation from the whitelist
+    /// @dev Only callable by owner. Does not affect default logic if removed.
+    /// @param _newLogic Address of the logic implementation to remove
     function removeLogic(
         address _newLogic
     ) public onlyOwner {
@@ -41,6 +55,9 @@ abstract contract LogicRegistry is Ownable2StepUpgradeable, ILogicRegistry {
         emit LogicRemoved(_newLogic);
     }
 
+    /// @notice Adds a logic implementation to the whitelist
+    /// @dev Only callable by owner
+    /// @param _newLogic Address of the logic implementation to add
     function addLogic(
         address _newLogic
     ) public onlyOwner {
@@ -48,10 +65,17 @@ abstract contract LogicRegistry is Ownable2StepUpgradeable, ILogicRegistry {
         emit LogicAdded(_newLogic);
     }
 
-    function canUseLogic(address, address logic) public view returns (bool) {
+    /// @notice Checks if a logic implementation can be used
+    /// @dev Ignores the fromLogic parameter (present in interface) and only checks whitelist status for now
+    /// @param fromLogic Previous logic implementation (unused in this implementation)
+    /// @param logic Address of the logic implementation to check
+    /// @return True if the logic is whitelisted, false otherwise
+    function canUseLogic(address fromLogic, address logic) public view returns (bool) {
         return _getLogicRegistryStorage().whitelist[logic];
     }
 
+    /// @notice Returns the current default logic implementation address
+    /// @return Address of the default logic implementation
     function defaultLogic() external view returns (address) {
         return _getLogicRegistryStorage().defaultLogic;
     }
