@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FOUNDRY_ETH_RPC_URL: https://rpc.ankr.com/tac
-      WRAPPED_NATIVE_TOKEN: "0xB63B9f0eb4A6E6f191529D71d4D88cc8900Df2C9"
+      WRAPPED_NATIVE_TOKEN: "0x07840B012d84095397Fd251Ea619cee6F866bC39"
       ASSET: "0xB63B9f0eb4A6E6f191529D71d4D88cc8900Df2C9"
     steps:
       - uses: actions/checkout@v4
@@ -111,31 +111,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: foundry-install-build
-          path: .
-      - run: forge test -vvv
-        env:
-          PROXY: false
-
-  test-wsoph-tac:
-    needs: setup
-    name: WTAC TAC
-    runs-on: ubuntu-latest
-    env:
-      FOUNDRY_ETH_RPC_URL: https://rpc.ankr.com/tac
-      WRAPPED_NATIVE_TOKEN: "0x2b1A859dE6A55c553520D7780Bc5805712B128F9"
-      ASSET: "0xB63B9f0eb4A6E6f191529D71d4D88cc8900Df2C9"
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-
-      - name: Restore build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: foundry-build
           path: .
       - run: forge test -vvv
         env:
