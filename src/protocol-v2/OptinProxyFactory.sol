@@ -2,22 +2,9 @@
 pragma solidity "0.8.26";
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {OptinProxy} from "@src/OptinProxy.sol";
 
-struct InitStruct {
-    address underlying;
-    string name;
-    string symbol;
-    address safe;
-    address whitelistManager;
-    address valuationManager;
-    address admin;
-    address feeReceiver;
-    uint16 managementRate;
-    uint16 performanceRate;
-    bool enableWhitelist;
-    uint256 rateUpdateCooldown;
-}
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {OptinProxy} from "@src/OptinProxy.sol";
 
 interface IVault {
     function initialize(bytes memory data, address feeRegistry, address wrappedNativeToken) external;
@@ -30,6 +17,21 @@ struct OptinProxyFactoryStorage {
     address WRAPPED_NATIVE;
     /// @notice Mapping to track whether an address is a proxy instance created by this factory
     mapping(address => bool) isInstance;
+}
+
+struct InitStruct {
+    IERC20 underlying;
+    string name;
+    string symbol;
+    address safe;
+    address whitelistManager;
+    address valuationManager;
+    address admin;
+    address feeReceiver;
+    uint16 managementRate;
+    uint16 performanceRate;
+    bool enableWhitelist;
+    uint256 rateUpdateCooldown;
 }
 
 /// @title ProxyFactory
@@ -49,13 +51,20 @@ contract OptinProxyFactory is OwnableUpgradeable {
         }
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    // solhint-disable-next-line ignoreConstructors
+    constructor(
+        bool disable
+    ) {
+        if (disable) _disableInitializers();
+    }
+
     /// @notice Constructs the BeaconProxyFactory
     /// @param _registry Address of the registry contract
     /// @param _wrappedNativeToken Address of the wrapped native token (e.g., WETH)
     function initialize(address _registry, address _wrappedNativeToken, address owner) public initializer {
         __Ownable_init(owner);
         OptinProxyFactoryStorage storage $ = _getProxyFactoryStorage();
-
         $.REGISTRY = _registry;
         $.WRAPPED_NATIVE = _wrappedNativeToken;
     }
@@ -72,17 +81,11 @@ contract OptinProxyFactory is OwnableUpgradeable {
         bytes32 salt
     ) external returns (address) {
         OptinProxyFactoryStorage storage $ = _getProxyFactoryStorage();
+        bytes memory call_data = abi.encodeCall(IVault.initialize, (abi.encode(init), $.REGISTRY, $.WRAPPED_NATIVE));
 
-        address proxy = address(
-            new OptinProxy{salt: salt}(
-                _logic,
-                $.REGISTRY,
-                initialOwner,
-                abi.encodeWithSelector(IVault.initialize.selector, abi.encode(init), $.REGISTRY, $.WRAPPED_NATIVE)
-            )
-        );
+        address proxy = address(new OptinProxy{salt: salt}(_logic, $.REGISTRY, initialOwner, call_data));
+
         $.isInstance[proxy] = true;
-
         emit ProxyDeployed(proxy, msg.sender);
 
         return address(proxy);

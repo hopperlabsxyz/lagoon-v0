@@ -4,12 +4,14 @@ pragma solidity "0.8.26";
 import {ILogicRegistry} from "./protocol-v2/ILogicRegistry.sol";
 import {
     ERC1967Utils,
+    ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
 } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract OptinProxy is TransparentUpgradeableProxy {
     ILogicRegistry public immutable REGISTRY;
-    string public proxyVersion;
+
+    error UpdateNotAllowed();
 
     constructor(
         address _logic,
@@ -24,19 +26,27 @@ contract OptinProxy is TransparentUpgradeableProxy {
         if (_logic == address(0)) {
             return ILogicRegistry(_logicRegistry).defaultLogic();
         }
-        if (!REGISTRY.canUseLogic(_implementation(), _logic)) revert("can't update");
+        if (!ILogicRegistry(_logicRegistry).canUseLogic(_implementation(), _logic)) revert UpdateNotAllowed();
 
         return _logic;
     }
 
-    function upgradeToAndCall(address logic, bytes calldata _data) external payable {
-        if (!REGISTRY.canUseLogic(implementation(), logic)) revert("can't update");
-        ERC1967Utils.upgradeToAndCall(logic, _data);
+    /**
+     * @dev If caller is the admin process the call internally, otherwise transparently fallback to the proxy behavior.
+     */
+    function _fallback() internal virtual override {
+        if (msg.sender == _proxyAdmin()) {
+            if (msg.sig != ITransparentUpgradeableProxy.upgradeToAndCall.selector) {
+                revert ProxyDeniedAdminAccess();
+            } else {
+                (address newImplementation, bytes memory data) = abi.decode(msg.data[4:], (address, bytes));
+                if (!REGISTRY.canUseLogic(_implementation(), newImplementation)) revert UpdateNotAllowed();
+                ERC1967Utils.upgradeToAndCall(newImplementation, data);
+            }
+        } else {
+            super._fallback();
+        }
     }
 
-    function implementation() public view returns (address) {
-        return _implementation();
-    }
-
-    receive() external payable {} // to remove
+    receive() external payable {}
 }

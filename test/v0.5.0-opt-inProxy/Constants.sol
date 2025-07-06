@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import "./VaultHelper.sol";
+import {InitStruct as InitStructVault} from "@src/protocol-v2/OptinProxyFactory.sol";
 
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 
@@ -15,7 +16,7 @@ import {ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
-import {InitStruct as ProxyInitStruct, OptinProxyFactory} from "@src/protocol-v2/OptinProxyFactory.sol";
+import {OptinProxyFactory} from "@src/protocol-v2/OptinProxyFactory.sol";
 
 contract Constants is Test {
     // ERC20 tokens
@@ -89,14 +90,14 @@ contract Constants is Test {
         implementation = address(new VaultHelper(disableImplementationInit));
 
         // First we deploy the factory and initialize it
-        factory = new OptinProxyFactory();
+        factory = new OptinProxyFactory(false);
         factory.initialize(address(protocolRegistry), WRAPPED_NATIVE_TOKEN, dao.addr);
 
         // we add an implementation
         vm.prank(dao.addr);
         protocolRegistry.updateDefaultLogic(implementation);
-        ProxyInitStruct memory initStruct = ProxyInitStruct({
-            underlying: address(underlying),
+        InitStructVault memory initStruct = InitStructVault({
+            underlying: (underlying),
             name: vaultName,
             symbol: vaultSymbol,
             safe: safe.addr,
@@ -109,13 +110,8 @@ contract Constants is Test {
             rateUpdateCooldown: rateUpdateCooldown,
             enableWhitelist: enableWhitelist
         });
-        if (proxy) {
-            address vaultHelper = factory.createVaultProxy(address(0), initStruct.admin, initStruct, keccak256("42"));
-            vault = VaultHelper(vaultHelper);
-        } else {
-            vault = VaultHelper(implementation);
-            vault.initialize(abi.encode(initStruct), address(protocolRegistry), WRAPPED_NATIVE_TOKEN);
-        }
+        address vaultHelper = factory.createVaultProxy(address(0), initStruct.admin, initStruct, keccak256("42"));
+        vault = VaultHelper(vaultHelper);
 
         if (enableWhitelist) {
             whitelistInit.push(feeReceiver.addr);
