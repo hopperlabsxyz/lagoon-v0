@@ -115,8 +115,8 @@ jobs:
       - run: forge test -vvv
         env:
           PROXY: false
-        
-    test-wsoph-tac:
+
+  test-wbtc-tac:
     needs: setup
     name: WTAC TAC
     runs-on: ubuntu-latest
