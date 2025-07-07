@@ -34,7 +34,7 @@ contract DelayProxyAdmin is ProxyAdmin {
     uint256 public implementationUpdateTime;
 
     /// @notice The new `implementation` enforced after `upgradeAndCall`
-    address public implementation;
+    address public newImplementation;
 
     /// @notice The time at which `updateDelay` is callable
     uint256 public delayUpdateTime;
@@ -51,10 +51,37 @@ contract DelayProxyAdmin is ProxyAdmin {
     /// @param initialOwner The address that will own this contract
     /// @param initialDelay The initial delay period that must be waited before upgrades can be executed
     constructor(address initialOwner, uint256 initialDelay) ProxyAdmin(initialOwner) {
-        require(initialDelay >= MIN_DELAY, DelayTooLow(MIN_DELAY));
-        require(initialDelay <= MAX_DELAY, DelayTooHigh(MAX_DELAY));
+        if (initialDelay < MIN_DELAY) {
+            revert DelayTooLow(MIN_DELAY);
+        }
+        if (initialDelay > MAX_DELAY) {
+            revert DelayTooHigh(MAX_DELAY);
+        }
         implementationUpdateTime = type(uint256).max;
         delayUpdateTime = type(uint256).max;
+        delay = initialDelay;
+        emit DelayUpdated(initialDelay, 0);
+    }
+
+    /// @notice Submits a new delay period for future enforcement
+    /// @dev Starts the timelock period for the delay update
+    /// @param _delay The new delay period to be enforced after the timelock
+    ///
+    /// Requirements:
+    /// - Must be called by the owner
+    /// - The _delay must be within MIN_DELAY and MAX_DELAY bounds
+    function submitDelay(
+        uint256 _delay
+    ) external onlyOwner {
+        if (_delay < MIN_DELAY) {
+            revert DelayTooLow(MIN_DELAY);
+        }
+        if (_delay > MAX_DELAY) {
+            revert DelayTooHigh(MAX_DELAY);
+        }
+        newDelay = _delay;
+        delayUpdateTime = block.timestamp + delay;
+        emit DelayUpdateSubmited(delay, newDelay, delayUpdateTime);
     }
 
     /// @notice Updates the delay period to the previously submitted new delay
@@ -64,7 +91,9 @@ contract DelayProxyAdmin is ProxyAdmin {
     /// - Must be called by the owner
     /// - The delayUpdateTime must have passed
     function updateDelay() external onlyOwner {
-        require(block.timestamp > delayUpdateTime, DelayIsNotOver());
+        if (block.timestamp < delayUpdateTime) {
+            revert DelayIsNotOver();
+        }
         emit DelayUpdated(newDelay, delay);
         delay = newDelay;
     }
@@ -78,26 +107,9 @@ contract DelayProxyAdmin is ProxyAdmin {
     function submitImplementation(
         address _implementation
     ) external onlyOwner {
-        implementation = _implementation;
+        newImplementation = _implementation;
         implementationUpdateTime = block.timestamp + delay;
-        emit ImplementationUpdateSubmited(implementation, implementationUpdateTime);
-    }
-
-    /// @notice Submits a new delay period for future enforcement
-    /// @dev Starts the timelock period for the delay update
-    /// @param _delay The new delay period to be enforced after the timelock
-    ///
-    /// Requirements:
-    /// - Must be called by the owner
-    /// - The _delay must be within MIN_DELAY and MAX_DELAY bounds
-    function submitDelay(
-        uint256 _delay
-    ) external onlyOwner {
-        require(_delay >= MIN_DELAY, DelayTooLow(MIN_DELAY));
-        require(_delay <= MAX_DELAY, DelayTooHigh(MAX_DELAY));
-        newDelay = _delay;
-        delayUpdateTime = block.timestamp + delay;
-        emit DelayUpdateSubmited(delay, newDelay, delayUpdateTime);
+        emit ImplementationUpdateSubmited(newImplementation, implementationUpdateTime);
     }
 
     /// @dev Upgrades `proxy` to `implementation` and calls a function on the new implementation.
@@ -108,8 +120,10 @@ contract DelayProxyAdmin is ProxyAdmin {
     /// - This contract must be the admin of `proxy`.
     /// - If `data` is empty, `msg.value` must be zero.
     function upgradeAndCall(ITransparentUpgradeableProxy proxy, bytes memory data) external payable onlyOwner {
-        require(block.timestamp > implementationUpdateTime, DelayIsNotOver());
-        proxy.upgradeToAndCall{value: msg.value}(implementation, data);
-        implementation = address(0);
+        if (block.timestamp < implementationUpdateTime) {
+            revert DelayIsNotOver();
+        }
+        proxy.upgradeToAndCall{value: msg.value}(newImplementation, data);
+        newImplementation = address(0);
     }
 }

@@ -3,8 +3,6 @@ pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 
-import {IVersion} from "./IVersion.sol";
-
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 import {Vault} from "@src/v0.1.0/Vault.sol";
 
@@ -16,8 +14,8 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transp
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
-import {OptinProxy} from "@src/OptinProxy.sol";
 import {OptinProxyFactory} from "@src/protocol-v2/OptinProxyFactory.sol";
+import {OptinProxy} from "@src/proxy/OptinProxy.sol";
 
 import {ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 
@@ -114,7 +112,13 @@ contract Upgradable is Test {
         });
 
         // first we create a vault whome logic is a vault v0.4
-        vault = factory.createVaultProxy(v4, admin.addr, v, "0x1123");
+        vault = factory.createVaultProxy({
+            _logic: v4,
+            _initialOwner: admin.addr,
+            _init: v,
+            salt: "0x1123",
+            _initialDelay: 86_400
+        });
         assertEq(Vault5(vault).version(), "v0.4.0");
 
         bytes32 ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
@@ -138,5 +142,11 @@ contract Upgradable is Test {
         vm.prank(address(adminContract));
         vm.expectRevert(TransparentUpgradeableProxy.ProxyDeniedAdminAccess.selector);
         Vault4(vault).requestDeposit(1, address(0), address(0));
+
+        // we give up ownership, now any contract can be used as logic
+        vm.prank(dao.addr);
+        protocolRegistry.renounceOwnership();
+        vm.prank(adminContract.owner());
+        adminContract.upgradeAndCall(ITransparentUpgradeableProxy(vault), notApproved, "");
     }
 }

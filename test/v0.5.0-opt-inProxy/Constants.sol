@@ -110,7 +110,14 @@ contract Constants is Test {
             rateUpdateCooldown: rateUpdateCooldown,
             enableWhitelist: enableWhitelist
         });
-        address vaultHelper = factory.createVaultProxy(address(0), initStruct.admin, initStruct, keccak256("42"));
+        address vaultHelper = factory.createVaultProxy({
+            _logic: address(0),
+            _initialOwner: initStruct.admin,
+            _initialDelay: 86_400,
+            _init: initStruct,
+            salt: keccak256("42")
+        });
+
         vault = VaultHelper(vaultHelper);
 
         if (enableWhitelist) {

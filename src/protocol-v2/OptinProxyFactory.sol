@@ -3,7 +3,7 @@ pragma solidity "0.8.26";
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {OptinProxy} from "@src/OptinProxy.sol";
+import {OptinProxy} from "@src/proxy/OptinProxy.sol";
 
 interface IVault {
     function initialize(bytes memory data, address feeRegistry, address wrappedNativeToken) external;
@@ -98,20 +98,30 @@ contract OptinProxyFactory is OwnableUpgradeable {
     /// @notice Creates a new vault proxy with the given initialization parameters
     /// @dev Uses CREATE2 with salt for deterministic address calculation
     /// @param _logic Address of the initial logic implementation
-    /// @param initialOwner Address of the initial proxy owner
-    /// @param init Initialization parameters for the vault
+    /// @param _initialOwner Address of the initial proxy owner
+    /// @param _initialDelay The initial delay before which an upgrade can occur by the proxy admin
+    /// @param _init Initialization parameters for the vault
     /// @param salt Salt used for deterministic deployment
     /// @return The address of the newly created proxy
     function createVaultProxy(
         address _logic,
-        address initialOwner,
-        InitStruct calldata init,
+        address _initialOwner,
+        uint256 _initialDelay,
+        InitStruct calldata _init,
         bytes32 salt
     ) external returns (address) {
         OptinProxyFactoryStorage storage $ = _getProxyFactoryStorage();
-        bytes memory call_data = abi.encodeCall(IVault.initialize, (abi.encode(init), $.REGISTRY, $.WRAPPED_NATIVE));
+        bytes memory call_data = abi.encodeCall(IVault.initialize, (abi.encode(_init), $.REGISTRY, $.WRAPPED_NATIVE));
 
-        address proxy = address(new OptinProxy{salt: salt}(_logic, $.REGISTRY, initialOwner, call_data));
+        address proxy = address(
+            new OptinProxy{salt: salt}({
+                _logic: _logic,
+                _logicRegistry: $.REGISTRY,
+                _initialOwner: _initialOwner,
+                _initialDelay: _initialDelay,
+                _data: call_data
+            })
+        );
 
         $.isInstance[proxy] = true;
         emit ProxyDeployed(proxy, msg.sender);

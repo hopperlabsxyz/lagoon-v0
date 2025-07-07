@@ -86,7 +86,7 @@ contract OptinProxy is ERC1967Proxy {
         address _initialOwner,
         uint256 _initialDelay,
         bytes memory _data
-    ) payable ERC1967Proxy(_logic, _data) {
+    ) payable ERC1967Proxy(_logicAtConstruction(_logic, _logicRegistry), _data) {
         _admin = address(new DelayProxyAdmin(_initialOwner, _initialDelay));
         // Set the storage value and emit an event for ERC-1967 compatibility
         ERC1967Utils.changeAdmin(_proxyAdmin());
