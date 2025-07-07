@@ -63,7 +63,7 @@ contract DelayProxyAdmin is ProxyAdmin {
     /// Requirements:
     /// - Must be called by the owner
     /// - The delayUpdateTime must have passed
-    function updateDelay() public onlyOwner {
+    function updateDelay() external onlyOwner {
         require(block.timestamp > delayUpdateTime, DelayIsNotOver());
         emit DelayUpdated(newDelay, delay);
         delay = newDelay;
@@ -107,7 +107,7 @@ contract DelayProxyAdmin is ProxyAdmin {
     ///
     /// - This contract must be the admin of `proxy`.
     /// - If `data` is empty, `msg.value` must be zero.
-    function upgradeAndCall(ITransparentUpgradeableProxy proxy, bytes memory data) public payable onlyOwner {
+    function upgradeAndCall(ITransparentUpgradeableProxy proxy, bytes memory data) external payable onlyOwner {
         require(block.timestamp > implementationUpdateTime, DelayIsNotOver());
         proxy.upgradeToAndCall{value: msg.value}(implementation, data);
         implementation = address(0);
