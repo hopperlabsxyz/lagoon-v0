@@ -71,6 +71,7 @@ abstract contract LogicRegistry is Ownable2StepUpgradeable, ILogicRegistry {
     /// @param logic Address of the logic implementation to check
     /// @return True if the logic is whitelisted, false otherwise
     function canUseLogic(address fromLogic, address logic) public view returns (bool) {
+        if (owner() == address(0)) return true; // logic can always be used if the protocol renounceOwnership()
         return _getLogicRegistryStorage().whitelist[logic];
     }
 
