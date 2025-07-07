@@ -3,10 +3,14 @@ pragma solidity "0.8.26";
 
 import {ILogicRegistry} from "../protocol-v2/ILogicRegistry.sol";
 
-import {ERC1967Utils, ITransparentUpgradeableProxy, TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ERC1967Utils,
+    ITransparentUpgradeableProxy,
+    TransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IERC1967} from "@openzeppelin/contracts/interfaces/IERC1967.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {DelayProxyAdmin} from "./DelayProxyAdmin.sol";
 
@@ -69,10 +73,6 @@ contract OptinProxy is ERC1967Proxy {
     /// @notice Error thrown when an unauthorized logic update is attempted
     error UpdateNotAllowed();
 
-    /// @dev Initializes an upgradeable proxy managed by an instance of a {DelayProxyAdmin} with an `initialOwner`,
-    /// backed by the implementation at `_logic`, and optionally initialized with `_data` as explained in
-    /// {ERC1967Proxy-constructor}.
-    ///
     /// @notice Constructs the OptinProxy contract
     /// @dev Initializes the proxy with logic, registry, admin and initialization data
     /// @param _logic The initial logic implementation address (can be zero to use registry's default)
@@ -104,48 +104,33 @@ contract OptinProxy is ERC1967Proxy {
     /// @param _logic The proposed logic implementation address
     /// @param _logicRegistry The registry contract to check against
     /// @return The validated logic implementation address
-    function _logicAtConstruction(
-        address _logic,
-        address _logicRegistry
-    ) internal view returns (address) {
+    function _logicAtConstruction(address _logic, address _logicRegistry) internal view returns (address) {
         if (_logic == address(0)) {
             return ILogicRegistry(_logicRegistry).defaultLogic();
         }
-        if (
-            !ILogicRegistry(_logicRegistry).canUseLogic(
-                _implementation(),
-                _logic
-            )
-        ) revert UpdateNotAllowed();
+        if (!ILogicRegistry(_logicRegistry).canUseLogic(_implementation(), _logic)) revert UpdateNotAllowed();
 
         return _logic;
     }
 
-    /**
-     * @notice Handles fallback calls to the proxy
-     * @dev If caller is admin, processes upgrade calls with registry verification. Otherwise forwards transparently.
-     * @custom:behavior When msg.sender is admin:
-     *   - Only upgradeToAndCall calls are allowed
-     *   - Verifies new implementation with registry before upgrading
-     * @custom:behavior When msg.sender is not admin:
-     *   - Forwards call transparently to current implementation
-     */
+    /// @notice Handles fallback calls to the proxy
+    /// @dev If caller is admin, processes upgrade calls with registry verification. Otherwise forwards transparently.
+    /// @custom:behavior When msg.sender is admin:
+    ///   - Only upgradeToAndCall calls are allowed
+    ///   - Verifies new implementation with registry before upgrading
+    /// @custom:behavior When msg.sender is not admin:
+    ///   - Forwards call transparently to current implementation
     function _fallback() internal virtual override {
         if (msg.sender == _proxyAdmin()) {
-            if (
-                msg.sig !=
-                ITransparentUpgradeableProxy.upgradeToAndCall.selector
-            ) {
+            if (msg.sig != ITransparentUpgradeableProxy.upgradeToAndCall.selector) {
                 revert ProxyDeniedAdminAccess();
             } else {
                 // equivalent to TransparentUpgradeableProxy.dispatchUpgradeToAndCall
                 // with a check to the registry first.
-                (address newImplementation, bytes memory data) = abi.decode(
-                    msg.data[4:],
-                    (address, bytes)
-                );
-                if (!REGISTRY.canUseLogic(_implementation(), newImplementation))
+                (address newImplementation, bytes memory data) = abi.decode(msg.data[4:], (address, bytes));
+                if (!REGISTRY.canUseLogic(_implementation(), newImplementation)) {
                     revert UpdateNotAllowed();
+                }
                 ERC1967Utils.upgradeToAndCall(newImplementation, data);
             }
         } else {
@@ -153,18 +138,13 @@ contract OptinProxy is ERC1967Proxy {
         }
     }
 
-    /**
-     * @dev Upgrade the implementation of the proxy. See {ERC1967Utils-upgradeToAndCall}.
-     *
-     * Requirements:
-     *
-     * - If `data` is empty, `msg.value` must be zero.
-     */
+    /// @dev Upgrade the implementation of the proxy. See {ERC1967Utils-upgradeToAndCall}.
+    ///
+    /// Requirements:
+    ///
+    /// - If `data` is empty, `msg.value` must be zero.
     function _dispatchUpgradeToAndCall() private {
-        (address newImplementation, bytes memory data) = abi.decode(
-            msg.data[4:],
-            (address, bytes)
-        );
+        (address newImplementation, bytes memory data) = abi.decode(msg.data[4:], (address, bytes));
         ERC1967Utils.upgradeToAndCall(newImplementation, data);
     }
 
