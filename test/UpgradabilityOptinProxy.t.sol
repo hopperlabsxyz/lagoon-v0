@@ -134,7 +134,7 @@ contract Upgradable is Test {
         vm.expectRevert(OptinProxy.UpdateNotAllowed.selector);
         adminContract.upgradeAndCall(ITransparentUpgradeableProxy(vault), notApproved, "");
 
-        // we try to do something a vault call as the admin, it reverts
+        // we try to do a vault call as the admin, it reverts
         vm.prank(address(adminContract));
         vm.expectRevert(TransparentUpgradeableProxy.ProxyDeniedAdminAccess.selector);
         Vault4(vault).requestDeposit(1, address(0), address(0));
