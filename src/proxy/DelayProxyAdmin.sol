@@ -135,5 +135,6 @@ contract DelayProxyAdmin is ProxyAdmin {
         }
         proxy.upgradeToAndCall{value: msg.value}(newImplementation, data);
         newImplementation = address(0);
+        implementationUpdateTime = type(uint256).max;
     }
 }

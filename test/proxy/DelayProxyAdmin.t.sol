@@ -215,6 +215,29 @@ contract DelayProxyAdminTest is Test {
         proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(0x456)), newImplementation, "");
     }
 
+    function test_UpgradeAndCall_RevertsIfCallTwiceInRaw() public {
+        // Mock proxy
+        MockProxy mockProxy = new MockProxy(address(proxyAdmin));
+        assertEq(mockProxy.implementation(), address(0));
+        assertEq(proxyAdmin.newImplementation(), address(0));
+
+        address newImplementation = address(0x123);
+        vm.prank(owner);
+        proxyAdmin.submitImplementation(newImplementation);
+
+        vm.warp(block.timestamp + initialDelay + 1);
+
+        vm.prank(owner);
+        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(mockProxy)), address(newImplementation), "");
+
+        assertEq(mockProxy.implementation(), address(newImplementation));
+        assertEq(proxyAdmin.newImplementation(), address(0));
+
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(DelayProxyAdmin.DelayIsNotOver.selector));
+        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(mockProxy)), address(newImplementation), "");
+    }
+
     // Test initial state
     function test_InitialState() public view {
         assertEq(proxyAdmin.implementationUpdateTime(), type(uint256).max);
@@ -249,5 +272,31 @@ contract TestImplementation2 {
         uint256 _value
     ) public {
         value = _value;
+    }
+}
+
+contract MockProxy {
+    address public admin;
+    address public implementation;
+
+    constructor(
+        address _admin
+    ) {
+        admin = _admin;
+    }
+
+    fallback() external {
+        if (msg.sender == admin) {
+            if (msg.sig != ITransparentUpgradeableProxy.upgradeToAndCall.selector) {
+                revert("ProxyDeniedAdminAccess()");
+            } else {
+                // equivalent to TransparentUpgradeableProxy.dispatchUpgradeToAndCall
+                // with a check to the registry first.
+                (address newImplementation, bytes memory data) = abi.decode(msg.data[4:], (address, bytes));
+                implementation = newImplementation;
+            }
+        } else {
+            revert("not admin");
+        }
     }
 }
