@@ -9,10 +9,10 @@ import {Vault} from "@src/v0.1.0/Vault.sol";
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {DelayProxyAdmin} from "@src/proxy/DelayProxyAdmin.sol";
 
 import {OptinProxyFactory} from "@src/protocol-v2/OptinProxyFactory.sol";
 import {OptinProxy} from "@src/proxy/OptinProxy.sol";
@@ -122,18 +122,24 @@ contract Upgradable is Test {
         assertEq(Vault5(vault).version(), "v0.4.0");
 
         bytes32 ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
-        ProxyAdmin adminContract = ProxyAdmin(address(uint160(uint256(vm.load(vault, bytes32(ADMIN_SLOT))))));
+        DelayProxyAdmin adminContract = DelayProxyAdmin(address(uint160(uint256(vm.load(vault, bytes32(ADMIN_SLOT))))));
 
         // we update this vault to version v0.5
         address v5 = address(new Vault5(false));
         vm.prank(dao.addr);
         protocolRegistry.addLogic(v5);
         vm.prank(adminContract.owner());
+        adminContract.submitImplementation(v5);
+        vm.warp(block.timestamp + 2 days);
+        vm.prank(adminContract.owner());
         adminContract.upgradeAndCall(ITransparentUpgradeableProxy(vault), v5, "");
         assertEq(Vault5(vault).version(), "v0.5.0");
 
         // we try to update contract to a not approve contract, it reverts
         address notApproved = address(new Vault5(false));
+        vm.prank(adminContract.owner());
+        adminContract.submitImplementation(notApproved);
+        vm.warp(block.timestamp + 2 days);
         vm.prank(adminContract.owner());
         vm.expectRevert(OptinProxy.UpdateNotAllowed.selector);
         adminContract.upgradeAndCall(ITransparentUpgradeableProxy(vault), notApproved, "");
@@ -146,6 +152,10 @@ contract Upgradable is Test {
         // we give up ownership, now any contract can be used as logic
         vm.prank(dao.addr);
         protocolRegistry.renounceOwnership();
+
+        vm.prank(adminContract.owner());
+        adminContract.submitImplementation(notApproved);
+        vm.warp(block.timestamp + 2 days);
         vm.prank(adminContract.owner());
         adminContract.upgradeAndCall(ITransparentUpgradeableProxy(vault), notApproved, "");
     }

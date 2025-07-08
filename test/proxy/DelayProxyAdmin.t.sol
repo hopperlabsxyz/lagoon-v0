@@ -171,7 +171,7 @@ contract DelayProxyAdminTest is Test {
 
         // // Upgrade proxy
         vm.prank(owner);
-        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(proxy)), "");
+        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(proxy)), address(impl2), "");
 
         // // // Verify upgrade
         TestImplementation2 upgraded = TestImplementation2(address(proxy));
@@ -194,7 +194,7 @@ contract DelayProxyAdminTest is Test {
         );
 
         vm.prank(owner);
-        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(mockProxy), "");
+        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(mockProxy), newImplementation, "");
 
         assertEq(proxyAdmin.newImplementation(), address(0));
     }
@@ -202,7 +202,7 @@ contract DelayProxyAdminTest is Test {
     function test_UpgradeAndCall_RevertsIfNotOwner() public {
         vm.prank(nonOwner);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nonOwner));
-        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(0x123)), "");
+        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(0x123)), address(0), "");
     }
 
     function test_UpgradeAndCall_RevertsIfDelayNotOver() public {
@@ -212,7 +212,7 @@ contract DelayProxyAdminTest is Test {
 
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(DelayProxyAdmin.DelayIsNotOver.selector));
-        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(0x456)), "");
+        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(0x456)), newImplementation, "");
     }
 
     // Test initial state
