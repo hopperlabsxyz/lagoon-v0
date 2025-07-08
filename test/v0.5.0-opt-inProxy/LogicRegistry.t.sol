@@ -6,7 +6,9 @@ import {BaseTest} from "./Base.sol";
 import {ILogicRegistry} from "@src/protocol-v2/ILogicRegistry.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
+import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 import {LogicRegistry, ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 
 import {Test} from "forge-std/Test.sol";
@@ -15,12 +17,21 @@ import {console} from "forge-std/console.sol";
 
 contract LogicRegistryTest is BaseTest {
     ProtocolRegistry public logicRegistry;
+    FeeRegistry public feeRegistry;
     address public nonOwner = address(0x2);
     address public logic1 = address(0x10);
     address public logic2 = address(0x11);
     address public logic3 = address(0x12);
 
     function setUp() public {
+        // if (proxy) {
+        //     feeRegistry = Upgrades.deployTransparentProxy(
+        //         "protocol-v1/feeRegistry.sol:FeeRegistry",
+        //         owner.addr,
+        //         abi.encodeCall(FeeRegistry.initialize.selector, (owner.addr, owner.addr))
+        //     );
+        //     feeRegistry = Upgrades.upgradeProxy(feeRegistry, "protocol-v2/feeRegistry.sol:FeeRegistry",  );
+        // }
         logicRegistry = new ProtocolRegistry(false);
         logicRegistry.initialize(owner.addr, owner.addr);
         console.log(logicRegistry.owner());
