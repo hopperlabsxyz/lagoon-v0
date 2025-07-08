@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import {ILogicRegistry} from "./ILogicRegistry.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 /// @title LogicRegistry
 /// @notice Abstract contract for managing whitelisted logic implementations and default logic
 /// @dev Inherits from Ownable2StepUpgradeable to provide ownership functionality with 2-step transfer
 /// @dev Implements ILogicRegistry interface for standard registry functions
-abstract contract LogicRegistry is Ownable2StepUpgradeable, ILogicRegistry {
+abstract contract LogicRegistry is Ownable2StepUpgradeable {
+    error LogicNotWhitelisted(address Logic);
+
+    event DefaultLogicUpdated(address previous, address newImpl);
+    event LogicAdded(address Logic);
+    event LogicRemoved(address Logic);
+
     /// @custom:storage-location erc7201:hopper.storage.LogicRegistry
     /// @notice Storage layout for the LogicRegistry contract
     struct LogicRegistryStorage {

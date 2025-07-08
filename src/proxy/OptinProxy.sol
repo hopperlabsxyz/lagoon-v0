@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity "0.8.26";
 
-import {ILogicRegistry} from "../protocol-v2/ILogicRegistry.sol";
+import {LogicRegistry} from "../protocol-v2/LogicRegistry.sol";
 
 import {
     ERC1967Utils,
@@ -65,7 +65,7 @@ contract OptinProxy is ERC1967Proxy {
     address private immutable _admin;
 
     /// @notice The immutable logic registry contract that governs which logic implementations can be used
-    ILogicRegistry public immutable REGISTRY;
+    LogicRegistry public immutable REGISTRY;
 
     ///@notice The proxy caller is the current admin, and can't fallback to the proxy target.
     error ProxyDeniedAdminAccess();
@@ -91,7 +91,7 @@ contract OptinProxy is ERC1967Proxy {
         // Set the storage value and emit an event for ERC-1967 compatibility
         ERC1967Utils.changeAdmin(_proxyAdmin());
 
-        REGISTRY = ILogicRegistry(_logicRegistry);
+        REGISTRY = LogicRegistry(_logicRegistry);
     }
 
     /// @dev Returns the admin of this proxy.
@@ -106,9 +106,9 @@ contract OptinProxy is ERC1967Proxy {
     /// @return The validated logic implementation address
     function _logicAtConstruction(address _logic, address _logicRegistry) internal view returns (address) {
         if (_logic == address(0)) {
-            return ILogicRegistry(_logicRegistry).defaultLogic();
+            return LogicRegistry(_logicRegistry).defaultLogic();
         }
-        if (!ILogicRegistry(_logicRegistry).canUseLogic(_implementation(), _logic)) revert UpdateNotAllowed();
+        if (!LogicRegistry(_logicRegistry).canUseLogic(_implementation(), _logic)) revert UpdateNotAllowed();
 
         return _logic;
     }
@@ -137,7 +137,4 @@ contract OptinProxy is ERC1967Proxy {
             super._fallback();
         }
     }
-
-    // To remove /!\
-    receive() external payable {}
 }
