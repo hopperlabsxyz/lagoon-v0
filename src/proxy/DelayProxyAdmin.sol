@@ -124,14 +124,11 @@ contract DelayProxyAdmin is ProxyAdmin {
     /// - If `data` is empty, `msg.value` must be zero.
     function upgradeAndCall(
         ITransparentUpgradeableProxy proxy,
-        address implementation,
+        address,
         bytes memory data
     ) public payable override onlyOwner {
         if (block.timestamp < implementationUpdateTime) {
             revert DelayIsNotOver();
-        }
-        if (newImplementation != implementation) {
-            revert ImplenentationInconsistent(newImplementation);
         }
         proxy.upgradeToAndCall{value: msg.value}(newImplementation, data);
         newImplementation = address(0);
