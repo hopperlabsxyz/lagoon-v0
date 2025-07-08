@@ -138,16 +138,6 @@ contract OptinProxy is ERC1967Proxy {
         }
     }
 
-    /// @dev Upgrade the implementation of the proxy. See {ERC1967Utils-upgradeToAndCall}.
-    ///
-    /// Requirements:
-    ///
-    /// - If `data` is empty, `msg.value` must be zero.
-    function _dispatchUpgradeToAndCall() private {
-        (address newImplementation, bytes memory data) = abi.decode(msg.data[4:], (address, bytes));
-        ERC1967Utils.upgradeToAndCall(newImplementation, data);
-    }
-
     // To remove /!\
     receive() external payable {}
 }
