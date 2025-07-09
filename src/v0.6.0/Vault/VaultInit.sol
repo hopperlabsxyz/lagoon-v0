@@ -111,46 +111,27 @@ contract VaultInit is Vault_Storage, ERC7540, Whitelistable, FeeManager {
     // ## DEPOSIT AND REDEEM FLOW FUNCTIONS ## //
     /////////////////////////////////////////////
 
-    /// @param assets The amount of assets to deposit.
-    /// @param controller The address of the controller involved in the deposit request.
-    /// @param owner The address of the owner for whom the deposit is requested.
-    function requestDeposit(
-        uint256 assets,
-        address controller,
-        address owner
-    ) public payable override returns (uint256 requestId) {
+    function requestDeposit(uint256, address, address) public payable override returns (uint256) {
         return 0;
     }
 
-    /// @notice Requests the redemption of tokens, subject to whitelist validation.
-    /// @param shares The number of tokens to redeem.
-    /// @param controller The address of the controller involved in the redemption request.
-    /// @param owner The address of the token owner requesting redemption.
-    /// @return requestId The id of the redeem request.
-    function requestRedeem(uint256 shares, address controller, address owner) public returns (uint256 requestId) {
+    function requestRedeem(uint256, address, address) public returns (uint256) {
         return 0;
     }
 
-    /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
-    /// If possible, it also settles redeem requests.
-    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
     function settleDeposit(
-        uint256 _newTotalAssets
+        uint256
     ) public override {}
 
-    /// @notice Settles redeem requests, only callable by the safe.
-    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
-    /// @dev After updating totalAssets, it takes fees, updates highWaterMark and finally settles redeem requests.
-    /// @inheritdoc ERC7540
     function settleRedeem(
-        uint256 _newTotalAssets
+        uint256
     ) public override {}
 
     function isTotalAssetsValid() public view returns (bool) {
-        return block.timestamp < _getERC7540Storage().totalAssetsExpiration;
+        return false;
     }
 
     function safe() public view override returns (address) {
-        return _getRolesStorage().safe;
+        return address(0);
     }
 }
