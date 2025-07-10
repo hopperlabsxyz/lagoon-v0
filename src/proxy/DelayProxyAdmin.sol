@@ -99,6 +99,8 @@ contract DelayProxyAdmin is ProxyAdmin {
         }
         emit DelayUpdated(newDelay, delay);
         delay = newDelay;
+        newDelay = 0;
+        delayUpdateTime = type(uint256).max;
     }
 
     /// @notice Submits a new implementation address for future enforcement
