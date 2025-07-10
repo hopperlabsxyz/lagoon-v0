@@ -10,7 +10,7 @@ using SafeERC20 for IERC20;
 /// @dev This contract is used to hold the assets/shares of the users that
 /// requested a deposit/redeem. It is used to simplify the logic of the vault.
 contract Silo {
-    IWETH9 public wrappedNativeToken;
+    IWETH9 public immutable wrappedNativeToken;
 
     constructor(IERC20 underlying, address _wrappedNativeToken) {
         underlying.forceApprove(msg.sender, type(uint256).max);
