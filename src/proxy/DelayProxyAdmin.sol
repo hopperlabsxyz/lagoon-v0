@@ -5,6 +5,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+/// @custom:contact team@hopperlabs.xyz
 contract DelayProxyAdmin is ProxyAdmin {
     ///@notice The `delay` period is not terminated
     error DelayIsNotOver();
@@ -99,6 +100,8 @@ contract DelayProxyAdmin is ProxyAdmin {
         }
         emit DelayUpdated(newDelay, delay);
         delay = newDelay;
+        newDelay = 0;
+        delayUpdateTime = type(uint256).max;
     }
 
     /// @notice Submits a new implementation address for future enforcement

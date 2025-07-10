@@ -7,8 +7,10 @@ import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/acces
 /// @notice Abstract contract for managing whitelisted logic implementations and default logic
 /// @dev Inherits from Ownable2StepUpgradeable to provide ownership functionality with 2-step transfer
 /// @dev Implements ILogicRegistry interface for standard registry functions
+/// @custom:contact team@hopperlabs.xyz
 abstract contract LogicRegistry is Ownable2StepUpgradeable {
     error LogicNotWhitelisted(address Logic);
+    error CantRemoveDefaultLogic();
 
     event DefaultLogicUpdated(address previous, address newImpl);
     event LogicAdded(address Logic);
@@ -52,12 +54,15 @@ abstract contract LogicRegistry is Ownable2StepUpgradeable {
 
     /// @notice Removes a logic implementation from the whitelist
     /// @dev Only callable by owner. Does not affect default logic if removed.
-    /// @param _newLogic Address of the logic implementation to remove
+    /// @param _logic Address of the logic implementation to remove
     function removeLogic(
-        address _newLogic
+        address _logic
     ) public onlyOwner {
-        _getLogicRegistryStorage().whitelist[_newLogic] = false;
-        emit LogicRemoved(_newLogic);
+        if (_logic == _getLogicRegistryStorage().defaultLogic) {
+            revert CantRemoveDefaultLogic();
+        }
+        _getLogicRegistryStorage().whitelist[_logic] = false;
+        emit LogicRemoved(_logic);
     }
 
     /// @notice Adds a logic implementation to the whitelist

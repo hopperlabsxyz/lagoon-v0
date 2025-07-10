@@ -84,6 +84,22 @@ contract LogicRegistryTest is BaseTest {
         vm.stopPrank();
     }
 
+    function test_RemoveLogic_RevertIfDefault() public {
+        vm.startPrank(owner.addr);
+        logicRegistry.updateDefaultLogic(logic1);
+        vm.stopPrank();
+
+        vm.startPrank(owner.addr);
+        vm.expectRevert(LogicRegistry.CantRemoveDefaultLogic.selector);
+        logicRegistry.removeLogic(logic1);
+
+        // if we update DefaultLogic we should be able to remove logic1
+        logicRegistry.updateDefaultLogic(logic2);
+        logicRegistry.removeLogic(logic1);
+
+        vm.stopPrank();
+    }
+
     function test_UpdateDefaultLogic() public {
         vm.startPrank(owner.addr);
         logicRegistry.addLogic(logic1);

@@ -54,6 +54,7 @@ struct InitStruct {
 /// @title OptinProxyFactory
 /// @notice Factory contract for creating and managing OptinProxy instances
 /// @dev Inherits from OwnableUpgradeable to provide ownership functionality
+/// @custom:contact team@hopperlabs.xyz
 contract OptinProxyFactory is OwnableUpgradeable {
     /// @notice Emitted when a new proxy is deployed
     /// @param proxy Address of the newly deployed proxy
