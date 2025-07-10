@@ -58,6 +58,7 @@ struct InitStruct {
     uint256 rateUpdateCooldown;
 }
 
+/// @custom:contact team@hopperlabs.xyz
 /// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault
 contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @custom:storage-location erc7201:hopper.storage.vault

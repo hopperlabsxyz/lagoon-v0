@@ -9,6 +9,7 @@ import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/acces
 /// It allows the contract owner (the protocol) to set a default protocol fee rate, define custom fee rates
 /// for specific vaults, and manage the address that receives these protocol fees.
 /// Protocol fees represents a fraction (which is the rate) of the fees taken by the asset manager of the vault
+/// @custom:contact team@hopperlabs.xyz
 abstract contract FeeRegistry is Ownable2StepUpgradeable {
     struct CustomRate {
         bool isActivated;
