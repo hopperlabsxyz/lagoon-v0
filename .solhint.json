@@ -1,12 +1,14 @@
 {
   "extends": "solhint:recommended",
   "rules": {
+    "payable-fallback": "off",
     "private-vars-leading-underscore": "off",
     "func-visibility": [
       "warn",
       {
         "ignoreConstructors": true
       }
-    ]
+    ],
+    "ignorePath": ".solhintignore"
   }
 }

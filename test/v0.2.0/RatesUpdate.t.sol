@@ -7,7 +7,7 @@ import "forge-std/Test.sol";
 import {BaseTest} from "./Base.sol";
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 
 contract testRateUpdates is BaseTest {
     uint16 public constant MAX_MANAGEMENT_RATE = 1000; // 10 %

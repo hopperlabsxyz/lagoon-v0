@@ -16,7 +16,7 @@ CONTRACT_PATH=./src/BeaconProxyFactory.sol:BeaconProxyFactory
 CONTRACT_PATH=./lib/openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol:BeaconProxy
 CONTRACT_PATH=./lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy
 CONTRACT_PATH=./lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin
-CONTRACT_PATH=./src/protocol/FeeRegistry.sol:FeeRegistry
+CONTRACT_PATH=./src/protocol-v1/FeeRegistry.sol:FeeRegistry
 
 CHAIN_ID=43114
 RUNS=1 # If you try to verify a contract deployed by a factory make sure to use the amount of runs used to deployed the said factory

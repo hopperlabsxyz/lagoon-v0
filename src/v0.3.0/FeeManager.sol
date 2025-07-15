@@ -7,7 +7,7 @@ import {HighWaterMarkUpdated, RatesUpdated} from "./primitives/Events.sol";
 import {Rates} from "./primitives/Struct.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {FeeRegistry} from "@src/protocol/FeeRegistry.sol";
+import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant BPS_DIVIDER = 10_000; // 100 %

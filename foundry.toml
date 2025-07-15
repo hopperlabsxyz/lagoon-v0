@@ -11,7 +11,7 @@ extra_output = ["storageLayout"]
 optimizer = true
 optimizer_runs = 1
 solc_version = "0.8.26"
-evm_version = 'cancun'
+evm_version = 'shanghai'
 
 
 [fmt]
