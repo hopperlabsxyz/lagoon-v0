@@ -70,7 +70,11 @@ load_prod_env:
 clean:
 	@forge clean
 
-build:
+# Install dependency contracts with soldeer
+deps:
+	@soldeer install
+
+build: deps
 	@forge build
 
 clean-docker:
