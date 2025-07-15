@@ -56,7 +56,7 @@ abstract contract BatchScript is Script {
     address private SAFE_MULTISEND_ADDRESS;
 
     // Chain ID, configured by chain.
-    uint256 private chainId;
+    uint256 private chainId = block.chainid;
 
     // Safe API base URL, configured by chain.
     string private SAFE_API_BASE_URL;
@@ -101,8 +101,6 @@ abstract contract BatchScript is Script {
         address safe_
     ) {
         // Set the chain ID
-        Chain memory chain = getChain(vm.envString("CHAIN"));
-        chainId = chain.chainId;
 
         // Set the Safe API base URL and multisend address based on chain
         if (chainId == 1) {
@@ -212,13 +210,13 @@ abstract contract BatchScript is Script {
         }
         batch.data = abi.encodeWithSignature("multiSend(bytes)", data);
 
-        // Batch gas parameters can all be zero and don't need to be set
+        // // Batch gas parameters can all be zero and don't need to be set
 
         // Get the safe nonce
         batch.nonce = _getNonce(safe_);
 
         // Get the transaction hash
-        batch.txHash = _getTransactionHash(safe_, batch);
+        // batch.txHash = _getTransactionHash(safe_, batch);
     }
 
     function _signBatch(address safe_, Batch memory batch_) private returns (Batch memory) {
@@ -420,13 +418,11 @@ abstract contract BatchScript is Script {
         address safe_
     ) private returns (uint256) {
         string memory endpoint = string.concat(_getSafeAPIEndpoint(safe_), "?limit=1");
+        console2.log(endpoint);
         (uint256 status, bytes memory data) = endpoint.get();
         if (status == 200) {
             string memory resp = string(data);
-            string[] memory results;
-            results = resp.readStringArray(".results");
-            if (results.length == 0) return 0;
-            return resp.readUint(".results[0].nonce") + 1;
+            return resp.readUint(".countUniqueNonce");
         } else {
             revert("Get nonce failed!");
         }

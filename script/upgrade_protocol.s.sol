@@ -16,10 +16,13 @@ import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 */
 
 contract UpgradeProtocolRegistry is BatchScript {
+    address REGISTRY = vm.envAddress("FEE_REGISTRY");
+    address FEE_REGISTRY_ADMIN = vm.envAddress("FEE_REGISTRY_ADMIN");
+
     function upgradeProtocolRegistry(
         bool send,
         address _proxy,
-        address FEE_REGISTRY_ADMIN
+        address _FEE_REGISTRY_ADMIN
     ) internal returns (address) {
         console.log("--- deployProtocolRegistry() ---");
 
@@ -31,18 +34,15 @@ contract UpgradeProtocolRegistry is BatchScript {
         // ProxyAdmin(FEE_REGISTRY_ADMIN).upgradeAndCall(ITransparentUpgradeableProxy(_proxy), impl, "");
         bytes memory txn =
             abi.encodeWithSelector(ProxyAdmin.upgradeAndCall.selector, ITransparentUpgradeableProxy(_proxy), impl, "");
-        addToBatch(FEE_REGISTRY_ADMIN, 0, txn);
+        addToBatch(_FEE_REGISTRY_ADMIN, 0, txn);
         executeBatch(send);
         return address(impl);
     }
 
-    function run() external virtual {
-        address REGISTRY = vm.envAddress("FEE_REGISTRY");
-        address FEE_REGISTRY_ADMIN = vm.envAddress("FEE_REGISTRY_ADMIN");
-        bool send = vm.envBool("BROADCAST");
+    function run() external virtual isBatch(vm.envAddress("SAFE_ADDRESS")) {
         // vm.isBroadcastable
-        vm.startBroadcast();
-        upgradeProtocolRegistry(false, REGISTRY, FEE_REGISTRY_ADMIN);
-        vm.stopBroadcast();
+        // vm.startBroadcast();
+        upgradeProtocolRegistry(true, REGISTRY, FEE_REGISTRY_ADMIN);
+        // vm.stopBroadcast();
     }
 }
