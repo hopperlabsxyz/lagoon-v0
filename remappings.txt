@@ -3,4 +3,5 @@
 @openzeppelin/contracts/=dependencies/@openzeppelin-contracts-5.0.0/
 @src=src/
 @test=test/
+forge-safe/=dependencies/forge-safe/src/
 forge-std/=dependencies/forge-std-1.9.7/src/

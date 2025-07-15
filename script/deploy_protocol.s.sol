@@ -2,7 +2,8 @@
 pragma solidity 0.8.26;
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
+
+import {ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 import {Script, console} from "forge-std/Script.sol";
 
 import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
@@ -12,12 +13,12 @@ import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 */
 
 contract DeployProtocol is Script {
-    function deployFeeRegistry(
+    function deployProtocolRegistry(
         address _dao,
         address _protocolFeeReceiver,
         address _proxyAdmin
     ) internal returns (address) {
-        console.log("--- deployFeeRegistry() ---");
+        console.log("--- deployProtocolRegistry() ---");
 
         Options memory opts;
         opts.constructorData = abi.encode(true);
@@ -25,14 +26,14 @@ contract DeployProtocol is Script {
         TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
             payable(
                 Upgrades.deployTransparentProxy(
-                    "FeeRegistry.sol:FeeRegistry",
+                    "ProtocolRegistry.sol:ProtocolRegistry",
                     _proxyAdmin,
-                    abi.encodeWithSelector(FeeRegistry.initialize.selector, _dao, _protocolFeeReceiver),
+                    abi.encodeWithSelector(ProtocolRegistry.initialize.selector, _dao, _protocolFeeReceiver),
                     opts
                 )
             )
         );
-        console.log("FeeRegistry proxy address: ", address(proxy));
+        console.log("ProtocolRegistry proxy address: ", address(proxy));
 
         return address(proxy);
     }
@@ -43,7 +44,7 @@ contract DeployProtocol is Script {
         address PROXY_ADMIN = vm.envAddress("PROXY_ADMIN");
 
         vm.startBroadcast();
-        deployFeeRegistry(DAO, PROTOCOL_FEE_RECEIVER, PROXY_ADMIN);
+        deployProtocolRegistry(DAO, PROTOCOL_FEE_RECEIVER, PROXY_ADMIN);
         vm.stopBroadcast();
     }
 }

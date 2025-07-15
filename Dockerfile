@@ -1,8 +1,11 @@
 ARG NODE_VERSION=22.11.0
-FROM node:${NODE_VERSION}-alpine AS node
+FROM --platform=linux/amd64 node:${NODE_VERSION}-alpine AS node
+
+
+RUN node -v && npm -v && npx -v
 
 # Use the latest foundry image
-FROM ghcr.io/foundry-rs/foundry:v0.3.0
+FROM --platform=linux/amd64 ghcr.io/foundry-rs/foundry:v0.3.0
 
 RUN apk add --no-cache git bash
 
@@ -34,9 +37,7 @@ ARG ETH_MAINNET=0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
 ARG WBTC_MAINNET=0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599
 
 # clone vault repo
-RUN --mount=type=secret,id=PERSONAL_ACCESS_TOKEN \
-  PERSONAL_ACCESS_TOKEN=$(cat /run/secrets/PERSONAL_ACCESS_TOKEN) && \
-  git clone --branch ${GH_BRANCH} "https://$PERSONAL_ACCESS_TOKEN@github.com/hopperlabsxyz/lagoon-v0" vault
+RUN git clone --branch ${GH_BRANCH} "https://github.com/hopperlabsxyz/lagoon-v0" vault
 
 # Copy our source code into the container
 WORKDIR /vault
@@ -45,6 +46,7 @@ RUN npm install
 
 # build vault
 RUN forge clean
+RUN forge soldeer install
 RUN forge build
 RUN --mount=type=secret,id=RPC_URL \
   FOUNDRY_ETH_RPC_URL=$(cat /run/secrets/RPC_URL) \
