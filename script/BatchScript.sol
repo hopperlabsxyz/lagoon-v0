@@ -8,35 +8,12 @@ pragma solidity >=0.6.2 <0.9.0;
 import {Script, StdChains, StdStorage, VmSafe, console2, stdJson, stdMath, stdStorageSafe} from "forge-std/Script.sol";
 
 import {Surl} from "./Surl.l.sol";
+import {Script, console} from "forge-std/Script.sol";
 
 // ⭐️ SCRIPT
 abstract contract BatchScript is Script {
     using stdJson for string;
     using Surl for *;
-
-    //     "to": "<checksummed address>",
-    //     "value": 0, // Value in wei
-    //     "data": "<0x prefixed hex string>",
-    //     "operation": 0,  // 0 CALL, 1 DELEGATE_CALL
-    //     "safeTxGas": 0,  // Max gas to use in the transaction
-
-    // Used by refund mechanism, not needed here
-    //     "gasToken": "<checksummed address>", // Token address (hold by the Safe) to be used as a refund to the
-    // sender, if `null` is Ether
-    //     "baseGas": 0,  // Gast costs not related to the transaction execution (signature check, refund payment...)
-    //     "gasPrice": 0,  // Gas price used for the refund calculation
-    //     "refundReceiver": "<checksummed address>", //Address of receiver of gas payment (or `null` if tx.origin)
-
-    //     "nonce": 0,  // Nonce of the Safe, transaction cannot be executed until Safe's nonce is not equal to this
-    // nonce
-    //     "contractTransactionHash": "string",  // Contract transaction hash calculated from all the field
-    //     "sender": "<checksummed address>",  // Owner of the Safe proposing the transaction. Must match one of the
-    // signatures
-    //     "signature": "<0x prefixed hex string>",  // One or more ethereum ECDSA signatures of the
-    // `contractTransactionHash` as an hex string
-
-    // Not required
-    //     "origin": "string"  // Give more information about the transaction, e.g. "My Custom Safe app"
 
     // Hash constants
     // Safe version for this script, hashes below depend on this
@@ -51,9 +28,6 @@ abstract contract BatchScript is Script {
     // gasPrice,address gasToken,address refundReceiver,uint256 nonce)"
     // );
     bytes32 private constant SAFE_TX_TYPEHASH = 0xbb8310d486368db6bd6f849402fdd73ad53d316b5a4b2644ad6efe0f941286d8;
-
-    // Deterministic deployment address of the Gnosis Safe Multisend contract, configured by chain.
-    address private SAFE_MULTISEND_ADDRESS;
 
     // Chain ID, configured by chain.
     uint256 private chainId = block.chainid;
@@ -93,7 +67,15 @@ abstract contract BatchScript is Script {
         bytes signature;
     }
 
-    bytes[] public encodedTxns;
+    struct Transaction {
+        address to;
+        uint256 value;
+        bytes data;
+        Operation operation;
+    }
+
+    Transaction[] public transactions;
+    address public safe_signer;
 
     // Modifiers
 
@@ -102,22 +84,17 @@ abstract contract BatchScript is Script {
     ) {
         // Set the chain ID
 
-        // Set the Safe API base URL and multisend address based on chain
+        // Set the Safe API base URL based on chain
         if (chainId == 1) {
             SAFE_API_BASE_URL = "https://safe-transaction-mainnet.safe.global/api/v1/safes/";
-            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else if (chainId == 5) {
             SAFE_API_BASE_URL = "https://safe-transaction-goerli.safe.global/api/v1/safes/";
-            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else if (chainId == 8453) {
             SAFE_API_BASE_URL = "https://safe-transaction-base.safe.global/api/v1/safes/";
-            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else if (chainId == 42_161) {
             SAFE_API_BASE_URL = "https://safe-transaction-arbitrum.safe.global/api/v1/safes/";
-            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else if (chainId == 43_114) {
             SAFE_API_BASE_URL = "https://safe-transaction-avalanche.safe.global/api/v1/safes/";
-            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else {
             revert("Unsupported chain");
         }
@@ -130,7 +107,7 @@ abstract contract BatchScript is Script {
         if (walletType == LOCAL) {
             privateKey = vm.envBytes32("PRIVATE_KEY");
         } else if (walletType == LEDGER) {
-            mnemonicIndex = vm.envUint("MNEMONIC_INDEX");
+            safe_signer = vm.envAddress("SAFE_SIGNER");
         } else {
             revert("Unsupported wallet type");
         }
@@ -141,16 +118,9 @@ abstract contract BatchScript is Script {
 
     // Functions to consume in a script
 
-    // Adds an encoded transaction to the batch.
-    // Encodes the transaction as packed bytes of:
-    // - `operation` as a `uint8` with `0` for a `call` or `1` for a `delegatecall` (=> 1 byte),
-    // - `to` as an `address` (=> 20 bytes),
-    // - `value` as in msg.value, sent as a `uint256` (=> 32 bytes),
-    // -  length of `data` as a `uint256` (=> 32 bytes),
-    // - `data` as `bytes`.
     function addToBatch(address to_, uint256 value_, bytes memory data_) internal returns (bytes memory) {
-        // Add transaction to batch array
-        encodedTxns.push(abi.encodePacked(Operation.CALL, to_, value_, data_.length, data_));
+        // Add transaction to transactions array
+        transactions.push(Transaction({to: to_, value: value_, data: data_, operation: Operation.CALL}));
 
         // Simulate transaction and get return value
         vm.prank(safe);
@@ -162,11 +132,9 @@ abstract contract BatchScript is Script {
         }
     }
 
-    // Convenience funtion to add an encoded transaction to the batch, but passes
-    // 0 as the `value` (equivalent to msg.value) field.
     function addToBatch(address to_, bytes memory data_) internal returns (bytes memory) {
-        // Add transaction to batch array
-        encodedTxns.push(abi.encodePacked(Operation.CALL, to_, uint256(0), data_.length, data_));
+        // Add transaction to transactions array
+        transactions.push(Transaction({to: to_, value: 0, data: data_, operation: Operation.CALL}));
 
         // Simulate transaction and get return value
         vm.prank(safe);
@@ -178,58 +146,49 @@ abstract contract BatchScript is Script {
         }
     }
 
-    // Simulate then send the batch to the Safe API. If `send_` is `false`, the
-    // batch will only be simulated.
     function executeBatch(
         bool send_
     ) internal {
-        Batch memory batch = _createBatch(safe);
-        // _simulateBatch(safe, batch);
-        if (send_) {
-            batch = _signBatch(safe, batch);
-            _sendBatch(safe, batch);
+        uint256 nonce = _getNonce(safe);
+
+        for (uint256 i = 0; i < transactions.length; i++) {
+            Transaction memory txn = transactions[i];
+            Batch memory batch = Batch({
+                to: txn.to,
+                value: txn.value,
+                data: txn.data,
+                operation: txn.operation,
+                safeTxGas: 0,
+                baseGas: 0,
+                gasPrice: 0,
+                gasToken: address(0),
+                refundReceiver: address(0),
+                nonce: nonce + i,
+                txHash: bytes32(0),
+                signature: bytes("")
+            });
+
+            batch.txHash = _getTransactionHash(safe, batch);
+
+            if (send_) {
+                batch = _signBatch(safe, batch);
+                _sendBatch(safe, batch);
+            }
         }
-    }
-
-    // Private functions
-
-    // Encodes the stored encoded transactions into a single Multisend transaction
-    function _createBatch(
-        address safe_
-    ) private returns (Batch memory batch) {
-        // Set initial batch fields
-        batch.to = SAFE_MULTISEND_ADDRESS;
-        batch.value = 0;
-        batch.operation = Operation.DELEGATECALL;
-
-        // Encode the batch calldata. The list of transactions is tightly packed.
-        bytes memory data;
-        uint256 len = encodedTxns.length;
-        for (uint256 i; i < len; ++i) {
-            data = bytes.concat(data, encodedTxns[i]);
-        }
-        batch.data = abi.encodeWithSignature("multiSend(bytes)", data);
-
-        // // Batch gas parameters can all be zero and don't need to be set
-
-        // Get the safe nonce
-        batch.nonce = _getNonce(safe_);
-
-        // Get the transaction hash
-        // batch.txHash = _getTransactionHash(safe_, batch);
     }
 
     function _signBatch(address safe_, Batch memory batch_) private returns (Batch memory) {
         // Get the typed data to sign
         string memory typedData = _getTypedData(safe_, batch_);
-
         // Construct the sign command
         string memory commandStart = "cast wallet sign ";
         string memory wallet;
         if (walletType == LOCAL) {
             wallet = string.concat("--private-key ", vm.toString(privateKey), " ");
         } else if (walletType == LEDGER) {
-            wallet = string.concat("--ledger --mnemonic-index ", vm.toString(mnemonicIndex), " ");
+            console.log("safe_signer", safe_signer);
+            mnemonicIndex = 20;
+            wallet = string.concat("--ledger --mnemonic-index ", vm.toString(mnemonicIndex - 1), " ");
         } else {
             revert("Unsupported wallet type");
         }
@@ -266,8 +225,9 @@ abstract contract BatchScript is Script {
         placeholder.serialize("refundReceiver", address(0));
         placeholder.serialize("contractTransactionHash", batch_.txHash);
         placeholder.serialize("signature", batch_.signature);
-        string memory payload = placeholder.serialize("sender", msg.sender);
-
+        string memory payload = placeholder.serialize("sender", safe_signer);
+        console.log("payload");
+        console.log(payload);
         // Send batch
         (uint256 status, bytes memory data) = endpoint.post(_getHeaders(), payload);
 
@@ -279,10 +239,6 @@ abstract contract BatchScript is Script {
         }
     }
 
-    // Computes the EIP712 hash of a Safe transaction.
-    // Look at
-    // https://github.com/safe-global/safe-eth-py/blob/174053920e0717cc9924405e524012c5f953cd8f/gnosis/safe/safe_tx.py#L186
-    // and https://github.com/safe-global/safe-eth-py/blob/master/gnosis/eth/eip712/__init__.py
     function _getTransactionHash(address safe_, Batch memory batch_) private view returns (bytes32) {
         return keccak256(
             abi.encodePacked(
@@ -417,7 +373,7 @@ abstract contract BatchScript is Script {
     function _getNonce(
         address safe_
     ) private returns (uint256) {
-        string memory endpoint = string.concat(_getSafeAPIEndpoint(safe_), "?limit=1");
+        string memory endpoint = string.concat(_getSafeAPIEndpoint(safe_));
         console2.log(endpoint);
         (uint256 status, bytes memory data) = endpoint.get();
         if (status == 200) {
