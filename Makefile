@@ -50,6 +50,7 @@ DOCKER_RUN := docker run $(DOCKER_FLAGS)
 
 FULL_SCRIPT := script/deploy_local_fork.s.sol:DeployFull
 PROTOCOL_SCRIPT := script/deploy_protocol.s.sol:DeployProtocol
+UPGRADE_PROTOCOL_SCRIPT := script/upgrade_protocol.s.sol:UpgradeProtocolRegistry
 BEACON_SCRIPT := script/deploy_beacon.s.sol:DeployBeacon
 VAULT_SCRIPT := script/deploy_vault.s.sol:DeployVault 
 FACTORY_SCRIPT := script/deploy_factory.s.sol:DeployBeaconProxyFactory 
@@ -115,7 +116,7 @@ start-fork: load_prod_env
 stop-fork: load_prod_env
 	docker compose --env-file $$ENV_DEPLOY down local-fork
 
-################### PROTOCOL #################### 
+################### DEPLOY PROTOCOL #################### 
 
 # simulation
 protocol: load_prod_env clean
@@ -131,6 +132,7 @@ deploy-protocol-pk: load_prod_env
 deploy-protocol-ledger: load_prod_env clean
 	@echo "Deploying FeeRegistry..."
 	forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(PROTOCOL_SCRIPT)
+
 
 ################### VAULT ##################### 
 
