@@ -6,6 +6,7 @@ import {
     ProxyAdmin
 } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+import {BeaconProxyFactory} from "@src/protocol-v1/BeaconProxyFactory.sol";
 import {OptinProxyFactory} from "@src/protocol-v2/OptinProxyFactory.sol";
 import {LogicRegistry, ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 import {Script, console} from "forge-std/Script.sol";
@@ -13,45 +14,53 @@ import {Script, console} from "forge-std/Script.sol";
 import {BatchScript} from "./BatchScript.sol";
 import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 /*
-  run `make protocol` to deploy this script
+ This script will deploy the OptinProxyFactory, propose safe txs to:
+ - update the fee registry with the logicRegistry 
+ - update the default implementation in the logic registry
 */
 
 contract UpgradeProtocolRegistry is BatchScript {
-    address REGISTRY = vm.envAddress("FEE_REGISTRY");
+    address registry;
     address FEE_REGISTRY_ADMIN = vm.envAddress("FEE_REGISTRY_ADMIN");
     uint256 deploymentPk = vm.envUint("PK");
-    address defaultLogic = vm.envAddress("DEFAULT_LOGIC");
+    address defaultLogic;
     address DAO = vm.envAddress("DAO");
-    address wrappedNativeToken = vm.envAddress("WRAPPED_NATIVE_TOKEN");
-
-    function upgradeProtocolRegistry(address _proxy, address _FEE_REGISTRY_ADMIN, address _impl) internal {
-        bytes memory txn =
-            abi.encodeWithSelector(ProxyAdmin.upgradeAndCall.selector, ITransparentUpgradeableProxy(_proxy), _impl, "");
-        addToBatch(_FEE_REGISTRY_ADMIN, 0, txn);
-    }
-
-    function addDefaultLogic(address logic, address registry) internal {
-        bytes memory txn = abi.encodeWithSelector(LogicRegistry.updateDefaultLogic.selector, logic);
-        addToBatch(registry, 0, txn);
-    }
-
-    function deployOptinFactory(address registry, address _wrappedNativeToken) public {
-        Options memory opts;
-        opts.constructorData = abi.encode(true);
-        bytes memory init =
-            abi.encodeWithSelector(OptinProxyFactory.initialize.selector, registry, _wrappedNativeToken, DAO);
-        Upgrades.deployTransparentProxy("OptinProxyFactory.sol:OptinProxyFactory", DAO, init, opts);
-    }
+    address wrappedNativeToken;
+    BeaconProxyFactory beaconFactory = BeaconProxyFactory(vm.envAddress("BEACON_FACTORY"));
 
     function run() external virtual isBatch(vm.envAddress("SAFE_ADDRESS")) {
         // vm.isBroadcastable
+        registry = beaconFactory.REGISTRY();
+        wrappedNativeToken = beaconFactory.WRAPPED_NATIVE();
+        defaultLogic = beaconFactory.implementation();
 
-        // vm.startBroadcast(deploymentPk);
-        // address impl = address(new ProtocolRegistry(true));
-        // vm.stopBroadcast();
-        // upgradeProtocolRegistry(REGISTRY, FEE_REGISTRY_ADMIN, 0xd039Ee9e7d6B3cfEa29250A7D559A4dDB21B25E2);
-        // addDefaultLogic(defaultLogic, REGISTRY);
-        deployOptinFactory(REGISTRY, wrappedNativeToken);
+        vm.startBroadcast(deploymentPk);
+        address impl = address(new ProtocolRegistry(true));
+        deployOptinFactory(registry, wrappedNativeToken);
+        vm.stopBroadcast();
+
+        upgradeProtocolRegistry(registry, FEE_REGISTRY_ADMIN, impl);
+        addDefaultLogic(defaultLogic, registry);
         executeBatch(true);
+    }
+
+    function upgradeProtocolRegistry(address _registry, address _FEE_REGISTRY_ADMIN, address _impl) internal {
+        bytes memory txn = abi.encodeWithSelector(
+            ProxyAdmin.upgradeAndCall.selector, ITransparentUpgradeableProxy(_registry), _impl, ""
+        );
+        addToBatch(_FEE_REGISTRY_ADMIN, 0, txn);
+    }
+
+    function addDefaultLogic(address logic, address _registry) internal {
+        bytes memory txn = abi.encodeWithSelector(LogicRegistry.updateDefaultLogic.selector, logic);
+        addToBatch(_registry, 0, txn);
+    }
+
+    function deployOptinFactory(address _registry, address _wrappedNativeToken) public {
+        Options memory opts;
+        opts.constructorData = abi.encode(true);
+        bytes memory init =
+            abi.encodeWithSelector(OptinProxyFactory.initialize.selector, _registry, _wrappedNativeToken, DAO);
+        Upgrades.deployTransparentProxy("OptinProxyFactory.sol:OptinProxyFactory", DAO, init, opts);
     }
 }

@@ -374,7 +374,6 @@ abstract contract BatchScript is Script {
         address safe_
     ) private returns (uint256) {
         string memory endpoint = string.concat(_getSafeAPIEndpoint(safe_));
-        console2.log(endpoint);
         (uint256 status, bytes memory data) = endpoint.get();
         if (status == 200) {
             string memory resp = string(data);
