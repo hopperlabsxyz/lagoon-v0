@@ -130,24 +130,6 @@ deploy-protocol-ledger: load_prod_env clean
 	forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(PROTOCOL_SCRIPT)
 
 
-################### UPGRADE PROTOCOL #################### 
-
-# simulation
-protocol: load_prod_env clean
-	@echo "Upgrading Protocol registry..."
-	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(DEPLOYER_FLAGS) $(UPGRADE_PROTOCOL_SCRIPT)
- 
-# pk broadcast
-deploy-protocol-pk: load_prod_env
-	@echo "Upgrading Protocol registry..."
-	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(PK_FLAGS) $(VERIFY_FLAGS) $(UPGRADE_PROTOCOL_SCRIPT)
-
-# ledger broadcast
-deploy-protocol-ledger: load_prod_env clean
-	@echo "Upgrading Protocol registry..."
-	forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(UPGRADE_PROTOCOL_SCRIPT)
-
-
 ################### VAULT ##################### 
 
 # simulation
