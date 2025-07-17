@@ -1,11 +1,11 @@
 ARG NODE_VERSION=22.11.0
-FROM --platform=linux/amd64 node:${NODE_VERSION}-alpine AS node
+FROM node:${NODE_VERSION}-alpine AS node
 
 
 RUN node -v && npm -v && npx -v
 
 # Use the latest foundry image
-FROM --platform=linux/amd64 ghcr.io/foundry-rs/foundry:v0.3.0
+FROM ghcr.io/foundry-rs/foundry:v0.3.0
 
 RUN apk add --no-cache git bash
 
