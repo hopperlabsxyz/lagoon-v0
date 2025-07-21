@@ -181,6 +181,16 @@ if [ ! -z "$CONSTRUCTOR_ARGS" ]; then
   CONSTRUCTOR_ARGS_PARAM="--constructor-args $CONSTRUCTOR_ARGS"
 fi
 
+echo Running: "forge verify-contract \
+  --chain-id $CHAIN_ID \
+  --num-of-optimizations $RUNS \
+  --watch \
+  $CONSTRUCTOR_ARGS_PARAM \
+  --etherscan-api-key $ETHERSCAN_API_KEY \
+  --compiler-version $COMPILER_VERSION \
+  $ADDRESS \
+  "$SELECTED_CONTRACT""
+
 # Run forge verify-contract
 forge verify-contract \
   --chain-id $CHAIN_ID \
@@ -191,3 +201,5 @@ forge verify-contract \
   --compiler-version $COMPILER_VERSION \
   $ADDRESS \
   "$SELECTED_CONTRACT"
+
+
