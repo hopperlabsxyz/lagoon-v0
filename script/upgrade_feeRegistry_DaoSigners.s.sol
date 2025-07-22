@@ -42,8 +42,7 @@ contract UpgradeProtocolRegistry is UpdateDaoSigners {
 
         vm.startBroadcast(deploymentPk);
         // address impl = address(new ProtocolRegistry(true));
-        new Vault(true);
-        // deployOptinFactory(registry, wrappedNativeToken);
+        deployOptinFactory(registry, wrappedNativeToken);
         vm.stopBroadcast();
 
         // swapSigner(DAO, prevOwner, oldSigner, newSigner);
