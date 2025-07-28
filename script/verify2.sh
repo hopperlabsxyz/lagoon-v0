@@ -32,6 +32,8 @@ declare -a CONTRACTS=(
   "./dependencies/@openzeppelin-contracts-5.0.0/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy"
   "./dependencies/@openzeppelin-contracts-5.0.0/proxy/transparent/ProxyAdmin.sol:ProxyAdmin"
   "./src/protocol-v1/FeeRegistry.sol:FeeRegistry"
+  "./src/protocol-v2/ProtocolRegistry.sol:ProtocolRegistry"
+
 )
 
 # Function to display help
