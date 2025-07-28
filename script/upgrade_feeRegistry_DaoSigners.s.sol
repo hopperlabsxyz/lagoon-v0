@@ -12,7 +12,7 @@ import {LogicRegistry, ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry
 import {Script, console} from "forge-std/Script.sol";
 
 import {Vault} from "../src/v0.5.0/Vault.sol";
-import {UpdateDaoSigners} from "./subscripts/upgrade_daoSigners.s.sol";
+import {UpdateDaoSigners} from "./safe_scripts/upgrade_daoSigners.s.sol";
 import {BatchScript} from "./tools/BatchScript.sol";
 import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 /*
