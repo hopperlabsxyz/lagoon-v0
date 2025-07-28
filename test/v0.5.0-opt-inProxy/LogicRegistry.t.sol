@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 import {BaseTest} from "./Base.sol";
 
-
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
@@ -48,7 +47,6 @@ contract LogicRegistryTest is BaseTest {
         vm.expectEmit(true, false, false, false, address(logicRegistry));
 
         emit LogicRegistry.LogicAdded(logic1);
-
 
         logicRegistry.addLogic(logic1);
 
@@ -105,7 +103,6 @@ contract LogicRegistryTest is BaseTest {
 
         vm.stopPrank();
     }
-
 
     function test_UpdateDefaultLogic() public {
         vm.startPrank(owner.addr);

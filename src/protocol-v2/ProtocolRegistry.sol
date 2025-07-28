@@ -4,7 +4,6 @@ pragma solidity "0.8.26";
 import {FeeRegistry} from "./FeeRegistry.sol";
 import {LogicRegistry} from "./LogicRegistry.sol";
 
-
 /// @custom:contact team@hopperlabs.xyz
 /// @custom:oz-upgrades-from src/protocol-v1/FeeRegistry.sol:FeeRegistry
 

@@ -5,7 +5,6 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {OptinProxy} from "@src/proxy/OptinProxy.sol";
 
-
 interface IVault {
     function initialize(bytes memory data, address feeRegistry, address wrappedNativeToken) external;
 }
