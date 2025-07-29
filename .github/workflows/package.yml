@@ -4,7 +4,7 @@ name: Create and publish a Docker image
 # Configures this workflow to run every time a change is pushed to the branch called `release`.
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize, reopened]
   push:
     branches: ["main"]
 
