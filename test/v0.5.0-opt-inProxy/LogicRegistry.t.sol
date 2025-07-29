@@ -3,10 +3,12 @@ pragma solidity ^0.8.26;
 
 import {BaseTest} from "./Base.sol";
 
+
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
+
 import {LogicRegistry, ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 
 import {Test} from "forge-std/Test.sol";
@@ -44,7 +46,9 @@ contract LogicRegistryTest is BaseTest {
         vm.startPrank(owner.addr);
 
         vm.expectEmit(true, false, false, false, address(logicRegistry));
+
         emit LogicRegistry.LogicAdded(logic1);
+
 
         logicRegistry.addLogic(logic1);
 
@@ -65,7 +69,9 @@ contract LogicRegistryTest is BaseTest {
         logicRegistry.addLogic(logic1);
 
         vm.expectEmit(true, true, true, true, address(logicRegistry));
+
         emit LogicRegistry.LogicRemoved(logic1);
+
         logicRegistry.removeLogic(logic1);
 
         assertFalse(logicRegistry.canUseLogic(address(0), logic1));
@@ -100,12 +106,15 @@ contract LogicRegistryTest is BaseTest {
         vm.stopPrank();
     }
 
+
     function test_UpdateDefaultLogic() public {
         vm.startPrank(owner.addr);
         logicRegistry.addLogic(logic1);
 
         vm.expectEmit(true, true, true, true);
+
         emit LogicRegistry.DefaultLogicUpdated(address(0), logic1);
+
         logicRegistry.updateDefaultLogic(logic1);
 
         assertEq(logicRegistry.defaultLogic(), logic1);
@@ -116,6 +125,7 @@ contract LogicRegistryTest is BaseTest {
         vm.startPrank(owner.addr);
 
         vm.expectEmit(true, true, true, true);
+
         emit LogicRegistry.LogicAdded(logic1);
 
         vm.expectEmit(true, true, true, true);

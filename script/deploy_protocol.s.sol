@@ -2,10 +2,8 @@
 pragma solidity 0.8.26;
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-
 import {ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 import {Script, console} from "forge-std/Script.sol";
-
 import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 /*
