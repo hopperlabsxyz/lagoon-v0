@@ -44,11 +44,6 @@ contract UpgradeProtocolRegistry is UpdateDaoSigners {
         // address impl = address(new ProtocolRegistry(true));
         deployOptinFactory(registry, wrappedNativeToken);
         vm.stopBroadcast();
-
-        // swapSigner(DAO, prevOwner, oldSigner, newSigner);
-        // upgradeProtocolRegistry(registry, FEE_REGISTRY_ADMIN, impl);
-        // addDefaultLogic(defaultLogic, registry);
-        // executeBatch(true);
     }
 
     function upgradeProtocolRegistry(address _registry, address _FEE_REGISTRY_ADMIN, address _impl) internal {
