@@ -87,7 +87,6 @@ build-image: load_dev_env
 	  --build-arg FOUNDRY_FFI=$(FOUNDRY_FFI) \
 		--build-arg PROXY=$(PROXY) \
 		--secret "id=RPC_URL" \
-		--secret "id=PERSONAL_ACCESS_TOKEN" \
 		--platform linux/x86_64 \
 		--no-cache \
 		--progress=plain \
