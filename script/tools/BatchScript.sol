@@ -7,7 +7,7 @@ pragma solidity >=0.6.2 <0.9.0;
 // 🧩 MODULES
 import {Script, StdChains, StdStorage, VmSafe, console2, stdJson, stdMath, stdStorageSafe} from "forge-std/Script.sol";
 
-import {Surl} from "./Surl.l.sol";
+import {Surl} from "./Surl.sol";
 import {Script, console} from "forge-std/Script.sol";
 
 // ⭐️ SCRIPT
@@ -95,10 +95,23 @@ abstract contract BatchScript is Script {
             SAFE_API_BASE_URL = "https://safe-transaction-arbitrum.safe.global/api/v1/safes/";
         } else if (chainId == 43_114) {
             SAFE_API_BASE_URL = "https://safe-transaction-avalanche.safe.global/api/v1/safes/";
+        } else if (chainId == 80_094) {
+            SAFE_API_BASE_URL = "https://safe-transaction-berachain.safe.global/api/v1/safes/";
+        } else if (chainId == 747_474) {
+            SAFE_API_BASE_URL = "https://safe-transaction-katana.safe.global/api/v1/safes/";
+        } else if (chainId == 5000) {
+            SAFE_API_BASE_URL = "https://safe-transaction-mantle.safe.global/api/v1/safes/";
+        } else if (chainId == 239) {
+            SAFE_API_BASE_URL = "https://transaction.safe.tac.build/api/v1/safes/";
+        } else if (chainId == 130) {
+            SAFE_API_BASE_URL = "https://safe-transaction-unichain.safe.global/api/v1/safes/";
+        } else if (chainId == 480) {
+            SAFE_API_BASE_URL = "https://safe-transaction-worldchain.safe.global/api/v1/safes/";
+        } else if (chainId == 146) {
+            SAFE_API_BASE_URL = "https://safe-transaction-sonic.safe.global/api/v1/safes/";
         } else {
             revert("Unsupported chain");
         }
-
         // Store the provided safe address
         safe = safe_;
 

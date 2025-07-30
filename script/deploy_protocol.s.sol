@@ -13,6 +13,14 @@ import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 */
 
 contract DeployProtocol is Script {
+    function run() external virtual {
+        address DAO = vm.envAddress("DAO");
+
+        vm.startBroadcast();
+        deployProtocolRegistry(DAO, DAO, DAO);
+        vm.stopBroadcast();
+    }
+
     function deployProtocolRegistry(
         address _dao,
         address _protocolFeeReceiver,
@@ -36,15 +44,5 @@ contract DeployProtocol is Script {
         console.log("ProtocolRegistry proxy address: ", address(proxy));
 
         return address(proxy);
-    }
-
-    function run() external virtual {
-        address DAO = vm.envAddress("DAO");
-        address PROTOCOL_FEE_RECEIVER = vm.envAddress("PROTOCOL_FEE_RECEIVER");
-        address PROXY_ADMIN = vm.envAddress("PROXY_ADMIN");
-
-        vm.startBroadcast();
-        deployProtocolRegistry(DAO, PROTOCOL_FEE_RECEIVER, PROXY_ADMIN);
-        vm.stopBroadcast();
     }
 }

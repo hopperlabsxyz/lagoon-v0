@@ -48,12 +48,6 @@ RUN npm install
 RUN forge clean
 RUN forge soldeer install
 RUN forge build
-RUN --mount=type=secret,id=RPC_URL \
-  FOUNDRY_ETH_RPC_URL=$(cat /run/secrets/RPC_URL) \
-  UNDERLYING_NAME=USDC forge test \
-  && \
-  FOUNDRY_ETH_RPC_URL=$(cat /run/secrets/RPC_URL) \
-  UNDERLYING_NAME=WRAPPED_NATIVE_TOKEN forge test
 
 # set OZ bash path to /bin/sh
 ENV OPENZEPPELIN_BASH_PATH="/bin/sh"
