@@ -18,8 +18,14 @@ contract DeployImplementation is Script {
     function run() external virtual {
         // ex: v0.3.0
         string memory tag = vm.envString("VERSION_TAG");
-
         vm.startBroadcast();
+        deployImplementation(tag);
+        vm.stopBroadcast();
+    }
+
+    function deployImplementation(
+        string memory tag
+    ) public returns (address) {
         Options memory opts;
         opts.constructorData = abi.encode(true);
         IMPLEMENTATION = Upgrades.deployImplementation(string.concat(tag, "/Vault.sol:Vault"), opts);
@@ -31,7 +37,7 @@ contract DeployImplementation is Script {
             console.log("\x1b[33mWarning!\x1b[0m There is no `version()` on the contract deployed");
         }
 
-        vm.stopBroadcast();
         console.log("Implementation address: ", IMPLEMENTATION);
+        return IMPLEMENTATION;
     }
 }

@@ -13,24 +13,6 @@ import {IVersion} from "@test/IVersion.sol";
 */
 
 contract DeployBeaconProxyFactory is Script {
-    function deployBeaconProxyFactory(
-        address _registry,
-        address _implementation,
-        address _owner,
-        address _wrappedNativeToken
-    ) internal returns (address) {
-        console.log("--- deployBeaconProxyFactory() ---");
-        console.log("Protocol registry:  ", _registry);
-        console.log("Implementation:  ", _implementation);
-        console.log("Owner:  ", _owner);
-
-        BeaconProxyFactory beaconProxyFactory =
-            new BeaconProxyFactory(_registry, _implementation, _owner, _wrappedNativeToken);
-
-        console.log("Beacon proxy factory  address:", address(beaconProxyFactory));
-        return address(beaconProxyFactory);
-    }
-
     function run() external virtual {
         address FEE_REGISTRY = vm.envAddress("FEE_REGISTRY");
         address BEACON_OWNER = vm.envAddress("BEACON_OWNER");
@@ -66,5 +48,23 @@ contract DeployBeaconProxyFactory is Script {
         require(beaconProxyFactory.owner() == BEACON_OWNER, "wrong beacon owner");
 
         vm.stopBroadcast();
+    }
+
+    function deployBeaconProxyFactory(
+        address _registry,
+        address _implementation,
+        address _owner,
+        address _wrappedNativeToken
+    ) internal returns (address) {
+        console.log("--- deployBeaconProxyFactory() ---");
+        console.log("Protocol registry:  ", _registry);
+        console.log("Implementation:  ", _implementation);
+        console.log("Owner:  ", _owner);
+
+        BeaconProxyFactory beaconProxyFactory =
+            new BeaconProxyFactory(_registry, _implementation, _owner, _wrappedNativeToken);
+
+        console.log("Beacon proxy factory  address:", address(beaconProxyFactory));
+        return address(beaconProxyFactory);
     }
 }

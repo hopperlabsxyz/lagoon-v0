@@ -191,3 +191,16 @@ forge verify-contract \
   --compiler-version $COMPILER_VERSION \
   $ADDRESS \
   "$SELECTED_CONTRACT"
+
+
+
+forge verify-contract \
+  --chain-id 56 \
+  --num-of-optimizations 1 \
+  --watch \
+  --compiler-version "v0.8.26+commit.8a97fa7a" \
+  0xE50554ec802375C9c3F9c087a8a7bb8C26d3DEDf \
+    "./src/v0.5.0/Vault.sol:Vault" \
+  --skip-is-verified-check \
+  --evm-version "cancun" \
+  --constructor-args 0000000000000000000000000000000000000000000000000000000000000001
