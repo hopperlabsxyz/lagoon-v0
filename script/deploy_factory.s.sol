@@ -16,7 +16,6 @@ contract DeployOptinProxyFactory is Script {
     function run() external virtual {
         address FEE_REGISTRY = vm.envAddress("REGISTRY");
         address DAO = vm.envAddress("DAO");
-
         address WRAPPED_NATIVE_TOKEN = vm.envAddress("WRAPPED_NATIVE_TOKEN");
 
         vm.startBroadcast();

@@ -138,17 +138,17 @@ deploy-protocol-ledger: load_prod_env clean
 # simulation
 registry: load_prod_env clean
 	@echo "Deploying Registry..."
-	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(DEPLOYER_FLAGS) $(PROTOCOL_SCRIPT)
+	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(DEPLOYER_FLAGS) $(REGISTRY_SCRIPT)
  
 # pk broadcast
-deploy-protocol-pk: load_prod_env
+deploy-registry-pk: load_prod_env
 	@echo "Deploying FeeRegistry..."
-	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(PK_FLAGS) $(VERIFY_FLAGS) $(PROTOCOL_SCRIPT)
+	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(PK_FLAGS) $(VERIFY_FLAGS) $(REGISTRY_SCRIPT)
 
 # ledger broadcast
-deploy-protocol-ledger: load_prod_env clean
+deploy-registry-ledger: load_prod_env clean
 	@echo "Deploying FeeRegistry..."
-	forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(PROTOCOL_SCRIPT)
+	forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(REGISTRY_SCRIPT)
 
 
 ################### VAULT ##################### 
