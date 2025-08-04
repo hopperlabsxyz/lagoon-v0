@@ -13,7 +13,7 @@
 #   ./script/verify.sh -c 1 -a 0x123... -k YOUR_API_KEY  # Verify Vault contract
 #   ./script/verify.sh --help              # Show help
 
-Default values
+# Default values
 ADDRESS=""
 CONSTRUCTOR_ARGS=""
 ETHERSCAN_API_KEY=""
