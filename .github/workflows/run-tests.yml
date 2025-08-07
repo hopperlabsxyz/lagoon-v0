@@ -43,7 +43,7 @@ jobs:
   # Mantle Tests (run in parallel with Mainnet tests)
   test-wbtc-mantle:
     needs: setup
-    name: WBTC Mantle
+    name: WBTC MANTLE
     runs-on: ubuntu-latest
     env:
       FOUNDRY_ETH_RPC_URL: https://mantle-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
@@ -99,6 +99,56 @@ jobs:
       FOUNDRY_ETH_RPC_URL: https://rpc.ankr.com/tac
       WRAPPED_NATIVE_TOKEN: "0xB63B9f0eb4A6E6f191529D71d4D88cc8900Df2C9"
       ASSET: "0xB63B9f0eb4A6E6f191529D71d4D88cc8900Df2C9"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Restore build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: foundry-install-build
+          path: .
+      - run: forge test -vvv
+        env:
+          PROXY: false
+
+  test-usdc-bnb:
+    needs: setup
+    name: USDT WORMHOLE BNB
+    runs-on: ubuntu-latest
+    env:
+      FOUNDRY_ETH_RPC_URL: https://bnb-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
+      WRAPPED_NATIVE_TOKEN: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+      ASSET: "0x524bC91Dc82d6b90EF29F76A3ECAaBAffFD490Bc"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Restore build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: foundry-install-build
+          path: .
+      - run: forge test -vvv
+        env:
+          PROXY: false
+
+  test-wbnb-bnb:
+    needs: setup
+    name: WBNB BNB
+    runs-on: ubuntu-latest
+    env:
+      FOUNDRY_ETH_RPC_URL: https://bnb-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
+      WRAPPED_NATIVE_TOKEN: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+      ASSET: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
     steps:
       - uses: actions/checkout@v4
         with:

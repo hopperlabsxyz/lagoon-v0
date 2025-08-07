@@ -194,5 +194,3 @@ forge verify-contract \
   $ADDRESS \
   "$SELECTED_CONTRACT"
 
-
-

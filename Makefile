@@ -50,6 +50,7 @@ DOCKER_RUN := docker run $(DOCKER_FLAGS)
 
 FULL_SCRIPT := script/deploy_local_fork.s.sol:DeployFull
 PROTOCOL_SCRIPT := script/deploy_protocol.s.sol:DeployProtocol
+REGISTRY_SCRIPT := script/deploy_registry.s.sol:DeployRegistry
 UPGRADE_PROTOCOL_SCRIPT := script/upgrade_protocol.s.sol:UpgradeProtocolRegistry
 BEACON_SCRIPT := script/deploy_beacon.s.sol:DeployBeacon
 VAULT_SCRIPT := script/deploy_vault.s.sol:DeployVault 
@@ -131,6 +132,23 @@ deploy-protocol-pk: load_prod_env
 deploy-protocol-ledger: load_prod_env clean
 	@echo "Deploying FeeRegistry..."
 	forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(PROTOCOL_SCRIPT)
+
+################### DEPLOY REGISTRY #################### 
+
+# simulation
+registry: load_prod_env clean
+	@echo "Deploying Registry..."
+	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(DEPLOYER_FLAGS) $(REGISTRY_SCRIPT)
+ 
+# pk broadcast
+deploy-registry-pk: load_prod_env
+	@echo "Deploying FeeRegistry..."
+	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(PK_FLAGS) $(VERIFY_FLAGS) $(REGISTRY_SCRIPT)
+
+# ledger broadcast
+deploy-registry-ledger: load_prod_env clean
+	@echo "Deploying FeeRegistry..."
+	forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(REGISTRY_SCRIPT)
 
 
 ################### VAULT ##################### 
