@@ -240,7 +240,7 @@ jobs:
         env:
           PROXY: false
 
-  test-bridged-usdc-botanix:
+  test-rusdc-hyperevm:
     needs: setup
     name: rUSDC HYPEREVM
     runs-on: ubuntu-latest
