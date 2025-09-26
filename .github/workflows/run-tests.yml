@@ -215,6 +215,7 @@ jobs:
       - run: forge test -vvv
         env:
           PROXY: false
+
   test-whype-hyperevm:
     needs: setup
     name: WHYPE HYPEREVM
@@ -264,6 +265,7 @@ jobs:
       - run: forge test -vvv
         env:
           PROXY: false
+
   test-weth-linea:
     needs: setup
     name: WETH LINEA
@@ -296,6 +298,105 @@ jobs:
       FOUNDRY_ETH_RPC_URL: https://linea-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
       WRAPPED_NATIVE_TOKEN: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f"
       ASSET: "0x176211869cA2b568f2A7D4EE941E073a821EE1ff"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Restore build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: foundry-install-build
+          path: .
+      - run: forge test -vvv --evm-version=cancun
+        env:
+          PROXY: false
+
+  test-usdc-optimism:
+    needs: setup
+    name: USDC OPTIMISM
+    runs-on: ubuntu-latest
+    env:
+      FOUNDRY_ETH_RPC_URL: https://opt-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
+      WRAPPED_NATIVE_TOKEN: "0x4200000000000000000000000000000000000006"
+      ASSET: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Restore build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: foundry-install-build
+          path: .
+      - run: forge test -vvv
+        env:
+          PROXY: false
+
+  test-weth-optimism:
+    needs: setup
+    name: WETH OPTIMISM
+    runs-on: ubuntu-latest
+    env:
+      FOUNDRY_ETH_RPC_URL: https://opt-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
+      WRAPPED_NATIVE_TOKEN: "0x4200000000000000000000000000000000000006"
+      ASSET: "0x4200000000000000000000000000000000000006"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Restore build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: foundry-install-build
+          path: .
+      - run: forge test -vvv
+        env:
+          PROXY: false
+
+  test-usdc-poylgon:
+    needs: setup
+    name: USDC POLYGON
+    runs-on: ubuntu-latest
+    env:
+      FOUNDRY_ETH_RPC_URL: https://polygon-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
+      WRAPPED_NATIVE_TOKEN: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
+      ASSET: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Restore build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: foundry-install-build
+          path: .
+      - run: forge test -vvv
+        env:
+          PROXY: false
+
+  test-weth-polygon:
+    needs: setup
+    name: WPOL POLYGON
+    runs-on: ubuntu-latest
+    env:
+      FOUNDRY_ETH_RPC_URL: https://polygon-mainnet.g.alchemy.com/v2/${{ secrets.ALCHEMY_KEY }}
+      WRAPPED_NATIVE_TOKEN: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
+      ASSET: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
     steps:
       - uses: actions/checkout@v4
         with:
