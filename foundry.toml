@@ -35,12 +35,11 @@ openzeppelin-foundry-upgrades = "0.4.0"
 berachain = { key="", chain = 80094, url = "https://api.berascan.com/api" }
 unichain = { key="", chain = 130, url = "https://api.uniscan.xyz/api" }
 worldchain = { key="", chain = 480, url = "https://api.worldscan.org/api" }
-avalanche = { key="", chain = 43114, url = "https://api.snowscan.xyz/api" }
 mantle = { key="", chain = 5000, url = "https://api.mantlescan.xyz/api" }
 katana = { key="", chain = 747474, url = "https://api.etherscan.io/v2/api?chainid=747474"}
 monad_testnet = { key="", chain = 10143, url = "https://api-testnet.monadscan.com/api" }
 
 # tac = {key="", chain = 239, url = "https://explorer.tac.build/"} // not supported
-
+unknown_chain = { key = "${ETHERSCAN_API_KEY}" }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
