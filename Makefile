@@ -39,7 +39,7 @@ LEDGER_FLAGS := $(DEPLOYER_FLAGS) \
 								--hd-paths $$HD_PATH \
 								--broadcast
 
-VERIFY_FLAGS := --etherscan-api-key $$ETHERSCAN_API_KEY \
+VERIFY_FLAGS := --etherscan-api-key $$ETHERSCAN_API_KEY --verifier-url https://api.etherscan.io/v2/api?chainid=$$CHAIN_ID \
 								--verify 
 
 #################### COMMANDS ####################
