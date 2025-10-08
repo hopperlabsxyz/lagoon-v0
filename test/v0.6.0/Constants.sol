@@ -2,21 +2,20 @@
 pragma solidity 0.8.26;
 
 import "./VaultHelper.sol";
-import {InitStruct as InitStructVault} from "@src/protocol-v2/OptinProxyFactory.sol";
 
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
 
-// import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
+import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import {ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
+import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
-import {OptinProxyFactory} from "@src/protocol-v2/OptinProxyFactory.sol";
+import {BeaconProxyFactory, InitStruct as BeaconProxyInitStruct} from "@src/protocol-v1/BeaconProxyFactory.sol";
 
 contract Constants is Test {
     // ERC20 tokens
@@ -25,11 +24,11 @@ contract Constants is Test {
     bool underlyingIsNativeToken = address(underlying) == WRAPPED_NATIVE_TOKEN;
 
     bool proxy = vm.envBool("PROXY");
-    OptinProxyFactory factory;
+    BeaconProxyFactory factory;
 
     uint8 decimalsOffset = 0;
     VaultHelper vault;
-    ProtocolRegistry protocolRegistry;
+    FeeRegistry feeRegistry;
     string vaultName = "vault_name";
     string vaultSymbol = "vault_symbol";
     uint256 rateUpdateCooldown = 1 days;
@@ -62,7 +61,6 @@ contract Constants is Test {
     VmSafe.Wallet address0 = VmSafe.Wallet({addr: address(0), publicKeyX: 0, publicKeyY: 0, privateKey: 0});
 
     int256 immutable bipsDividerSigned = 10_000;
-    address implementation;
 
     constructor() {
         users.push(user1);
@@ -78,26 +76,21 @@ contract Constants is Test {
     }
 
     function setUpVault(uint16 _protocolRate, uint16 _managementRate, uint16 _performanceRate) internal {
-        protocolRegistry = new ProtocolRegistry(false);
-        protocolRegistry.initialize(dao.addr, dao.addr);
+        feeRegistry = new FeeRegistry(false);
+        feeRegistry.initialize(dao.addr, dao.addr);
 
         vm.prank(dao.addr);
-        protocolRegistry.updateDefaultRate(_protocolRate);
+        feeRegistry.updateDefaultRate(_protocolRate);
 
         Options memory opts;
         bool disableImplementationInit = proxy;
         opts.constructorData = abi.encode(disableImplementationInit);
-        implementation = address(new VaultHelper(disableImplementationInit));
+        address implementation = address(new VaultHelper(disableImplementationInit));
 
-        // First we deploy the factory and initialize it
-        factory = new OptinProxyFactory(false);
-        factory.initialize(address(protocolRegistry), WRAPPED_NATIVE_TOKEN, dao.addr);
+        factory = new BeaconProxyFactory(address(feeRegistry), implementation, dao.addr, WRAPPED_NATIVE_TOKEN);
 
-        // we add an implementation
-        vm.prank(dao.addr);
-        protocolRegistry.updateDefaultLogic(implementation);
-        InitStructVault memory initStruct = InitStructVault({
-            underlying: (underlying),
+        BeaconProxyInitStruct memory initStruct = BeaconProxyInitStruct({
+            underlying: address(underlying),
             name: vaultName,
             symbol: vaultSymbol,
             safe: safe.addr,
@@ -110,23 +103,20 @@ contract Constants is Test {
             rateUpdateCooldown: rateUpdateCooldown,
             enableWhitelist: enableWhitelist
         });
-
-        address vaultHelper = factory.createVaultProxy({
-            _logic: address(0),
-            _initialOwner: initStruct.admin,
-            _initialDelay: 86_400,
-            _init: initStruct,
-            salt: keccak256("42")
-        });
-
-        vault = VaultHelper(vaultHelper);
+        if (proxy) {
+            address vaultHelper = factory.createVaultProxy(initStruct, keccak256("42"));
+            vault = VaultHelper(vaultHelper);
+        } else {
+            vault = VaultHelper(implementation);
+            vault.initialize(abi.encode(initStruct), address(feeRegistry), WRAPPED_NATIVE_TOKEN);
+        }
 
         if (enableWhitelist) {
             whitelistInit.push(feeReceiver.addr);
             whitelistInit.push(dao.addr);
             whitelistInit.push(safe.addr);
             whitelistInit.push(vault.pendingSilo());
-            whitelistInit.push(address(protocolRegistry));
+            whitelistInit.push(address(feeRegistry));
             vm.prank(whitelistManager.addr);
             vault.addToWhitelist(whitelistInit);
         }

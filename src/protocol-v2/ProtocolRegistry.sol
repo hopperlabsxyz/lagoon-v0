@@ -6,6 +6,7 @@ import {LogicRegistry} from "./LogicRegistry.sol";
 
 /// @custom:contact team@hopperlabs.xyz
 /// @custom:oz-upgrades-from src/protocol-v1/FeeRegistry.sol:FeeRegistry
+
 contract ProtocolRegistry is FeeRegistry, LogicRegistry {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors

@@ -99,6 +99,7 @@ contract OptinProxyFactory is OwnableUpgradeable {
     /// @notice Creates a new vault proxy with the given initialization parameters
     /// @dev Uses CREATE2 with salt for deterministic address calculation
     /// @param _logic Address of the initial logic implementation
+
     /// @param _initialOwner Address of the initial proxy owner
     /// @param _initialDelay The initial delay before which an upgrade can occur by the proxy admin
     /// @param _init Initialization parameters for the vault
