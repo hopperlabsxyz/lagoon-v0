@@ -12,6 +12,7 @@ import {
     ERC7540PreviewMintDisabled,
     ERC7540PreviewRedeemDisabled,
     ERC7540PreviewWithdrawDisabled,
+    MaxCapReached,
     NewTotalAssetsMissing,
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
@@ -20,6 +21,8 @@ import {
 } from "./primitives/Errors.sol";
 import {
     DepositRequestCanceled,
+    GaveUpOperatorPrivileges,
+    MaxCapUpdated,
     NewTotalAssetsUpdated,
     SettleDeposit,
     SettleRedeem,
@@ -83,6 +86,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         // New variables introduce with v0.5.0
         uint128 totalAssetsExpiration;
         uint128 totalAssetsLifespan;
+        // New variables introduce with v0.6.0
+        uint256 maxCap;
+        bool gaveUpOperatorPrivileges;
     }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
@@ -125,6 +131,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
                 $.decimalsOffset = 18 - underlyingDecimals;
             }
         }
+        $.gaveUpOperatorPrivileges = false;
+        $.maxCap = type(uint256).max;
     }
 
     ///////////////
@@ -136,10 +144,18 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     modifier onlyOperator(
         address controller
     ) {
-        if (controller != msg.sender && !isOperator(controller, msg.sender)) {
+        bool safeAsOperator = msg.sender == safe() && !_getERC7540Storage().gaveUpOperatorPrivileges;
+        if (controller != msg.sender && !isOperator(controller, msg.sender) && !safeAsOperator) {
             revert ERC7540InvalidOperator();
         }
         _;
+    }
+
+    /// @notice Make sure new deposit request is under the max cap.
+    function _onlyUnderMaxCap(uint256 assets, uint256 siloAssetsBalance) internal {
+        if (totalAssets() + assets + siloAssetsBalance > _getERC7540Storage().maxCap) {
+            revert MaxCapReached();
+        }
     }
 
     /////////////////////
@@ -224,10 +240,12 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param controller The controller is the address that will manage the request.
     /// @param owner The owner of the assets.
     function _requestDeposit(uint256 assets, address controller, address owner) internal returns (uint256) {
+        ERC7540Storage storage $ = _getERC7540Storage();
+
+        _onlyUnderMaxCap(assets, IERC20(asset()).balanceOf(address($.pendingSilo)));
+
         uint256 claimable = claimableDepositRequest(0, controller);
         if (claimable > 0) _deposit(claimable, controller, controller);
-
-        ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 _depositId = $.depositEpochId;
         if ($.lastDepositRequestId[controller] != _depositId) {
@@ -583,6 +601,20 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint128 oldLifespan = $.totalAssetsLifespan;
         $.totalAssetsLifespan = lifespan;
         emit TotalAssetsLifespanUpdated(oldLifespan, lifespan);
+    }
+
+    function _updateMaxCap(
+        uint256 maxCap
+    ) internal {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        emit MaxCapUpdated({previousMaxCap: $.maxCap, maxCap: maxCap});
+        $.maxCap = maxCap;
+    }
+
+    function _giveUpOperatorPrivileges() internal {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        $.gaveUpOperatorPrivileges = true;
+        emit GaveUpOperatorPrivileges();
     }
 
     //////////////////////////

@@ -168,6 +168,8 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
     ) public payable onlySyncDeposit onlyOpen returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
+        _onlyUnderMaxCap(assets, IERC20(asset()).balanceOf(address($.pendingSilo)));
+
         if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
 
         if (msg.value != 0) {
@@ -309,6 +311,20 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
         }
     }
 
+    /// @notice Claims all available shares for a list of controller addresses.
+    /// @dev Iterates over each controller address, checks for claimable deposits, and deposits them on their behalf.
+    /// @param controllers The list of controller addresses for which to claim shares.
+    function redeemAssetsOnBehalf(
+        address[] memory controllers
+    ) external onlySafe {
+        for (uint256 i = 0; i < controllers.length; i++) {
+            uint256 claimable = claimableRedeemRequest(0, controllers[i]);
+            if (claimable > 0) {
+                _redeem(claimable, controllers[i], controllers[i]);
+            }
+        }
+    }
+
     ///////////////////////////////////////////////////////
     // ## VALUATION UPDATING AND SETTLEMENT FUNCTIONS ## //
     ///////////////////////////////////////////////////////
@@ -368,6 +384,24 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
 
         _updateTotalAssets(_newTotalAssets);
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+    }
+
+    /////////////////////////////
+    // ## MAX CAP FUNCTIONS ## //
+    /////////////////////////////
+
+    function updateMaxCap(
+        uint256 maxCap
+    ) external onlySafe {
+        _updateMaxCap(maxCap);
+    }
+
+    //////////////////////////////
+    // ## OPERATOR PRIVILEGES ## //
+    //////////////////////////////
+
+    function giveUpOperatorPrivileges() external onlyOwner {
+        _giveUpOperatorPrivileges();
     }
 
     /////////////////////////////
