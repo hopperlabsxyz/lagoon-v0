@@ -1,48 +1,53 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
-import {Script, console} from "forge-std/Script.sol";
-import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
-/*
-  run `make protocol` to deploy this script
-*/
+import {DeployOptinProxyFactory} from "./deploy_factory.s.sol";
+import {DeployImplementation} from "./deploy_implementation.s.sol";
 
-contract DeployProtocol is Script {
-    function deployProtocolRegistry(
-        address _dao,
-        address _protocolFeeReceiver,
-        address _proxyAdmin
-    ) internal returns (address) {
-        console.log("--- deployProtocolRegistry() ---");
+import {DeployOptinProxyForVerification} from "./deploy_optinProxyForVerification.s.sol";
+import {DeployRegistry} from "./deploy_registry.s.sol";
 
-        Options memory opts;
-        opts.constructorData = abi.encode(true);
+import {DeploySilo} from "./deploy_silo.s.sol";
+import {BatchScript} from "./tools/BatchScript.sol";
 
-        TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
-            payable(
-                Upgrades.deployTransparentProxy(
-                    "ProtocolRegistry.sol:ProtocolRegistry",
-                    _proxyAdmin,
-                    abi.encodeWithSelector(ProtocolRegistry.initialize.selector, _dao, _protocolFeeReceiver),
-                    opts
-                )
-            )
-        );
-        console.log("ProtocolRegistry proxy address: ", address(proxy));
+contract DeployProtocol is
+    DeployImplementation,
+    DeployRegistry,
+    DeployOptinProxyFactory,
+    DeploySilo,
+    DeployOptinProxyForVerification
+{
+    string tag = vm.envString("VERSION_TAG");
+    address DAO = vm.envAddress("DAO");
+    address WRAPPED_NATIVE_TOKEN = vm.envAddress("WRAPPED_NATIVE_TOKEN");
 
-        return address(proxy);
-    }
-
-    function run() external virtual {
-        address DAO = vm.envAddress("DAO");
-        address PROTOCOL_FEE_RECEIVER = vm.envAddress("PROTOCOL_FEE_RECEIVER");
-        address PROXY_ADMIN = vm.envAddress("PROXY_ADMIN");
-
+    function run()
+        external
+        virtual
+        override(DeployImplementation, DeployRegistry, DeployOptinProxyFactory, DeploySilo, DeployOptinProxyForVerification)
+    {
         vm.startBroadcast();
-        deployProtocolRegistry(DAO, PROTOCOL_FEE_RECEIVER, PROXY_ADMIN);
+        address implementation = deployImplementation(tag);
+        // we deploy the registry but temporaly the owner is the deployment address.
+        ProtocolRegistry registry =
+            ProtocolRegistry(deployProtocolRegistry({_dao: msg.sender, _protocolFeeReceiver: DAO, _proxyAdmin: DAO}));
+
+        // we update the default logic
+        registry.updateDefaultLogic(implementation);
+
+        // we give back ownership, it need to be verified.
+        registry.transferOwnership(DAO);
+
+        // we deploy the optin factory
+        deployOptinFactory({_registry: address(registry), _wrappedNativeToken: WRAPPED_NATIVE_TOKEN, _DAO: DAO});
+
+        // we deploy a silo to ease the deployment verification
+        deploySilo(WRAPPED_NATIVE_TOKEN, WRAPPED_NATIVE_TOKEN);
+
+        // we deploy an optin proxy to ease the deployment verification
+        deployEmptyOptinProxyForVerification();
         vm.stopBroadcast();
     }
 }

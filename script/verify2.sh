@@ -7,7 +7,7 @@
 # - in a new terminal run:    foundryup
 # - install deps with:        forge install
 # - run the script with:      ./script/verify.sh
-#
+
 # Examples:
 #   ./script/verify.sh                     # Interactive mode
 #   ./script/verify.sh -c 1 -a 0x123... -k YOUR_API_KEY  # Verify Vault contract
@@ -27,6 +27,7 @@ INTERACTIVE=true
 declare -a CONTRACTS=(
   "./src/v0.5.0/Vault.sol:Vault"
   "./src/v0.5.0/Silo.sol:Silo"
+  "./src/proxy/OptinProxy.sol:OptinProxy"
   "./src/BeaconProxyFactory.sol:BeaconProxyFactory"
   "./dependencies/@openzeppelin-contracts-5.0.0/proxy/beacon/BeaconProxy.sol:BeaconProxy"
   "./dependencies/@openzeppelin-contracts-5.0.0/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy"
@@ -182,6 +183,7 @@ if [ ! -z "$CONSTRUCTOR_ARGS" ]; then
   CONSTRUCTOR_ARGS_PARAM="--constructor-args $CONSTRUCTOR_ARGS"
 fi
 
+
 # Run forge verify-contract
 forge verify-contract \
   --chain-id $CHAIN_ID \
@@ -192,3 +194,4 @@ forge verify-contract \
   --compiler-version $COMPILER_VERSION \
   $ADDRESS \
   "$SELECTED_CONTRACT"
+

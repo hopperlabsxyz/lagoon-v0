@@ -13,14 +13,22 @@ import {IVersion} from "@test/IVersion.sol";
 */
 
 contract DeployImplementation is Script {
+    address IMPLEMENTATION;
+
     function run() external virtual {
         // ex: v0.3.0
         string memory tag = vm.envString("VERSION_TAG");
-
         vm.startBroadcast();
+        deployImplementation(tag);
+        vm.stopBroadcast();
+    }
+
+    function deployImplementation(
+        string memory tag
+    ) public returns (address) {
         Options memory opts;
         opts.constructorData = abi.encode(true);
-        address IMPLEMENTATION = Upgrades.deployImplementation(string.concat(tag, "/Vault.sol:Vault"), opts);
+        IMPLEMENTATION = Upgrades.deployImplementation(string.concat(tag, "/Vault.sol:Vault"), opts);
 
         try IVersion(IMPLEMENTATION).version() returns (string memory version) {
             require(keccak256(abi.encode(tag)) == keccak256(abi.encode(version)), "Wrong beacon version deployed");
@@ -29,7 +37,7 @@ contract DeployImplementation is Script {
             console.log("\x1b[33mWarning!\x1b[0m There is no `version()` on the contract deployed");
         }
 
-        vm.stopBroadcast();
         console.log("Implementation address: ", IMPLEMENTATION);
+        return IMPLEMENTATION;
     }
 }

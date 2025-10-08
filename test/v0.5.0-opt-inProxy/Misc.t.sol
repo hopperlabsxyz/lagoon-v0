@@ -8,6 +8,10 @@ import {BaseTest} from "./Base.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+interface ExposeRegistry {
+    function REGISTRY() external returns (address);
+}
+
 contract TestMisc is BaseTest {
     function setUp() public {
         setUpVault(0, 0, 0);
@@ -227,5 +231,14 @@ contract TestMisc is BaseTest {
         vm.prank(vault.safe());
         vault.updateTotalAssetsLifespan(1000);
         assertEq(vault.totalAssetsLifespan(), 1000);
+    }
+
+    // Opt-in Proxy is not perfectly transparent anymore because
+    // it exposed the function REGISTRY(). We have to make sure no
+    // future implementation of the vault will expose this function,
+    // otherwise there will be an overlapping.
+    function test_registryCollision() public {
+        vm.expectRevert();
+        ExposeRegistry(implementation).REGISTRY();
     }
 }
