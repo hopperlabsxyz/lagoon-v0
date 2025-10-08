@@ -501,6 +501,6 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
     }
 
     function version() public pure returns (string memory) {
-        return "v0.5.0";
+        return "v0.6.0";
     }
 }

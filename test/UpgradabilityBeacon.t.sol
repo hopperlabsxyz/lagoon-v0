@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import {IVersion} from "./IVersion.sol";
 
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
-import {Vault} from "@src/v0.1.0/Vault.sol";
+import {InitStruct, Vault} from "@src/v0.5.0/Vault.sol";
 
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -52,21 +52,6 @@ contract Upgradable is Test {
 
     int256 immutable bipsDividerSigned = 10_000;
 
-    function _beaconDeploy(
-        string memory contractName,
-        address _owner,
-        Options memory opts
-    ) internal returns (UpgradeableBeacon) {
-        return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner, opts));
-    }
-
-    function _proxyDeploy(UpgradeableBeacon beacon, Vault.InitStruct memory v) internal returns (address) {
-        BeaconProxy _proxy =
-            BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault.initialize, v))));
-
-        return address(_proxy);
-    }
-
     function test_upgradeable() public {
         if (!doProxy) return;
         feeRegistry = new FeeRegistry(false);
@@ -76,7 +61,7 @@ contract Upgradable is Test {
         feeRegistry.updateDefaultRate(50);
 
         UpgradeableBeacon beacon;
-        Vault.InitStruct memory v = Vault.InitStruct({
+        InitStruct memory v = InitStruct({
             underlying: underlying,
             name: vaultName,
             symbol: vaultSymbol,
@@ -85,28 +70,42 @@ contract Upgradable is Test {
             valuationManager: valuationManager.addr,
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
-            feeRegistry: address(feeRegistry),
             managementRate: 200,
             performanceRate: 2000,
-            wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
             rateUpdateCooldown: rateUpdateCooldown,
             enableWhitelist: enableWhitelist
         });
 
         Options memory opts;
         opts.constructorData = abi.encode(true);
-        beacon = _beaconDeploy("v0.1.0/Vault.sol:Vault", owner.addr, opts);
+        beacon = _beaconDeploy("v0.5.0/Vault.sol:Vault", owner.addr, opts);
         address vault = _proxyDeploy(beacon, v);
 
         opts.constructorData = abi.encode(false);
         vm.startPrank(owner.addr);
-        Upgrades.upgradeBeacon(address(beacon), "v0.2.0/Vault.sol:Vault", opts);
-        Upgrades.upgradeBeacon(address(beacon), "v0.3.0/Vault.sol:Vault", opts);
-        assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.3.0")));
-        Upgrades.upgradeBeacon(address(beacon), "v0.4.0/Vault.sol:Vault", opts);
-        assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.4.0")));
-        Upgrades.upgradeBeacon(address(beacon), "v0.5.0/Vault.sol:Vault", opts);
-        assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.5.0")));
+        Upgrades.upgradeBeacon(address(beacon), "v0.6.0/Vault.sol:Vault", opts);
+        assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.6.0")));
         vm.stopPrank();
+    }
+
+    function _beaconDeploy(
+        string memory contractName,
+        address _owner,
+        Options memory opts
+    ) internal returns (UpgradeableBeacon) {
+        return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner, opts));
+    }
+
+    function _proxyDeploy(UpgradeableBeacon beacon, InitStruct memory v) internal returns (address) {
+        BeaconProxy _proxy = BeaconProxy(
+            payable(
+                Upgrades.deployBeaconProxy(
+                    address(beacon),
+                    abi.encodeCall(Vault.initialize, (abi.encode(v), address(feeRegistry), WRAPPED_NATIVE_TOKEN))
+                )
+            )
+        );
+
+        return address(_proxy);
     }
 }
