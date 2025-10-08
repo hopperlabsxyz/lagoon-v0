@@ -131,7 +131,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
                 $.decimalsOffset = 18 - underlyingDecimals;
             }
         }
-        $.gaveUpOperatorPrivileges = false;
         $.maxCap = type(uint256).max;
     }
 
