@@ -32,14 +32,12 @@ contract DeployRegistry is Script {
         opts.constructorData = abi.encode(true);
 
         TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
-            payable(
-                Upgrades.deployTransparentProxy(
+            payable(Upgrades.deployTransparentProxy(
                     "ProtocolRegistry.sol:ProtocolRegistry",
                     _proxyAdmin,
                     abi.encodeWithSelector(ProtocolRegistry.initialize.selector, _dao, _protocolFeeReceiver),
                     opts
-                )
-            )
+                ))
         );
         console.log("ProtocolRegistry proxy address: ", address(proxy));
 

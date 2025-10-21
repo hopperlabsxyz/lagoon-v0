@@ -38,7 +38,10 @@ interface ILogicRegistry {
      * @param logic The logic implementation address to check
      * @return bool True if the logic is whitelisted for the version
      */
-    function canUseLogic(address, address logic) external view returns (bool);
+    function canUseLogic(
+        address,
+        address logic
+    ) external view returns (bool);
 
     function defaultLogic() external view returns (address);
 }

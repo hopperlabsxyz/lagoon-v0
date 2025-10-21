@@ -113,11 +113,7 @@ contract Upgradable is Test {
 
         // first we create a vault whome logic is a vault v0.4
         vault = factory.createVaultProxy({
-            _logic: v5,
-            _initialOwner: admin.addr,
-            _init: v,
-            salt: "0x1123",
-            _initialDelay: 86_400
+            _logic: v5, _initialOwner: admin.addr, _init: v, salt: "0x1123", _initialDelay: 86_400
         });
         assertEq(Vault5(vault).version(), "v0.5.0");
 

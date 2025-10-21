@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {FeeRegistry} from "../protocol-v1/FeeRegistry.sol";
+import {RolesLib} from "./libraries/RolesLib.sol";
 import {OnlySafe, OnlyValuationManager, OnlyWhitelistManager} from "./primitives/Errors.sol";
 import {FeeReceiverUpdated, ValuationManagerUpdated, WhitelistManagerUpdated} from "./primitives/Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
@@ -10,6 +11,8 @@ import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/acces
 /// @dev This contract is used to define the various roles needed for a vault to operate.
 /// @dev It also defines the modifiers used to check functions' caller.
 abstract contract Roles is Ownable2StepUpgradeable {
+    using RolesLib for *;
+
     /// @notice Stores the various roles responsible of managing the vault.
     /// @param whitelistManager The address responsible of managing the whitelist.
     /// @param feeReceiver The address that will receive the fees generated.
@@ -93,8 +96,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function updateWhitelistManager(
         address _whitelistManager
     ) external onlyOwner {
-        emit WhitelistManagerUpdated(_getRolesStorage().whitelistManager, _whitelistManager);
-        _getRolesStorage().whitelistManager = _whitelistManager;
+        RolesLib.updateWhitelistManager(_getRolesStorage(), _whitelistManager);
     }
 
     /// @notice Updates the address of the valuation manager.
@@ -103,8 +105,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function updateValuationManager(
         address _valuationManager
     ) external onlyOwner {
-        emit ValuationManagerUpdated(_getRolesStorage().valuationManager, _valuationManager);
-        _getRolesStorage().valuationManager = _valuationManager;
+        RolesLib.updateValuationManager(_getRolesStorage(), _valuationManager);
     }
 
     /// @notice Updates the address of the fee receiver.
@@ -113,7 +114,6 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function updateFeeReceiver(
         address _feeReceiver
     ) external onlyOwner {
-        emit FeeReceiverUpdated(_getRolesStorage().feeReceiver, _feeReceiver);
-        _getRolesStorage().feeReceiver = _feeReceiver;
+        RolesLib.updateFeeReceiver(_getRolesStorage(), _feeReceiver);
     }
 }
