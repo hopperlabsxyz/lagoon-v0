@@ -2,15 +2,13 @@
 pragma solidity 0.8.26;
 
 import {ERC7540} from "./ERC7540.sol";
+import {FeeLib} from "./libraries/FeeLib.sol";
 import {AboveMaxRate} from "./primitives/Errors.sol";
 import {HighWaterMarkUpdated, RatesUpdated} from "./primitives/Events.sol";
 import {Rates} from "./primitives/Struct.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
-
-uint256 constant ONE_YEAR = 365 days;
-uint256 constant BPS_DIVIDER = 10_000; // 100 %
 
 abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     using Math for uint256;
@@ -187,7 +185,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
 
         uint256 timeElapsed = block.timestamp - $.lastFeeTime;
         uint256 _totalAssets = totalAssets();
-        uint256 managementFees = _calculateManagementFee(_totalAssets, _rates.managementRate, timeElapsed);
+        uint256 managementFees = FeeLib.calculateManagementFee(_totalAssets, _rates.managementRate, timeElapsed);
 
         // by taking management fees the price per share decreases
         uint256 pricePerShare = (10 ** _decimals)
@@ -196,8 +194,9 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         /// Performance fee computation ///
 
         uint256 _totalSupply = totalSupply();
-        uint256 performanceFees =
-            _calculatePerformanceFee(_rates.performanceRate, _totalSupply, pricePerShare, $.highWaterMark, _decimals);
+        uint256 performanceFees = FeeLib.calculatePerformanceFee(
+            _rates.performanceRate, _totalSupply, pricePerShare, $.highWaterMark, _decimals
+        );
 
         /// Protocol fee computation & convertion to shares ///
 
@@ -209,47 +208,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
             _totalSupply + 10 ** _decimalsOffset(), (_totalAssets - totalFees) + 1, Math.Rounding.Ceil
         );
 
-        protocolShares = totalShares.mulDiv(_protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
+        protocolShares = totalShares.mulDiv(_protocolRate(), FeeLib.BPS_DIVIDER, Math.Rounding.Ceil);
         managerShares = totalShares - protocolShares;
-    }
-
-    /// @dev Calculate the management fee
-    /// @param assets the total assets under management
-    /// @param annualRate the management rate, expressed in BPS and corresponding to the annual
-    /// @param timeElapsed the time elapsed since the last fee calculation in seconds
-    /// @return managementFee the management fee express in assets
-    function _calculateManagementFee(
-        uint256 assets,
-        uint256 annualRate,
-        uint256 timeElapsed
-    ) internal pure returns (uint256 managementFee) {
-        uint256 annualFee = assets.mulDiv(annualRate, BPS_DIVIDER, Math.Rounding.Ceil);
-        managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR, Math.Rounding.Ceil);
-    }
-
-    /// @dev Calculate the performance fee
-    /// @dev The performance is calculated as the difference between the current price per share and the high water mark
-    /// @dev The performance fee is calculated as the product of the performance and the performance rate
-    /// @param _rate the performance rate, expressed in BPS
-    /// @param _totalSupply the total supply of shares
-    /// @param _pricePerShare the current price per share
-    /// @param _highWaterMark the highest price per share ever reached
-    /// @param _decimals the number of decimals of the shares
-    /// @return performanceFee the performance fee express in assets
-    function _calculatePerformanceFee(
-        uint256 _rate,
-        uint256 _totalSupply,
-        uint256 _pricePerShare,
-        uint256 _highWaterMark,
-        uint256 _decimals
-    ) internal pure returns (uint256 performanceFee) {
-        if (_pricePerShare > _highWaterMark) {
-            uint256 profitPerShare;
-            unchecked {
-                profitPerShare = _pricePerShare - _highWaterMark;
-            }
-            uint256 profit = profitPerShare.mulDiv(_totalSupply, 10 ** _decimals, Math.Rounding.Ceil);
-            performanceFee = profit.mulDiv(_rate, BPS_DIVIDER, Math.Rounding.Ceil);
-        }
     }
 }
