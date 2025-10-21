@@ -11,7 +11,7 @@ import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/acces
 /// @dev This contract is used to define the various roles needed for a vault to operate.
 /// @dev It also defines the modifiers used to check functions' caller.
 abstract contract Roles is Ownable2StepUpgradeable {
-    using RolesLib for *;
+    using RolesLib for RolesStorage;
 
     /// @notice Stores the various roles responsible of managing the vault.
     /// @param whitelistManager The address responsible of managing the whitelist.
@@ -96,7 +96,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function updateWhitelistManager(
         address _whitelistManager
     ) external onlyOwner {
-        RolesLib.updateWhitelistManager(_getRolesStorage(), _whitelistManager);
+        _getRolesStorage().updateWhitelistManager(_whitelistManager);
     }
 
     /// @notice Updates the address of the valuation manager.
@@ -105,7 +105,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function updateValuationManager(
         address _valuationManager
     ) external onlyOwner {
-        RolesLib.updateValuationManager(_getRolesStorage(), _valuationManager);
+        _getRolesStorage().updateValuationManager(_valuationManager);
     }
 
     /// @notice Updates the address of the fee receiver.
@@ -114,6 +114,6 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function updateFeeReceiver(
         address _feeReceiver
     ) external onlyOwner {
-        RolesLib.updateFeeReceiver(_getRolesStorage(), _feeReceiver);
+        _getRolesStorage().updateFeeReceiver(_feeReceiver);
     }
 }
