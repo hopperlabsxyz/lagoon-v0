@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {Roles} from "./Roles.sol";
 import {WhitelistDisabled, WhitelistUpdated} from "./primitives/Events.sol";
@@ -30,7 +30,10 @@ abstract contract Whitelistable is Roles {
     /// @dev Initializes the whitelist.
     /// @param activate if the whitelist should be activated.
     // solhint-disable-next-line func-name-mixedcase
-    function __Whitelistable_init(bool activate, address protocolFeeReceiver) internal onlyInitializing {
+    function __Whitelistable_init(
+        bool activate,
+        address protocolFeeReceiver
+    ) internal onlyInitializing {
         if (activate) {
             WhitelistableStorage storage $ = _getWhitelistableStorage();
             $.isActivated = true;
