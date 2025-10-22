@@ -3,25 +3,30 @@ pragma solidity 0.8.26;
 
 import {Whitelistable} from "../Whitelistable.sol";
 import {WhitelistDisabled, WhitelistUpdated} from "../primitives/Events.sol";
+import {Constant} from "./constant.sol";
 
 library WhitelistableLib {
+    function version() public pure returns (string memory) {
+        return Constant.version();
+    }
+
     function addToWhitelist(
-        Whitelistable.WhitelistableStorage storage $,
+        Whitelistable.WhitelistableStorage storage self,
         address[] memory accounts
-    ) internal {
+    ) public {
         for (uint256 i = 0; i < accounts.length; i++) {
-            $.isWhitelisted[accounts[i]] = true;
+            self.isWhitelisted[accounts[i]] = true;
             emit WhitelistUpdated(accounts[i], true);
         }
     }
 
     function revokeFromWhitelist(
-        Whitelistable.WhitelistableStorage storage $,
+        Whitelistable.WhitelistableStorage storage self,
         address[] memory accounts
-    ) internal {
+    ) public {
         uint256 i = 0;
         for (; i < accounts.length;) {
-            $.isWhitelisted[accounts[i]] = false;
+            self.isWhitelisted[accounts[i]] = false;
             emit WhitelistUpdated(accounts[i], false);
             // solhint-disable-next-line no-inline-assembly
             unchecked {
@@ -31,9 +36,9 @@ library WhitelistableLib {
     }
 
     function disableWhitelist(
-        Whitelistable.WhitelistableStorage storage $
-    ) internal {
-        $.isActivated = false;
+        Whitelistable.WhitelistableStorage storage self
+    ) public {
+        self.isActivated = false;
         emit WhitelistDisabled();
     }
 }

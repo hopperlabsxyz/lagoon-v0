@@ -17,7 +17,7 @@ import {
     OnlySyncDepositAllowed,
     ValuationUpdateNotAllowed
 } from "../primitives/Errors.sol";
-import {Vault_Storage} from "./VaultStorage.sol";
+import {VaultBase} from "./VaultBase.sol";
 
 import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
@@ -60,7 +60,7 @@ struct InitStruct {
 }
 
 /// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault
-contract VaultInit is Vault_Storage, ERC7540, Whitelistable, FeeManager {
+contract VaultInit is VaultBase, ERC7540, Whitelistable, FeeManager {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
     constructor(

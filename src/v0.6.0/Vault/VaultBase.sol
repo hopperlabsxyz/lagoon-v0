@@ -29,7 +29,7 @@ import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 using SafeERC20 for IERC20;
 
 /// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault
-contract Vault_Storage {
+contract VaultBase {
     /// @custom:storage-location erc7201:hopper.storage.vault
     /// @param newTotalAssets The new total assets of the vault. It is used to update the totalAssets variable.
     /// @param state The state of the vault. It can be Open, Closing, or Closed.

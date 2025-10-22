@@ -7,6 +7,7 @@ import "@src/v0.6.0/ERC7540.sol";
 import "@src/v0.6.0/FeeManager.sol";
 import "@src/v0.6.0/Roles.sol";
 import "@src/v0.6.0/Vault/Vault.sol";
+import "@src/v0.6.0/libraries/FeeLib.sol";
 import "@src/v0.6.0/primitives/Errors.sol";
 import "@src/v0.6.0/primitives/Events.sol";
 import "@src/v0.6.0/primitives/Struct.sol";
@@ -67,7 +68,7 @@ contract VaultHelper is Vault {
     }
 
     function protocolRate() public view returns (uint256) {
-        return _protocolRate();
+        return FeeLib.protocolRate(_getFeeManagerStorage());
     }
 
     function lastDepositEpochIdSettled_debug() public view returns (uint256) {

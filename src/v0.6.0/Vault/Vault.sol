@@ -3,8 +3,8 @@ pragma solidity 0.8.26;
 
 import {ERC7540} from "../ERC7540.sol";
 
+import {VaultBase} from "./VaultBase.sol";
 import {VaultInit} from "./VaultInit.sol";
-import {Vault_Storage} from "./VaultStorage.sol";
 
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
@@ -63,8 +63,9 @@ struct InitStruct {
 }
 
 /// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault
-contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
+contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
     VaultInit immutable init;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
 
