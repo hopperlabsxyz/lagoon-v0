@@ -5,6 +5,7 @@ import {Silo} from "./Silo.sol";
 import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
 import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IWETH9} from "./interfaces/IWETH9.sol";
+import {ERC7540Lib} from "./libraries/ERC7540Lib.sol";
 import {
     CantDepositNativeToken,
     ERC7540InvalidOperator,
@@ -168,7 +169,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     }
 
     function _decimalsOffset() internal view virtual override returns (uint8) {
-        return _getERC7540Storage().decimalsOffset;
+        return ERC7540Lib.decimalsOffset(_getERC7540Storage());
     }
 
     function _update(
@@ -354,7 +355,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             revert RequestIdNotClaimable();
         }
 
-        assets = _convertToAssets(shares, requestId, Math.Rounding.Ceil);
+        assets = ERC7540Lib.convertToAssets($, shares, requestId, Math.Rounding.Ceil);
 
         $.epochs[requestId].depositRequest[controller] -= assets;
         _transfer(address(this), receiver, shares);
@@ -435,7 +436,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         $.epochs[requestId].redeemRequest[controller] -= shares;
-        assets = _convertToAssets(shares, requestId, Math.Rounding.Floor);
+        assets = ERC7540Lib.convertToAssets($, shares, requestId, Math.Rounding.Floor);
         IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Withdraw(msg.sender, receiver, controller, assets, shares);
@@ -458,7 +459,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             revert RequestIdNotClaimable();
         }
 
-        shares = _convertToShares(assets, requestId, Math.Rounding.Ceil);
+        shares = ERC7540Lib.convertToShares($, assets, requestId, Math.Rounding.Ceil);
         $.epochs[requestId].redeemRequest[controller] -= shares;
         IERC20(asset()).safeTransfer(receiver, assets);
 
@@ -555,70 +556,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         );
     }
 
-    ////////////////////////////////////////
-    // ## TOTALASSETS UPDATE FUNCTIONS ## //
-    ////////////////////////////////////////
-
-    /// @notice Update newTotalAssets variable in order to update totalAssets.
-    /// @param _newTotalAssets The new total assets of the vault.
-    function _updateNewTotalAssets(
-        uint256 _newTotalAssets
-    ) internal whenNotPaused {
-        ERC7540Storage storage $ = _getERC7540Storage();
-
-        $.epochs[$.depositEpochId].settleId = $.depositSettleId;
-        $.epochs[$.redeemEpochId].settleId = $.redeemSettleId;
-
-        address _pendingSilo = address($.pendingSilo);
-        uint256 pendingAssets = IERC20(asset()).balanceOf(_pendingSilo);
-        uint256 pendingShares = balanceOf(_pendingSilo);
-
-        if (pendingAssets != 0) {
-            $.depositEpochId += 2;
-            $.settles[$.depositSettleId].pendingAssets = pendingAssets;
-        }
-        if (pendingShares != 0) {
-            $.redeemEpochId += 2;
-            $.settles[$.redeemSettleId].pendingShares = pendingShares;
-        }
-
-        $.newTotalAssets = _newTotalAssets;
-
-        emit NewTotalAssetsUpdated(_newTotalAssets);
-    }
-
-    /// @dev Updates the totalAssets variable with the newTotalAssets variable.
-    function _updateTotalAssets(
-        uint256 _newTotalAssets
-    ) internal whenNotPaused {
-        ERC7540Storage storage $ = _getERC7540Storage();
-
-        uint256 newTotalAssets = $.newTotalAssets;
-
-        if (
-            newTotalAssets == type(uint256).max // it means newTotalAssets has not been updated
-        ) revert NewTotalAssetsMissing();
-
-        if (_newTotalAssets != newTotalAssets) {
-            revert WrongNewTotalAssets();
-        }
-
-        $.totalAssets = newTotalAssets;
-        $.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
-
-        $.totalAssetsExpiration = uint128(block.timestamp) + $.totalAssetsLifespan;
-        emit TotalAssetsUpdated(newTotalAssets);
-    }
-
-    function _updateTotalAssetsLifespan(
-        uint128 lifespan
-    ) internal {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        uint128 oldLifespan = $.totalAssetsLifespan;
-        $.totalAssetsLifespan = lifespan;
-        emit TotalAssetsLifespanUpdated(oldLifespan, lifespan);
-    }
-
     //////////////////////////
     // ## VIEW FUNCTIONS ## //
     //////////////////////////
@@ -631,28 +568,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 assets,
         uint256 requestId
     ) public view returns (uint256) {
-        return _convertToShares(assets, uint40(requestId), Math.Rounding.Floor);
-    }
-
-    /// @dev Converts assets to shares for a specific epoch.
-    /// @param assets The assets to convert.
-    /// @param requestId The request ID.
-    /// @param rounding The rounding method.
-    /// @return The corresponding shares.
-    function _convertToShares(
-        uint256 assets,
-        uint40 requestId,
-        Math.Rounding rounding
-    ) internal view returns (uint256) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-
-        // cache
-        uint40 settleId = $.epochs[requestId].settleId;
-
-        uint256 _totalAssets = $.settles[settleId].totalAssets + 1;
-        uint256 _totalSupply = $.settles[settleId].totalSupply + 10 ** _decimalsOffset();
-
-        return assets.mulDiv(_totalSupply, _totalAssets, rounding);
+        return ERC7540Lib.convertToShares(_getERC7540Storage(), assets, uint40(requestId), Math.Rounding.Floor);
     }
 
     /// @dev Converts shares to assets for a specific epoch.
@@ -662,28 +578,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 shares,
         uint256 requestId
     ) public view returns (uint256) {
-        return _convertToAssets(shares, uint40(requestId), Math.Rounding.Floor);
-    }
-
-    /// @notice Convert shares to assets for a specific epoch/request.
-    /// @param shares The shares to convert.
-    /// @param requestId The request ID at which the conversion should be done.
-    /// @param rounding The rounding method.
-    /// @return The corresponding assets.
-    function _convertToAssets(
-        uint256 shares,
-        uint40 requestId,
-        Math.Rounding rounding
-    ) internal view returns (uint256) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-
-        // cache
-        uint40 settleId = $.epochs[requestId].settleId;
-
-        uint256 _totalAssets = $.settles[settleId].totalAssets + 1;
-        uint256 _totalSupply = $.settles[settleId].totalSupply + 10 ** _decimalsOffset();
-
-        return shares.mulDiv(_totalAssets, _totalSupply, rounding);
+        return ERC7540Lib.convertToAssets(_getERC7540Storage(), shares, uint40(requestId), Math.Rounding.Floor);
     }
 
     /// @notice Returns the pending redeem request for a controller.
@@ -694,14 +589,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 requestId,
         address controller
     ) public view returns (uint256 shares) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-
-        if (requestId == 0) {
-            requestId = $.lastRedeemRequestId[controller];
-        }
-        if (requestId > $.lastRedeemEpochIdSettled) {
-            return $.epochs[uint40(requestId)].redeemRequest[controller];
-        }
+        return ERC7540Lib.pendingRedeemRequest(_getERC7540Storage(), requestId, controller);
     }
 
     /// @notice Returns the claimable redeem request for a controller for a specific request ID.
@@ -712,12 +600,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 requestId,
         address controller
     ) public view returns (uint256 shares) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-
-        if (requestId == 0) requestId = $.lastRedeemRequestId[controller];
-        if (requestId <= $.lastRedeemEpochIdSettled) {
-            return $.epochs[uint40(requestId)].redeemRequest[controller];
-        }
+        return ERC7540Lib.claimableRedeemRequest(_getERC7540Storage(), requestId, controller);
     }
 
     /// @notice Returns the amount of assets that are pending to be deposited for a controller. For a specific request
@@ -729,12 +612,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 requestId,
         address controller
     ) public view returns (uint256 assets) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-
-        if (requestId == 0) requestId = $.lastDepositRequestId[controller];
-        if (requestId > $.lastDepositEpochIdSettled) {
-            return $.epochs[uint40(requestId)].depositRequest[controller];
-        }
+        return ERC7540Lib.pendingDepositRequest(_getERC7540Storage(), requestId, controller);
     }
 
     /// @notice Returns the claimable deposit request for a controller for a specific request ID.
@@ -745,12 +623,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 requestId,
         address controller
     ) public view returns (uint256 assets) {
-        ERC7540Storage storage $ = _getERC7540Storage();
-
-        if (requestId == 0) requestId = $.lastDepositRequestId[controller];
-        if (requestId <= $.lastDepositEpochIdSettled) {
-            return $.epochs[uint40(requestId)].depositRequest[controller];
-        }
+        return ERC7540Lib.claimableDepositRequest(_getERC7540Storage(), requestId, controller);
     }
 
     ///////////////////

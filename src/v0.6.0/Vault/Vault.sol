@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {ERC7540} from "../ERC7540.sol";
+import {ERC7540Lib} from "../libraries/ERC7540Lib.sol";
 
 import {VaultBase} from "./VaultBase.sol";
 import {VaultInit} from "./VaultInit.sol";
@@ -321,7 +322,7 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
     function updateTotalAssetsLifespan(
         uint128 lifespan
     ) external onlySafe {
-        _updateTotalAssetsLifespan(lifespan);
+        ERC7540Lib.updateTotalAssetsLifespan(_getERC7540Storage(), lifespan);
     }
 
     /// @notice Function to propose a new valuation for the vault.
@@ -338,7 +339,7 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
         if (isTotalAssetsValid()) {
             revert ValuationUpdateNotAllowed();
         }
-        _updateNewTotalAssets(_newTotalAssets);
+        ERC7540Lib.updateNewTotalAssets(_getERC7540Storage(), _newTotalAssets, paused(), asset());
     }
 
     /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
@@ -371,7 +372,7 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
     ) internal {
         RolesStorage storage $roles = _getRolesStorage();
 
-        _updateTotalAssets(_newTotalAssets);
+        ERC7540Lib.updateTotalAssets(_getERC7540Storage(), _newTotalAssets, paused());
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
     }
 
@@ -386,7 +387,7 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
     function initiateClosing() external onlyOwner onlyOpen {
         ERC7540Storage storage $ = _getERC7540Storage();
         if ($.newTotalAssets != type(uint256).max) {
-            _updateNewTotalAssets($.newTotalAssets);
+            ERC7540Lib.updateNewTotalAssets(_getERC7540Storage(), $.newTotalAssets, paused(), asset());
         }
         _getVaultStorage().state = State.Closing;
         emit StateUpdated(State.Closing);
@@ -398,7 +399,7 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) external onlySafe onlyClosing {
         RolesStorage storage $roles = _getRolesStorage();
-        _updateTotalAssets(_newTotalAssets);
+        ERC7540Lib.updateTotalAssets(_getERC7540Storage(), _newTotalAssets, paused());
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
 
         _settleDeposit(msg.sender);
