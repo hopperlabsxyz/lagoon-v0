@@ -341,7 +341,7 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
         if (isTotalAssetsValid()) {
             revert ValuationUpdateNotAllowed();
         }
-        ERC7540Lib.updateNewTotalAssets(_getERC7540Storage(), _newTotalAssets, paused(), asset());
+        ERC7540Lib.updateNewTotalAssets(_getERC7540Storage(), _newTotalAssets);
     }
 
     /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
@@ -351,7 +351,8 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
         _updateTotalAssetsAndTakeFees(_newTotalAssets);
-        _settleDeposit(msg.sender);
+        uint256 claimableShares = ERC7540Lib.settleDeposit(_getERC7540Storage(), msg.sender);
+        _mint(address(this), claimableShares);
         _settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
 
@@ -374,7 +375,7 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
     ) internal {
         RolesStorage storage $roles = _getRolesStorage();
 
-        ERC7540Lib.updateTotalAssets(_getERC7540Storage(), _newTotalAssets, paused());
+        ERC7540Lib.updateTotalAssets(_getERC7540Storage(), _newTotalAssets);
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
     }
 
@@ -387,7 +388,7 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
     /// "defined"
     /// @dev (!= type(uint256).max). This guarantee that no userShares will be locked in a pending state.
     function initiateClosing() external onlyOwner onlyOpen {
-        VaultStateLib.initiateClosing(_getVaultStorage(), _getERC7540Storage(), paused(), asset());
+        VaultStateLib.initiateClosing(_getVaultStorage(), _getERC7540Storage());
     }
 
     /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.
@@ -396,10 +397,12 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) external onlySafe onlyClosing {
         RolesStorage storage $roles = _getRolesStorage();
-        ERC7540Lib.updateTotalAssets(_getERC7540Storage(), _newTotalAssets, paused());
+        ERC7540Lib.updateTotalAssets(_getERC7540Storage(), _newTotalAssets);
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
 
-        _settleDeposit(msg.sender);
+        uint256 claimableShares = ERC7540Lib.settleDeposit(_getERC7540Storage(), msg.sender);
+        _mint(address(this), claimableShares); // TODO:
+
         _settleRedeem(msg.sender);
         _getVaultStorage().state = State.Closed;
 

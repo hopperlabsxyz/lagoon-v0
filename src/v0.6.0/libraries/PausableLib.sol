@@ -5,19 +5,8 @@ import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Pau
 
 library PausableLib {
     /// @dev Throws if the contract is paused.
-    function requireNotPaused(
-        PausableUpgradeable.PausableStorage storage self
-    ) internal view {
-        if (self._paused) {
-            revert PausableUpgradeable.EnforcedPause();
-        }
-    }
-
-    /// @dev Throws if the contract is paused.
-    function requireNotPaused(
-        bool paused
-    ) internal pure {
-        if (paused) {
+    function requireNotPaused() internal view {
+        if (PausableUpgradeable(address(this)).paused()) {
             revert PausableUpgradeable.EnforcedPause();
         }
     }

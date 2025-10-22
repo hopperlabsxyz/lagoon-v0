@@ -16,12 +16,10 @@ library VaultStateLib {
     /// @dev (!= type(uint256).max). This guarantee that no userShares will be locked in a pending state.
     function initiateClosing(
         VaultStorage storage self,
-        ERC7540.ERC7540Storage storage erc7540,
-        bool isPaused,
-        address asset
+        ERC7540.ERC7540Storage storage erc7540
     ) public {
         if (erc7540.newTotalAssets != type(uint256).max) {
-            erc7540.updateNewTotalAssets(erc7540.newTotalAssets, isPaused, asset);
+            erc7540.updateNewTotalAssets(erc7540.newTotalAssets);
         }
         self.state = State.Closing;
         emit StateUpdated(State.Closing);
