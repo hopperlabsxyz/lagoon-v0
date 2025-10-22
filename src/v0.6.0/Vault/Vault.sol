@@ -3,6 +3,8 @@ pragma solidity 0.8.26;
 
 import {ERC7540} from "../ERC7540.sol";
 import {ERC7540Lib} from "../libraries/ERC7540Lib.sol";
+import {VaultStateLib} from "../libraries/VaultStateLib.sol";
+import {VaultStorage} from "../primitives/VaultStorage.sol";
 
 import {VaultBase} from "./VaultBase.sol";
 import {VaultInit} from "./VaultInit.sol";
@@ -385,12 +387,7 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
     /// "defined"
     /// @dev (!= type(uint256).max). This guarantee that no userShares will be locked in a pending state.
     function initiateClosing() external onlyOwner onlyOpen {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        if ($.newTotalAssets != type(uint256).max) {
-            ERC7540Lib.updateNewTotalAssets(_getERC7540Storage(), $.newTotalAssets, paused(), asset());
-        }
-        _getVaultStorage().state = State.Closing;
-        emit StateUpdated(State.Closing);
+        VaultStateLib.initiateClosing(_getVaultStorage(), _getERC7540Storage(), paused(), asset());
     }
 
     /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.

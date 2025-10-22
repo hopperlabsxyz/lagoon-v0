@@ -6,6 +6,7 @@ import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
 import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IWETH9} from "./interfaces/IWETH9.sol";
 import {ERC7540Lib} from "./libraries/ERC7540Lib.sol";
+import {State} from "./primitives/Enums.sol";
 import {
     CantDepositNativeToken,
     ERC7540InvalidOperator,
@@ -41,6 +42,9 @@ import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+// import {VaultBase} from "./vault/VaultBase.sol";
+// import {State} from "./primitives/Enums.sol";
 
 using SafeERC20 for IERC20;
 using Math for uint256;
