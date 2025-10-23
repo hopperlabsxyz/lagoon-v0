@@ -55,7 +55,7 @@ library ERC7540Lib {
     /// @dev Updates the totalAssets variable with the newTotalAssets variable.
     function updateTotalAssets(
         uint256 _newTotalAssets
-    ) internal {
+    ) public {
         PausableLib.requireNotPaused();
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         uint256 newTotalAssets = $.newTotalAssets;
@@ -78,7 +78,7 @@ library ERC7540Lib {
     /// @param _newTotalAssets The new total assets of the vault.
     function updateNewTotalAssets(
         uint256 _newTotalAssets
-    ) internal {
+    ) public {
         PausableLib.requireNotPaused();
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -105,7 +105,7 @@ library ERC7540Lib {
 
     function updateTotalAssetsLifespan(
         uint128 lifespan
-    ) internal {
+    ) public {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         uint128 oldLifespan = $.totalAssetsLifespan;
         $.totalAssetsLifespan = lifespan;
@@ -125,7 +125,7 @@ library ERC7540Lib {
         uint256 shares,
         uint40 requestId,
         Math.Rounding rounding
-    ) internal view returns (uint256) {
+    ) public view returns (uint256) {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         // cache
         uint40 settleId = $.epochs[requestId].settleId;
@@ -145,7 +145,7 @@ library ERC7540Lib {
         uint256 assets,
         uint40 requestId,
         Math.Rounding rounding
-    ) internal view returns (uint256) {
+    ) public view returns (uint256) {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         // cache
         uint40 settleId = $.epochs[requestId].settleId;
@@ -163,7 +163,7 @@ library ERC7540Lib {
     function pendingRedeemRequest(
         uint256 requestId,
         address controller
-    ) internal view returns (uint256 shares) {
+    ) public view returns (uint256 shares) {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         if (requestId == 0) {
             requestId = $.lastRedeemRequestId[controller];
@@ -180,7 +180,7 @@ library ERC7540Lib {
     function claimableRedeemRequest(
         uint256 requestId,
         address controller
-    ) internal view returns (uint256 shares) {
+    ) public view returns (uint256 shares) {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         if (requestId == 0) requestId = $.lastRedeemRequestId[controller];
         if (requestId <= $.lastRedeemEpochIdSettled) {
@@ -196,7 +196,7 @@ library ERC7540Lib {
     function pendingDepositRequest(
         uint256 requestId,
         address controller
-    ) internal view returns (uint256 assets) {
+    ) public view returns (uint256 assets) {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
         if (requestId > $.lastDepositEpochIdSettled) {
@@ -211,7 +211,7 @@ library ERC7540Lib {
     function claimableDepositRequest(
         uint256 requestId,
         address controller
-    ) internal view returns (uint256 assets) {
+    ) public view returns (uint256 assets) {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
         if (requestId <= $.lastDepositEpochIdSettled) {
@@ -225,7 +225,7 @@ library ERC7540Lib {
 
     function settleDeposit(
         address assetsCustodian
-    ) internal returns (uint256 sharesToMint) {
+    ) public returns (uint256 sharesToMint) {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         uint40 depositSettleId = $.depositSettleId;
 
@@ -266,7 +266,7 @@ library ERC7540Lib {
     /// @param assetsCustodian The address that holds the assets.
     function settleRedeem(
         address assetsCustodian
-    ) internal {
+    ) public {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         uint40 redeemSettleId = $.redeemSettleId;
 
