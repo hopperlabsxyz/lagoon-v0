@@ -93,7 +93,7 @@ contract VaultHelper is Vault {
 
     /// @notice Returns the state of the vault. It can be Open, Closing, or Closed.
     function state() external view returns (State) {
-        return VaultStateLib._getVaultStorage().state;
+        return VaultLib._getVaultStorage().state;
     }
 
     /// @notice Returns the address of the whitelist manager.

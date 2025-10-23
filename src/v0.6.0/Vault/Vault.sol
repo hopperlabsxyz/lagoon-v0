@@ -5,7 +5,7 @@ import {ERC7540} from "../ERC7540.sol";
 import {ERC7540Lib} from "../libraries/ERC7540Lib.sol";
 import {FeeLib} from "../libraries/FeeLib.sol";
 import {RolesLib} from "../libraries/RolesLib.sol";
-import {VaultStateLib} from "../libraries/VaultStateLib.sol";
+import {VaultLib} from "../libraries/VaultLib.sol";
 import {VaultStorage} from "../primitives/VaultStorage.sol";
 
 import {VaultInit} from "./VaultInit.sol";
@@ -103,14 +103,14 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     /// @notice Reverts if the vault is not open.
     modifier onlyOpen() {
-        State _state = VaultStateLib._getVaultStorage().state;
+        State _state = VaultLib._getVaultStorage().state;
         if (_state != State.Open) revert NotOpen(_state);
         _;
     }
 
     /// @notice Reverts if the vault is not closing.
     modifier onlyClosing() {
-        State _state = VaultStateLib._getVaultStorage().state;
+        State _state = VaultLib._getVaultStorage().state;
         if (_state != State.Closing) revert NotClosing(_state);
         _;
     }
@@ -239,7 +239,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address receiver,
         address controller
     ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256 shares) {
-        VaultStorage storage $ = VaultStateLib._getVaultStorage();
+        VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             shares = _convertToShares(assets, Math.Rounding.Ceil);
@@ -265,7 +265,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address receiver,
         address controller
     ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256 assets) {
-        VaultStorage storage $ = VaultStateLib._getVaultStorage();
+        VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             assets = _convertToAssets(shares, Math.Rounding.Floor);
@@ -334,7 +334,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     function updateNewTotalAssets(
         uint256 _newTotalAssets
     ) public onlyValuationManager {
-        if (VaultStateLib._getVaultStorage().state == State.Closed) {
+        if (VaultLib._getVaultStorage().state == State.Closed) {
             revert Closed();
         }
 
@@ -390,7 +390,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// "defined"
     /// @dev (!= type(uint256).max). This guarantee that no userShares will be locked in a pending state.
     function initiateClosing() external onlyOwner onlyOpen {
-        VaultStateLib.initiateClosing();
+        VaultLib.initiateClosing();
     }
 
     /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.
@@ -398,7 +398,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     function close(
         uint256 _newTotalAssets
     ) external onlySafe onlyClosing {
-        VaultStateLib.close(_newTotalAssets);
+        VaultLib.close(_newTotalAssets);
     }
 
     /////////////////////////////////
@@ -434,7 +434,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         if (paused()) return 0;
         uint256 shares = claimableRedeemRequest(0, controller);
-        if (shares == 0 && VaultStateLib._getVaultStorage().state == State.Closed) {
+        if (shares == 0 && VaultLib._getVaultStorage().state == State.Closed) {
             // controller has no redeem claimable, we will use the synchronous flow
             return balanceOf(controller);
         }
@@ -452,7 +452,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         if (paused()) return 0;
 
         uint256 shares = claimableRedeemRequest(0, controller);
-        if (shares == 0 && VaultStateLib._getVaultStorage().state == State.Closed) {
+        if (shares == 0 && VaultLib._getVaultStorage().state == State.Closed) {
             // controller has no redeem claimable, we will use the synchronous flow
             return convertToAssets(balanceOf(controller));
         }

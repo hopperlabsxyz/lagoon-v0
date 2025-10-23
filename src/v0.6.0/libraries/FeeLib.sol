@@ -120,22 +120,6 @@ library FeeLib {
         $.lastFeeTime = block.timestamp;
     }
 
-    function doFeeRepartition(
-        FeeManager.FeeManagerStorage storage $,
-        uint256 totalFees,
-        uint256 _totalSupply,
-        uint256 _totalAssets,
-        uint8 _decimalsOffset
-    ) public view returns (uint256 managerShares, uint256 protocolShares) {
-        // since we are minting shares without actually increasing the totalAssets, we need to compensate the future
-        // dilution of price per share by virtually decreasing totalAssets in our computation
-        uint256 totalShares =
-            totalFees.mulDiv(_totalSupply + 10 ** _decimalsOffset, (_totalAssets - totalFees) + 1, Math.Rounding.Ceil);
-
-        protocolShares = totalShares.mulDiv(protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
-        managerShares = totalShares - protocolShares;
-    }
-
     /// @dev Calculate and return the manager and protocol shares to be minted as fees
     /// @dev total fees are the sum of the management and performance fees
     /// @dev manager shares are the fees that go to the manager, it is the difference between the total fees and the
