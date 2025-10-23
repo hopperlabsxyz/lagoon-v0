@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import {Roles} from "../Roles.sol";
 import {FeeReceiverUpdated, ValuationManagerUpdated, WhitelistManagerUpdated} from "../primitives/Events.sol";
-import {Constant} from "./constant.sol";
+import {Constant} from "./Constant.sol";
 
 library RolesLib {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Roles")) - 1)) & ~bytes32(uint256(0xff))
