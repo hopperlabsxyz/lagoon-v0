@@ -351,9 +351,8 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
         _updateTotalAssetsAndTakeFees(_newTotalAssets);
-        uint256 claimableShares = ERC7540Lib.settleDeposit(_getERC7540Storage(), msg.sender);
-        _mint(address(this), claimableShares);
-        _settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
+        ERC7540Lib.settleDeposit(_getERC7540Storage(), msg.sender);
+        ERC7540Lib.settleRedeem(_getERC7540Storage(), msg.sender); // if it is possible to settleRedeem, we should do so
     }
 
     /// @notice Settles redeem requests, only callable by the safe.
@@ -364,7 +363,7 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
         _updateTotalAssetsAndTakeFees(_newTotalAssets);
-        _settleRedeem(msg.sender);
+        ERC7540Lib.settleRedeem(_getERC7540Storage(), msg.sender); // if it is possible to settleRedeem, we should do so
     }
 
     /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
@@ -400,10 +399,8 @@ contract Vault is VaultBase, ERC7540, Whitelistable, FeeManager {
         ERC7540Lib.updateTotalAssets(_getERC7540Storage(), _newTotalAssets);
         _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
 
-        uint256 claimableShares = ERC7540Lib.settleDeposit(_getERC7540Storage(), msg.sender);
-        _mint(address(this), claimableShares); // TODO:
-
-        _settleRedeem(msg.sender);
+        ERC7540Lib.settleDeposit(_getERC7540Storage(), msg.sender);
+        ERC7540Lib.settleRedeem(_getERC7540Storage(), msg.sender);
         _getVaultStorage().state = State.Closed;
 
         // Transfer will fail if there are not enough assets inside the safe, making sure that redeem requests are

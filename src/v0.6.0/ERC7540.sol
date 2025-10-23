@@ -43,9 +43,6 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-// import {VaultBase} from "./vault/VaultBase.sol";
-// import {State} from "./primitives/Enums.sol";
-
 using SafeERC20 for IERC20;
 using Math for uint256;
 
@@ -470,94 +467,18 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         emit Withdraw(msg.sender, receiver, controller, assets, shares);
     }
 
-    ////////////////////////////////
-    // ## SETTLEMENT FUNCTIONS ## //
-    ////////////////////////////////
-
-    /// @dev This function will deposit the pending assets of the pendingSilo.
-    /// and save the deposit parameters in the settleData.
-    /// @param assetsCustodian The address that will hold the assets.
-    function _settleDeposit(
-        address assetsCustodian
-    ) internal {
-        ERC7540Storage storage $erc7540 = _getERC7540Storage();
-
-        uint40 depositSettleId = $erc7540.depositSettleId;
-
-        uint256 _pendingAssets = $erc7540.settles[depositSettleId].pendingAssets;
-        if (_pendingAssets == 0) return;
-
-        uint256 shares = _convertToShares(_pendingAssets, Math.Rounding.Floor);
-
-        // cache
-        uint256 _totalAssets = totalAssets();
-        uint256 _totalSupply = totalSupply();
-        uint40 lastDepositEpochIdSettled = $erc7540.depositEpochId - 2;
-
-        SettleData storage settleData = $erc7540.settles[depositSettleId];
-
-        settleData.totalAssets = _totalAssets;
-        settleData.totalSupply = _totalSupply;
-
+    function forge(
+        uint256 shares
+    ) external {
+        require(msg.sender == address(this));
         _mint(address(this), shares);
-
-        _totalAssets += _pendingAssets;
-        _totalSupply += shares;
-
-        $erc7540.totalAssets = _totalAssets;
-        $erc7540.depositSettleId = depositSettleId + 2;
-        $erc7540.lastDepositEpochIdSettled = lastDepositEpochIdSettled;
-
-        IERC20(asset()).safeTransferFrom(address($erc7540.pendingSilo), assetsCustodian, _pendingAssets);
-
-        emit SettleDeposit(
-            lastDepositEpochIdSettled, depositSettleId, _totalAssets, _totalSupply, _pendingAssets, shares
-        );
     }
 
-    /// @dev This function will redeem the pending shares of the pendingSilo.
-    /// and save the redeem parameters in the settleData.
-    /// @param assetsCustodian The address that holds the assets.
-    function _settleRedeem(
-        address assetsCustodian
-    ) internal {
-        ERC7540Storage storage $erc7540 = _getERC7540Storage();
-
-        uint40 redeemSettleId = $erc7540.redeemSettleId;
-
-        address _asset = asset();
-
-        uint256 pendingShares = $erc7540.settles[redeemSettleId].pendingShares;
-        uint256 assetsToWithdraw = _convertToAssets(pendingShares, Math.Rounding.Floor);
-
-        uint256 assetsInTheSafe = IERC20(_asset).balanceOf(assetsCustodian);
-        if (assetsToWithdraw == 0 || assetsToWithdraw > assetsInTheSafe) return;
-
-        // cache
-        uint256 _totalAssets = totalAssets();
-        uint256 _totalSupply = totalSupply();
-        uint40 lastRedeemEpochIdSettled = $erc7540.redeemEpochId - 2;
-
-        SettleData storage settleData = $erc7540.settles[redeemSettleId];
-
-        settleData.totalAssets = _totalAssets;
-        settleData.totalSupply = _totalSupply;
-
-        _burn(address($erc7540.pendingSilo), pendingShares);
-
-        _totalAssets -= assetsToWithdraw;
-        _totalSupply -= pendingShares;
-
-        $erc7540.totalAssets = _totalAssets;
-
-        $erc7540.redeemSettleId = redeemSettleId + 2;
-        $erc7540.lastRedeemEpochIdSettled = lastRedeemEpochIdSettled;
-
-        IERC20(_asset).safeTransferFrom(assetsCustodian, address(this), assetsToWithdraw);
-
-        emit SettleRedeem(
-            lastRedeemEpochIdSettled, redeemSettleId, _totalAssets, _totalSupply, assetsToWithdraw, pendingShares
-        );
+    function void(
+        uint256 shares
+    ) external {
+        require(msg.sender == address(this));
+        _burn(address(_getERC7540Storage().pendingSilo), shares);
     }
 
     //////////////////////////

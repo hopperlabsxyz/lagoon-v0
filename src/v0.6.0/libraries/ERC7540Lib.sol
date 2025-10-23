@@ -202,6 +202,10 @@ library ERC7540Lib {
         }
     }
 
+    ////////////////////////////////
+    // ## SETTLEMENT FUNCTIONS ## //
+    ////////////////////////////////
+
     function settleDeposit(
         ERC7540.ERC7540Storage storage self,
         address assetsCustodian
@@ -226,8 +230,7 @@ library ERC7540Lib {
         _totalAssets += _pendingAssets;
         _totalSupply += shares;
 
-        // TODO: can we find a way to keep the same logic order and not return sharesToMint and not reimplement the
-        // erc20 update logic entirely also IERC20(address(this))._mint(address(this), shares);
+        ERC7540(address(this)).forge(shares);
 
         self.totalAssets = _totalAssets;
         self.depositSettleId = depositSettleId + 2;
@@ -239,7 +242,50 @@ library ERC7540Lib {
         emit SettleDeposit(
             lastDepositEpochIdSettled, depositSettleId, _totalAssets, _totalSupply, _pendingAssets, shares
         );
+    }
 
-        return shares;
+    /// @dev This function will redeem the pending shares of the pendingSilo.
+    /// and save the redeem parameters in the settleData.
+    /// @param assetsCustodian The address that holds the assets.
+    function settleRedeem(
+        ERC7540.ERC7540Storage storage self,
+        address assetsCustodian
+    ) internal {
+        uint40 redeemSettleId = self.redeemSettleId;
+
+        address _asset = IERC4626(address(this)).asset();
+
+        uint256 pendingShares = self.settles[redeemSettleId].pendingShares;
+        uint256 assetsToWithdraw = IERC4626(address(this)).convertToAssets(pendingShares);
+
+        uint256 assetsInTheSafe = IERC20(_asset).balanceOf(assetsCustodian);
+        if (assetsToWithdraw == 0 || assetsToWithdraw > assetsInTheSafe) return;
+
+        // cache
+        uint256 _totalAssets = IERC4626(address(this)).totalAssets();
+        uint256 _totalSupply = IERC4626(address(this)).totalSupply();
+        uint40 lastRedeemEpochIdSettled = self.redeemEpochId - 2;
+
+        SettleData storage settleData = self.settles[redeemSettleId];
+
+        settleData.totalAssets = _totalAssets;
+        settleData.totalSupply = _totalSupply;
+
+        // external call
+        ERC7540(address(this)).void(pendingShares);
+
+        _totalAssets -= assetsToWithdraw;
+        _totalSupply -= pendingShares;
+
+        self.totalAssets = _totalAssets;
+
+        self.redeemSettleId = redeemSettleId + 2;
+        self.lastRedeemEpochIdSettled = lastRedeemEpochIdSettled;
+
+        IERC20(_asset).safeTransferFrom(assetsCustodian, address(this), assetsToWithdraw);
+
+        emit SettleRedeem(
+            lastRedeemEpochIdSettled, redeemSettleId, _totalAssets, _totalSupply, assetsToWithdraw, pendingShares
+        );
     }
 }
