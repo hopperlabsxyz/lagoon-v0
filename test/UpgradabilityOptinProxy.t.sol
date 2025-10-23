@@ -24,7 +24,7 @@ import {DelayProxyAdmin} from "@src/proxy/DelayProxyAdmin.sol";
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {InitStruct} from "@src/protocol-v2/OptinProxyFactory.sol";
-import {Vault as Vault6} from "@src/v0.6.0/Vault/Vault.sol";
+import {Vault as Vault6} from "@src/v0.6.0/vault/Vault.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {console} from "forge-std/console.sol";
 
