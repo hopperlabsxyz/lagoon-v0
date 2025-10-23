@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -20,7 +20,11 @@ struct InitStruct {
 }
 
 interface IVault {
-    function initialize(bytes memory data, address feeRegistry, address wrappedNativeToken) external;
+    function initialize(
+        bytes memory data,
+        address feeRegistry,
+        address wrappedNativeToken
+    ) external;
 }
 
 /// @title BeaconProxyFactory
@@ -61,7 +65,10 @@ contract BeaconProxyFactory is UpgradeableBeacon {
     /// @param init Initialization data for the proxy
     /// @param salt Salt used for deterministic address calculation
     /// @return The address of the newly created proxy
-    function createBeaconProxy(bytes memory init, bytes32 salt) public returns (address) {
+    function createBeaconProxy(
+        bytes memory init,
+        bytes32 salt
+    ) public returns (address) {
         address proxy = address(
             new BeaconProxy{salt: salt}(
                 address(this), abi.encodeWithSelector(IVault.initialize.selector, init, REGISTRY, WRAPPED_NATIVE)
@@ -80,7 +87,10 @@ contract BeaconProxyFactory is UpgradeableBeacon {
     /// @param init Structured initialization data for the vault
     /// @param salt Salt used for deterministic address calculation
     /// @return The address of the newly created vault proxy
-    function createVaultProxy(InitStruct calldata init, bytes32 salt) external returns (address) {
+    function createVaultProxy(
+        InitStruct calldata init,
+        bytes32 salt
+    ) external returns (address) {
         return createBeaconProxy(abi.encode(init), salt);
     }
 }

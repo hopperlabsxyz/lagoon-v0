@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
@@ -82,7 +82,10 @@ abstract contract LogicRegistry is Ownable2StepUpgradeable {
     /// @param fromLogic Previous logic implementation (unused in this implementation)
     /// @param logic Address of the logic implementation to check
     /// @return True if the logic is whitelisted, false otherwise
-    function canUseLogic(address fromLogic, address logic) public view returns (bool) {
+    function canUseLogic(
+        address fromLogic,
+        address logic
+    ) public view returns (bool) {
         if (owner() == address(0)) return true; // logic can always be used if the protocol renounceOwnership()
         return _getLogicRegistryStorage().whitelist[logic];
     }

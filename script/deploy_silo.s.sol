@@ -23,7 +23,10 @@ contract DeploySilo is Script {
         vm.stopBroadcast();
     }
 
-    function deploySilo(address _asset, address _wrappedNativeToken) internal returns (address) {
+    function deploySilo(
+        address _asset,
+        address _wrappedNativeToken
+    ) internal returns (address) {
         console.log("--- deploySilo() ---");
 
         Options memory opts;

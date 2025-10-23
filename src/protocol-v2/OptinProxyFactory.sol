@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {OptinProxy} from "@src/proxy/OptinProxy.sol";
 
 interface IVault {
-    function initialize(bytes memory data, address feeRegistry, address wrappedNativeToken) external;
+    function initialize(
+        bytes memory data,
+        address feeRegistry,
+        address wrappedNativeToken
+    ) external;
 }
 
 /// @title OptinProxyFactoryStorage
@@ -89,7 +93,11 @@ contract OptinProxyFactory is OwnableUpgradeable {
     /// @param _registry Address of the logic registry contract
     /// @param _wrappedNativeToken Address of the wrapped native token (e.g. WETH)
     /// @param owner Address of the initial owner
-    function initialize(address _registry, address _wrappedNativeToken, address owner) public initializer {
+    function initialize(
+        address _registry,
+        address _wrappedNativeToken,
+        address owner
+    ) public initializer {
         __Ownable_init(owner);
         OptinProxyFactoryStorage storage $ = _getProxyFactoryStorage();
         $.REGISTRY = _registry;
