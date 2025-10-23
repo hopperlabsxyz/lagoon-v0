@@ -2,31 +2,16 @@
 pragma solidity 0.8.26;
 
 import {Roles} from "./Roles.sol";
+import {RolesLib} from "./libraries/RolesLib.sol";
 import {WhitelistableLib} from "./libraries/WhitelistableLib.sol";
 
 abstract contract Whitelistable is Roles {
-    using WhitelistableLib for WhitelistableStorage;
-
-    // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))
-    /// @custom:storage-location erc7201:hopper.storage.Whitelistable
-    // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant whitelistableStorage = 0x083cc98ab296d1a1f01854b5f7a2f47df4425a56ba7b35f7faa3a336067e4800;
-
     /// @custom:storage-definition erc7201:hopper.storage.Whitelistable
     /// @param isWhitelisted The mapping of whitelisted addresses.
     /// @param isActivated The flag to check if the whitelist is activated.
     struct WhitelistableStorage {
         mapping(address => bool) isWhitelisted;
         bool isActivated;
-    }
-
-    /// @dev Returns the storage struct of the whitelist.
-    /// @return _whitelistableStorage The storage struct of the whitelist.
-    function _getWhitelistableStorage() internal pure returns (WhitelistableStorage storage _whitelistableStorage) {
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            _whitelistableStorage.slot := whitelistableStorage
-        }
     }
 
     /// @dev Initializes the whitelist.
@@ -36,14 +21,14 @@ abstract contract Whitelistable is Roles {
         bool activate
     ) internal onlyInitializing {
         if (activate) {
-            WhitelistableStorage storage $ = _getWhitelistableStorage();
+            WhitelistableStorage storage $ = WhitelistableLib._getWhitelistableStorage();
             $.isActivated = true;
         }
     }
 
     /// @notice Deactivates the whitelist
     function disableWhitelist() public onlyOwner {
-        _getWhitelistableStorage().disableWhitelist();
+        WhitelistableLib.disableWhitelist();
     }
 
     /// @notice Checks if an account is whitelisted
@@ -52,8 +37,8 @@ abstract contract Whitelistable is Roles {
     function isWhitelisted(
         address account
     ) public view returns (bool) {
-        WhitelistableStorage storage $ = _getWhitelistableStorage();
-        if (_getRolesStorage().feeRegistry.protocolFeeReceiver() == account) {
+        WhitelistableStorage storage $ = WhitelistableLib._getWhitelistableStorage();
+        if (RolesLib._getRolesStorage().feeRegistry.protocolFeeReceiver() == account) {
             return true;
         }
         return $.isActivated ? $.isWhitelisted[account] : true;
@@ -63,7 +48,7 @@ abstract contract Whitelistable is Roles {
     function addToWhitelist(
         address[] memory accounts
     ) external onlyWhitelistManager {
-        _getWhitelistableStorage().addToWhitelist(accounts);
+        WhitelistableLib.addToWhitelist(accounts);
     }
 
     /// @notice Removes multiple accounts from the whitelist
@@ -71,6 +56,6 @@ abstract contract Whitelistable is Roles {
     function revokeFromWhitelist(
         address[] memory accounts
     ) external onlyWhitelistManager {
-        _getWhitelistableStorage().revokeFromWhitelist(accounts);
+        WhitelistableLib.revokeFromWhitelist(accounts);
     }
 }

@@ -34,7 +34,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function __Roles_init(
         RolesStorage memory roles
     ) internal onlyInitializing {
-        RolesStorage storage $ = _getRolesStorage();
+        RolesStorage storage $ = RolesLib._getRolesStorage();
 
         $.whitelistManager = roles.whitelistManager;
         $.feeReceiver = roles.feeReceiver;
@@ -43,36 +43,22 @@ abstract contract Roles is Ownable2StepUpgradeable {
         $.valuationManager = roles.valuationManager;
     }
 
-    // keccak256(abi.encode(uint256(keccak256("hopper.storage.Roles")) - 1)) & ~bytes32(uint256(0xff))
-    /// @custom:storage-location erc7201:hopper.storage.Roles
-    // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant rolesStorage = 0x7c302ed2c673c3d6b4551cf74a01ee649f887e14fd20d13dbca1b6099534d900;
-
-    /// @dev Returns the storage struct of the roles.
-    /// @return _rolesStorage The storage struct of the roles.
-    function _getRolesStorage() internal pure returns (RolesStorage storage _rolesStorage) {
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            _rolesStorage.slot := rolesStorage
-        }
-    }
-
     /// @dev Returns the storage struct of the roles.
     /// @return _rolesStorage The storage struct of the roles.
     function getRolesStorage() public pure returns (RolesStorage memory _rolesStorage) {
-        _rolesStorage = _getRolesStorage();
+        _rolesStorage = RolesLib._getRolesStorage();
     }
 
     /// @dev Modifier to check if the caller is the safe.
     modifier onlySafe() {
-        address _safe = _getRolesStorage().safe;
+        address _safe = RolesLib._getRolesStorage().safe;
         if (_safe != msg.sender) revert OnlySafe(_safe);
         _;
     }
 
     /// @dev Modifier to check if the caller is the whitelist manager.
     modifier onlyWhitelistManager() {
-        address _whitelistManager = _getRolesStorage().whitelistManager;
+        address _whitelistManager = RolesLib._getRolesStorage().whitelistManager;
         if (_whitelistManager != msg.sender) {
             revert OnlyWhitelistManager(_whitelistManager);
         }
@@ -81,7 +67,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
 
     /// @dev Modifier to check if the caller is the valuation manager.
     modifier onlyValuationManager() {
-        address _valuationManager = _getRolesStorage().valuationManager;
+        address _valuationManager = RolesLib._getRolesStorage().valuationManager;
         if (_valuationManager != msg.sender) {
             revert OnlyValuationManager(_valuationManager);
         }
@@ -94,7 +80,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function updateWhitelistManager(
         address _whitelistManager
     ) external onlyOwner {
-        RolesLib.updateWhitelistManager(_getRolesStorage(), _whitelistManager);
+        RolesLib.updateWhitelistManager(_whitelistManager);
     }
 
     /// @notice Updates the address of the valuation manager.
@@ -103,7 +89,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function updateValuationManager(
         address _valuationManager
     ) external onlyOwner {
-        RolesLib.updateValuationManager(_getRolesStorage(), _valuationManager);
+        RolesLib.updateValuationManager(_valuationManager);
     }
 
     /// @notice Updates the address of the fee receiver.
@@ -112,6 +98,6 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function updateFeeReceiver(
         address _feeReceiver
     ) external onlyOwner {
-        RolesLib.updateFeeReceiver(_getRolesStorage(), _feeReceiver);
+        RolesLib.updateFeeReceiver(_feeReceiver);
     }
 }

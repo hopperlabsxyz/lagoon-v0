@@ -36,20 +36,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         Rates oldRates;
     }
 
-    // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
-    /// @custom:storage-location erc7201:hopper.storage.FeeManager
-    // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant feeManagerStorage = 0xa5292f7ccd85acc1b3080c01f5da9af7799f2c26826bd4d79081d6511780bd00;
-
-    /// @notice Get the storage slot for the FeeManagerStorage struct
-    /// @return _feeManagerStorage the storage slot
-    function _getFeeManagerStorage() internal pure returns (FeeManagerStorage storage _feeManagerStorage) {
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            _feeManagerStorage.slot := feeManagerStorage
-        }
-    }
-
     /// @notice Initialize the FeeManager contract
     /// @param _registry the address of the fee registry contract
     /// @param _managementRate the management rate, expressed in BPS
@@ -71,7 +57,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
             revert AboveMaxRate(MAX_PERFORMANCE_RATE);
         }
 
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
+        FeeManagerStorage storage $ = FeeLib._getFeeManagerStorage();
 
         $.newRatesTimestamp = block.timestamp;
 
@@ -84,37 +70,12 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         $.rates.performanceRate = _performanceRate;
     }
 
-    /// @notice Take the fees by minting the manager and protocol shares
-    /// @param feeReceiver the address that will receive the manager shares
-    /// @param protocolFeeReceiver the address that will receive the protocol shares
-    function _takeFees(
-        address feeReceiver,
-        address protocolFeeReceiver
-    ) internal {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-
-        uint8 decimals = decimals();
-        (uint256 managerShares, uint256 protocolShares) =
-            FeeLib.calculateFees($, totalAssets(), totalSupply(), _decimalsOffset(), decimals);
-
-        if (managerShares > 0) {
-            _mint(feeReceiver, managerShares);
-            if (
-                protocolShares > 0 // they can't be protocolShares without managerShares
-            ) _mint(protocolFeeReceiver, protocolShares);
-        }
-        uint256 pricePerShare = _convertToAssets(10 ** decimals, Math.Rounding.Floor);
-        _setHighWaterMark(pricePerShare);
-
-        $.lastFeeTime = block.timestamp;
-    }
-
     /// @notice update the fee rates, the new rates will be applied after the cooldown period
     /// @param newRates the new fee rates
     function updateRates(
         Rates memory newRates
     ) external onlyOwner {
-        FeeLib.updateRates(_getFeeManagerStorage(), newRates);
+        FeeLib.updateRates(FeeLib._getFeeManagerStorage(), newRates);
     }
 
     /// @dev Since we have a cooldown period and to avoid a double call
@@ -122,22 +83,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// following the timestamp
     /// @notice the current fee rates
     function feeRates() public view returns (Rates memory) {
-        return FeeLib.feeRates(_getFeeManagerStorage());
-    }
-
-    /// @dev Update the high water mark only if the new value is greater than the current one
-    /// @dev The high water mark is the highest price per share ever reached
-    /// @param _newHighWaterMark the new high water mark
-    function _setHighWaterMark(
-        uint256 _newHighWaterMark
-    ) internal {
-        FeeManagerStorage storage $ = _getFeeManagerStorage();
-
-        uint256 _highWaterMark = $.highWaterMark;
-
-        if (_newHighWaterMark > _highWaterMark) {
-            emit HighWaterMarkUpdated(_highWaterMark, _newHighWaterMark);
-            $.highWaterMark = _newHighWaterMark;
-        }
+        return FeeLib.feeRates();
     }
 }
