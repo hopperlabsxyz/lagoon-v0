@@ -72,7 +72,7 @@ contract TestInitiateClosing is BaseTest {
 
         // user 3 request deposit before vault goes into closing state
         requestDeposit(user3Assets / 2, user3.addr); // 50k assets
-        // user 3 request redeem before vault goes into closing state on half of his shares
+            // user 3 request redeem before vault goes into closing state on half of his shares
         requestRedeem(25_000 * 10 ** vault.decimals(), user3.addr); // 25k shares pending
     }
 

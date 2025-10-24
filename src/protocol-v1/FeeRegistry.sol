@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {CustomRateUpdated, DefaultRateUpdated, ProtocolFeeReceiverUpdated} from "./Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
@@ -37,7 +37,10 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     /// @notice Initializes the owner and protocol fee receiver.
     /// @param initialOwner The contract protocol address.
     /// @param _protocolFeeReceiver The protocol fee receiver.
-    function initialize(address initialOwner, address _protocolFeeReceiver) public initializer {
+    function initialize(
+        address initialOwner,
+        address _protocolFeeReceiver
+    ) public initializer {
         __Ownable_init(initialOwner);
         FeeRegistryStorage storage $ = _getFeeRegistryStorage();
         $.protocolFeeReceiver = _protocolFeeReceiver;
@@ -73,7 +76,11 @@ contract FeeRegistry is Ownable2StepUpgradeable {
     /// @param vault The address of the vault.
     /// @param rate The custom fee rate for the vault.
     /// @param isActivated A boolean indicating whether the custom rate is activated.
-    function updateCustomRate(address vault, uint16 rate, bool isActivated) external onlyOwner {
+    function updateCustomRate(
+        address vault,
+        uint16 rate,
+        bool isActivated
+    ) external onlyOwner {
         _getFeeRegistryStorage().customRate[vault] = CustomRate({isActivated: isActivated, rate: rate});
         emit CustomRateUpdated(vault, rate, isActivated);
     }

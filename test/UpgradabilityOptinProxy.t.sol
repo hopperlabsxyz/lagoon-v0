@@ -24,7 +24,7 @@ import {DelayProxyAdmin} from "@src/proxy/DelayProxyAdmin.sol";
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {InitStruct} from "@src/protocol-v2/OptinProxyFactory.sol";
-import {Vault as Vault6} from "@src/v0.6.0/Vault/Vault.sol";
+import {Vault as Vault6} from "@src/v0.6.0/vault/Vault.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {console} from "forge-std/console.sol";
 
@@ -115,11 +115,7 @@ contract Upgradable is Test {
 
         // first we create a vault whome logic is a vault v0.5
         vault = factory.createVaultProxy({
-            _logic: v5,
-            _initialOwner: admin.addr,
-            _init: v,
-            salt: "0x1123",
-            _initialDelay: 86_400
+            _logic: v5, _initialOwner: admin.addr, _init: v, salt: "0x1123", _initialDelay: 86_400
         });
         assertEq(Vault(vault).version(), "v0.5.0");
 
