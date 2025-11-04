@@ -81,6 +81,13 @@ library FeeLib {
         }
     }
 
+    function calculateEntryFees(
+        uint256 rate,
+        uint256 assets
+    ) public pure returns (uint256 entryFee) {
+        return assets.mulDiv(rate, BPS_DIVIDER, Math.Rounding.Ceil);
+    }
+
     /// @dev Update the high water mark only if the new value is greater than the current one
     /// @dev The high water mark is the highest price per share ever reached
     /// @param _newHighWaterMark the new high water mark
@@ -129,10 +136,14 @@ library FeeLib {
     /// @return protocolShares the protocol shares to be minted as fees
     function calculateFees() public view returns (uint256 managerShares, uint256 protocolShares) {
         FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
-
-        uint256 _decimals = ERC7540(address(this)).decimals();
+        ERC7540.ERC7540Storage storage $erc7540 = ERC7540Lib._getERC7540Storage();
 
         Rates memory _rates = feeRates();
+        uint256 _decimals = ERC7540(address(this)).decimals();
+
+        /// Entry fee computation ///
+
+        uint256 entryFees = calculateEntryFees(0, $erc7540.settles[$erc7540.depositSettleId].pendingAssets);
 
         /// Management fee computation ///
 
@@ -156,7 +167,7 @@ library FeeLib {
 
         /// Protocol fee computation & convertion to shares ///
 
-        uint256 totalFees = managementFees + performanceFees;
+        uint256 totalFees = entryFees + managementFees + performanceFees;
 
         // since we are minting shares without actually increasing the totalAssets, we need to compensate the future
         // dilution of price per share by virtually decreasing totalAssets in our computation

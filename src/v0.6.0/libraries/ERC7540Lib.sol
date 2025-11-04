@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {ERC7540} from "../ERC7540.sol";
+import {FeeLib} from "../FeeManager.sol";
 import {
     CantDepositNativeToken,
     ERC7540InvalidOperator,
