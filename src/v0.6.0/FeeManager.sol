@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {ERC7540} from "./ERC7540.sol";
 import {FeeLib} from "./libraries/FeeLib.sol";
 import {AboveMaxRate} from "./primitives/Errors.sol";
 import {HighWaterMarkUpdated, RatesUpdated} from "./primitives/Events.sol";
@@ -10,7 +9,7 @@ import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/acces
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 
-abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
+abstract contract FeeManager is Ownable2StepUpgradeable {
     using Math for uint256;
 
     uint16 public constant MAX_MANAGEMENT_RATE = FeeLib.MAX_MANAGEMENT_RATE;

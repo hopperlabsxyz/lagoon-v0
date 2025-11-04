@@ -138,8 +138,9 @@ library FeeLib {
         FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
         ERC7540.ERC7540Storage storage $erc7540 = ERC7540Lib._getERC7540Storage();
 
-        Rates memory _rates = feeRates();
         uint256 _decimals = ERC7540(address(this)).decimals();
+
+        Rates memory _rates = feeRates();
 
         /// Entry fee computation ///
 
