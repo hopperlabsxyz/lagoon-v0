@@ -6,9 +6,14 @@ pragma solidity 0.8.26;
 /// @dev Holds management and performance rates for the vault.
 /// @param managementRate Management fee rate in basis points.
 /// @param performanceRate Performance fee rate in basis points.
+/// @param entryRate Entry fee rate in basis points.
+/// @param exitRate Exit fee rate in basis points.
 struct Rates {
     uint16 managementRate;
     uint16 performanceRate;
+    // TODO: make sure there is no storage collision adding those fields
+    uint16 entryRate;
+    uint16 exitRate;
 }
 
 /// @dev Holds data for a specific epoch.

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
+import "forge-std/Test.sol";
+
 import {ERC7540} from "../ERC7540.sol";
 import {FeeLib} from "../FeeManager.sol";
 import {
@@ -25,6 +27,7 @@ import {
     TotalAssetsUpdated
 } from "../primitives/Events.sol";
 import {EpochData, SettleData} from "../primitives/Struct.sol";
+import {Rates} from "../primitives/Struct.sol";
 import {Constant} from "./Constant.sol";
 import {PausableLib} from "./PausableLib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
@@ -248,7 +251,8 @@ library ERC7540Lib {
         _totalAssets += _pendingAssets;
         _totalSupply += shares;
 
-        ERC7540(address(this)).forge(address(this), shares);
+        uint256 entryFeesShares = FeeLib.takeEntryFees(shares);
+        ERC7540(address(this)).forge(address(this), shares - entryFeesShares);
 
         $.totalAssets = _totalAssets;
         $.depositSettleId = depositSettleId + 2;

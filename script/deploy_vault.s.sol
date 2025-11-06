@@ -24,6 +24,8 @@ contract DeployVault is Script {
         // Fees
         uint16 MANAGEMENT_RATE = uint16(vm.envUint("MANAGEMENT_RATE"));
         uint16 PERFORMANCE_RATE = uint16(vm.envUint("PERFORMANCE_RATE"));
+        uint16 ENTRY_RATE = uint16(vm.envUint("ENTRY_RATE"));
+        uint16 EXIT_RATE = uint16(vm.envUint("EXIT_RATE"));
         uint256 RATE_UPDATE_COOLDOWN = vm.envUint("RATE_UPDATE_COOLDOWN");
 
         // Roles
@@ -43,6 +45,8 @@ contract DeployVault is Script {
             feeReceiver: FEE_RECEIVER,
             managementRate: MANAGEMENT_RATE,
             performanceRate: PERFORMANCE_RATE,
+            entryRate: ENTRY_RATE,
+            exitRate: EXIT_RATE,
             enableWhitelist: ENABLE_WHITELIST,
             rateUpdateCooldown: RATE_UPDATE_COOLDOWN
         });

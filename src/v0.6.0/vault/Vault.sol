@@ -49,6 +49,8 @@ using SafeERC20 for IERC20;
 /// @param wrappedNativeToken The address of the wrapped native token.
 /// @param managementRate The management fee rate.
 /// @param performanceRate The performance fee rate.
+/// @param entryRate The entry fee rate.
+/// @param exitRate The exit fee rate.
 /// @param rateUpdateCooldown The cooldown period for updating the fee rates.
 /// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
 struct InitStruct {
@@ -62,6 +64,8 @@ struct InitStruct {
     address feeReceiver;
     uint16 managementRate;
     uint16 performanceRate;
+    uint16 entryRate;
+    uint16 exitRate;
     bool enableWhitelist;
     uint256 rateUpdateCooldown;
 }
@@ -353,7 +357,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     function settleDeposit(
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
-        _updateTotalAssetsAndTakeFees(_newTotalAssets);
+        ERC7540Lib.updateTotalAssets(_newTotalAssets);
+        FeeLib.takeManagementAndPerformanceFees();
         ERC7540Lib.settleDeposit(msg.sender);
         ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
@@ -365,20 +370,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     function settleRedeem(
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
-        _updateTotalAssetsAndTakeFees(_newTotalAssets);
-        ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
-    }
-
-    /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
-    /// If possible, it also settles redeem requests.
-    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
-    function _updateTotalAssetsAndTakeFees(
-        uint256 _newTotalAssets
-    ) internal {
-        RolesStorage storage $roles = RolesLib._getRolesStorage();
-
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
-        FeeLib.takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+        FeeLib.takeManagementAndPerformanceFees();
+        ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
 
     /////////////////////////////

@@ -6,6 +6,7 @@ import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
 import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IWETH9} from "./interfaces/IWETH9.sol";
 import {ERC7540Lib} from "./libraries/ERC7540Lib.sol";
+import {FeeLib} from "./libraries/FeeLib.sol";
 import {State} from "./primitives/Enums.sol";
 import {
     CantDepositNativeToken,
@@ -28,6 +29,7 @@ import {
     TotalAssetsLifespanUpdated,
     TotalAssetsUpdated
 } from "./primitives/Events.sol";
+import {Rates} from "./primitives/Struct.sol";
 import {EpochData, SettleData} from "./primitives/Struct.sol";
 import {
     ERC20Upgradeable,
@@ -298,6 +300,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         if (requestId > $.lastDepositEpochIdSettled) {
             revert RequestIdNotClaimable();
         }
+        Rates memory _rates = FeeLib.feeRates();
+        uint256 entryFees = FeeLib.calculateEntryFees(_rates.entryRate, assets);
+        assets -= entryFees;
 
         $.epochs[requestId].depositRequest[controller] -= assets;
         shares = convertToShares(assets, requestId);

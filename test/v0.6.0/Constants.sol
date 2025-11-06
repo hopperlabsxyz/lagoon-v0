@@ -80,6 +80,16 @@ contract Constants is Test {
         uint16 _managementRate,
         uint16 _performanceRate
     ) internal {
+        return setUpVault(_protocolRate, _managementRate, _performanceRate, 0, 0);
+    }
+
+    function setUpVault(
+        uint16 _protocolRate,
+        uint16 _managementRate,
+        uint16 _performanceRate,
+        uint16 _entryRate,
+        uint16 _exitRate
+    ) internal {
         feeRegistry = new FeeRegistry(false);
         feeRegistry.initialize(dao.addr, dao.addr);
 
@@ -105,7 +115,9 @@ contract Constants is Test {
             managementRate: _managementRate,
             performanceRate: _performanceRate,
             rateUpdateCooldown: rateUpdateCooldown,
-            enableWhitelist: enableWhitelist
+            enableWhitelist: enableWhitelist,
+            entryRate: _entryRate,
+            exitRate: _exitRate
         });
         if (proxy) {
             address vaultHelper = factory.createVaultProxy(initStruct, keccak256("42"));

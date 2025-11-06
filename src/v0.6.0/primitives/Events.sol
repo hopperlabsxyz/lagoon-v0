@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {State} from "./Enums.sol";
+import {State, FeeType} from "./Enums.sol";
 import {Rates} from "./Struct.sol";
 
 // ********************* VAULT ********************* //
@@ -78,6 +78,11 @@ event RatesUpdated(Rates oldRates, Rates newRate, uint256 timestamp);
 /// @param oldHighWaterMark The old highWaterMark.
 /// @param newHighWaterMark The new highWaterMark.
 event HighWaterMarkUpdated(uint256 oldHighWaterMark, uint256 newHighWaterMark);
+
+/// @notice Emitted when a fee is taken from the vault.
+/// @param feeType The type of fee being taken.
+/// @param shares The number of shares minted as fees.
+event FeeTaken(FeeType indexed feeType, uint256 shares);
 
 // ********************* ERC7540 ********************* //
 /// @notice Emitted when the totalAssets variable is updated.

@@ -3,14 +3,12 @@ pragma solidity 0.8.26;
 
 import {ERC7540} from "../ERC7540.sol";
 import {FeeManager} from "../FeeManager.sol";
-import {Roles} from "../Roles.sol";
 import {FeeLib} from "../libraries/FeeLib.sol";
 import {State} from "../primitives/Enums.sol";
 import {StateUpdated} from "../primitives/Events.sol";
 import {VaultStorage} from "../primitives/VaultStorage.sol";
 import {VaultStorage} from "../primitives/VaultStorage.sol";
 import {ERC7540Lib} from "./ERC7540Lib.sol";
-import {RolesLib} from "./RolesLib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -47,9 +45,8 @@ library VaultLib {
     function close(
         uint256 _newTotalAssets
     ) public {
-        Roles.RolesStorage storage $roles = RolesLib._getRolesStorage();
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
-        FeeLib.takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+        FeeLib.takeManagementAndPerformanceFees();
 
         ERC7540Lib.settleDeposit(msg.sender);
         ERC7540Lib.settleRedeem(msg.sender);
