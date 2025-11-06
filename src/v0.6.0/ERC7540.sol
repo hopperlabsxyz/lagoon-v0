@@ -8,37 +8,12 @@ import {IWETH9} from "./interfaces/IWETH9.sol";
 import {ERC7540Lib} from "./libraries/ERC7540Lib.sol";
 import {FeeLib} from "./libraries/FeeLib.sol";
 import {State} from "./primitives/Enums.sol";
-import {
-    CantDepositNativeToken,
-    ERC7540InvalidOperator,
-    ERC7540PreviewDepositDisabled,
-    ERC7540PreviewMintDisabled,
-    ERC7540PreviewRedeemDisabled,
-    ERC7540PreviewWithdrawDisabled,
-    NewTotalAssetsMissing,
-    OnlyOneRequestAllowed,
-    RequestIdNotClaimable,
-    RequestNotCancelable,
-    WrongNewTotalAssets
-} from "./primitives/Errors.sol";
-import {
-    DepositRequestCanceled,
-    NewTotalAssetsUpdated,
-    SettleDeposit,
-    SettleRedeem,
-    TotalAssetsLifespanUpdated,
-    TotalAssetsUpdated
-} from "./primitives/Events.sol";
+import {CantDepositNativeToken, ERC7540InvalidOperator, ERC7540PreviewDepositDisabled, ERC7540PreviewMintDisabled, ERC7540PreviewRedeemDisabled, ERC7540PreviewWithdrawDisabled, NewTotalAssetsMissing, OnlyOneRequestAllowed, RequestIdNotClaimable, RequestNotCancelable, WrongNewTotalAssets} from "./primitives/Errors.sol";
+import {DepositRequestCanceled, NewTotalAssetsUpdated, SettleDeposit, SettleRedeem, TotalAssetsLifespanUpdated, TotalAssetsUpdated} from "./primitives/Events.sol";
 import {Rates} from "./primitives/Struct.sol";
 import {EpochData, SettleData} from "./primitives/Struct.sol";
-import {
-    ERC20Upgradeable,
-    IERC20,
-    IERC20Metadata
-} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {
-    ERC20PausableUpgradeable
-} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
+import {ERC20Upgradeable, IERC20, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
@@ -51,7 +26,12 @@ using Math for uint256;
 /// @title ERC7540Upgradeable
 /// @dev An implementation of the ERC7540 standard. It defines the core data structures and functions necessary
 /// to do requests and process them.
-abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgradeable, ERC4626Upgradeable {
+abstract contract ERC7540 is
+    IERC7540Redeem,
+    IERC7540Deposit,
+    ERC20PausableUpgradeable,
+    ERC4626Upgradeable
+{
     /// @custom:storage-location erc7201:hopper.storage.ERC7540
     /// @param totalAssets The total assets.
     /// @param depositEpochId The current deposit epoch ID.
@@ -127,9 +107,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @notice Make sure the caller is an operator or the controller.
     /// @param controller The controller.
-    modifier onlyOperator(
-        address controller
-    ) {
+    modifier onlyOperator(address controller) {
         if (controller != msg.sender && !isOperator(controller, msg.sender)) {
             revert ERC7540InvalidOperator();
         }
@@ -142,7 +120,12 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @notice Returns the total assets.
     /// @return The total assets.
-    function totalAssets() public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+    function totalAssets()
+        public
+        view
+        override(IERC4626, ERC4626Upgradeable)
+        returns (uint256)
+    {
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
         return $.totalAssets;
     }
@@ -185,7 +168,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address operator,
         bool approved
     ) external whenNotPaused returns (bool success) {
-        ERC7540Lib._getERC7540Storage().isOperator[msg.sender][operator] = approved;
+        ERC7540Lib._getERC7540Storage().isOperator[msg.sender][
+            operator
+        ] = approved;
         emit OperatorSet(msg.sender, operator, approved);
         return true;
     }
@@ -250,7 +235,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
                 revert CantDepositNativeToken();
             }
         } else {
-            IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
+            IERC20(asset()).safeTransferFrom(
+                owner,
+                address($.pendingSilo),
+                assets
+            );
         }
         $.epochs[_depositId].depositRequest[controller] += assets;
 
@@ -300,9 +289,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         if (requestId > $.lastDepositEpochIdSettled) {
             revert RequestIdNotClaimable();
         }
-        Rates memory _rates = FeeLib.feeRates();
-        uint256 entryFees = FeeLib.calculateEntryFees(_rates.entryRate, assets);
-        assets -= entryFees;
+        assets -= FeeLib.calculateEntryFees(assets);
 
         $.epochs[requestId].depositRequest[controller] -= assets;
         shares = convertToShares(assets, requestId);
@@ -347,7 +334,14 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             revert RequestIdNotClaimable();
         }
 
-        assets = ERC7540Lib.convertToAssets(shares, requestId, Math.Rounding.Ceil);
+        assets = ERC7540Lib.convertToAssets(
+            shares,
+            requestId,
+            Math.Rounding.Ceil
+        );
+        // TODO: add tests that demonstrates this working, no failed test if
+        // this line is removed write now
+        assets -= FeeLib.calculateEntryFees(assets);
 
         $.epochs[requestId].depositRequest[controller] -= assets;
         _transfer(address(this), receiver, shares);
@@ -366,9 +360,15 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             revert RequestNotCancelable(requestId);
         }
 
-        uint256 requestedAmount = $.epochs[requestId].depositRequest[msg.sender];
+        uint256 requestedAmount = $.epochs[requestId].depositRequest[
+            msg.sender
+        ];
         $.epochs[requestId].depositRequest[msg.sender] = 0;
-        IERC20(asset()).safeTransferFrom(address($.pendingSilo), msg.sender, requestedAmount);
+        IERC20(asset()).safeTransferFrom(
+            address($.pendingSilo),
+            msg.sender,
+            requestedAmount
+        );
 
         emit DepositRequestCanceled(requestId, msg.sender);
     }
@@ -426,9 +426,16 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         if (requestId > $.lastRedeemEpochIdSettled) {
             revert RequestIdNotClaimable();
         }
+        // TODO: add tests that demonstrates this working, no failed test if
+        // this line is removed write now
+        shares -= FeeLib.calculateExitFees(shares);
 
         $.epochs[requestId].redeemRequest[controller] -= shares;
-        assets = ERC7540Lib.convertToAssets(shares, requestId, Math.Rounding.Floor);
+        assets = ERC7540Lib.convertToAssets(
+            shares,
+            requestId,
+            Math.Rounding.Floor
+        );
         IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Withdraw(msg.sender, receiver, controller, assets, shares);
@@ -451,25 +458,27 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             revert RequestIdNotClaimable();
         }
 
-        shares = ERC7540Lib.convertToShares(assets, requestId, Math.Rounding.Ceil);
+        shares = ERC7540Lib.convertToShares(
+            assets,
+            requestId,
+            Math.Rounding.Ceil
+        );
+        // TODO: add tests that demonstrates this working, no failed test if
+        // this line is removed write now
+        shares -= FeeLib.calculateExitFees(shares);
+
         $.epochs[requestId].redeemRequest[controller] -= shares;
         IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Withdraw(msg.sender, receiver, controller, assets, shares);
     }
 
-    function forge(
-        address to,
-        uint256 shares
-    ) external {
+    function forge(address to, uint256 shares) external {
         require(msg.sender == address(this));
         _mint(to, shares);
     }
 
-    function void(
-        address from,
-        uint256 shares
-    ) external {
+    function void(address from, uint256 shares) external {
         require(msg.sender == address(this));
         _burn(from, shares);
     }
@@ -486,7 +495,12 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 assets,
         uint256 requestId
     ) public view returns (uint256) {
-        return ERC7540Lib.convertToShares(assets, uint40(requestId), Math.Rounding.Floor);
+        return
+            ERC7540Lib.convertToShares(
+                assets,
+                uint40(requestId),
+                Math.Rounding.Floor
+            );
     }
 
     /// @dev Converts shares to assets for a specific epoch.
@@ -496,7 +510,12 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 shares,
         uint256 requestId
     ) public view returns (uint256) {
-        return ERC7540Lib.convertToAssets(shares, uint40(requestId), Math.Rounding.Floor);
+        return
+            ERC7540Lib.convertToAssets(
+                shares,
+                uint40(requestId),
+                Math.Rounding.Floor
+            );
     }
 
     /// @notice Returns the pending redeem request for a controller.
@@ -559,12 +578,13 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     function supportsInterface(
         bytes4 interfaceId
     ) public view virtual returns (bool) {
-        return interfaceId == 0x2f0a18c5 // IERC7575
-            || interfaceId == 0xf815c03d // IERC7575 shares
-            || interfaceId == 0xce3bbe50 // IERC7540Deposit
-            || interfaceId == 0x620ee8e4 // IERC7540Redeem
-            || interfaceId == 0xe3bc4e65 // IERC7540
-            || interfaceId == type(IERC165).interfaceId;
+        return
+            interfaceId == 0x2f0a18c5 || // IERC7575
+            interfaceId == 0xf815c03d || // IERC7575 shares
+            interfaceId == 0xce3bbe50 || // IERC7540Deposit
+            interfaceId == 0x620ee8e4 || // IERC7540Redeem
+            interfaceId == 0xe3bc4e65 || // IERC7540
+            interfaceId == type(IERC165).interfaceId;
     }
 
     //////////////////////////////////
@@ -574,16 +594,12 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @dev Settles deposit requests by transferring assets from the pendingSilo to the safe
     /// and minting the corresponding shares to vault.
     /// The function is not implemented here and must be implemented.
-    function settleDeposit(
-        uint256 _newTotalAssets
-    ) public virtual;
+    function settleDeposit(uint256 _newTotalAssets) public virtual;
 
     /// @dev Settles redeem requests by transferring assets from the safe to the vault
     /// and burning the corresponding shares from the pending silo.
     /// The function is not implemented here and must be implemented.
-    function settleRedeem(
-        uint256 _newTotalAssets
-    ) public virtual;
+    function settleRedeem(uint256 _newTotalAssets) public virtual;
 
     function safe() public view virtual returns (address);
 }

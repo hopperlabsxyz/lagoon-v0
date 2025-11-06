@@ -5,9 +5,9 @@ import {ERC7540} from "../ERC7540.sol";
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
 import {ERC7540Lib} from "../libraries/ERC7540Lib.sol";
-import {AboveMaxRate} from "../primitives/Errors.sol";
 import {FeeType} from "../primitives/Enums.sol";
-import {HighWaterMarkUpdated, RatesUpdated, FeeTaken} from "../primitives/Events.sol";
+import {AboveMaxRate} from "../primitives/Errors.sol";
+import {FeeTaken, HighWaterMarkUpdated, RatesUpdated} from "../primitives/Events.sol";
 import {RatesUpdated} from "../primitives/Events.sol";
 import {Rates} from "../primitives/Struct.sol";
 import {Constant} from "./Constant.sol";
@@ -31,16 +31,11 @@ library FeeLib {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
     /// @custom:storage-location erc7201:hopper.storage.FeeManager
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant feeManagerStorage =
-        0xa5292f7ccd85acc1b3080c01f5da9af7799f2c26826bd4d79081d6511780bd00;
+    bytes32 private constant feeManagerStorage = 0xa5292f7ccd85acc1b3080c01f5da9af7799f2c26826bd4d79081d6511780bd00;
 
     /// @notice Get the storage slot for the FeeManagerStorage struct
     /// @return _feeManagerStorage the storage slot
-    function _getFeeManagerStorage()
-        internal
-        pure
-        returns (FeeManager.FeeManagerStorage storage _feeManagerStorage)
-    {
+    function _getFeeManagerStorage() internal pure returns (FeeManager.FeeManagerStorage storage _feeManagerStorage) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             _feeManagerStorage.slot := feeManagerStorage
@@ -61,16 +56,8 @@ library FeeLib {
         uint256 annualRate,
         uint256 timeElapsed
     ) public pure returns (uint256 managementFee) {
-        uint256 annualFee = assets.mulDiv(
-            annualRate,
-            BPS_DIVIDER,
-            Math.Rounding.Ceil
-        );
-        managementFee = annualFee.mulDiv(
-            timeElapsed,
-            ONE_YEAR,
-            Math.Rounding.Ceil
-        );
+        uint256 annualFee = assets.mulDiv(annualRate, BPS_DIVIDER, Math.Rounding.Ceil);
+        managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR, Math.Rounding.Ceil);
     }
 
     /// @dev Calculate the performance fee
@@ -94,30 +81,33 @@ library FeeLib {
             unchecked {
                 profitPerShare = _pricePerShare - _highWaterMark;
             }
-            uint256 profit = profitPerShare.mulDiv(
-                _totalSupply,
-                10 ** _decimals,
-                Math.Rounding.Ceil
-            );
-            performanceFee = profit.mulDiv(
-                _rate,
-                BPS_DIVIDER,
-                Math.Rounding.Ceil
-            );
+            uint256 profit = profitPerShare.mulDiv(_totalSupply, 10 ** _decimals, Math.Rounding.Ceil);
+            performanceFee = profit.mulDiv(_rate, BPS_DIVIDER, Math.Rounding.Ceil);
         }
     }
 
+    // TODO: comments
     function calculateEntryFees(
-        uint256 rate,
-        uint256 assets
-    ) public pure returns (uint256 entryFee) {
-        return assets.mulDiv(rate, BPS_DIVIDER, Math.Rounding.Ceil);
+        uint256 shares
+    ) public returns (uint256 entryFeesShares) {
+        Rates memory _rates = feeRates();
+        entryFeesShares = shares.mulDiv(_rates.entryRate, BPS_DIVIDER, Math.Rounding.Ceil);
+    }
+
+    // TODO: comments
+    function calculateExitFees(
+        uint256 shares
+    ) public returns (uint256 exitFeesShares) {
+        Rates memory _rates = feeRates();
+        exitFeesShares = shares.mulDiv(_rates.exitRate, BPS_DIVIDER, Math.Rounding.Ceil);
     }
 
     /// @dev Update the high water mark only if the new value is greater than the current one
     /// @dev The high water mark is the highest price per share ever reached
     /// @param _newHighWaterMark the new high water mark
-    function setHighWaterMark(uint256 _newHighWaterMark) public {
+    function setHighWaterMark(
+        uint256 _newHighWaterMark
+    ) public {
         FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         uint256 _highWaterMark = $.highWaterMark;
@@ -128,46 +118,43 @@ library FeeLib {
         }
     }
 
-    function takeEntryFees(
+    function doFeeRepartition(
         uint256 shares
-    ) public returns (uint256 entryFeesShares) {
-        Rates memory _rates = feeRates();
-        entryFeesShares = calculateEntryFees(_rates.entryRate, shares);
-        takeFees(entryFeesShares);
-
-        // TODO: test it
-        emit FeeTaken(FeeType.Entry, entryFeesShares);
+    ) internal returns (uint256 managerShares, uint256 protocolShares) {
+        FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
+        protocolShares = shares.mulDiv(protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
+        managerShares = shares - protocolShares;
     }
 
     /// @notice Take the fees by minting the manager and protocol shares
     /// @param shares the amount of fee shares to distribute
-    function takeFees(uint256 shares) public {
-        FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
+    function takeFees(
+        uint256 shares,
+        FeeType feeType
+    ) public {
         Roles.RolesStorage storage $roles = RolesLib._getRolesStorage();
 
         address feeReceiver = $roles.feeReceiver;
         address protocolFeeReceiver = $roles.feeRegistry.protocolFeeReceiver();
 
-        uint256 protocolShares = shares.mulDiv(
-            protocolRate(),
-            BPS_DIVIDER,
-            Math.Rounding.Ceil
-        );
-        uint256 managerShares = shares - protocolShares;
+        (uint256 managerShares, uint256 protocolShares) = doFeeRepartition(shares);
 
         if (managerShares > 0) {
             ERC7540(address(this)).forge(feeReceiver, managerShares);
-            // TODO: emit an event with fees breakdown
             if (
                 protocolShares > 0 // they can't be protocolShares without managerShares
             ) ERC7540(address(this)).forge(protocolFeeReceiver, protocolShares);
         }
-        uint256 pricePerShare = ERC7540(address(this)).convertToAssets(
-            10 ** ERC7540(address(this)).decimals()
-        );
-        setHighWaterMark(pricePerShare);
+        // TODO: test it
+        emit FeeTaken(feeType, shares);
+    }
 
-        $.lastFeeTime = block.timestamp;
+    // TODO: comments
+    function takeEntryFees(
+        uint256 shares
+    ) public returns (uint256 entryFeeShares) {
+        entryFeeShares = calculateEntryFees(shares);
+        takeFees(entryFeeShares, FeeType.Entry);
     }
 
     /// @dev Calculate and return the manager and protocol shares to be minted as fees
@@ -186,54 +173,41 @@ library FeeLib {
 
         uint256 timeElapsed = block.timestamp - $.lastFeeTime;
         uint256 _totalAssets = ERC7540(address(this)).totalAssets();
-        uint256 managementFees = calculateManagementFee(
-            _totalAssets,
-            _rates.managementRate,
-            timeElapsed
-        );
+        uint256 managementFees = calculateManagementFee(_totalAssets, _rates.managementRate, timeElapsed);
 
         // by taking management fees the price per share decreases
-        uint256 pricePerShare = (10 ** _decimals).mulDiv(
+        uint256 pricePerShare = (10 ** _decimals)
+        .mulDiv(
             _totalAssets + 1 - managementFees,
-            ERC7540(address(this)).totalSupply() +
-                10 ** ERC7540Lib.decimalsOffset(),
+            ERC7540(address(this)).totalSupply() + 10 ** ERC7540Lib.decimalsOffset(),
             Math.Rounding.Ceil
         );
 
         /// Performance fee computation ///
 
         uint256 _totalSupply = ERC7540(address(this)).totalSupply();
-        uint256 performanceFees = calculatePerformanceFee(
-            _rates.performanceRate,
-            _totalSupply,
-            pricePerShare,
-            $.highWaterMark,
-            _decimals
-        );
+        uint256 performanceFees =
+            calculatePerformanceFee(_rates.performanceRate, _totalSupply, pricePerShare, $.highWaterMark, _decimals);
 
         uint256 totalFees = managementFees + performanceFees;
 
         // since we are minting shares without actually increasing the totalAssets, we need to compensate the future
         // dilution of price per share by virtually decreasing totalAssets in our computation
         uint256 managementShares = managementFees.mulDiv(
-            _totalSupply + 10 ** ERC7540Lib.decimalsOffset(),
-            (_totalAssets - totalFees) + 1,
-            Math.Rounding.Ceil
+            _totalSupply + 10 ** ERC7540Lib.decimalsOffset(), (_totalAssets - totalFees) + 1, Math.Rounding.Ceil
         );
 
         uint256 performanceShares = performanceFees.mulDiv(
-            _totalSupply + 10 ** ERC7540Lib.decimalsOffset(),
-            (_totalAssets - totalFees) + 1,
-            Math.Rounding.Ceil
+            _totalSupply + 10 ** ERC7540Lib.decimalsOffset(), (_totalAssets - totalFees) + 1, Math.Rounding.Ceil
         );
 
-        takeFees(managementShares + performanceShares);
+        takeFees(managementShares, FeeType.Management);
+        takeFees(performanceShares, FeeType.Performance);
 
-        // TODO: test it
-        emit FeeTaken(FeeType.Management, managementShares);
+        pricePerShare = ERC7540(address(this)).convertToAssets(10 ** ERC7540(address(this)).decimals());
+        setHighWaterMark(pricePerShare);
 
-        // TODO: test it
-        emit FeeTaken(FeeType.Performance, performanceShares);
+        $.lastFeeTime = block.timestamp;
     }
 
     /// @notice update the fee rates, the new rates will be applied after the cooldown period
