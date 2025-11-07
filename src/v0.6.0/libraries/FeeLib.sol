@@ -89,7 +89,7 @@ library FeeLib {
     // TODO: comments
     function calculateEntryFees(
         uint256 shares
-    ) public returns (uint256 entryFeesShares) {
+    ) public view returns (uint256 entryFeesShares) {
         Rates memory _rates = feeRates();
         entryFeesShares = shares.mulDiv(_rates.entryRate, BPS_DIVIDER, Math.Rounding.Ceil);
     }
@@ -97,7 +97,7 @@ library FeeLib {
     // TODO: comments
     function calculateExitFees(
         uint256 shares
-    ) public returns (uint256 exitFeesShares) {
+    ) public view returns (uint256 exitFeesShares) {
         Rates memory _rates = feeRates();
         exitFeesShares = shares.mulDiv(_rates.exitRate, BPS_DIVIDER, Math.Rounding.Ceil);
     }

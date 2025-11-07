@@ -6,8 +6,27 @@ import "forge-std/Test.sol";
 import {ERC7540} from "../ERC7540.sol";
 import {FeeLib} from "../FeeManager.sol";
 import {FeeType} from "../primitives/Enums.sol";
-import {CantDepositNativeToken, ERC7540InvalidOperator, ERC7540PreviewDepositDisabled, ERC7540PreviewMintDisabled, ERC7540PreviewRedeemDisabled, ERC7540PreviewWithdrawDisabled, NewTotalAssetsMissing, OnlyOneRequestAllowed, RequestIdNotClaimable, RequestNotCancelable, WrongNewTotalAssets} from "../primitives/Errors.sol";
-import {DepositRequestCanceled, NewTotalAssetsUpdated, SettleDeposit, SettleRedeem, TotalAssetsLifespanUpdated, TotalAssetsUpdated} from "../primitives/Events.sol";
+import {
+    CantDepositNativeToken,
+    ERC7540InvalidOperator,
+    ERC7540PreviewDepositDisabled,
+    ERC7540PreviewMintDisabled,
+    ERC7540PreviewRedeemDisabled,
+    ERC7540PreviewWithdrawDisabled,
+    NewTotalAssetsMissing,
+    OnlyOneRequestAllowed,
+    RequestIdNotClaimable,
+    RequestNotCancelable,
+    WrongNewTotalAssets
+} from "../primitives/Errors.sol";
+import {
+    DepositRequestCanceled,
+    NewTotalAssetsUpdated,
+    SettleDeposit,
+    SettleRedeem,
+    TotalAssetsLifespanUpdated,
+    TotalAssetsUpdated
+} from "../primitives/Events.sol";
 import {EpochData, SettleData} from "../primitives/Struct.sol";
 import {Rates} from "../primitives/Struct.sol";
 import {Constant} from "./Constant.sol";
@@ -23,16 +42,11 @@ library ERC7540Lib {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
     /// @custom:slot erc7201:hopper.storage.ERC7540
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant erc7540Storage =
-        0x5c74d456014b1c0eb4368d944667a568313858a3029a650ff0cb7b56f8b57a00;
+    bytes32 private constant erc7540Storage = 0x5c74d456014b1c0eb4368d944667a568313858a3029a650ff0cb7b56f8b57a00;
 
     /// @notice Returns the ERC7540 storage struct.
     /// @return _erc7540Storage The ERC7540 storage struct.
-    function _getERC7540Storage()
-        internal
-        pure
-        returns (ERC7540.ERC7540Storage storage _erc7540Storage)
-    {
+    function _getERC7540Storage() internal pure returns (ERC7540.ERC7540Storage storage _erc7540Storage) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             _erc7540Storage.slot := erc7540Storage
@@ -44,7 +58,9 @@ library ERC7540Lib {
     }
 
     /// @dev Updates the totalAssets variable with the newTotalAssets variable.
-    function updateTotalAssets(uint256 _newTotalAssets) public {
+    function updateTotalAssets(
+        uint256 _newTotalAssets
+    ) public {
         PausableLib.requireNotPaused();
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         uint256 newTotalAssets = $.newTotalAssets;
@@ -59,15 +75,15 @@ library ERC7540Lib {
         $.totalAssets = newTotalAssets;
         $.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
 
-        $.totalAssetsExpiration =
-            uint128(block.timestamp) +
-            $.totalAssetsLifespan;
+        $.totalAssetsExpiration = uint128(block.timestamp) + $.totalAssetsLifespan;
         emit TotalAssetsUpdated(newTotalAssets);
     }
 
     /// @notice Update newTotalAssets variable in order to update totalAssets.
     /// @param _newTotalAssets The new total assets of the vault.
-    function updateNewTotalAssets(uint256 _newTotalAssets) public {
+    function updateNewTotalAssets(
+        uint256 _newTotalAssets
+    ) public {
         PausableLib.requireNotPaused();
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -75,8 +91,7 @@ library ERC7540Lib {
         $.epochs[$.redeemEpochId].settleId = $.redeemSettleId;
 
         address _pendingSilo = address($.pendingSilo);
-        uint256 pendingAssets = IERC20(IERC4626(address(this)).asset())
-            .balanceOf(_pendingSilo);
+        uint256 pendingAssets = IERC20(IERC4626(address(this)).asset()).balanceOf(_pendingSilo);
         uint256 pendingShares = IERC20(address(this)).balanceOf(_pendingSilo);
 
         if (pendingAssets != 0) {
@@ -93,7 +108,9 @@ library ERC7540Lib {
         emit NewTotalAssetsUpdated(_newTotalAssets);
     }
 
-    function updateTotalAssetsLifespan(uint128 lifespan) public {
+    function updateTotalAssetsLifespan(
+        uint128 lifespan
+    ) public {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         uint128 oldLifespan = $.totalAssetsLifespan;
         $.totalAssetsLifespan = lifespan;
@@ -119,8 +136,7 @@ library ERC7540Lib {
         uint40 settleId = $.epochs[requestId].settleId;
 
         uint256 _totalAssets = $.settles[settleId].totalAssets + 1;
-        uint256 _totalSupply = $.settles[settleId].totalSupply +
-            10 ** decimalsOffset();
+        uint256 _totalSupply = $.settles[settleId].totalSupply + 10 ** decimalsOffset();
 
         return shares.mulDiv(_totalAssets, _totalSupply, rounding);
     }
@@ -140,8 +156,7 @@ library ERC7540Lib {
         uint40 settleId = $.epochs[requestId].settleId;
 
         uint256 _totalAssets = $.settles[settleId].totalAssets + 1;
-        uint256 _totalSupply = $.settles[settleId].totalSupply +
-            10 ** decimalsOffset();
+        uint256 _totalSupply = $.settles[settleId].totalSupply + 10 ** decimalsOffset();
 
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
     }
@@ -222,9 +237,7 @@ library ERC7540Lib {
         uint256 _pendingAssets = $.settles[depositSettleId].pendingAssets;
         if (_pendingAssets == 0) return 0;
 
-        uint256 shares = IERC4626(address(this)).convertToShares(
-            _pendingAssets
-        );
+        uint256 shares = IERC4626(address(this)).convertToShares(_pendingAssets);
 
         // cache
         uint256 _totalAssets = IERC4626(address(this)).totalAssets();
@@ -246,26 +259,20 @@ library ERC7540Lib {
         $.depositSettleId = depositSettleId + 2;
         $.lastDepositEpochIdSettled = lastDepositEpochIdSettled;
 
-        IERC20(IERC4626(address(this)).asset()).safeTransferFrom(
-            address($.pendingSilo),
-            assetsCustodian,
-            _pendingAssets
-        );
+        IERC20(IERC4626(address(this)).asset())
+            .safeTransferFrom(address($.pendingSilo), assetsCustodian, _pendingAssets);
 
         emit SettleDeposit(
-            lastDepositEpochIdSettled,
-            depositSettleId,
-            _totalAssets,
-            _totalSupply,
-            _pendingAssets,
-            shares
+            lastDepositEpochIdSettled, depositSettleId, _totalAssets, _totalSupply, _pendingAssets, shares
         );
     }
 
     /// @dev This function will redeem the pending shares of the pendingSilo.
     /// and save the redeem parameters in the settleData.
     /// @param assetsCustodian The address that holds the assets.
-    function settleRedeem(address assetsCustodian) public {
+    function settleRedeem(
+        address assetsCustodian
+    ) public {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         uint40 redeemSettleId = $.redeemSettleId;
 
@@ -273,9 +280,7 @@ library ERC7540Lib {
 
         uint256 pendingShares = $.settles[redeemSettleId].pendingShares;
         uint256 exitFeeShares = FeeLib.calculateExitFees(pendingShares);
-        uint256 assetsToWithdraw = IERC4626(address(this)).convertToAssets(
-            pendingShares - exitFeeShares
-        );
+        uint256 assetsToWithdraw = IERC4626(address(this)).convertToAssets(pendingShares - exitFeeShares);
 
         uint256 assetsInTheSafe = IERC20(_asset).balanceOf(assetsCustodian);
         if (assetsToWithdraw == 0 || assetsToWithdraw > assetsInTheSafe) return;
@@ -302,19 +307,10 @@ library ERC7540Lib {
         $.redeemSettleId = redeemSettleId + 2;
         $.lastRedeemEpochIdSettled = lastRedeemEpochIdSettled;
 
-        IERC20(_asset).safeTransferFrom(
-            assetsCustodian,
-            address(this),
-            assetsToWithdraw
-        );
+        IERC20(_asset).safeTransferFrom(assetsCustodian, address(this), assetsToWithdraw);
 
         emit SettleRedeem(
-            lastRedeemEpochIdSettled,
-            redeemSettleId,
-            _totalAssets,
-            _totalSupply,
-            assetsToWithdraw,
-            pendingShares
+            lastRedeemEpochIdSettled, redeemSettleId, _totalAssets, _totalSupply, assetsToWithdraw, pendingShares
         );
     }
 }

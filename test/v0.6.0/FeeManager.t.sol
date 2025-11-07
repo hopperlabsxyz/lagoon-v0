@@ -34,13 +34,7 @@ contract TestFeeManager is BaseTest {
         // 20% performance fee
         // 10% entry fee (new)
         // 0% exit fee (new)
-        setUpVault(
-            protocolFee,
-            managementFee,
-            performanceFee,
-            entryFee,
-            exitFee
-        );
+        setUpVault(protocolFee, managementFee, performanceFee, entryFee, exitFee);
 
         _1 = 1 * 10 ** vault.underlyingDecimals();
         _1K = 1000 * 10 ** vault.underlyingDecimals();
@@ -63,10 +57,7 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), pricePerShare());
     }
 
-    function test_feeReceiverAndDaoHaveNoVaultSharesAtVaultCreation()
-        public
-        view
-    {
+    function test_feeReceiverAndDaoHaveNoVaultSharesAtVaultCreation() public view {
         assertEq(vault.balanceOf(vault.feeReceiver()), 0);
         assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0);
     }
@@ -100,10 +91,7 @@ contract TestFeeManager is BaseTest {
         vm.prank(user1.addr);
         vault.deposit(user1InitialDeposit - 1, user1.addr, user1.addr);
 
-        console.log(
-            "assets user1       :",
-            vault.convertToAssets(vault.balanceOf(user1.addr))
-        );
+        console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
 
         assertEq(vault.lastFeeTime(), block.timestamp);
         assertEq(pricePerShare(), ppsAtStart);
@@ -117,16 +105,10 @@ contract TestFeeManager is BaseTest {
         newTotalAssets = 5 * 10 ** (vault.underlyingDecimals() - 1);
         updateAndSettle(newTotalAssets);
 
-        console.log(
-            "assets user1       :",
-            vault.convertToAssets(vault.balanceOf(user1.addr))
-        );
+        console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
         vm.prank(user2.addr);
         vault.deposit(user2InitialDeposit, user2.addr, user2.addr);
-        console.log(
-            "assets user2       :",
-            vault.convertToAssets(vault.balanceOf(user2.addr))
-        );
+        console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
 
         assertApproxEqAbs(
             pricePerShare(),
@@ -206,25 +188,13 @@ contract TestFeeManager is BaseTest {
         console.log("totalAssets        :", vault.totalAssets());
         console.log("price per share    :", vault.pricePerShare());
         console.log("------");
-        console.log(
-            "shares feeReceiver :",
-            vault.balanceOf(vault.feeReceiver())
-        );
+        console.log("shares feeReceiver :", vault.balanceOf(vault.feeReceiver()));
         console.log("shares user1       :", vault.balanceOf(user1.addr));
         console.log("shares user2       :", vault.balanceOf(user2.addr));
         console.log("------");
-        console.log(
-            "assets feeReceiver :",
-            vault.convertToAssets(vault.balanceOf(vault.feeReceiver()))
-        );
-        console.log(
-            "assets user1       :",
-            vault.convertToAssets(vault.balanceOf(user1.addr))
-        );
-        console.log(
-            "assets user2       :",
-            vault.convertToAssets(vault.balanceOf(user2.addr))
-        );
+        console.log("assets feeReceiver :", vault.convertToAssets(vault.balanceOf(vault.feeReceiver())));
+        console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
+        console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
         console.log("======");
 
         requestRedeem(user1ShareBalance, user1.addr);
@@ -238,25 +208,13 @@ contract TestFeeManager is BaseTest {
         console.log("totalAssets        :", vault.totalAssets());
         console.log("price per share    :", vault.pricePerShare());
         console.log("------");
-        console.log(
-            "shares feeReceiver :",
-            vault.balanceOf(vault.feeReceiver())
-        );
+        console.log("shares feeReceiver :", vault.balanceOf(vault.feeReceiver()));
         console.log("shares user1       :", vault.balanceOf(user1.addr));
         console.log("shares user2       :", vault.balanceOf(user2.addr));
         console.log("------");
-        console.log(
-            "assets feeReceiver :",
-            vault.convertToAssets(vault.balanceOf(vault.feeReceiver()))
-        );
-        console.log(
-            "assets user1       :",
-            vault.convertToAssets(vault.balanceOf(user1.addr))
-        );
-        console.log(
-            "assets user2       :",
-            vault.convertToAssets(vault.balanceOf(user2.addr))
-        );
+        console.log("assets feeReceiver :", vault.convertToAssets(vault.balanceOf(vault.feeReceiver())));
+        console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
+        console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
         console.log("======");
 
         uint256 user1AssetBefore = assetBalance(user1.addr);
@@ -268,10 +226,8 @@ contract TestFeeManager is BaseTest {
         assetBalance(user1.addr);
         assetBalance(user2.addr);
 
-        uint256 user1Profit = (user1AssetAfter - user1AssetBefore) -
-            user1InitialDeposit;
-        uint256 user2Profit = (user2AssetAfter - user2AssetBefore) -
-            user2InitialDeposit;
+        uint256 user1Profit = (user1AssetAfter - user1AssetBefore) - user1InitialDeposit;
+        uint256 user2Profit = (user2AssetAfter - user2AssetBefore) - user2InitialDeposit;
 
         // User Position Evolution:
         // ════════════════════════════════════════════════════════════════════════════════════════
@@ -287,15 +243,9 @@ contract TestFeeManager is BaseTest {
         // Exit fees (10%)                   -0.121176  →  1.090584  (1.211760 * 0.1 = 0.121176)
         // ════════════════════════════════════════════════════════════════════════════════════════
         // Final Position: 1.090584
-        uint256 expectedUser1Profit = 90_584 *
-            10 ** (vault.underlyingDecimals() - 6);
+        uint256 expectedUser1Profit = 90_584 * 10 ** (vault.underlyingDecimals() - 6);
 
-        assertApproxEqAbs(
-            user1Profit,
-            expectedUser1Profit,
-            5,
-            "user1 expected profit is wrong"
-        );
+        assertApproxEqAbs(user1Profit, expectedUser1Profit, 5, "user1 expected profit is wrong");
 
         // User Position Evolution:
         // ════════════════════════════════════════════════════════════════════════════════════════
@@ -309,22 +259,17 @@ contract TestFeeManager is BaseTest {
         // Exit fees (10%)                     -269,280  →  2,423,520  (2,692,800 * 0.1 = 269,280)
         // ════════════════════════════════════════════════════════════════════════════════════════
         // Final Position: 2,423,520
-        uint256 expectedUser2Profit = 1_423_520 *
-            10 ** vault.underlyingDecimals();
+        uint256 expectedUser2Profit = 1_423_520 * 10 ** vault.underlyingDecimals();
 
         assertApproxEqAbs(
-            user2Profit,
-            expectedUser2Profit,
-            10 ** (vault.underlyingDecimals() + 1),
-            "user2 expected profit is wrong"
+            user2Profit, expectedUser2Profit, 10 ** (vault.underlyingDecimals() + 1), "user2 expected profit is wrong"
         );
 
         // expectedTotalFees = (totalAssets - (deposit1 + profit1 + deposit2 + profit2)) * (1 - exitFees)
         //                   = (4_000_002 - (1 + 0.09584 + 1_000_000 + 1_423_520)) * 0.9
         //                   = ~1_576_480.9$ * 0.9
         //                   = ~1_418_832.81$
-        uint256 expectedTotalFees = 1_418_833_000 *
-            10 ** (vault.underlyingDecimals() - 3);
+        uint256 expectedTotalFees = 1_418_833_000 * 10 ** (vault.underlyingDecimals() - 3);
 
         address feeReceiver = vault.feeReceiver();
         address dao = vault.protocolFeeReceiver();
@@ -347,20 +292,12 @@ contract TestFeeManager is BaseTest {
         updateNewTotalAssets(vault.totalAssets());
         settle();
 
-        uint256 feeReceiverAssetAfter = redeem(
-            feeReceiverShareBalance,
-            feeReceiver
-        );
+        uint256 feeReceiverAssetAfter = redeem(feeReceiverShareBalance, feeReceiver);
         uint256 daoAssetAfter = redeem(daoShareBalance, dao);
 
         uint256 totalFees = feeReceiverAssetAfter + daoAssetAfter;
 
-        assertApproxEqAbs(
-            totalFees,
-            expectedTotalFees,
-            5 * 10 ** vault.underlyingDecimals(),
-            "wrong total Fees"
-        );
+        assertApproxEqAbs(totalFees, expectedTotalFees, 5 * 10 ** vault.underlyingDecimals(), "wrong total Fees");
     }
 
     function test_SettleRedeemTakesCorrectAmountOfFees() public {
@@ -418,43 +355,19 @@ contract TestFeeManager is BaseTest {
         // Protocol Fees (10%)    -13.432  →  120.888
         // ════════════════════════════════════════════════════════════════════
         // Final Position: 120.888
-        uint256 amProfit = vault.convertToShares(
-            120_888 * 10 ** vault.underlyingDecimals()
-        );
+        uint256 amProfit = vault.convertToShares(120_888 * 10 ** vault.underlyingDecimals());
         // Protocol Position Evolution:
         // ════════════════════════════════════════════════════════════════════
         // Initial Investment      0
         // Protocol Fees (10%)    +13.432  →  13.432
         // ════════════════════════════════════════════════════════════════════
         // Final Position: 13.432
-        uint256 daoProfit = vault.convertToShares(
-            13_432 * 10 ** vault.underlyingDecimals()
-        );
+        uint256 daoProfit = vault.convertToShares(13_432 * 10 ** vault.underlyingDecimals());
 
-        assertApproxEqAbs(
-            balance1After - balance1Before,
-            user1Profit,
-            100_000,
-            "unexpected balance 1"
-        );
-        assertApproxEqAbs(
-            balance2After - balance2Before,
-            user2Profit,
-            100_000,
-            "unexpected balance 2"
-        );
-        assertApproxEqAbs(
-            amSharesBalance,
-            amProfit,
-            vault.convertToShares(100_000),
-            "am: wrong profits"
-        );
-        assertApproxEqAbs(
-            daoSharesBalance,
-            daoProfit,
-            vault.convertToShares(100_000),
-            "dao: wrong profits"
-        );
+        assertApproxEqAbs(balance1After - balance1Before, user1Profit, 100_000, "unexpected balance 1");
+        assertApproxEqAbs(balance2After - balance2Before, user2Profit, 100_000, "unexpected balance 2");
+        assertApproxEqAbs(amSharesBalance, amProfit, vault.convertToShares(100_000), "am: wrong profits");
+        assertApproxEqAbs(daoSharesBalance, daoProfit, vault.convertToShares(100_000), "dao: wrong profits");
     }
 
     function test_CloseTakesCorrectAmountOfFees() public {
@@ -511,18 +424,14 @@ contract TestFeeManager is BaseTest {
         // Protocol Fees (10%)    -13.432  →  120.888
         // ════════════════════════════════════════════════════════════════════
         // Final Position: 120.888
-        uint256 amProfit = vault.convertToShares(
-            120_888 * 10 ** vault.underlyingDecimals()
-        );
+        uint256 amProfit = vault.convertToShares(120_888 * 10 ** vault.underlyingDecimals());
         // Protocol Position Evolution:
         // ════════════════════════════════════════════════════════════════════
         // Initial Investment      0
         // Protocol Fees (10%)    +13.432  →  13.432
         // ════════════════════════════════════════════════════════════════════
         // Final Position: 13.432
-        uint256 daoProfit = vault.convertToShares(
-            13_432 * 10 ** vault.underlyingDecimals()
-        );
+        uint256 daoProfit = vault.convertToShares(13_432 * 10 ** vault.underlyingDecimals());
 
         assertApproxEqAbs(
             assetBalance(address(vault)),
@@ -531,30 +440,10 @@ contract TestFeeManager is BaseTest {
             "wrong vault asset balance"
         );
 
-        assertApproxEqAbs(
-            balance1After - balance1Before,
-            user1Profit,
-            100_000,
-            "user1: wrong profits"
-        );
-        assertApproxEqAbs(
-            balance2After - balance2Before,
-            user2Profit,
-            100_000,
-            "user2: wrong profits"
-        );
-        assertApproxEqAbs(
-            amSharesBalance,
-            amProfit,
-            vault.convertToShares(100_000),
-            "am: wrong profits"
-        );
-        assertApproxEqAbs(
-            daoSharesBalance,
-            daoProfit,
-            vault.convertToShares(100_000),
-            "dao: wrong profits"
-        );
+        assertApproxEqAbs(balance1After - balance1Before, user1Profit, 100_000, "user1: wrong profits");
+        assertApproxEqAbs(balance2After - balance2Before, user2Profit, 100_000, "user2: wrong profits");
+        assertApproxEqAbs(amSharesBalance, amProfit, vault.convertToShares(100_000), "am: wrong profits");
+        assertApproxEqAbs(daoSharesBalance, daoProfit, vault.convertToShares(100_000), "dao: wrong profits");
     }
 
     function test_NoFeesAreTakenDuringFreeRide() public {
@@ -581,25 +470,13 @@ contract TestFeeManager is BaseTest {
         console.log("price per share    :", vault.pricePerShare());
         console.log("hwm                :", vault.highWaterMark());
         console.log("------");
-        console.log(
-            "shares feeReceiver :",
-            vault.balanceOf(vault.feeReceiver())
-        );
+        console.log("shares feeReceiver :", vault.balanceOf(vault.feeReceiver()));
         console.log("shares user1       :", vault.balanceOf(user1.addr));
         console.log("shares user2       :", vault.balanceOf(user2.addr));
         console.log("------");
-        console.log(
-            "assets feeReceiver :",
-            vault.convertToAssets(vault.balanceOf(vault.feeReceiver()))
-        );
-        console.log(
-            "assets user1       :",
-            vault.convertToAssets(vault.balanceOf(user1.addr))
-        );
-        console.log(
-            "assets user2       :",
-            vault.convertToAssets(vault.balanceOf(user2.addr))
-        );
+        console.log("assets feeReceiver :", vault.convertToAssets(vault.balanceOf(vault.feeReceiver())));
+        console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
+        console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
         console.log("======");
         // ------------ Settle ------------ //
         updateAndSettle(newTotalAssets);
@@ -609,25 +486,13 @@ contract TestFeeManager is BaseTest {
         console.log("price per share    :", vault.pricePerShare());
         console.log("hwm                :", vault.highWaterMark());
         console.log("------");
-        console.log(
-            "shares feeReceiver :",
-            vault.balanceOf(vault.feeReceiver())
-        );
+        console.log("shares feeReceiver :", vault.balanceOf(vault.feeReceiver()));
         console.log("shares user1       :", vault.balanceOf(user1.addr));
         console.log("shares user2       :", vault.balanceOf(user2.addr));
         console.log("------");
-        console.log(
-            "assets feeReceiver :",
-            vault.convertToAssets(vault.balanceOf(vault.feeReceiver()))
-        );
-        console.log(
-            "assets user1       :",
-            vault.convertToAssets(vault.balanceOf(user1.addr))
-        );
-        console.log(
-            "assets user2       :",
-            vault.convertToAssets(vault.balanceOf(user2.addr))
-        );
+        console.log("assets feeReceiver :", vault.convertToAssets(vault.balanceOf(vault.feeReceiver())));
+        console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
+        console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
         console.log("======");
 
         vm.prank(user1.addr);
@@ -648,25 +513,13 @@ contract TestFeeManager is BaseTest {
         console.log("price per share    :", vault.pricePerShare());
         console.log("hwm                :", vault.highWaterMark());
         console.log("------");
-        console.log(
-            "shares feeReceiver :",
-            vault.balanceOf(vault.feeReceiver())
-        );
+        console.log("shares feeReceiver :", vault.balanceOf(vault.feeReceiver()));
         console.log("shares user1       :", vault.balanceOf(user1.addr));
         console.log("shares user2       :", vault.balanceOf(user2.addr));
         console.log("------");
-        console.log(
-            "assets feeReceiver :",
-            vault.convertToAssets(vault.balanceOf(vault.feeReceiver()))
-        );
-        console.log(
-            "assets user1       :",
-            vault.convertToAssets(vault.balanceOf(user1.addr))
-        );
-        console.log(
-            "assets user2       :",
-            vault.convertToAssets(vault.balanceOf(user2.addr))
-        );
+        console.log("assets feeReceiver :", vault.convertToAssets(vault.balanceOf(vault.feeReceiver())));
+        console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
+        console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
         console.log("======");
 
         vm.prank(user2.addr);
@@ -675,28 +528,16 @@ contract TestFeeManager is BaseTest {
         // no fees should be charged to user 1 because the pps
         // have decreased from 1 to ~0.5 and therefore do not exceed the highWaterMark of 1pps
         assertEq(
-            pricePerShare(),
-            5 * 10 ** (vault.underlyingDecimals() - 1),
-            "price per share didn't decreased as expected"
+            pricePerShare(), 5 * 10 ** (vault.underlyingDecimals() - 1), "price per share didn't decreased as expected"
         );
-        assertEq(
-            vault.balanceOf(vault.feeReceiver()),
-            0,
-            "feeReceiver received unexpected fee shares"
-        );
-        assertEq(
-            vault.balanceOf(vault.protocolFeeReceiver()),
-            0,
-            "protocol received unexpected fee shares"
-        );
+        assertEq(vault.balanceOf(vault.feeReceiver()), 0, "feeReceiver received unexpected fee shares");
+        assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0, "protocol received unexpected fee shares");
 
         // ------------ Settle ------------ //
 
         // user2 get x2 without paying performance fees
         newTotalAssets =
-            (vault.highWaterMark() *
-                (vault.totalSupply() + 1 * vault.decimalsOffset())) /
-            10 ** vault.decimals();
+            (vault.highWaterMark() * (vault.totalSupply() + 1 * vault.decimalsOffset())) / 10 ** vault.decimals();
         console.log("HERE newtotalasset", newTotalAssets);
         // newTotalAssets = 2_000_001 * 10 ** vault.underlyingDecimals(); // vault
         // valo made a x2 for user2; and x1 for
@@ -708,25 +549,13 @@ contract TestFeeManager is BaseTest {
         console.log("price per share    :", vault.pricePerShare());
         console.log("hwm                :", vault.highWaterMark());
         console.log("------");
-        console.log(
-            "shares feeReceiver :",
-            vault.balanceOf(vault.feeReceiver())
-        );
+        console.log("shares feeReceiver :", vault.balanceOf(vault.feeReceiver()));
         console.log("shares user1       :", vault.balanceOf(user1.addr));
         console.log("shares user2       :", vault.balanceOf(user2.addr));
         console.log("------");
-        console.log(
-            "assets feeReceiver :",
-            vault.convertToAssets(vault.balanceOf(vault.feeReceiver()))
-        );
-        console.log(
-            "assets user1       :",
-            vault.convertToAssets(vault.balanceOf(user1.addr))
-        );
-        console.log(
-            "assets user2       :",
-            vault.convertToAssets(vault.balanceOf(user2.addr))
-        );
+        console.log("assets feeReceiver :", vault.convertToAssets(vault.balanceOf(vault.feeReceiver())));
+        console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
+        console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
         console.log("------");
         console.log("underlying decimals :", vault.underlyingDecimals());
         console.log("decimals            :", vault.decimals());
@@ -761,25 +590,13 @@ contract TestFeeManager is BaseTest {
         console.log("price per share    :", vault.pricePerShare());
         console.log("hwm                :", vault.highWaterMark());
         console.log("------");
-        console.log(
-            "shares feeReceiver :",
-            vault.balanceOf(vault.feeReceiver())
-        );
+        console.log("shares feeReceiver :", vault.balanceOf(vault.feeReceiver()));
         console.log("shares user1       :", vault.balanceOf(user1.addr));
         console.log("shares user2       :", vault.balanceOf(user2.addr));
         console.log("------");
-        console.log(
-            "assets feeReceiver :",
-            vault.convertToAssets(vault.balanceOf(vault.feeReceiver()))
-        );
-        console.log(
-            "assets user1       :",
-            vault.convertToAssets(vault.balanceOf(user1.addr))
-        );
-        console.log(
-            "assets user2       :",
-            vault.convertToAssets(vault.balanceOf(user2.addr))
-        );
+        console.log("assets feeReceiver :", vault.convertToAssets(vault.balanceOf(vault.feeReceiver())));
+        console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
+        console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
         console.log("======");
         updateAndSettle(newTotalAssets);
 
@@ -792,41 +609,22 @@ contract TestFeeManager is BaseTest {
         // assetBalance(user1.addr);
         // assetBalance(user2.addr);
 
-        uint256 user2Profit = (user2AssetAfter - user2AssetBefore) -
-            user2InitialDeposit;
+        uint256 user2Profit = (user2AssetAfter - user2AssetBefore) - user2InitialDeposit;
 
         // Valo at totalAssets update
         // 0.5$       => pps = 0.5
         // 1.0$       => pps = 1.0 (no fees taken since we are back to the intial price per share)
-        assertApproxEqAbs(
-            user1AssetAfter,
-            10 ** vault.underlyingDecimals(),
-            5,
-            "user1 expected profit is wrong"
-        );
+        assertApproxEqAbs(user1AssetAfter, 10 ** vault.underlyingDecimals(), 5, "user1 expected profit is wrong");
 
         // Valo at totalAssets update
         // 1M$       => pps = 0.5
         // 2M$       => pps = 1.0 (user2 makes 1M profit without paying any fees)
         uint256 freeride = user2InitialDeposit;
 
-        assertApproxEqAbs(
-            user2Profit,
-            freeride,
-            5 * 10 ** vault.underlyingDecimals(),
-            "user2 expected profit is wrong"
-        );
+        assertApproxEqAbs(user2Profit, freeride, 5 * 10 ** vault.underlyingDecimals(), "user2 expected profit is wrong");
 
-        assertEq(
-            vault.balanceOf(vault.feeReceiver()),
-            0,
-            "feeReceiver received unexpected fee shares"
-        );
-        assertEq(
-            vault.balanceOf(vault.protocolFeeReceiver()),
-            0,
-            "protocol received unexpected fee shares"
-        );
+        assertEq(vault.balanceOf(vault.feeReceiver()), 0, "feeReceiver received unexpected fee shares");
+        assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0, "protocol received unexpected fee shares");
     }
 
     function test_updateRates_revertIfManagementRateAboveMaxRates() public {
@@ -843,22 +641,14 @@ contract TestFeeManager is BaseTest {
         Rates memory ratesBefore = vault.feeRates();
 
         vm.prank(vault.owner());
-        vm.expectRevert(
-            abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE)
-        );
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
         vault.updateRates(newRates);
 
         Rates memory ratesAfter = vault.feeRates();
 
+        assertEq(ratesAfter.managementRate, ratesBefore.managementRate, "managementRate before and after are different");
         assertEq(
-            ratesAfter.managementRate,
-            ratesBefore.managementRate,
-            "managementRate before and after are different"
-        );
-        assertEq(
-            ratesAfter.performanceRate,
-            ratesBefore.performanceRate,
-            "performanceRate before and after are different"
+            ratesAfter.performanceRate, ratesBefore.performanceRate, "performanceRate before and after are different"
         );
     }
 
@@ -876,22 +666,14 @@ contract TestFeeManager is BaseTest {
         Rates memory ratesBefore = vault.feeRates();
 
         vm.prank(vault.owner());
-        vm.expectRevert(
-            abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE)
-        );
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE));
         vault.updateRates(newRates);
 
         Rates memory ratesAfter = vault.feeRates();
 
+        assertEq(ratesAfter.managementRate, ratesBefore.managementRate, "managementRate before and after are different");
         assertEq(
-            ratesAfter.managementRate,
-            ratesBefore.managementRate,
-            "managementRate before and after are different"
-        );
-        assertEq(
-            ratesAfter.performanceRate,
-            ratesBefore.performanceRate,
-            "performanceRate before and after are different"
+            ratesAfter.performanceRate, ratesBefore.performanceRate, "performanceRate before and after are different"
         );
     }
 

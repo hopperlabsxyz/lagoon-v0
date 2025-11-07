@@ -18,16 +18,11 @@ library VaultLib {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
     /// @custom:slot erc7201:hopper.storage.vault
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant vaultStorage =
-        0x0e6b3200a60a991c539f47dddaca04a18eb4bcf2b53906fb44751d827f001400;
+    bytes32 private constant vaultStorage = 0x0e6b3200a60a991c539f47dddaca04a18eb4bcf2b53906fb44751d827f001400;
 
     /// @notice Returns the storage struct of the vault.
     /// @return _vaultStorage The storage struct of the vault.
-    function _getVaultStorage()
-        internal
-        pure
-        returns (VaultStorage storage _vaultStorage)
-    {
+    function _getVaultStorage() internal pure returns (VaultStorage storage _vaultStorage) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             _vaultStorage.slot := vaultStorage
@@ -47,7 +42,9 @@ library VaultLib {
         emit StateUpdated(State.Closing);
     }
 
-    function close(uint256 _newTotalAssets) public {
+    function close(
+        uint256 _newTotalAssets
+    ) public {
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
         FeeLib.takeManagementAndPerformanceFees();
         ERC7540Lib.settleDeposit(msg.sender);
@@ -56,11 +53,8 @@ library VaultLib {
 
         // Transfer will fail if there are not enough assets inside the safe, making sure that redeem requests are
         // fulfilled
-        IERC20(IERC4626(address(this)).asset()).safeTransferFrom(
-            msg.sender,
-            address(this),
-            ERC7540Lib._getERC7540Storage().totalAssets
-        );
+        IERC20(IERC4626(address(this)).asset())
+            .safeTransferFrom(msg.sender, address(this), ERC7540Lib._getERC7540Storage().totalAssets);
 
         emit StateUpdated(State.Closed);
     }
