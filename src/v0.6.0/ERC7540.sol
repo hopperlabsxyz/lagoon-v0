@@ -300,10 +300,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         if (requestId > $.lastDepositEpochIdSettled) {
             revert RequestIdNotClaimable();
         }
-        assets -= FeeLib.calculateEntryFees(assets);
 
         $.epochs[requestId].depositRequest[controller] -= assets;
-        shares = convertToShares(assets, requestId);
+        uint256 entryFeeAssets = FeeLib.calculateEntryFees(assets, false);
+        shares = convertToShares(assets - entryFeeAssets, requestId);
 
         _transfer(address(this), receiver, shares);
 
@@ -346,11 +346,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         assets = ERC7540Lib.convertToAssets(shares, requestId, Math.Rounding.Ceil);
-        // TODO: add tests that demonstrates this working, no failed test if
-        // this line is removed write now
-        assets -= FeeLib.calculateEntryFees(assets);
-
+        assets += FeeLib.calculateEntryFees(assets, true);
         $.epochs[requestId].depositRequest[controller] -= assets;
+
         _transfer(address(this), receiver, shares);
 
         emit Deposit(controller, receiver, assets, shares);
@@ -427,12 +425,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         if (requestId > $.lastRedeemEpochIdSettled) {
             revert RequestIdNotClaimable();
         }
-        // TODO: add tests that demonstrates this working, no failed test if
-        // this line is removed write now
-        shares -= FeeLib.calculateExitFees(shares);
 
         $.epochs[requestId].redeemRequest[controller] -= shares;
-        assets = ERC7540Lib.convertToAssets(shares, requestId, Math.Rounding.Floor);
+        uint256 exitFeeShares = FeeLib.calculateExitFees(shares, false);
+        assets = ERC7540Lib.convertToAssets(shares - exitFeeShares, requestId, Math.Rounding.Floor);
         IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Withdraw(msg.sender, receiver, controller, assets, shares);
@@ -456,11 +452,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         shares = ERC7540Lib.convertToShares(assets, requestId, Math.Rounding.Ceil);
-        // TODO: add tests that demonstrates this working, no failed test if
-        // this line is removed write now
-        shares -= FeeLib.calculateExitFees(shares);
-
+        shares += FeeLib.calculateExitFees(shares, true);
         $.epochs[requestId].redeemRequest[controller] -= shares;
+
         IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Withdraw(msg.sender, receiver, controller, assets, shares);

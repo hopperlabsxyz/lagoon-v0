@@ -279,7 +279,7 @@ library ERC7540Lib {
         address _asset = IERC4626(address(this)).asset();
 
         uint256 pendingShares = $.settles[redeemSettleId].pendingShares;
-        uint256 exitFeeShares = FeeLib.calculateExitFees(pendingShares);
+        uint256 exitFeeShares = FeeLib.calculateExitFees(pendingShares, false);
         uint256 assetsToWithdraw = IERC4626(address(this)).convertToAssets(pendingShares - exitFeeShares);
 
         uint256 assetsInTheSafe = IERC20(_asset).balanceOf(assetsCustodian);

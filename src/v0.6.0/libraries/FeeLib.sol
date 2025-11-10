@@ -86,20 +86,49 @@ library FeeLib {
         }
     }
 
-    // TODO: comments
+    /// @dev Calculate entry fees when users deposit
+    /// @param amount the number of shares being minted
+    /// @param reverse if true, calculates the gross amount needed to achieve the desired net amount after fees;
+    ///                if false, calculates the fee amount to be deducted from the given amount
+    /// @return entryFeesShares the entry fee in shares
     function calculateEntryFees(
-        uint256 shares
+        uint256 amount,
+        bool reverse
     ) public view returns (uint256 entryFeesShares) {
         Rates memory _rates = feeRates();
-        entryFeesShares = shares.mulDiv(_rates.entryRate, BPS_DIVIDER, Math.Rounding.Ceil);
+        if (reverse) return applyFeeReverse(amount, _rates.entryRate);
+        return applyFee(amount, _rates.entryRate);
+    }
+
+    /// @dev Calculate exit fees when users withdraw
+    /// @param amount the number of shares being redeemed or 0
+    /// @param reverse if true, calculates the gross amount needed to achieve the desired net amount after fees;
+    ///                if false, calculates the fee amount to be deducted from the given amount
+    /// @return exitFees the exit fee amount
+    function calculateExitFees(
+        uint256 amount,
+        bool reverse
+    ) public view returns (uint256) {
+        Rates memory _rates = feeRates();
+        if (reverse) return applyFeeReverse(amount, _rates.exitRate);
+        return applyFee(amount, _rates.exitRate);
     }
 
     // TODO: comments
-    function calculateExitFees(
-        uint256 shares
-    ) public view returns (uint256 exitFeesShares) {
-        Rates memory _rates = feeRates();
-        exitFeesShares = shares.mulDiv(_rates.exitRate, BPS_DIVIDER, Math.Rounding.Ceil);
+    function applyFee(
+        uint256 amount,
+        uint256 rate
+    ) public pure returns (uint256) {
+        return amount.mulDiv(rate, BPS_DIVIDER, Math.Rounding.Ceil);
+    }
+
+    // TODO: comments
+    function applyFeeReverse(
+        uint256 amount,
+        uint256 rate
+    ) public pure returns (uint256) {
+        if (rate == 0) return 0;
+        return amount.mulDiv(BPS_DIVIDER, (BPS_DIVIDER - rate), Math.Rounding.Ceil) - amount;
     }
 
     /// @dev Update the high water mark only if the new value is greater than the current one
@@ -118,14 +147,6 @@ library FeeLib {
         }
     }
 
-    function doFeeRepartition(
-        uint256 shares
-    ) internal returns (uint256 managerShares, uint256 protocolShares) {
-        FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
-        protocolShares = shares.mulDiv(protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
-        managerShares = shares - protocolShares;
-    }
-
     /// @notice Take the fees by minting the manager and protocol shares
     /// @param shares the amount of fee shares to distribute
     function takeFees(
@@ -137,7 +158,9 @@ library FeeLib {
         address feeReceiver = $roles.feeReceiver;
         address protocolFeeReceiver = $roles.feeRegistry.protocolFeeReceiver();
 
-        (uint256 managerShares, uint256 protocolShares) = doFeeRepartition(shares);
+        // Fee repartition
+        uint256 protocolShares = shares.mulDiv(protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
+        uint256 managerShares = shares - protocolShares;
 
         if (managerShares > 0) {
             ERC7540(address(this)).forge(feeReceiver, managerShares);
@@ -153,7 +176,15 @@ library FeeLib {
     function takeEntryFees(
         uint256 shares
     ) public returns (uint256 entryFeeShares) {
-        entryFeeShares = calculateEntryFees(shares);
+        entryFeeShares = calculateEntryFees(shares, false);
+        takeFees(entryFeeShares, FeeType.Entry);
+    }
+
+    // TODO: comments
+    function takeExitFees(
+        uint256 shares
+    ) public returns (uint256 entryFeeShares) {
+        entryFeeShares = calculateEntryFees(shares, true);
         takeFees(entryFeeShares, FeeType.Entry);
     }
 

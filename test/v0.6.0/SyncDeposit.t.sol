@@ -36,8 +36,8 @@ contract TestSyncDeposit is BaseTest {
         vm.prank(user1.addr);
         uint256 shares = vault.syncDeposit(userBalance, user1.addr, address(0));
 
-        assertEq(shares, vault.balanceOf(user1.addr));
-        assertEq(shares, expectedShares);
+        assertEq(shares, vault.balanceOf(user1.addr), "shares received != user balance");
+        assertEq(shares, expectedShares, "shares received != expected shares");
     }
 
     function test_syncDeposit_lifespanOutdate() public {

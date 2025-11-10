@@ -180,7 +180,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address receiver,
         address referral
     ) public payable onlySyncDeposit onlyOpen returns (uint256 shares) {
-        // TODO: add entry fees
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
 
         if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
@@ -245,17 +244,15 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address receiver,
         address controller
-    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256 shares) {
+    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256) {
         VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
-            // TODO: make sure this does not produce rounding pb
-            uint256 exitFeeAssets = FeeLib.calculateExitFees(assets);
-            shares = _convertToShares(assets - exitFeeAssets, Math.Rounding.Ceil);
-            uint256 exitFeeShares = _convertToShares(exitFeeAssets, Math.Rounding.Ceil);
-            _withdraw(msg.sender, receiver, controller, assets - exitFeeAssets, shares); // sync
-            _burn(controller, exitFeeShares);
+            uint256 shares = _convertToShares(assets, Math.Rounding.Ceil);
+            uint256 exitFeeShares = FeeLib.calculateExitFees(shares, true);
+            _withdraw(msg.sender, receiver, controller, assets, shares + exitFeeShares); // sync
             FeeLib.takeFees(exitFeeShares, FeeType.Exit);
+            return shares + exitFeeShares;
         } else {
             if (controller != msg.sender && !isOperator(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
@@ -276,18 +273,18 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 shares,
         address receiver,
         address controller
-    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256 assets) {
+    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256) {
         VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             // TODO: add tests that demonstrates this working, no failed test if
             // this line is removed write now
-            uint256 exitFeeShares = FeeLib.calculateExitFees(shares);
-            shares -= exitFeeShares;
-            assets = _convertToAssets(shares, Math.Rounding.Floor);
+            // move this to the function under
+            uint256 exitFeeShares = FeeLib.calculateExitFees(shares, false);
+            uint256 assets = _convertToAssets(shares - exitFeeShares, Math.Rounding.Floor);
             _withdraw(msg.sender, receiver, controller, assets, shares); // sync
-            _burn(controller, exitFeeShares);
             FeeLib.takeFees(exitFeeShares, FeeType.Exit);
+            return assets;
         } else {
             if (controller != msg.sender && !isOperator(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
