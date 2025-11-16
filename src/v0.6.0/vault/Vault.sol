@@ -369,6 +369,21 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         }
     }
 
+    // TODO: units tests
+    /// @notice Claims all available assets for a list of controller addresses.
+    /// @dev Iterates over each controller address, checks for claimable redeems, and redeems them on their behalf.
+    /// @param controllers The list of controller addresses for which to claim assets.
+    function claimAssetsOnBehalf(
+        address[] memory controllers
+    ) external onlySafe {
+        for (uint256 i = 0; i < controllers.length; i++) {
+            uint256 claimable = claimableRedeemRequest(0, controllers[i]);
+            if (claimable > 0) {
+                _redeem(claimable, controllers[i], controllers[i]);
+            }
+        }
+    }
+
     ///////////////////////////////////////////////////////
     // ## VALUATION UPDATING AND SETTLEMENT FUNCTIONS ## //
     ///////////////////////////////////////////////////////
