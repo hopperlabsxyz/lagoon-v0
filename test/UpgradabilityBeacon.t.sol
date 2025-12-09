@@ -60,7 +60,10 @@ contract Upgradable is Test {
         return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner, opts));
     }
 
-    function _proxyDeploy(UpgradeableBeacon beacon, Vault.InitStruct memory v) internal returns (address) {
+    function _proxyDeploy(
+        UpgradeableBeacon beacon,
+        Vault.InitStruct memory v
+    ) internal returns (address) {
         BeaconProxy _proxy =
             BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault.initialize, v))));
 

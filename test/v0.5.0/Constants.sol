@@ -75,7 +75,11 @@ contract Constants is Test {
         users.push(user10);
     }
 
-    function setUpVault(uint16 _protocolRate, uint16 _managementRate, uint16 _performanceRate) internal {
+    function setUpVault(
+        uint16 _protocolRate,
+        uint16 _managementRate,
+        uint16 _performanceRate
+    ) internal {
         feeRegistry = new FeeRegistry(false);
         feeRegistry.initialize(dao.addr, dao.addr);
 

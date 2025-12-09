@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {LogicRegistry} from "../protocol-v2/LogicRegistry.sol";
 
@@ -105,7 +105,10 @@ contract OptinProxy is ERC1967Proxy {
     /// @param _logic The proposed logic implementation address
     /// @param _logicRegistry The registry contract to check against
     /// @return The validated logic implementation address
-    function _logicAtConstruction(address _logic, address _logicRegistry) internal view returns (address) {
+    function _logicAtConstruction(
+        address _logic,
+        address _logicRegistry
+    ) internal view returns (address) {
         if (_logic == address(0)) {
             return LogicRegistry(_logicRegistry).defaultLogic();
         }

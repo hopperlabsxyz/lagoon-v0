@@ -376,7 +376,7 @@ contract TestFeeManager is BaseTest {
 
         // user2 get x2 without paying performance fees
         newTotalAssets = 2_000_001 * 10 ** vault.underlyingDecimals(); // vault valo made a x2 for user2; and x1 for
-        // user1
+            // user1
         updateAndSettle(newTotalAssets);
 
         // We expect the price per share to do be equal to: 2 - 20% = 1.8
