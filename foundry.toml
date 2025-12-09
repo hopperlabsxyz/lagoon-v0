@@ -38,6 +38,7 @@ worldchain = { key="", chain = 480, url = "https://api.worldscan.org/api" }
 mantle = { key="", chain = 5000, url = "https://api.mantlescan.xyz/api" }
 katana = { key="", chain = 747474, url = "https://api.etherscan.io/v2/api?chainid=747474"}
 monad_testnet = { key="", chain = 10143, url = "https://api-testnet.monadscan.com/api" }
+sei = { key="${ETHERSCAN_API_KEY}", chain = 1329, url = "https://api.etherscan.io/v2/api?chainid=1329" }
 unknown_chain = { key = "${ETHERSCAN_API_KEY}" }
 plasma = { key = "${ETHERSCAN_API_KEY}", chain = 9745, url = "https://api.etherscan.io/v2/api?chainid=9745" }
 
