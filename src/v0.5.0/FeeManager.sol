@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {ERC7540} from "./ERC7540.sol";
 import {AboveMaxRate} from "./primitives/Errors.sol";
@@ -89,7 +89,10 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// @notice Take the fees by minting the manager and protocol shares
     /// @param feeReceiver the address that will receive the manager shares
     /// @param protocolFeeReceiver the address that will receive the protocol shares
-    function _takeFees(address feeReceiver, address protocolFeeReceiver) internal {
+    function _takeFees(
+        address feeReceiver,
+        address protocolFeeReceiver
+    ) internal {
         FeeManagerStorage storage $ = _getFeeManagerStorage();
 
         (uint256 managerShares, uint256 protocolShares) = _calculateFees();
@@ -187,9 +190,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         uint256 managementFees = _calculateManagementFee(_totalAssets, _rates.managementRate, timeElapsed);
 
         // by taking management fees the price per share decreases
-        uint256 pricePerShare = (10 ** _decimals).mulDiv(
-            _totalAssets + 1 - managementFees, totalSupply() + 10 ** _decimalsOffset(), Math.Rounding.Ceil
-        );
+        uint256 pricePerShare = (10 ** _decimals)
+        .mulDiv(_totalAssets + 1 - managementFees, totalSupply() + 10 ** _decimalsOffset(), Math.Rounding.Ceil);
 
         /// Performance fee computation ///
 
@@ -203,8 +205,9 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
 
         // since we are minting shares without actually increasing the totalAssets, we need to compensate the future
         // dilution of price per share by virtually decreasing totalAssets in our computation
-        uint256 totalShares =
-            totalFees.mulDiv(_totalSupply + 10 ** _decimalsOffset(), (_totalAssets - totalFees) + 1, Math.Rounding.Ceil);
+        uint256 totalShares = totalFees.mulDiv(
+            _totalSupply + 10 ** _decimalsOffset(), (_totalAssets - totalFees) + 1, Math.Rounding.Ceil
+        );
 
         protocolShares = totalShares.mulDiv(_protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
         managerShares = totalShares - protocolShares;

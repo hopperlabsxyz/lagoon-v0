@@ -74,7 +74,7 @@ clean:
 
 # Install dependency contracts with soldeer
 deps:
-	@soldeer install
+	@forge soldeer install
 
 build: deps
 	@forge build

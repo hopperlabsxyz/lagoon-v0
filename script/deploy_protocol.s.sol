@@ -26,7 +26,13 @@ contract DeployProtocol is
     function run()
         external
         virtual
-        override(DeployImplementation, DeployRegistry, DeployOptinProxyFactory, DeploySilo, DeployOptinProxyForVerification)
+        override(
+            DeployImplementation,
+            DeployRegistry,
+            DeployOptinProxyFactory,
+            DeploySilo,
+            DeployOptinProxyForVerification
+        )
     {
         vm.startBroadcast();
         address implementation = deployImplementation(tag);

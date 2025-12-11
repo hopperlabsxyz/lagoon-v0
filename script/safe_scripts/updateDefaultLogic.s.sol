@@ -17,7 +17,7 @@ import {BatchScript} from "../tools/BatchScript.sol";
 import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 /*
  This script will deploy the OptinProxyFactory, propose safe txs to:
- - update the fee registry with the logicRegistry 
+ - update the fee registry with the logicRegistry
  - update the default implementation in the logic registry
  - upgrade the set of signers of the DAO multisig
 */
@@ -33,7 +33,10 @@ contract UpgradeProtocolRegistry is BatchScript {
         executeBatch(true);
     }
 
-    function addDefaultLogic(address logic, address _registry) internal {
+    function addDefaultLogic(
+        address logic,
+        address _registry
+    ) internal {
         bytes memory txn = abi.encodeWithSelector(LogicRegistry.updateDefaultLogic.selector, logic);
         addToBatch(_registry, 0, txn);
     }

@@ -11,7 +11,11 @@ import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 contract BaseTest is Test, Constants {
     using SafeERC20 for IERC20;
 
-    function requestDeposit(uint256 amount, address controller, address owner) internal returns (uint256) {
+    function requestDeposit(
+        uint256 amount,
+        address controller,
+        address owner
+    ) internal returns (uint256) {
         vm.prank(owner);
         return vault.requestDeposit(amount, controller, owner);
     }
@@ -35,11 +39,18 @@ contract BaseTest is Test, Constants {
         return _requestDeposit(amount, controller, owner, operator, referral, false);
     }
 
-    function requestDeposit(uint256 amount, address user) internal returns (uint256) {
+    function requestDeposit(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
         return requestDeposit(amount, user, user, user);
     }
 
-    function requestDeposit(uint256 amount, address user, bool viaEth) internal returns (uint256) {
+    function requestDeposit(
+        uint256 amount,
+        address user,
+        bool viaEth
+    ) internal returns (uint256) {
         return _requestDeposit(amount, user, user, user, address(0), viaEth);
     }
 
@@ -100,7 +111,10 @@ contract BaseTest is Test, Constants {
         return shares;
     }
 
-    function deposit(uint256 amount, address user) internal returns (uint256) {
+    function deposit(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
         address receiver = user;
         address controller = user;
 
@@ -122,7 +136,12 @@ contract BaseTest is Test, Constants {
         return shares;
     }
 
-    function mint(uint256 amount, address controller, address operator, address receiver) internal returns (uint256) {
+    function mint(
+        uint256 amount,
+        address controller,
+        address operator,
+        address receiver
+    ) internal returns (uint256) {
         uint256 sharesBefore = vault.balanceOf(receiver);
 
         uint256 lastRequestId = vault.lastDepositRequestId(controller);
@@ -140,7 +159,10 @@ contract BaseTest is Test, Constants {
         return assets;
     }
 
-    function mint(uint256 amount, address user) internal returns (uint256) {
+    function mint(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
         address receiver = msg.sender;
         address controller = user;
         uint256 sharesBefore = vault.balanceOf(receiver);
@@ -160,7 +182,11 @@ contract BaseTest is Test, Constants {
         return assets;
     }
 
-    function requestRedeem(uint256 amount, address controller, address owner) internal returns (uint256) {
+    function requestRedeem(
+        uint256 amount,
+        address controller,
+        address owner
+    ) internal returns (uint256) {
         address operator = owner;
         return requestRedeem(amount, controller, owner, operator);
     }
@@ -180,11 +206,17 @@ contract BaseTest is Test, Constants {
         return redeemId;
     }
 
-    function requestRedeem(uint256 amount, address user) internal returns (uint256) {
+    function requestRedeem(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
         return requestRedeem(amount, user, user, user);
     }
 
-    function redeem(uint256 amount, address user) internal returns (uint256) {
+    function redeem(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
         return redeem(amount, user, user, user);
     }
 
@@ -242,7 +274,10 @@ contract BaseTest is Test, Constants {
         return assets;
     }
 
-    function withdraw(uint256 amount, address user) internal returns (uint256) {
+    function withdraw(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
         return withdraw(amount, user, user, user);
     }
 
@@ -398,7 +433,10 @@ contract BaseTest is Test, Constants {
         whitelist(user);
     }
 
-    function dealAmountAndApproveAndWhitelist(address user, uint256 amount) public {
+    function dealAmountAndApproveAndWhitelist(
+        address user,
+        uint256 amount
+    ) public {
         dealAmountAndApprove(user, amount);
         whitelist(user);
     }
@@ -409,7 +447,10 @@ contract BaseTest is Test, Constants {
         dealAmountAndApprove(user, 100_000 * 10 ** vault.underlyingDecimals());
     }
 
-    function dealAmountAndApprove(address user, uint256 amount) public {
+    function dealAmountAndApprove(
+        address user,
+        uint256 amount
+    ) public {
         address asset = vault.asset();
         deal(user, type(uint256).max);
         deal(vault.asset(), user, amount);

@@ -11,7 +11,11 @@ import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 */
 
 interface Safe {
-    function swapOwner(address prevOwner, address oldOwner, address newOwner) external;
+    function swapOwner(
+        address prevOwner,
+        address oldOwner,
+        address newOwner
+    ) external;
 }
 
 contract UpdateDaoSigners is BatchScript {
@@ -26,7 +30,12 @@ contract UpdateDaoSigners is BatchScript {
         executeBatch(true);
     }
 
-    function swapSigner(address dao, address _prevOwner, address _oldSigner, address _newSigner) internal {
+    function swapSigner(
+        address dao,
+        address _prevOwner,
+        address _oldSigner,
+        address _newSigner
+    ) internal {
         bytes memory txn = abi.encodeWithSelector(Safe.swapOwner.selector, _prevOwner, _oldSigner, _newSigner);
         addToBatch(dao, 0, txn);
     }

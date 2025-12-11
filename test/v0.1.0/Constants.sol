@@ -81,14 +81,21 @@ contract Constants is Test {
         return UpgradeableBeacon(Upgrades.deployBeacon(contractName, _owner, opts));
     }
 
-    function _proxyDeploy(UpgradeableBeacon beacon, Vault.InitStruct memory v) internal returns (VaultHelper) {
+    function _proxyDeploy(
+        UpgradeableBeacon beacon,
+        Vault.InitStruct memory v
+    ) internal returns (VaultHelper) {
         BeaconProxy proxy =
             BeaconProxy(payable(Upgrades.deployBeaconProxy(address(beacon), abi.encodeCall(Vault.initialize, v))));
 
         return VaultHelper(address(proxy));
     }
 
-    function setUpVault(uint16 _protocolRate, uint16 _managementRate, uint16 _performanceRate) internal {
+    function setUpVault(
+        uint16 _protocolRate,
+        uint16 _managementRate,
+        uint16 _performanceRate
+    ) internal {
         bool proxy = vm.envBool("PROXY");
 
         feeRegistry = new FeeRegistry(false);
