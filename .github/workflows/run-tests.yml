@@ -87,7 +87,7 @@ jobs:
         with:
           name: foundry-install-build
           path: .
-      - run: forge test -vvv
+      - run: forge test -vvv --jobs 16
         env:
           PROXY: false
 
@@ -111,7 +111,7 @@ jobs:
   #       uses: actions/download-artifact@v4
   #       with:
   #         name: foundry-install-build
-  #         path: .
+          # path: .
   #     - run: forge test -vvv
   #       env:
   #         PROXY: false
