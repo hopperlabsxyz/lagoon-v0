@@ -9,7 +9,11 @@ import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4
 import {VmSafe} from "forge-std/Vm.sol";
 
 contract BaseTest is Test, Constants {
-    function requestDeposit(uint256 amount, address controller, address owner) internal returns (uint256) {
+    function requestDeposit(
+        uint256 amount,
+        address controller,
+        address owner
+    ) internal returns (uint256) {
         vm.prank(owner);
         return vault.requestDeposit(amount, controller, owner);
     }
@@ -33,11 +37,18 @@ contract BaseTest is Test, Constants {
         return _requestDeposit(amount, controller, owner, operator, referral, false);
     }
 
-    function requestDeposit(uint256 amount, address user) internal returns (uint256) {
+    function requestDeposit(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
         return requestDeposit(amount, user, user, user);
     }
 
-    function requestDeposit(uint256 amount, address user, bool viaEth) internal returns (uint256) {
+    function requestDeposit(
+        uint256 amount,
+        address user,
+        bool viaEth
+    ) internal returns (uint256) {
         return _requestDeposit(amount, user, user, user, address(0), viaEth);
     }
 
@@ -84,22 +95,37 @@ contract BaseTest is Test, Constants {
         return vault.deposit(amount, receiver, controller);
     }
 
-    function deposit(uint256 amount, address user) internal returns (uint256) {
+    function deposit(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
         vm.prank(user);
         return vault.deposit(amount, user);
     }
 
-    function mint(uint256 amount, address controller, address operator, address receiver) internal returns (uint256) {
+    function mint(
+        uint256 amount,
+        address controller,
+        address operator,
+        address receiver
+    ) internal returns (uint256) {
         vm.prank(operator);
         return vault.mint(amount, receiver, controller);
     }
 
-    function mint(uint256 amount, address user) internal returns (uint256) {
+    function mint(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
         vm.prank(user);
         return vault.mint(amount, user);
     }
 
-    function requestRedeem(uint256 amount, address controller, address owner) internal returns (uint256) {
+    function requestRedeem(
+        uint256 amount,
+        address controller,
+        address owner
+    ) internal returns (uint256) {
         address operator = owner;
         return requestRedeem(amount, controller, owner, operator);
     }
@@ -119,11 +145,17 @@ contract BaseTest is Test, Constants {
         return redeemId;
     }
 
-    function requestRedeem(uint256 amount, address user) internal returns (uint256) {
+    function requestRedeem(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
         return requestRedeem(amount, user, user, user);
     }
 
-    function redeem(uint256 amount, address user) internal returns (uint256) {
+    function redeem(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
         return redeem(amount, user, user, user);
     }
 
@@ -158,7 +190,10 @@ contract BaseTest is Test, Constants {
         return assets;
     }
 
-    function withdraw(uint256 amount, address user) internal returns (uint256) {
+    function withdraw(
+        uint256 amount,
+        address user
+    ) internal returns (uint256) {
         return withdraw(amount, user, user, user);
     }
 
@@ -303,7 +338,10 @@ contract BaseTest is Test, Constants {
         whitelist(user);
     }
 
-    function dealAmountAndApproveAndWhitelist(address user, uint256 amount) public {
+    function dealAmountAndApproveAndWhitelist(
+        address user,
+        uint256 amount
+    ) public {
         dealAmountAndApprove(user, amount);
         whitelist(user);
     }
@@ -314,7 +352,10 @@ contract BaseTest is Test, Constants {
         dealAmountAndApprove(user, 100_000 * 10 ** vault.underlyingDecimals());
     }
 
-    function dealAmountAndApprove(address user, uint256 amount) public {
+    function dealAmountAndApprove(
+        address user,
+        uint256 amount
+    ) public {
         address asset = vault.asset();
         deal(user, type(uint256).max);
         deal(vault.asset(), user, amount);

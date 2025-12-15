@@ -13,7 +13,10 @@ library Surl {
         return get(self, empty);
     }
 
-    function get(string memory self, string[] memory headers) internal returns (uint256 status, bytes memory data) {
+    function get(
+        string memory self,
+        string[] memory headers
+    ) internal returns (uint256 status, bytes memory data) {
         return curl(self, headers, "", "GET");
     }
 
@@ -24,7 +27,10 @@ library Surl {
         return curl(self, empty, "", "DELETE");
     }
 
-    function del(string memory self, string memory body) internal returns (uint256 status, bytes memory data) {
+    function del(
+        string memory self,
+        string memory body
+    ) internal returns (uint256 status, bytes memory data) {
         string[] memory empty = new string[](0);
         return curl(self, empty, body, "DELETE");
     }
@@ -44,7 +50,10 @@ library Surl {
         return curl(self, empty, "", "PATCH");
     }
 
-    function patch(string memory self, string memory body) internal returns (uint256 status, bytes memory data) {
+    function patch(
+        string memory self,
+        string memory body
+    ) internal returns (uint256 status, bytes memory data) {
         string[] memory empty = new string[](0);
         return curl(self, empty, body, "PATCH");
     }
@@ -64,7 +73,10 @@ library Surl {
         return curl(self, empty, "", "POST");
     }
 
-    function post(string memory self, string memory body) internal returns (uint256 status, bytes memory data) {
+    function post(
+        string memory self,
+        string memory body
+    ) internal returns (uint256 status, bytes memory data) {
         string[] memory empty = new string[](0);
         return curl(self, empty, body, "POST");
     }
@@ -84,7 +96,10 @@ library Surl {
         return curl(self, empty, "", "PUT");
     }
 
-    function put(string memory self, string memory body) internal returns (uint256 status, bytes memory data) {
+    function put(
+        string memory self,
+        string memory body
+    ) internal returns (uint256 status, bytes memory data) {
         string[] memory empty = new string[](0);
         return curl(self, empty, body, "PUT");
     }

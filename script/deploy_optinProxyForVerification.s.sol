@@ -14,7 +14,10 @@ import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 */
 
 contract MockLogicRegistry {
-    function canUseLogic(address, address) public pure returns (bool) {
+    function canUseLogic(
+        address,
+        address
+    ) public pure returns (bool) {
         return true;
     }
 }
