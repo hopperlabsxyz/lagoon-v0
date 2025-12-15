@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -54,7 +54,10 @@ contract DelayProxyAdmin is ProxyAdmin {
     /// @dev Sets up the contract with initial owner and delay parameters
     /// @param initialOwner The address that will own this contract
     /// @param initialDelay The initial delay period that must be waited before upgrades can be executed
-    constructor(address initialOwner, uint256 initialDelay) ProxyAdmin(initialOwner) {
+    constructor(
+        address initialOwner,
+        uint256 initialDelay
+    ) ProxyAdmin(initialOwner) {
         if (initialDelay < MIN_DELAY) {
             revert DelayTooLow(MIN_DELAY);
         }

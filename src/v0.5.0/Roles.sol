@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {FeeRegistry} from "../protocol-v1/FeeRegistry.sol";
 import {OnlySafe, OnlyValuationManager, OnlyWhitelistManager} from "./primitives/Errors.sol";
