@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {State} from "./Enums.sol";
 import {Rates} from "./Struct.sol";

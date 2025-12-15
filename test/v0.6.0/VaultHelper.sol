@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 
 import "@src/v0.6.0/ERC7540.sol";
 import "@src/v0.6.0/FeeManager.sol";
 import "@src/v0.6.0/Roles.sol";
-import "@src/v0.6.0/Vault/Vault.sol";
 import "@src/v0.6.0/primitives/Errors.sol";
 import "@src/v0.6.0/primitives/Events.sol";
 import "@src/v0.6.0/primitives/Struct.sol";
+import "@src/v0.6.0/vault/Vault.sol";
 
 contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {ERC7540} from "../ERC7540.sol";
 import {FeeManager} from "../FeeManager.sol";
@@ -114,11 +114,19 @@ contract VaultInit is Vault_Storage, ERC7540, Whitelistable, FeeManager {
     // ## DEPOSIT AND REDEEM FLOW FUNCTIONS ## //
     /////////////////////////////////////////////
 
-    function requestDeposit(uint256, address, address) public payable override returns (uint256) {
+    function requestDeposit(
+        uint256,
+        address,
+        address
+    ) public payable override returns (uint256) {
         return 0;
     }
 
-    function requestRedeem(uint256, address, address) public returns (uint256) {
+    function requestRedeem(
+        uint256,
+        address,
+        address
+    ) public returns (uint256) {
         return 0;
     }
 

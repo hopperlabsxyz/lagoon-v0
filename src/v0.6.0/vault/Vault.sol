@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {ERC7540} from "../ERC7540.sol";
 
@@ -76,7 +76,11 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
 
     /// @notice Initializes the vault.
     /// @param data The encoded initialization parameters of the vault.
-    function initialize(bytes memory data, address feeRegistry, address wrappedNativeToken) public virtual {
+    function initialize(
+        bytes memory data,
+        address feeRegistry,
+        address wrappedNativeToken
+    ) public virtual {
         // init.initialize(data, feeRegistry, wrappedNativeToken);
         bytes memory callData =
             abi.encodeWithSignature("initialize(bytes,address,address)", data, feeRegistry, wrappedNativeToken);

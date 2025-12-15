@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {FeeRegistry} from "../protocol-v1/FeeRegistry.sol";
 import {OnlySafe, OnlyValuationManager, OnlyWhitelistManager} from "./primitives/Errors.sol";
 import {
-    FeeReceiverUpdated, SafeUpdated, ValuationManagerUpdated, WhitelistManagerUpdated
+    FeeReceiverUpdated,
+    SafeUpdated,
+    ValuationManagerUpdated,
+    WhitelistManagerUpdated
 } from "./primitives/Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 

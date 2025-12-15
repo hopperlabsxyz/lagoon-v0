@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity "0.8.26";
+pragma solidity 0.8.26;
 
 import {Silo} from "./Silo.sol";
 import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
@@ -35,8 +35,9 @@ import {
     IERC20,
     IERC20Metadata
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {ERC20PausableUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
+import {
+    ERC20PausableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
@@ -109,7 +110,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param underlying The underlying token.
     /// @param wrappedNativeToken The wrapped native token.
     // solhint-disable-next-line func-name-mixedcase
-    function __ERC7540_init(IERC20 underlying, address wrappedNativeToken) internal onlyInitializing {
+    function __ERC7540_init(
+        IERC20 underlying,
+        address wrappedNativeToken
+    ) internal onlyInitializing {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         $.depositEpochId = 1;
@@ -151,7 +155,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     }
 
     /// @notice Make sure new deposit request is under the max cap.
-    function _onlyUnderMaxCap(uint256 assets, uint256 siloAssetsBalance) internal {
+    function _onlyUnderMaxCap(
+        uint256 assets,
+        uint256 siloAssetsBalance
+    ) internal {
         if (totalAssets() + assets + siloAssetsBalance > _getERC7540Storage().maxCap) {
             revert MaxCapReached();
         }
@@ -194,12 +201,18 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     // ## EIP7540 ## //
     ///////////////////
 
-    function isOperator(address controller, address operator) public view returns (bool) {
+    function isOperator(
+        address controller,
+        address operator
+    ) public view returns (bool) {
         return _getERC7540Storage().isOperator[controller][operator];
     }
 
     /// @dev should not be usable when contract is paused
-    function setOperator(address operator, bool approved) external whenNotPaused returns (bool success) {
+    function setOperator(
+        address operator,
+        bool approved
+    ) external whenNotPaused returns (bool success) {
         _getERC7540Storage().isOperator[msg.sender][operator] = approved;
         emit OperatorSet(msg.sender, operator, approved);
         return true;
@@ -238,7 +251,12 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param assets The amount of assets to deposit.
     /// @param controller The controller is the address that will manage the request.
     /// @param owner The owner of the assets.
-    function _requestDeposit(uint256 assets, address controller, address owner) internal returns (uint256) {
+
+    function _requestDeposit(
+        uint256 assets,
+        address controller,
+        address owner
+    ) internal returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         _onlyUnderMaxCap(assets, IERC20(asset()).balanceOf(address($.pendingSilo)));
@@ -302,7 +320,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param receiver The receiver of the shares.
     /// @param controller The controller, who owns the deposit request.
     /// @return shares The corresponding shares.
-    function _deposit(uint256 assets, address receiver, address controller) internal virtual returns (uint256 shares) {
+    function _deposit(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) internal virtual returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastDepositRequestId[controller];
@@ -341,7 +363,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param receiver The receiver of the shares.
     /// @param controller The controller, who owns the mint request.
     /// @return assets The corresponding assets.
-    function _mint(uint256 shares, address receiver, address controller) internal virtual returns (uint256 assets) {
+    function _mint(
+        uint256 shares,
+        address receiver,
+        address controller
+    ) internal virtual returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastDepositRequestId[controller];
@@ -385,7 +411,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param controller The controller is the address that will manage the request.
     /// @param owner The owner of the shares.
     /// @return The request ID. It is the current redeem epoch ID.
-    function _requestRedeem(uint256 shares, address controller, address owner) internal returns (uint256) {
+    function _requestRedeem(
+        uint256 shares,
+        address controller,
+        address owner
+    ) internal returns (uint256) {
         if (msg.sender != owner && !isOperator(owner, msg.sender)) {
             _spendAllowance(owner, msg.sender, shares);
         }
@@ -413,7 +443,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param receiver The receiver of the assets.
     /// @param controller The controller, who owns the redeem request.
     /// @return assets The corresponding assets.
-    function _redeem(uint256 shares, address receiver, address controller) internal returns (uint256 assets) {
+    function _redeem(
+        uint256 shares,
+        address receiver,
+        address controller
+    ) internal returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastRedeemRequestId[controller];
@@ -433,7 +467,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param receiver The receiver of the assets.
     /// @param controller The controller, who owns the request.
     /// @return shares The corresponding shares.
-    function _withdraw(uint256 assets, address receiver, address controller) internal returns (uint256 shares) {
+    function _withdraw(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) internal returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastRedeemRequestId[controller];
@@ -624,7 +662,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param assets The assets to convert.
     /// @param requestId The request ID, which is equivalent to the epoch ID.
     /// @return The corresponding shares.
-    function convertToShares(uint256 assets, uint256 requestId) public view returns (uint256) {
+    function convertToShares(
+        uint256 assets,
+        uint256 requestId
+    ) public view returns (uint256) {
         return _convertToShares(assets, uint40(requestId), Math.Rounding.Floor);
     }
 
@@ -652,7 +693,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @dev Converts shares to assets for a specific epoch.
     /// @param shares The shares to convert.
     /// @param requestId The request ID.
-    function convertToAssets(uint256 shares, uint256 requestId) public view returns (uint256) {
+    function convertToAssets(
+        uint256 shares,
+        uint256 requestId
+    ) public view returns (uint256) {
         return _convertToAssets(shares, uint40(requestId), Math.Rounding.Floor);
     }
 
@@ -681,7 +725,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param requestId The request ID.
     /// @param controller The controller.
     /// @return shares The shares that are waiting to be settled.
-    function pendingRedeemRequest(uint256 requestId, address controller) public view returns (uint256 shares) {
+    function pendingRedeemRequest(
+        uint256 requestId,
+        address controller
+    ) public view returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) {
@@ -696,7 +743,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param requestId The request ID.
     /// @param controller The controller.
     /// @return shares The shares that can be redeemed.
-    function claimableRedeemRequest(uint256 requestId, address controller) public view returns (uint256 shares) {
+    function claimableRedeemRequest(
+        uint256 requestId,
+        address controller
+    ) public view returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) requestId = $.lastRedeemRequestId[controller];
@@ -710,7 +760,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param requestId The request ID.
     /// @param controller The controller.
     /// @return assets The assets that are waiting to be settled.
-    function pendingDepositRequest(uint256 requestId, address controller) public view returns (uint256 assets) {
+    function pendingDepositRequest(
+        uint256 requestId,
+        address controller
+    ) public view returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
@@ -723,7 +776,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param requestId The request ID.
     /// @param controller The controller.
     /// @return assets The assets that can be claimed.
-    function claimableDepositRequest(uint256 requestId, address controller) public view returns (uint256 assets) {
+    function claimableDepositRequest(
+        uint256 requestId,
+        address controller
+    ) public view returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];

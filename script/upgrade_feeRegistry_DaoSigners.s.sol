@@ -17,13 +17,17 @@ import {BatchScript} from "./tools/BatchScript.sol";
 import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 /*
  This script will deploy the OptinProxyFactory, propose safe txs to:
- - update the fee registry with the logicRegistry 
+ - update the fee registry with the logicRegistry
  - update the default implementation in the logic registry
  - upgrade the set of signers of the DAO multisig
 */
 
 interface Safe {
-    function swapOwner(address prevOwner, address oldOwner, address newOwner) external;
+    function swapOwner(
+        address prevOwner,
+        address oldOwner,
+        address newOwner
+    ) external;
 }
 
 contract UpgradeProtocolRegistry is UpdateDaoSigners {
@@ -46,19 +50,29 @@ contract UpgradeProtocolRegistry is UpdateDaoSigners {
         vm.stopBroadcast();
     }
 
-    function upgradeProtocolRegistry(address _registry, address _FEE_REGISTRY_ADMIN, address _impl) internal {
+    function upgradeProtocolRegistry(
+        address _registry,
+        address _FEE_REGISTRY_ADMIN,
+        address _impl
+    ) internal {
         bytes memory txn = abi.encodeWithSelector(
             ProxyAdmin.upgradeAndCall.selector, ITransparentUpgradeableProxy(_registry), _impl, ""
         );
         addToBatch(_FEE_REGISTRY_ADMIN, 0, txn);
     }
 
-    function addDefaultLogic(address logic, address _registry) internal {
+    function addDefaultLogic(
+        address logic,
+        address _registry
+    ) internal {
         bytes memory txn = abi.encodeWithSelector(LogicRegistry.updateDefaultLogic.selector, logic);
         addToBatch(_registry, 0, txn);
     }
 
-    function deployOptinFactory(address _registry, address _wrappedNativeToken) public {
+    function deployOptinFactory(
+        address _registry,
+        address _wrappedNativeToken
+    ) public {
         Options memory opts;
         opts.constructorData = abi.encode(true);
         bytes memory init =
