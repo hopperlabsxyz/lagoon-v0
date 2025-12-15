@@ -131,7 +131,11 @@ abstract contract BatchScript is Script {
 
     // Functions to consume in a script
 
-    function addToBatch(address to_, uint256 value_, bytes memory data_) internal returns (bytes memory) {
+    function addToBatch(
+        address to_,
+        uint256 value_,
+        bytes memory data_
+    ) internal returns (bytes memory) {
         // Add transaction to transactions array
         transactions.push(Transaction({to: to_, value: value_, data: data_, operation: Operation.CALL}));
 
@@ -145,7 +149,10 @@ abstract contract BatchScript is Script {
         }
     }
 
-    function addToBatch(address to_, bytes memory data_) internal returns (bytes memory) {
+    function addToBatch(
+        address to_,
+        bytes memory data_
+    ) internal returns (bytes memory) {
         // Add transaction to transactions array
         transactions.push(Transaction({to: to_, value: 0, data: data_, operation: Operation.CALL}));
 
@@ -190,7 +197,10 @@ abstract contract BatchScript is Script {
         }
     }
 
-    function _signBatch(address safe_, Batch memory batch_) private returns (Batch memory) {
+    function _signBatch(
+        address safe_,
+        Batch memory batch_
+    ) private returns (Batch memory) {
         // Get the typed data to sign
         string memory typedData = _getTypedData(safe_, batch_);
         // Construct the sign command
@@ -220,7 +230,10 @@ abstract contract BatchScript is Script {
         return batch_;
     }
 
-    function _sendBatch(address safe_, Batch memory batch_) private {
+    function _sendBatch(
+        address safe_,
+        Batch memory batch_
+    ) private {
         string memory endpoint = _getSafeAPIEndpoint(safe_);
 
         // Create json payload for API call to Gnosis transaction service
@@ -252,7 +265,10 @@ abstract contract BatchScript is Script {
         }
     }
 
-    function _getTransactionHash(address safe_, Batch memory batch_) private view returns (bytes32) {
+    function _getTransactionHash(
+        address safe_,
+        Batch memory batch_
+    ) private view returns (bytes32) {
         return keccak256(
             abi.encodePacked(
                 hex"1901",
@@ -276,7 +292,10 @@ abstract contract BatchScript is Script {
         );
     }
 
-    function _getTypedData(address safe_, Batch memory batch_) private returns (string memory) {
+    function _getTypedData(
+        address safe_,
+        Batch memory batch_
+    ) private returns (string memory) {
         // Create EIP712 structured data for the batch transaction to sign externally via cast
 
         // EIP712Domain Field Types
