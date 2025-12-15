@@ -87,7 +87,7 @@ jobs:
         with:
           name: foundry-install-build
           path: .
-      - run: forge test -vvv --jobs 16
+      - run: forge test -vvv --no-rpc-rate-limit
         env:
           PROXY: false
 
