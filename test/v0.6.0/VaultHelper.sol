@@ -185,4 +185,8 @@ contract VaultHelper is Vault {
     function highWaterMark() public view returns (uint256) {
         return _getFeeManagerStorage().highWaterMark;
     }
+
+    function gaveUpOperatorPrivileges() public view returns (bool) {
+        return _getERC7540Storage().gaveUpOperatorPrivileges;
+    }
 }

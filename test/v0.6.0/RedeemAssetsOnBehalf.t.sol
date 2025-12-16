@@ -14,9 +14,6 @@ contract TestRedeemAssetsOnBehalf is BaseTest {
         dealAndApproveAndWhitelist(user1.addr);
         dealAndApproveAndWhitelist(user2.addr);
         dealAndApproveAndWhitelist(user3.addr);
-        dealAndApproveAndWhitelist(user4.addr);
-        dealAndApproveAndWhitelist(user5.addr);
-        dealAndApproveAndWhitelist(user6.addr);
     }
 
     function test_RedeemAssetsOnBehalf_onlySafe() public {
