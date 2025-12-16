@@ -8,7 +8,7 @@ import "forge-std/Test.sol";
 import {BaseTest} from "./Base.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract TestMint is BaseTest {
+contract TestRoles is BaseTest {
     function setUp() public {
         setUpVault(0, 0, 0);
     }
@@ -61,5 +61,32 @@ contract TestMint is BaseTest {
     function test_updateNewTotalAssetsManager_notOwner() public {
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
         vault.updateValuationManager(address(0x42));
+    }
+
+    function test_updateSafe() public {
+        address oldSafe = vault.safe();
+        address newSafe = address(0x42);
+
+        vm.prank(vault.owner());
+        vault.updateSafe(newSafe);
+
+        assertEq(vault.safe(), newSafe);
+        assertNotEq(vault.safe(), oldSafe);
+    }
+
+    function test_updateSafe_notOwner() public {
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
+        vault.updateSafe(address(0x42));
+    }
+
+    function test_updateSafe_emitsEvent() public {
+        address oldSafe = vault.safe();
+        address newSafe = address(0x42);
+
+        vm.expectEmit(true, true, true, true);
+        emit SafeUpdated(oldSafe, newSafe);
+
+        vm.prank(vault.owner());
+        vault.updateSafe(newSafe);
     }
 }
