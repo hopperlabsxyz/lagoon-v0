@@ -651,11 +651,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     }
 
     function _updateMaxCap(
-        uint256 maxCap
+        uint256 _maxCap
     ) internal {
         ERC7540Storage storage $ = _getERC7540Storage();
-        emit MaxCapUpdated({previousMaxCap: $.maxCap, maxCap: maxCap});
-        $.maxCap = maxCap;
+        emit MaxCapUpdated({previousMaxCap: $.maxCap, maxCap: _maxCap});
+        $.maxCap = _maxCap;
     }
 
     function _giveUpOperatorPrivileges() internal {

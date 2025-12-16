@@ -338,8 +338,8 @@ contract BaseTest is Test, Constants {
         uint256 depositSettleIdBefore = vault.depositSettleId();
         uint256 redeemSettleIdBefore = vault.redeemSettleId();
 
-        uint256 pendingDepositAmount = vault.pendingDeposit();
-        uint256 pendingRedeemAmount = vault.pendingRedeem();
+        uint256 pendingDepositAmount = vault.pendingDeposit(uint40(depositSettleIdBefore));
+        uint256 pendingRedeemAmount = vault.pendingRedeem(uint40(redeemSettleIdBefore));
 
         vm.startPrank(vault.safe());
         vault.settleDeposit(vault.newTotalAssets());
