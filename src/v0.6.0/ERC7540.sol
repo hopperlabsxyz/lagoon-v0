@@ -155,11 +155,13 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     }
 
     /// @notice Make sure new deposit request is under the max cap.
+    /// @param assets The amount of assets to deposit or request deposit for.
     function _onlyUnderMaxCap(
-        uint256 assets,
-        uint256 siloAssetsBalance
-    ) internal {
-        if (totalAssets() + assets + siloAssetsBalance > _getERC7540Storage().maxCap) {
+        uint256 assets
+    ) internal view {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        uint256 siloAssetsBalance = IERC20(asset()).balanceOf(address($.pendingSilo));
+        if (totalAssets() + assets + siloAssetsBalance > $.maxCap) {
             revert MaxCapReached();
         }
     }
@@ -259,7 +261,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     ) internal returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        _onlyUnderMaxCap(assets, IERC20(asset()).balanceOf(address($.pendingSilo)));
+        _onlyUnderMaxCap(assets);
 
         uint256 claimable = claimableDepositRequest(0, controller);
         if (claimable > 0) _deposit(claimable, controller, controller);
