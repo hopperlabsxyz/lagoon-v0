@@ -147,11 +147,19 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     modifier onlyOperator(
         address controller
     ) {
+        _onlyOperator(controller);
+        _;
+    }
+
+    /// @notice Make sure the caller is an operator or the controller.
+    /// @param controller The controller.
+    function _onlyOperator(
+        address controller
+    ) private view {
         bool safeAsOperator = msg.sender == safe() && !_getERC7540Storage().gaveUpOperatorPrivileges;
         if (controller != msg.sender && !isOperator(controller, msg.sender) && !safeAsOperator) {
             revert ERC7540InvalidOperator();
         }
-        _;
     }
 
     /// @notice Make sure new deposit request is under the max cap.
