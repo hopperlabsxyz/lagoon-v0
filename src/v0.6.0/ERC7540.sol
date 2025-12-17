@@ -481,7 +481,20 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 assets,
         uint256 requestId
     ) public view returns (uint256) {
-        return ERC7540Lib.convertToShares(assets, uint40(requestId), Math.Rounding.Floor);
+        return _convertToShares(assets, uint40(requestId), Math.Rounding.Floor);
+    }
+
+    /// @dev Converts assets to shares for a specific epoch.
+    /// @param assets The assets to convert.
+    /// @param requestId The request ID.
+    /// @param rounding The rounding method.
+    /// @return The corresponding shares.
+    function _convertToShares(
+        uint256 assets,
+        uint256 requestId,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return ERC7540Lib.convertToShares(assets, uint40(requestId), rounding);
     }
 
     /// @dev Converts shares to assets for a specific epoch.
@@ -491,7 +504,20 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 shares,
         uint256 requestId
     ) public view returns (uint256) {
-        return ERC7540Lib.convertToAssets(shares, uint40(requestId), Math.Rounding.Floor);
+        return _convertToAssets(shares, uint40(requestId), Math.Rounding.Floor);
+    }
+
+    /// @notice Convert shares to assets for a specific epoch/request.
+    /// @param shares The shares to convert.
+    /// @param requestId The request ID at which the conversion should be done.
+    /// @param rounding The rounding method.
+    /// @return The corresponding assets.
+    function _convertToAssets(
+        uint256 shares,
+        uint256 requestId,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return ERC7540Lib.convertToAssets(shares, uint40(requestId), rounding);
     }
 
     /// @notice Returns the pending redeem request for a controller.

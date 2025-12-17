@@ -19,8 +19,8 @@ CONTRACT_PATH=./lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmi
 CONTRACT_PATH=./src/protocol-v1/FeeRegistry.sol:FeeRegistry
 
 CHAIN_ID=43114
-RUNS=1 # If you try to verify a contract deployed by a factory make sure to use the amount of runs used to deployed the said factory
 COMPILER_VERSION=v0.8.26+commit.8a97fa7a
+RUNS=1 # If you try to verify a contract deployed by a factory make sure to use the amount of runs used to deployed the said factory
 
 forge verify-contract \
   --chain-id $CHAIN_ID \
