@@ -124,7 +124,9 @@ contract OptinProxyFactory is OwnableUpgradeable {
         bytes memory call_data = abi.encodeCall(IVault.initialize, (abi.encode(_init), $.REGISTRY, $.WRAPPED_NATIVE));
 
         address proxy = address(
-            new OptinProxy{salt: salt}({
+            new OptinProxy{
+                salt: salt
+            }({
                 _logic: _logic,
                 _logicRegistry: $.REGISTRY,
                 _initialOwner: _initialOwner,
