@@ -3,7 +3,6 @@ pragma solidity 0.8.26;
 
 import {Whitelistable} from "../Whitelistable.sol";
 import {WhitelistDisabled, WhitelistUpdated} from "../primitives/Events.sol";
-import {Constant} from "./Constant.sol";
 
 library WhitelistableLib {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))
@@ -22,10 +21,6 @@ library WhitelistableLib {
         assembly {
             _whitelistableStorage.slot := whitelistableStorage
         }
-    }
-
-    function version() public pure returns (string memory) {
-        return Constant.version();
     }
 
     function addToWhitelist(
