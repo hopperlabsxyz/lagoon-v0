@@ -31,7 +31,9 @@ abstract contract Roles is Ownable2StepUpgradeable {
     /// @dev Initializes the roles of the vault.
     /// @param roles The roles to be initialized.
     // solhint-disable-next-line func-name-mixedcase
-    function __Roles_init(RolesStorage memory roles) internal onlyInitializing {
+    function __Roles_init(
+        RolesStorage memory roles
+    ) internal onlyInitializing {
         RolesStorage storage $ = RolesLib._getRolesStorage();
 
         $.whitelistManager = roles.whitelistManager;
@@ -43,11 +45,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
 
     /// @dev Returns the storage struct of the roles.
     /// @return _rolesStorage The storage struct of the roles.
-    function getRolesStorage()
-        public
-        pure
-        returns (RolesStorage memory _rolesStorage)
-    {
+    function getRolesStorage() public pure returns (RolesStorage memory _rolesStorage) {
         _rolesStorage = RolesLib._getRolesStorage();
     }
 
@@ -90,7 +88,9 @@ abstract contract Roles is Ownable2StepUpgradeable {
     /// @notice Updates the address of the fee receiver.
     /// @param _feeReceiver The new address of the fee receiver.
     /// @dev Only the owner can call this function.
-    function updateFeeReceiver(address _feeReceiver) external onlyOwner {
+    function updateFeeReceiver(
+        address _feeReceiver
+    ) external onlyOwner {
         RolesLib.updateFeeReceiver(_feeReceiver);
     }
 }

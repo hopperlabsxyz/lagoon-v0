@@ -15,7 +15,17 @@ import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
 import {Whitelistable} from "../Whitelistable.sol";
 import {State} from "../primitives/Enums.sol";
-import {CantDepositNativeToken, Closed, ERC7540InvalidOperator, NotClosing, NotOpen, NotWhitelisted, OnlyAsyncDepositAllowed, OnlySyncDepositAllowed, ValuationUpdateNotAllowed} from "../primitives/Errors.sol";
+import {
+    CantDepositNativeToken,
+    Closed,
+    ERC7540InvalidOperator,
+    NotClosing,
+    NotOpen,
+    NotWhitelisted,
+    OnlyAsyncDepositAllowed,
+    OnlySyncDepositAllowed,
+    ValuationUpdateNotAllowed
+} from "../primitives/Errors.sol";
 
 import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
@@ -68,7 +78,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
 
-    constructor(bool disable) {
+    constructor(
+        bool disable
+    ) {
         init = new VaultInit(disable);
     }
 
@@ -80,15 +92,11 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address wrappedNativeToken
     ) public virtual {
         // init.initialize(data, feeRegistry, wrappedNativeToken);
-        bytes memory callData = abi.encodeWithSignature(
-            "initialize(bytes,address,address)",
-            data,
-            feeRegistry,
-            wrappedNativeToken
-        );
+        bytes memory callData =
+            abi.encodeWithSignature("initialize(bytes,address,address)", data, feeRegistry, wrappedNativeToken);
 
         // Perform delegate call to the init contract
-        (bool success, ) = address(init).delegatecall(callData);
+        (bool success,) = address(init).delegatecall(callData);
 
         // Revert if the delegate call failed
         require(success, "Delegate call failed");
@@ -133,15 +141,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address controller,
         address owner
-    )
-        public
-        payable
-        override
-        onlyOperator(owner)
-        whenNotPaused
-        onlyAsyncDeposit
-        returns (uint256 requestId)
-    {
+    ) public payable override onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         return _requestDeposit(assets, controller, owner);
     }
@@ -156,14 +156,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller,
         address owner,
         address referral
-    )
-        public
-        payable
-        onlyOperator(owner)
-        whenNotPaused
-        onlyAsyncDeposit
-        returns (uint256 requestId)
-    {
+    ) public payable onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         requestId = _requestDeposit(assets, controller, owner);
 
@@ -189,11 +182,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
                 assets = msg.value;
                 // we do not send directly eth in case the safe is not payable
                 $.pendingSilo.depositEth{value: assets}();
-                IERC20(asset()).safeTransferFrom(
-                    address($.pendingSilo),
-                    safe(),
-                    assets
-                );
+                IERC20(asset()).safeTransferFrom(address($.pendingSilo), safe(), assets);
             } else {
                 revert CantDepositNativeToken();
             }
@@ -235,11 +224,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 claimable = claimableDepositRequest(0, msg.sender);
         if (claimable > 0) _deposit(claimable, msg.sender, msg.sender);
 
-        uint256 redeemId = _requestRedeem(
-            sharesToRedeem,
-            msg.sender,
-            msg.sender
-        );
+        uint256 redeemId = _requestRedeem(sharesToRedeem, msg.sender, msg.sender);
 
         return uint40(redeemId);
     }
@@ -251,33 +236,17 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address receiver,
         address controller
-    )
-        public
-        override(ERC4626Upgradeable, IERC4626)
-        whenNotPaused
-        returns (uint256)
-    {
+    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256) {
         VaultStorage storage $ = VaultLib._getVaultStorage();
 
-        if (
-            $.state == State.Closed &&
-            claimableRedeemRequest(0, controller) == 0
-        ) {
+        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             uint256 shares = _convertToShares(assets, Math.Rounding.Ceil);
             uint256 exitFeeShares = FeeLib.calculateExitFees(shares, true);
-            _withdraw(
-                msg.sender,
-                receiver,
-                controller,
-                assets,
-                shares + exitFeeShares
-            ); // sync
+            _withdraw(msg.sender, receiver, controller, assets, shares + exitFeeShares); // sync
             FeeLib.takeFees(exitFeeShares, FeeType.Exit);
             return shares + exitFeeShares;
         } else {
-            if (
-                controller != msg.sender && !isOperator(controller, msg.sender)
-            ) {
+            if (controller != msg.sender && !isOperator(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
             }
             return _withdraw(assets, receiver, controller); // async
@@ -296,33 +265,20 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 shares,
         address receiver,
         address controller
-    )
-        public
-        override(ERC4626Upgradeable, IERC4626)
-        whenNotPaused
-        returns (uint256)
-    {
+    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256) {
         VaultStorage storage $ = VaultLib._getVaultStorage();
 
-        if (
-            $.state == State.Closed &&
-            claimableRedeemRequest(0, controller) == 0
-        ) {
+        if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             // TODO: add tests that demonstrates this working, no failed test if
             // this line is removed write now
             // move this to the function under
             uint256 exitFeeShares = FeeLib.calculateExitFees(shares, false);
-            uint256 assets = _convertToAssets(
-                shares - exitFeeShares,
-                Math.Rounding.Floor
-            );
+            uint256 assets = _convertToAssets(shares - exitFeeShares, Math.Rounding.Floor);
             _withdraw(msg.sender, receiver, controller, assets, shares); // sync
             FeeLib.takeFees(exitFeeShares, FeeType.Exit);
             return assets;
         } else {
-            if (
-                controller != msg.sender && !isOperator(controller, msg.sender)
-            ) {
+            if (controller != msg.sender && !isOperator(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
             }
             return _redeem(shares, receiver, controller);
@@ -388,7 +344,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     // ## VALUATION UPDATING AND SETTLEMENT FUNCTIONS ## //
     ///////////////////////////////////////////////////////
 
-    function updateTotalAssetsLifespan(uint128 lifespan) external onlySafe {
+    function updateTotalAssetsLifespan(
+        uint128 lifespan
+    ) external onlySafe {
         ERC7540Lib.updateTotalAssetsLifespan(lifespan);
     }
 
@@ -449,7 +407,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.
     /// @dev Users can still requestDeposit but it can't be settled.
-    function close(uint256 _newTotalAssets) external onlySafe onlyClosing {
+    function close(
+        uint256 _newTotalAssets
+    ) external onlySafe onlyClosing {
         VaultLib.close(_newTotalAssets);
     }
 
@@ -508,9 +468,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             // controller has no redeem claimable, we will use the synchronous flow
             return convertToAssets(balanceOf(controller));
         }
-        uint256 lastRedeemId = ERC7540Lib
-            ._getERC7540Storage()
-            .lastRedeemRequestId[controller];
+        uint256 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
         return convertToAssets(shares, lastRedeemId);
     }
 
@@ -535,9 +493,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller
     ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         if (paused()) return 0;
-        uint256 lastDepositId = ERC7540Lib
-            ._getERC7540Storage()
-            .lastDepositRequestId[controller];
+        uint256 lastDepositId = ERC7540Lib._getERC7540Storage().lastDepositRequestId[controller];
         uint256 claimable = claimableDepositRequest(lastDepositId, controller);
         return convertToShares(claimable, lastDepositId);
     }
