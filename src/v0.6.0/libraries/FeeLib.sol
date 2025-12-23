@@ -10,7 +10,6 @@ import {AboveMaxRate} from "../primitives/Errors.sol";
 import {FeeTaken, HighWaterMarkUpdated, RatesUpdated} from "../primitives/Events.sol";
 import {RatesUpdated} from "../primitives/Events.sol";
 import {Rates} from "../primitives/Struct.sol";
-import {Constant} from "./Constant.sol";
 import {RolesLib} from "./RolesLib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -40,10 +39,6 @@ library FeeLib {
         assembly {
             _feeManagerStorage.slot := feeManagerStorage
         }
-    }
-
-    function version() public pure returns (string memory) {
-        return Constant.version();
     }
 
     /// @dev Calculate the management fee

@@ -29,7 +29,6 @@ import {
 } from "../primitives/Events.sol";
 import {EpochData, SettleData} from "../primitives/Struct.sol";
 import {Rates} from "../primitives/Struct.sol";
-import {Constant} from "./Constant.sol";
 import {PausableLib} from "./PausableLib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -59,10 +58,6 @@ library ERC7540Lib {
         if (controller != msg.sender && !ERC7540(address(this)).isOperator(controller, msg.sender)) {
             revert ERC7540InvalidOperator();
         }
-    }
-
-    function version() public pure returns (string memory) {
-        return Constant.version();
     }
 
     /// @dev Updates the totalAssets variable with the newTotalAssets variable.
