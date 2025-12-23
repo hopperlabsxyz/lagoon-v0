@@ -4,8 +4,14 @@ pragma solidity 0.8.26;
 import {FeeRegistry} from "../protocol-v1/FeeRegistry.sol";
 import {RolesLib} from "./libraries/RolesLib.sol";
 import {OnlySafe, OnlyValuationManager, OnlyWhitelistManager} from "./primitives/Errors.sol";
-import {FeeReceiverUpdated, ValuationManagerUpdated, WhitelistManagerUpdated} from "./primitives/Events.sol";
+import {
+    FeeReceiverUpdated,
+    SafeUpdated,
+    ValuationManagerUpdated,
+    WhitelistManagerUpdated
+} from "./primitives/Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 
 /// @title RolesUpgradeable
 /// @dev This contract is used to define the various roles needed for a vault to operate.
@@ -99,5 +105,15 @@ abstract contract Roles is Ownable2StepUpgradeable {
         address _feeReceiver
     ) external onlyOwner {
         RolesLib.updateFeeReceiver(_feeReceiver);
+    }
+
+    /// @notice Updates the address of the safe.
+    /// @param _safe The new address of the safe.
+    /// @dev Only the owner can call this function.
+    function updateSafe(
+        address _safe
+    ) external onlyOwner {
+        emit SafeUpdated(_getRolesStorage().safe, _safe);
+        _getRolesStorage().safe = _safe;
     }
 }

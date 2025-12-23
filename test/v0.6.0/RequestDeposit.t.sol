@@ -52,7 +52,6 @@ contract TestRequestDeposit is BaseTest {
         if (underlyingIsNativeToken) {
             vm.startPrank(user1.addr);
             uint256 requestId = vault.requestDeposit{value: userBalance}(0, user1.addr, user1.addr);
-            console.log("requestId", requestId);
             vm.stopPrank();
 
             assertEq(assetBalance(address(vault)), 0);

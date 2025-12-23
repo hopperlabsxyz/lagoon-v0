@@ -177,6 +177,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     ) public payable onlySyncDeposit onlyOpen returns (uint256 shares) {
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
 
+        _onlyUnderMaxCap(assets);
+
         if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
 
         if (msg.value != 0) {
@@ -305,7 +307,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     }
 
     /// @notice Claims all available shares for a list of controller addresses.
-    /// @dev Iterates over each controller address, checks for claimable deposits, and deposits them on their behalf.
+    /// @dev Iterates over each controller address, checks for claimable deposits, and claims them on their behalf.
     /// @param controllers The list of controller addresses for which to claim shares.
     function claimSharesOnBehalf(
         address[] memory controllers
@@ -314,6 +316,20 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             uint256 claimable = claimableDepositRequest(0, controllers[i]);
             if (claimable > 0) {
                 _deposit(claimable, controllers[i], controllers[i]);
+            }
+        }
+    }
+
+    /// @notice Claims all available assets for a list of controller addresses.
+    /// @dev Iterates over each controller address, checks for claimable redemptions and claims them on their behalf.
+    /// @param controllers The list of controller addresses for which to claim assets.
+    function redeemAssetsOnBehalf(
+        address[] memory controllers
+    ) external onlySafe {
+        for (uint256 i = 0; i < controllers.length; i++) {
+            uint256 claimable = claimableRedeemRequest(0, controllers[i]);
+            if (claimable > 0) {
+                _redeem(claimable, controllers[i], controllers[i]);
             }
         }
     }
@@ -379,6 +395,24 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
         FeeLib.takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+    }
+
+    /////////////////////////////
+    // ## MAX CAP FUNCTIONS ## //
+    /////////////////////////////
+
+    function updateMaxCap(
+        uint256 maxCap
+    ) external onlySafe {
+        _updateMaxCap(maxCap);
+    }
+
+    //////////////////////////////
+    // ## OPERATOR PRIVILEGES ## //
+    //////////////////////////////
+
+    function giveUpOperatorPrivileges() external onlyOwner {
+        _giveUpOperatorPrivileges();
     }
 
     /////////////////////////////

@@ -187,4 +187,20 @@ contract VaultHelper is Vault {
     function highWaterMark() public view returns (uint256) {
         return FeeLib._getFeeManagerStorage().highWaterMark;
     }
+
+    function gaveUpOperatorPrivileges() public view returns (bool) {
+        return _getERC7540Storage().gaveUpOperatorPrivileges;
+    }
+
+    function pendingDeposit(
+        uint40 epochId
+    ) public view returns (uint256) {
+        return _getERC7540Storage().settles[epochId].pendingAssets;
+    }
+
+    function pendingRedeem(
+        uint40 epochId
+    ) public view returns (uint256) {
+        return _getERC7540Storage().settles[epochId].pendingShares;
+    }
 }

@@ -99,6 +99,9 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
             init.rateUpdateCooldown
         );
 
+        // $.totalAssets = initialTotalAssets;
+        // mint(initialTotalAssets, address(init.safe));
+
         emit StateUpdated(State.Open);
     }
 

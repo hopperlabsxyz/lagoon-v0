@@ -14,6 +14,7 @@ import {
     ERC7540PreviewMintDisabled,
     ERC7540PreviewRedeemDisabled,
     ERC7540PreviewWithdrawDisabled,
+    MaxCapReached,
     NewTotalAssetsMissing,
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
@@ -22,6 +23,8 @@ import {
 } from "./primitives/Errors.sol";
 import {
     DepositRequestCanceled,
+    GaveUpOperatorPrivileges,
+    MaxCapUpdated,
     NewTotalAssetsUpdated,
     SettleDeposit,
     SettleRedeem,
@@ -86,6 +89,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         // New variables introduce with v0.5.0
         uint128 totalAssetsExpiration;
         uint128 totalAssetsLifespan;
+        // New variables introduce with v0.6.0
+        uint256 maxCap;
+        bool gaveUpOperatorPrivileges;
     }
 
     /// @notice Initializes the ERC7540 contract.
@@ -117,6 +123,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
                 $.decimalsOffset = 18 - underlyingDecimals;
             }
         }
+        $.maxCap = type(uint256).max;
     }
 
     ///////////////
@@ -128,10 +135,31 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     modifier onlyOperator(
         address controller
     ) {
-        if (controller != msg.sender && !isOperator(controller, msg.sender)) {
+        _onlyOperator(controller);
+        _;
+    }
+
+    /// @notice Make sure the caller is an operator or the controller.
+    /// @param controller The controller.
+    function _onlyOperator(
+        address controller
+    ) private view {
+        bool safeAsOperator = msg.sender == safe() && !_getERC7540Storage().gaveUpOperatorPrivileges;
+        if (controller != msg.sender && !isOperator(controller, msg.sender) && !safeAsOperator) {
             revert ERC7540InvalidOperator();
         }
-        _;
+    }
+
+    /// @notice Make sure new deposit request is under the max cap.
+    /// @param assets The amount of assets to deposit or request deposit for.
+    function _onlyUnderMaxCap(
+        uint256 assets
+    ) internal view {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        uint256 siloAssetsBalance = IERC20(asset()).balanceOf(address($.pendingSilo));
+        if (totalAssets() + assets + siloAssetsBalance > $.maxCap) {
+            revert MaxCapReached();
+        }
     }
 
     /////////////////////
@@ -221,16 +249,18 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param assets The amount of assets to deposit.
     /// @param controller The controller is the address that will manage the request.
     /// @param owner The owner of the assets.
+
     function _requestDeposit(
         uint256 assets,
         address controller,
         address owner
     ) internal returns (uint256) {
+        _onlyUnderMaxCap(assets);
+
         uint256 claimable = claimableDepositRequest(0, controller);
         if (claimable > 0) _deposit(claimable, controller, controller);
 
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
-
         uint40 _depositId = $.depositEpochId;
         if ($.lastDepositRequestId[controller] != _depositId) {
             if (pendingDepositRequest(0, controller) > 0) {
@@ -467,6 +497,20 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     ) external {
         require(msg.sender == address(this));
         _burn(from, shares);
+    }
+
+    function _updateMaxCap(
+        uint256 _maxCap
+    ) internal {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        emit MaxCapUpdated({previousMaxCap: $.maxCap, maxCap: _maxCap});
+        $.maxCap = _maxCap;
+    }
+
+    function _giveUpOperatorPrivileges() internal {
+        ERC7540Storage storage $ = _getERC7540Storage();
+        $.gaveUpOperatorPrivileges = true;
+        emit GaveUpOperatorPrivileges();
     }
 
     //////////////////////////
