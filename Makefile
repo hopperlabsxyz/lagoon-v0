@@ -56,6 +56,7 @@ BEACON_SCRIPT := script/deploy_beacon.s.sol:DeployBeacon
 VAULT_SCRIPT := script/deploy_vault.s.sol:DeployVault 
 FACTORY_SCRIPT := script/deploy_factory.s.sol:DeployBeaconProxyFactory 
 IMPLEMENTATION_SCRIPT := script/deploy_implementation.s.sol:DeployImplementation
+OPTIN_PROXY_FOR_VERIFICATION_SCRIPT := script/deploy_optinProxyForVerification.s.sol:DeployOptinProxyForVerification
 
 #################### UTILS #####################
 
@@ -197,6 +198,22 @@ deploy-implementation-pk: load_prod_env
 	@echo "Deploying Implementation..."
 	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(PK_FLAGS) $(VERIFY_FLAGS) $(IMPLEMENTATION_SCRIPT)
 
+####################### OPTIN PROXY FOR VERIFICATION #####################
+
+# simulation
+optin-proxy: load_prod_env
+	@echo "Deploying Optin Proxy For Verification..."
+	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(DEPLOYER_FLAGS) $(OPTIN_PROXY_FOR_VERIFICATION_SCRIPT)
+
+# pk broadcast 
+deploy-optin-proxy-pk: load_prod_env
+	@echo "Deploying Optin Proxy For Verification..."
+	@$(DOCKER_RUN) $(IMAGE):$(VERSION_TAG) $(PK_FLAGS) $(VERIFY_FLAGS) $(OPTIN_PROXY_FOR_VERIFICATION_SCRIPT)
+
+# ledger broadcast
+deploy-optin-proxy-ledger: load_prod_env clean
+	@echo "Deploying Optin Proxy For Verification..."
+	@forge script $(LEDGER_FLAGS) $(VERIFY_FLAGS) $(OPTIN_PROXY_FOR_VERIFICATION_SCRIPT)
 
 .PHONY: load_dev_env \
 	load_prod_env \
@@ -226,5 +243,4 @@ deploy-implementation-pk: load_prod_env
 	factory\
 	deploy-factory-ledger \
 	deploy-factory-pk
-
 
