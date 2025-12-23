@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {OptinProxy} from "@src/proxy/OptinProxy.sol";
+import {LagoonVault} from "@src/proxy/OptinProxy.sol";
 
 interface IVault {
     function initialize(
@@ -124,7 +124,7 @@ contract OptinProxyFactory is OwnableUpgradeable {
         bytes memory call_data = abi.encodeCall(IVault.initialize, (abi.encode(_init), $.REGISTRY, $.WRAPPED_NATIVE));
 
         address proxy = address(
-            new OptinProxy{
+            new LagoonVault{
                 salt: salt
             }({
                 _logic: _logic,

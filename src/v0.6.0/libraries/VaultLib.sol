@@ -3,14 +3,23 @@ pragma solidity 0.8.26;
 
 import {ERC7540} from "../ERC7540.sol";
 import {FeeManager} from "../FeeManager.sol";
-import {Roles} from "../Roles.sol";
 import {FeeLib} from "../libraries/FeeLib.sol";
 import {State} from "../primitives/Enums.sol";
+import {
+    CantDepositNativeToken,
+    Closed,
+    ERC7540InvalidOperator,
+    NotClosing,
+    NotOpen,
+    NotWhitelisted,
+    OnlyAsyncDepositAllowed,
+    OnlySyncDepositAllowed,
+    ValuationUpdateNotAllowed
+} from "../primitives/Errors.sol";
 import {StateUpdated} from "../primitives/Events.sol";
 import {VaultStorage} from "../primitives/VaultStorage.sol";
 import {VaultStorage} from "../primitives/VaultStorage.sol";
 import {ERC7540Lib} from "./ERC7540Lib.sol";
-import {RolesLib} from "./RolesLib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -31,6 +40,34 @@ library VaultLib {
         }
     }
 
+    function _onlyOpen() internal view {
+        State _state = _getVaultStorage().state;
+        if (_state != State.Open) revert NotOpen(_state);
+    }
+
+    function _onlyClosing() internal view {
+        State _state = _getVaultStorage().state;
+        if (_state != State.Closing) revert NotClosing(_state);
+    }
+
+    function _onlySyncDeposit() internal view {
+        // if total assets is not valid we can only do asynchronous deposit
+        if (!isTotalAssetsValid()) {
+            revert OnlyAsyncDepositAllowed();
+        }
+    }
+
+    function _onlyAsyncDeposit() internal view {
+        // if total assets is valid we can only do synchronous deposit
+        if (isTotalAssetsValid()) {
+            revert OnlySyncDepositAllowed();
+        }
+    }
+
+    function isTotalAssetsValid() public view returns (bool) {
+        return block.timestamp < ERC7540Lib._getERC7540Storage().totalAssetsExpiration;
+    }
+
     /// @notice Initiates the closing of the vault. Can only be called by the owner.
     /// @dev we make sure that initiate closing will make an epoch changement if the variable newTotalAssets is
     /// "defined"
@@ -47,10 +84,8 @@ library VaultLib {
     function close(
         uint256 _newTotalAssets
     ) public {
-        Roles.RolesStorage storage $roles = RolesLib._getRolesStorage();
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
-        FeeLib.takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
-
+        FeeLib.takeManagementAndPerformanceFees();
         ERC7540Lib.settleDeposit(msg.sender);
         ERC7540Lib.settleRedeem(msg.sender);
         _getVaultStorage().state = State.Closed;

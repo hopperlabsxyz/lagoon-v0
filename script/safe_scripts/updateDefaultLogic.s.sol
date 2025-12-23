@@ -15,6 +15,7 @@ import {Script, console} from "forge-std/Script.sol";
 
 import {BatchScript} from "../tools/BatchScript.sol";
 import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+
 /*
  This script will deploy the OptinProxyFactory, propose safe txs to:
  - update the fee registry with the logicRegistry

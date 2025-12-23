@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
+import "forge-std/Test.sol";
+
 import {ERC7540} from "../ERC7540.sol";
+import {FeeLib} from "../FeeManager.sol";
+import {FeeType} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
     ERC7540InvalidOperator,
@@ -24,6 +28,7 @@ import {
     TotalAssetsUpdated
 } from "../primitives/Events.sol";
 import {EpochData, SettleData} from "../primitives/Struct.sol";
+import {Rates} from "../primitives/Struct.sol";
 import {PausableLib} from "./PausableLib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -44,6 +49,14 @@ library ERC7540Lib {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             _erc7540Storage.slot := erc7540Storage
+        }
+    }
+
+    function _onlyOperator(
+        address controller
+    ) internal view {
+        if (controller != msg.sender && !ERC7540(address(this)).isOperator(controller, msg.sender)) {
+            revert ERC7540InvalidOperator();
         }
     }
 
@@ -242,7 +255,8 @@ library ERC7540Lib {
         _totalAssets += _pendingAssets;
         _totalSupply += shares;
 
-        ERC7540(address(this)).forge(address(this), shares);
+        uint256 entryFeeShares = FeeLib.takeEntryFees(shares);
+        ERC7540(address(this)).forge(address(this), shares - entryFeeShares);
 
         $.totalAssets = _totalAssets;
         $.depositSettleId = depositSettleId + 2;
@@ -268,7 +282,8 @@ library ERC7540Lib {
         address _asset = IERC4626(address(this)).asset();
 
         uint256 pendingShares = $.settles[redeemSettleId].pendingShares;
-        uint256 assetsToWithdraw = IERC4626(address(this)).convertToAssets(pendingShares);
+        uint256 exitFeeShares = FeeLib.calculateExitFees(pendingShares, false);
+        uint256 assetsToWithdraw = IERC4626(address(this)).convertToAssets(pendingShares - exitFeeShares);
 
         uint256 assetsInTheSafe = IERC20(_asset).balanceOf(assetsCustodian);
         if (assetsToWithdraw == 0 || assetsToWithdraw > assetsInTheSafe) return;
@@ -285,9 +300,10 @@ library ERC7540Lib {
 
         // external call
         ERC7540(address(this)).void(address($.pendingSilo), pendingShares);
+        FeeLib.takeFees(exitFeeShares, FeeType.Exit);
 
         _totalAssets -= assetsToWithdraw;
-        _totalSupply -= pendingShares;
+        _totalSupply -= (pendingShares - exitFeeShares);
 
         $.totalAssets = _totalAssets;
 

@@ -72,6 +72,16 @@ contract VaultHelper is Vault {
         return FeeLib.protocolRate();
     }
 
+    function entryRate() public view returns (uint256) {
+        Rates memory _rates = feeRates();
+        return _rates.entryRate;
+    }
+
+    function exitRate() public view returns (uint256) {
+        Rates memory _rates = feeRates();
+        return _rates.exitRate;
+    }
+
     function lastDepositEpochIdSettled_debug() public view returns (uint256) {
         return ERC7540Lib._getERC7540Storage().lastDepositEpochIdSettled;
     }
