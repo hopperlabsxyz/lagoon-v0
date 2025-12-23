@@ -1,0 +1,65 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.26;
+
+import {ERC7540} from "../ERC7540.sol";
+import {FeeManager} from "../FeeManager.sol";
+import {Roles} from "../Roles.sol";
+import {FeeLib} from "../libraries/FeeLib.sol";
+import {State} from "../primitives/Enums.sol";
+import {StateUpdated} from "../primitives/Events.sol";
+import {VaultStorage} from "../primitives/VaultStorage.sol";
+import {VaultStorage} from "../primitives/VaultStorage.sol";
+import {ERC7540Lib} from "./ERC7540Lib.sol";
+import {RolesLib} from "./RolesLib.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+library VaultLib {
+    using SafeERC20 for IERC20;
+
+    // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
+    /// @custom:slot erc7201:hopper.storage.vault
+    // solhint-disable-next-line const-name-snakecase
+    bytes32 private constant vaultStorage = 0x0e6b3200a60a991c539f47dddaca04a18eb4bcf2b53906fb44751d827f001400;
+
+    /// @notice Returns the storage struct of the vault.
+    /// @return _vaultStorage The storage struct of the vault.
+    function _getVaultStorage() internal pure returns (VaultStorage storage _vaultStorage) {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            _vaultStorage.slot := vaultStorage
+        }
+    }
+
+    /// @notice Initiates the closing of the vault. Can only be called by the owner.
+    /// @dev we make sure that initiate closing will make an epoch changement if the variable newTotalAssets is
+    /// "defined"
+    /// @dev (!= type(uint256).max). This guarantee that no userShares will be locked in a pending state.
+    function initiateClosing() public {
+        ERC7540.ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+        if ($.newTotalAssets != type(uint256).max) {
+            ERC7540Lib.updateNewTotalAssets($.newTotalAssets);
+        }
+        _getVaultStorage().state = State.Closing;
+        emit StateUpdated(State.Closing);
+    }
+
+    function close(
+        uint256 _newTotalAssets
+    ) public {
+        Roles.RolesStorage storage $roles = RolesLib._getRolesStorage();
+        ERC7540Lib.updateTotalAssets(_newTotalAssets);
+        FeeLib.takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+
+        ERC7540Lib.settleDeposit(msg.sender);
+        ERC7540Lib.settleRedeem(msg.sender);
+        _getVaultStorage().state = State.Closed;
+
+        // Transfer will fail if there are not enough assets inside the safe, making sure that redeem requests are
+        // fulfilled
+        IERC20(IERC4626(address(this)).asset())
+            .safeTransferFrom(msg.sender, address(this), ERC7540Lib._getERC7540Storage().totalAssets);
+
+        emit StateUpdated(State.Closed);
+    }
+}

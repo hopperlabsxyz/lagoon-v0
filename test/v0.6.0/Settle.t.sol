@@ -120,7 +120,6 @@ contract TestSettle is BaseTest {
         vm.startPrank(vault.safe());
         vault.settleRedeem(vault.newTotalAssets());
         vm.stopPrank();
-
         uint256 settleRedeemIdAfter = vault.redeemSettleId();
 
         assertEq(settleRedeemIdBefore + 2, settleRedeemIdAfter, "wrong settle redeem id after settle redeem");

@@ -2,9 +2,13 @@
 pragma solidity 0.8.26;
 
 import {ERC7540} from "../ERC7540.sol";
+import {ERC7540Lib} from "../libraries/ERC7540Lib.sol";
+import {FeeLib} from "../libraries/FeeLib.sol";
+import {RolesLib} from "../libraries/RolesLib.sol";
+import {VaultLib} from "../libraries/VaultLib.sol";
+import {VaultStorage} from "../primitives/VaultStorage.sol";
 
 import {VaultInit} from "./VaultInit.sol";
-import {Vault_Storage} from "./VaultStorage.sol";
 
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
@@ -63,8 +67,9 @@ struct InitStruct {
 }
 
 /// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault
-contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
+contract Vault is ERC7540, Whitelistable, FeeManager {
     VaultInit immutable init;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
 
@@ -98,14 +103,14 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
 
     /// @notice Reverts if the vault is not open.
     modifier onlyOpen() {
-        State _state = _getVaultStorage().state;
+        State _state = VaultLib._getVaultStorage().state;
         if (_state != State.Open) revert NotOpen(_state);
         _;
     }
 
     /// @notice Reverts if the vault is not closing.
     modifier onlyClosing() {
-        State _state = _getVaultStorage().state;
+        State _state = VaultLib._getVaultStorage().state;
         if (_state != State.Closing) revert NotClosing(_state);
         _;
     }
@@ -170,7 +175,7 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
         address receiver,
         address referral
     ) public payable onlySyncDeposit onlyOpen returns (uint256 shares) {
-        ERC7540Storage storage $ = _getERC7540Storage();
+        ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
 
         if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
 
@@ -234,7 +239,7 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
         address receiver,
         address controller
     ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256 shares) {
-        VaultStorage storage $ = _getVaultStorage();
+        VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             shares = _convertToShares(assets, Math.Rounding.Ceil);
@@ -260,7 +265,7 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
         address receiver,
         address controller
     ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256 assets) {
-        VaultStorage storage $ = _getVaultStorage();
+        VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             assets = _convertToAssets(shares, Math.Rounding.Floor);
@@ -290,7 +295,7 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
             _spendAllowance(owner, caller, shares);
         }
 
-        _getERC7540Storage().totalAssets -= assets;
+        ERC7540Lib._getERC7540Storage().totalAssets -= assets;
 
         _burn(owner, shares);
 
@@ -320,7 +325,7 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
     function updateTotalAssetsLifespan(
         uint128 lifespan
     ) external onlySafe {
-        _updateTotalAssetsLifespan(lifespan);
+        ERC7540Lib.updateTotalAssetsLifespan(lifespan);
     }
 
     /// @notice Function to propose a new valuation for the vault.
@@ -329,7 +334,9 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
     function updateNewTotalAssets(
         uint256 _newTotalAssets
     ) public onlyValuationManager {
-        if (_getVaultStorage().state == State.Closed) revert Closed();
+        if (VaultLib._getVaultStorage().state == State.Closed) {
+            revert Closed();
+        }
 
         // if totalAssets is not expired yet it means syncDeposit are allowed
         // in this case we do not allow onlyValuationManager to propose a new nav
@@ -337,7 +344,7 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
         if (isTotalAssetsValid()) {
             revert ValuationUpdateNotAllowed();
         }
-        _updateNewTotalAssets(_newTotalAssets);
+        ERC7540Lib.updateNewTotalAssets(_newTotalAssets);
     }
 
     /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
@@ -347,8 +354,8 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
         _updateTotalAssetsAndTakeFees(_newTotalAssets);
-        _settleDeposit(msg.sender);
-        _settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
+        ERC7540Lib.settleDeposit(msg.sender);
+        ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
 
     /// @notice Settles redeem requests, only callable by the safe.
@@ -359,7 +366,7 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
         _updateTotalAssetsAndTakeFees(_newTotalAssets);
-        _settleRedeem(msg.sender);
+        ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
 
     /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
@@ -368,10 +375,10 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
     function _updateTotalAssetsAndTakeFees(
         uint256 _newTotalAssets
     ) internal {
-        RolesStorage storage $roles = _getRolesStorage();
+        RolesStorage storage $roles = RolesLib._getRolesStorage();
 
-        _updateTotalAssets(_newTotalAssets);
-        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+        ERC7540Lib.updateTotalAssets(_newTotalAssets);
+        FeeLib.takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
     }
 
     /////////////////////////////
@@ -383,12 +390,7 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
     /// "defined"
     /// @dev (!= type(uint256).max). This guarantee that no userShares will be locked in a pending state.
     function initiateClosing() external onlyOwner onlyOpen {
-        ERC7540Storage storage $ = _getERC7540Storage();
-        if ($.newTotalAssets != type(uint256).max) {
-            _updateNewTotalAssets($.newTotalAssets);
-        }
-        _getVaultStorage().state = State.Closing;
-        emit StateUpdated(State.Closing);
+        VaultLib.initiateClosing();
     }
 
     /// @notice Closes the vault, only redemption and withdrawal are allowed after this. Can only be called by the safe.
@@ -396,19 +398,7 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
     function close(
         uint256 _newTotalAssets
     ) external onlySafe onlyClosing {
-        RolesStorage storage $roles = _getRolesStorage();
-        _updateTotalAssets(_newTotalAssets);
-        _takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
-
-        _settleDeposit(msg.sender);
-        _settleRedeem(msg.sender);
-        _getVaultStorage().state = State.Closed;
-
-        // Transfer will fail if there are not enough assets inside the safe, making sure that redeem requests are
-        // fulfilled
-        IERC20(asset()).safeTransferFrom(msg.sender, address(this), _getERC7540Storage().totalAssets);
-
-        emit StateUpdated(State.Closed);
+        VaultLib.close(_newTotalAssets);
     }
 
     /////////////////////////////////
@@ -428,7 +418,7 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
     }
 
     function expireTotalAssets() public onlySafe {
-        _getERC7540Storage().totalAssetsExpiration = 0;
+        ERC7540Lib._getERC7540Storage().totalAssetsExpiration = 0;
     }
 
     // MAX FUNCTIONS OVERRIDE //
@@ -444,7 +434,7 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
     ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         if (paused()) return 0;
         uint256 shares = claimableRedeemRequest(0, controller);
-        if (shares == 0 && _getVaultStorage().state == State.Closed) {
+        if (shares == 0 && VaultLib._getVaultStorage().state == State.Closed) {
             // controller has no redeem claimable, we will use the synchronous flow
             return balanceOf(controller);
         }
@@ -462,11 +452,11 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
         if (paused()) return 0;
 
         uint256 shares = claimableRedeemRequest(0, controller);
-        if (shares == 0 && _getVaultStorage().state == State.Closed) {
+        if (shares == 0 && VaultLib._getVaultStorage().state == State.Closed) {
             // controller has no redeem claimable, we will use the synchronous flow
             return convertToAssets(balanceOf(controller));
         }
-        uint256 lastRedeemId = _getERC7540Storage().lastRedeemRequestId[controller];
+        uint256 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
         return convertToAssets(shares, lastRedeemId);
     }
 
@@ -491,17 +481,17 @@ contract Vault is Vault_Storage, ERC7540, Whitelistable, FeeManager {
         address controller
     ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         if (paused()) return 0;
-        uint256 lastDepositId = _getERC7540Storage().lastDepositRequestId[controller];
+        uint256 lastDepositId = ERC7540Lib._getERC7540Storage().lastDepositRequestId[controller];
         uint256 claimable = claimableDepositRequest(lastDepositId, controller);
         return convertToShares(claimable, lastDepositId);
     }
 
     function isTotalAssetsValid() public view returns (bool) {
-        return block.timestamp < _getERC7540Storage().totalAssetsExpiration;
+        return block.timestamp < ERC7540Lib._getERC7540Storage().totalAssetsExpiration;
     }
 
     function safe() public view override returns (address) {
-        return _getRolesStorage().safe;
+        return RolesLib._getRolesStorage().safe;
     }
 
     function version() public pure returns (string memory) {
