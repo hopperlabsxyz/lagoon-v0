@@ -113,7 +113,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function updateSafe(
         address _safe
     ) external onlyOwner {
-        emit SafeUpdated(_getRolesStorage().safe, _safe);
-        _getRolesStorage().safe = _safe;
+        emit SafeUpdated(RolesLib._getRolesStorage().safe, _safe);
+        RolesLib._getRolesStorage().safe = _safe;
     }
 }

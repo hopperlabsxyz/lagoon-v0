@@ -144,7 +144,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address controller,
         address owner
-    ) public payable override onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
+    ) public payable override onlyOperator(owner, false) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         return _requestDeposit(assets, controller, owner);
     }
@@ -159,7 +159,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller,
         address owner,
         address referral
-    ) public payable onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
+    ) public payable onlyOperator(owner, false) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         requestId = _requestDeposit(assets, controller, owner);
 
@@ -247,7 +247,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             shares = _convertToShares(assets, Math.Rounding.Ceil);
             _withdraw(msg.sender, receiver, controller, assets, shares); // sync
         } else {
-            if (controller != msg.sender && !isOperator(controller, msg.sender)) {
+            if (controller != msg.sender && !_isOperator(controller, msg.sender, true)) {
                 revert ERC7540InvalidOperator();
             }
             return _withdraw(assets, receiver, controller); // async
@@ -273,7 +273,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             assets = _convertToAssets(shares, Math.Rounding.Floor);
             _withdraw(msg.sender, receiver, controller, assets, shares);
         } else {
-            if (controller != msg.sender && !isOperator(controller, msg.sender)) {
+            if (controller != msg.sender && !_isOperator(controller, msg.sender, true)) {
                 revert ERC7540InvalidOperator();
             }
             return _redeem(shares, receiver, controller);
@@ -293,7 +293,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
-        if (caller != owner && !isOperator(owner, caller)) {
+        if (caller != owner && !_isOperator(owner, caller, true)) {
             _spendAllowance(owner, caller, shares);
         }
 
@@ -530,5 +530,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     function version() public pure returns (string memory) {
         return "v0.6.0";
+    }
+
+    function _protocolFeeReceiver() internal view override returns (address) {
+        return RolesLib._getRolesStorage().feeRegistry.protocolFeeReceiver();
     }
 }

@@ -144,4 +144,8 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
     function safe() public view override returns (address) {
         return address(0);
     }
+
+    function _protocolFeeReceiver() internal view override returns (address) {
+        return address(0);
+    }
 }

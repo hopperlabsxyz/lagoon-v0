@@ -349,14 +349,14 @@ contract BaseTest is Test, Constants {
         uint256 redeemSettleIdAfter = vault.redeemSettleId();
 
         if (pendingDepositAmount == 0) {
-            assertEq(depositSettleIdBefore, depositSettleIdAfter);
+            assertEq(depositSettleIdBefore, depositSettleIdAfter, "wrong depositSettleId after settle 1");
         } else {
-            assertEq(depositSettleIdBefore + 2, depositSettleIdAfter);
+            assertEq(depositSettleIdBefore + 2, depositSettleIdAfter, "wrong depositSettleId after settle 2");
         }
         if (pendingRedeemAmount == 0) {
-            assertEq(redeemSettleIdBefore, redeemSettleIdAfter);
+            assertEq(redeemSettleIdBefore, redeemSettleIdAfter, "wrong redeemSettleId after settle 1");
         } else {
-            assertEq(redeemSettleIdBefore + 2, redeemSettleIdAfter);
+            assertEq(redeemSettleIdBefore + 2, redeemSettleIdAfter, "wrong redeemSettleId after settle 2");
         }
     }
 
