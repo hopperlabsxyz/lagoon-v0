@@ -7,7 +7,7 @@ import "forge-std/Test.sol";
 import {BaseTest} from "./Base.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract TestMint is BaseTest {
+contract TestRoles is BaseTest {
     function setUp() public {
         setUpVault(0, 0, 0);
     }

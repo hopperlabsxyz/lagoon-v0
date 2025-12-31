@@ -83,7 +83,8 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
                 feeRegistry: FeeRegistry(feeRegistry),
-                valuationManager: init.valuationManager
+                valuationManager: init.valuationManager,
+                gaveUpSafeUpgradeability: false
             })
         );
         __ERC20_init(init.name, init.symbol);
@@ -99,12 +100,11 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
             init.rateUpdateCooldown
         );
 
+        // $.totalAssets = initialTotalAssets;
+        // mint(initialTotalAssets, address(init.safe));
+
         emit StateUpdated(State.Open);
     }
-
-    /////////////////////
-    // ## MODIFIERS ## //
-    /////////////////////
 
     /////////////////////////////////////////////
     // ## DEPOSIT AND REDEEM FLOW FUNCTIONS ## //
@@ -139,6 +139,10 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
     }
 
     function safe() public view override returns (address) {
+        return address(0);
+    }
+
+    function _protocolFeeReceiver() internal view override returns (address) {
         return address(0);
     }
 }

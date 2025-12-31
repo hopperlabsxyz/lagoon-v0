@@ -52,7 +52,6 @@ contract TestRequestDeposit is BaseTest {
         if (underlyingIsNativeToken) {
             vm.startPrank(user1.addr);
             uint256 requestId = vault.requestDeposit{value: userBalance}(0, user1.addr, user1.addr);
-            console.log("requestId", requestId);
             vm.stopPrank();
 
             assertEq(assetBalance(address(vault)), 0);
@@ -89,7 +88,7 @@ contract TestRequestDeposit is BaseTest {
         assertEq(requestId_1 + 2, vault.depositEpochId(), "wrong deposit id");
         assertEq(
             vault.lastDepositRequestId_debug(user1.addr), // keep track of the last deposit id of the user, only one
-                // requestId is allowed by settle period by user
+            // requestId is allowed by settle period by user
             requestId_1,
             "wrong internal lastDepositRequestId"
         );

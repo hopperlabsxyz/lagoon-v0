@@ -32,6 +32,7 @@ contract Constants is Test {
     string vaultName = "vault_name";
     string vaultSymbol = "vault_symbol";
     uint256 rateUpdateCooldown = 1 days;
+    uint8 decimals = 18;
 
     // Users
     VmSafe.Wallet user1 = vm.createWallet("user1");
@@ -114,6 +115,7 @@ contract Constants is Test {
             vault = VaultHelper(implementation);
             vault.initialize(abi.encode(initStruct), address(feeRegistry), WRAPPED_NATIVE_TOKEN);
         }
+        decimals = vault.decimals();
 
         if (enableWhitelist) {
             whitelistInit.push(feeReceiver.addr);

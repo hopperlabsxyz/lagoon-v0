@@ -161,6 +161,10 @@ contract VaultHelper is Vault {
         return RolesLib._getRolesStorage().feeRegistry.protocolFeeReceiver();
     }
 
+    function gaveUpSafeUpgradeability() public view returns (bool) {
+        return RolesLib._getRolesStorage().gaveUpSafeUpgradeability;
+    }
+
     function pendingSilo() public view returns (address) {
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
         return address($.pendingSilo);
@@ -186,5 +190,21 @@ contract VaultHelper is Vault {
     /// @notice value of the high water mark, the highest price per share ever reached
     function highWaterMark() public view returns (uint256) {
         return FeeLib._getFeeManagerStorage().highWaterMark;
+    }
+
+    function gaveUpOperatorPrivileges() public view returns (bool) {
+        return ERC7540Lib._getERC7540Storage().gaveUpOperatorPrivileges;
+    }
+
+    function pendingDeposit(
+        uint40 epochId
+    ) public view returns (uint256) {
+        return ERC7540Lib._getERC7540Storage().settles[epochId].pendingAssets;
+    }
+
+    function pendingRedeem(
+        uint40 epochId
+    ) public view returns (uint256) {
+        return ERC7540Lib._getERC7540Storage().settles[epochId].pendingShares;
     }
 }

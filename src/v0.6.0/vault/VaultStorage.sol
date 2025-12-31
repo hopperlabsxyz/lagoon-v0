@@ -1,32 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {ERC7540} from "../ERC7540.sol";
-import {FeeManager} from "../FeeManager.sol";
-import {Roles} from "../Roles.sol";
-import {Whitelistable} from "../Whitelistable.sol";
 import {State} from "../primitives/Enums.sol";
-import {
-    CantDepositNativeToken,
-    Closed,
-    ERC7540InvalidOperator,
-    NotClosing,
-    NotOpen,
-    NotWhitelisted,
-    OnlyAsyncDepositAllowed,
-    OnlySyncDepositAllowed,
-    ValuationUpdateNotAllowed
-} from "../primitives/Errors.sol";
-
-import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
-import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
-
-using SafeERC20 for IERC20;
 
 /// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault
 contract Vault_Storage {
