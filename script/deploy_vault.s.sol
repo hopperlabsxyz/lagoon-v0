@@ -4,7 +4,6 @@ pragma solidity 0.8.26;
 import {BeaconProxyFactory, InitStruct} from "@src/protocol-v1/BeaconProxyFactory.sol";
 
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Script, console} from "forge-std/Script.sol";
 
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
@@ -24,6 +23,8 @@ contract DeployVault is Script {
         // Fees
         uint16 MANAGEMENT_RATE = uint16(vm.envUint("MANAGEMENT_RATE"));
         uint16 PERFORMANCE_RATE = uint16(vm.envUint("PERFORMANCE_RATE"));
+        uint16 ENTRY_RATE = uint16(vm.envUint("ENTRY_RATE"));
+        uint16 EXIT_RATE = uint16(vm.envUint("EXIT_RATE"));
         uint256 RATE_UPDATE_COOLDOWN = vm.envUint("RATE_UPDATE_COOLDOWN");
 
         // Roles
@@ -43,6 +44,8 @@ contract DeployVault is Script {
             feeReceiver: FEE_RECEIVER,
             managementRate: MANAGEMENT_RATE,
             performanceRate: PERFORMANCE_RATE,
+            entryRate: ENTRY_RATE,
+            exitRate: EXIT_RATE,
             enableWhitelist: ENABLE_WHITELIST,
             rateUpdateCooldown: RATE_UPDATE_COOLDOWN
         });

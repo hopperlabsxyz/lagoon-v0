@@ -5,8 +5,6 @@ import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract TestRequestDeposit is BaseTest {
     function setUp() public {
@@ -89,7 +87,7 @@ contract TestRequestDeposit is BaseTest {
         assertEq(requestId_1 + 2, vault.depositEpochId(), "wrong deposit id");
         assertEq(
             vault.lastDepositRequestId_debug(user1.addr), // keep track of the last deposit id of the user, only one
-                // requestId is allowed by settle period by user
+            // requestId is allowed by settle period by user
             requestId_1,
             "wrong internal lastDepositRequestId"
         );

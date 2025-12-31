@@ -8,3 +8,12 @@ enum State {
     Closing, // The vault is in the process of closing; no NEW deposit (settlement) are accepted into the vault
     Closed // The vault is closed; settlement are locked; withdrawals are guaranteed at fixed price per share
 }
+
+// ********************* FEE MANAGER ********************* //
+
+enum FeeType {
+    Management,
+    Performance,
+    Entry,
+    Exit
+}

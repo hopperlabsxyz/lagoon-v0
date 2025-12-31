@@ -176,6 +176,12 @@ contract BaseTest is Test, Constants {
 
         vm.prank(user);
         uint256 assets = vault.mint(amount, user);
+        assertEq(
+            assets,
+            vault.convertToAssets(amount + FeeLib.applyFeeReverse(amount, vault.entryRate())),
+            "mint: wrong assets returned"
+        );
+        console.log("HERE assets", assets);
 
         uint256 sharesAfter = vault.balanceOf(receiver);
 
@@ -243,6 +249,7 @@ contract BaseTest is Test, Constants {
         // console.log("user bal             ", vault.balanceOf(controller));
         // console.log("---------");
         uint256 assetsBeforeReceiver = assetBalance(receiver);
+        uint256 sharesBeforeReceiver = balance(receiver);
         uint256 assetsBeforeController = assetBalance(controller);
         uint256 assetsBeforeOperator = assetBalance(operator);
 
@@ -254,24 +261,29 @@ contract BaseTest is Test, Constants {
         uint256 assets = vault.redeem(amount, receiver, controller);
         uint256 assetsAfterReceiver = assetBalance(receiver);
 
-        assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxWithdraw, "wrong maxWithdraw");
+        assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxWithdraw, "redeem: wrong maxWithdraw");
         // assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxRedeem, "wrong maxRedeem");
 
+        console.log("shares before: ", sharesBeforeReceiver);
+        console.log("shares       : ", amount);
+        console.log("shares after: ", balance(receiver));
         assertEq(
-            assetsBeforeReceiver + assets, assetBalance(receiver), "Receiver assets balance did not increase properly"
+            assetsBeforeReceiver + assets,
+            assetBalance(receiver),
+            "redeem: Receiver assets balance did not increase properly"
         );
         if (controller != receiver) {
             assertEq(
                 assetsBeforeController,
                 assetBalance(controller),
-                "Controller assets balance should remain the same after redeem"
+                "redeem: Controller assets balance should remain the same after redeem"
             );
         }
         if (operator != receiver) {
             assertEq(
                 assetsBeforeOperator,
                 assetBalance(operator),
-                "Operator assets balance should remain the same after redeem"
+                "redeem: Operator assets balance should remain the same after redeem"
             );
         }
         return assets;
@@ -290,37 +302,68 @@ contract BaseTest is Test, Constants {
         address operator,
         address receiver
     ) internal returns (uint256) {
+        uint256 lastRequestId = vault.lastRedeemRequestId(controller);
+        console.log("---------");
+        console.log("amount               ", amount);
+        console.log("total assets         ", vault.totalAssets());
+        console.log("asset balance vault  ", assetBalance(address(vault)));
+        console.log("asset balance safe   ", assetBalance(safe.addr));
+        console.log("current epoch id     ", vault.redeemSettleId());
+        console.log("redeem id            ", lastRequestId);
+        console.log("claimable redeems    ", vault.claimableRedeemRequest(lastRequestId, controller));
+        console.log("max redeem           ", vault.maxRedeem(controller));
+        console.log("max redeem converted ", vault.convertToAssets(vault.maxRedeem(controller), lastRequestId));
+        console.log("max withdraw         ", vault.maxWithdraw(controller));
+        console.log("user bal             ", vault.balanceOf(controller));
+        console.log("---------");
         uint256 assetsBeforeReceiver = assetBalance(receiver);
         uint256 assetsBeforeController = assetBalance(controller);
         uint256 assetsBeforeOperator = assetBalance(operator);
 
-        uint256 lastRequestId = vault.lastRedeemRequestId(controller);
         uint256 maxWithdraw = vault.maxWithdraw(controller);
-        uint256 maxRedeem = vault.convertToAssets(vault.maxRedeem(controller), lastRequestId);
+        // console.log("maxRedeemAssets", maxRedeemAssets);
 
+        console.log("HEY0");
         vm.prank(operator);
         uint256 shares = vault.withdraw(amount, receiver, controller);
+        console.log("HEY1");
 
         uint256 assetsAfterReceiver = assetBalance(receiver);
 
-        assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxWithdraw, "wrong maxWithdraw");
-        assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxRedeem, "wrong maxRedeem");
+        assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxWithdraw, "withdraw: wrong maxRedeem");
+        console.log("HEY2");
 
-        assertEq(
-            assetsBeforeReceiver + amount, assetBalance(receiver), "Receiver assets balance did not increase properly"
-        );
+        if (vault.state() == State.Closed && vault.claimableRedeemRequest(0, controller) == 0) {
+            shares -= FeeLib.applyFee(shares, vault.exitRate());
+            uint256 expectedAssets = vault.convertToAssets(shares);
+            expectedAssets += assetsBeforeReceiver;
+            assertEq(
+                expectedAssets,
+                assetBalance(receiver),
+                "withdraw when closed: Receiver assets balance did not increase properly"
+            );
+        } else {
+            shares -= FeeLib.applyFee(shares, vault.exitRate());
+            uint256 expectedAssets = vault.convertToAssets(shares, lastRequestId);
+            expectedAssets += assetsBeforeReceiver;
+            assertEq(
+                expectedAssets,
+                assetBalance(receiver),
+                "withdraw when not closed: Receiver assets balance did not increase properly"
+            );
+        }
         if (controller != receiver) {
             assertEq(
                 assetsBeforeController,
                 assetBalance(controller),
-                "Controller assets balance should remain the same after redeem"
+                "withdraw: Controller assets balance should remain the same after redeem"
             );
         }
         if (operator != receiver) {
             assertEq(
                 assetsBeforeOperator,
                 assetBalance(operator),
-                "Operator assets balance should remain the same after redeem"
+                "withdraw: Operator assets balance should remain the same after redeem"
             );
         }
         return shares;

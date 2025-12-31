@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {Roles} from "../Roles.sol";
+import {OnlySafe, OnlyValuationManager, OnlyWhitelistManager} from "../primitives/Errors.sol";
 import {FeeReceiverUpdated, ValuationManagerUpdated, WhitelistManagerUpdated} from "../primitives/Events.sol";
 
 library RolesLib {
@@ -16,6 +17,25 @@ library RolesLib {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             _rolesStorage.slot := rolesStorage
+        }
+    }
+
+    function _onlySafe() internal view {
+        address _safe = _getRolesStorage().safe;
+        if (_safe != msg.sender) revert OnlySafe(_safe);
+    }
+
+    function _onlyWhitelistManager() internal view {
+        address _whitelistManager = _getRolesStorage().whitelistManager;
+        if (_whitelistManager != msg.sender) {
+            revert OnlyWhitelistManager(_whitelistManager);
+        }
+    }
+
+    function _onlyValuationManager() internal view {
+        address _valuationManager = _getRolesStorage().valuationManager;
+        if (_valuationManager != msg.sender) {
+            revert OnlyValuationManager(_valuationManager);
         }
     }
 

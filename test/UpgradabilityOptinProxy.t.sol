@@ -16,8 +16,8 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transp
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
-import {OptinProxy} from "@src/OptinProxy.sol";
 import {OptinProxyFactory} from "@src/protocol-v2/OptinProxyFactory.sol";
+import {LagoonVault} from "@src/proxy/OptinProxy.sol";
 
 import {ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 import {DelayProxyAdmin} from "@src/proxy/DelayProxyAdmin.sol";
@@ -138,7 +138,7 @@ contract Upgradable is Test {
         adminContract.submitImplementation(notApproved);
         vm.warp(block.timestamp + 2 days);
         vm.prank(adminContract.owner());
-        vm.expectRevert(OptinProxy.UpdateNotAllowed.selector);
+        vm.expectRevert(LagoonVault.UpdateNotAllowed.selector);
         adminContract.upgradeAndCall(ITransparentUpgradeableProxy(vault), notApproved, "");
 
         // we try to do a vault call as the admin, it reverts

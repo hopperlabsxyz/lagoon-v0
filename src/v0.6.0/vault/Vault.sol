@@ -6,6 +6,7 @@ import {ERC7540Lib} from "../libraries/ERC7540Lib.sol";
 import {FeeLib} from "../libraries/FeeLib.sol";
 import {RolesLib} from "../libraries/RolesLib.sol";
 import {VaultLib} from "../libraries/VaultLib.sol";
+import {FeeType} from "../primitives/Enums.sol";
 import {VaultStorage} from "../primitives/VaultStorage.sol";
 
 import {VaultInit} from "./VaultInit.sol";
@@ -49,6 +50,8 @@ using SafeERC20 for IERC20;
 /// @param wrappedNativeToken The address of the wrapped native token.
 /// @param managementRate The management fee rate.
 /// @param performanceRate The performance fee rate.
+/// @param entryRate The entry fee rate.
+/// @param exitRate The exit fee rate.
 /// @param rateUpdateCooldown The cooldown period for updating the fee rates.
 /// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
 struct InitStruct {
@@ -62,6 +65,8 @@ struct InitStruct {
     address feeReceiver;
     uint16 managementRate;
     uint16 performanceRate;
+    uint16 entryRate;
+    uint16 exitRate;
     bool enableWhitelist;
     uint256 rateUpdateCooldown;
 }
@@ -103,33 +108,25 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     /// @notice Reverts if the vault is not open.
     modifier onlyOpen() {
-        State _state = VaultLib._getVaultStorage().state;
-        if (_state != State.Open) revert NotOpen(_state);
+        VaultLib._onlyOpen();
         _;
     }
 
     /// @notice Reverts if the vault is not closing.
     modifier onlyClosing() {
-        State _state = VaultLib._getVaultStorage().state;
-        if (_state != State.Closing) revert NotClosing(_state);
+        VaultLib._onlyClosing();
         _;
     }
 
     // @notice Reverts if totalAssets is expired.
     modifier onlySyncDeposit() {
-        // if total assets is not valid we can only do asynchronous deposit
-        if (!isTotalAssetsValid()) {
-            revert OnlyAsyncDepositAllowed();
-        }
+        VaultLib._onlySyncDeposit();
         _;
     }
 
     // @notice Reverts if totalAssets is valid.
     modifier onlyAsyncDeposit() {
-        // if total assets is valid we can only do synchronous deposit
-        if (isTotalAssetsValid()) {
-            revert OnlySyncDepositAllowed();
-        }
+        VaultLib._onlyAsyncDeposit();
         _;
     }
 
@@ -193,6 +190,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             IERC20(asset()).safeTransferFrom(msg.sender, safe(), assets);
         }
         shares = _convertToShares(assets, Math.Rounding.Floor);
+        shares -= FeeLib.takeEntryFees(shares);
         $.totalAssets += assets;
         _mint(receiver, shares);
 
@@ -238,12 +236,15 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         address receiver,
         address controller
-    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256 shares) {
+    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256) {
         VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
-            shares = _convertToShares(assets, Math.Rounding.Ceil);
-            _withdraw(msg.sender, receiver, controller, assets, shares); // sync
+            uint256 shares = _convertToShares(assets, Math.Rounding.Ceil);
+            uint256 exitFeeShares = FeeLib.calculateExitFees(shares, true);
+            _withdraw(msg.sender, receiver, controller, assets, shares + exitFeeShares); // sync
+            FeeLib.takeFees(exitFeeShares, FeeType.Exit);
+            return shares + exitFeeShares;
         } else {
             if (controller != msg.sender && !isOperator(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
@@ -264,12 +265,18 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 shares,
         address receiver,
         address controller
-    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256 assets) {
+    ) public override(ERC4626Upgradeable, IERC4626) whenNotPaused returns (uint256) {
         VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
-            assets = _convertToAssets(shares, Math.Rounding.Floor);
-            _withdraw(msg.sender, receiver, controller, assets, shares);
+            // TODO: add tests that demonstrates this working, no failed test if
+            // this line is removed write now
+            // move this to the function under
+            uint256 exitFeeShares = FeeLib.calculateExitFees(shares, false);
+            uint256 assets = _convertToAssets(shares - exitFeeShares, Math.Rounding.Floor);
+            _withdraw(msg.sender, receiver, controller, assets, shares); // sync
+            FeeLib.takeFees(exitFeeShares, FeeType.Exit);
+            return assets;
         } else {
             if (controller != msg.sender && !isOperator(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
@@ -318,6 +325,21 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         }
     }
 
+    // TODO: units tests
+    /// @notice Claims all available assets for a list of controller addresses.
+    /// @dev Iterates over each controller address, checks for claimable redeems, and redeems them on their behalf.
+    /// @param controllers The list of controller addresses for which to claim assets.
+    function claimAssetsOnBehalf(
+        address[] memory controllers
+    ) external onlySafe {
+        for (uint256 i = 0; i < controllers.length; i++) {
+            uint256 claimable = claimableRedeemRequest(0, controllers[i]);
+            if (claimable > 0) {
+                _redeem(claimable, controllers[i], controllers[i]);
+            }
+        }
+    }
+
     ///////////////////////////////////////////////////////
     // ## VALUATION UPDATING AND SETTLEMENT FUNCTIONS ## //
     ///////////////////////////////////////////////////////
@@ -353,7 +375,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     function settleDeposit(
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
-        _updateTotalAssetsAndTakeFees(_newTotalAssets);
+        ERC7540Lib.updateTotalAssets(_newTotalAssets);
+        FeeLib.takeManagementAndPerformanceFees();
         ERC7540Lib.settleDeposit(msg.sender);
         ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
@@ -365,20 +388,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     function settleRedeem(
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
-        _updateTotalAssetsAndTakeFees(_newTotalAssets);
-        ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
-    }
-
-    /// @notice Settles deposit requests, integrates user funds into the vault strategy, and enables share claims.
-    /// If possible, it also settles redeem requests.
-    /// @dev Unusable when paused, protected by whenNotPaused in _updateTotalAssets.
-    function _updateTotalAssetsAndTakeFees(
-        uint256 _newTotalAssets
-    ) internal {
-        RolesStorage storage $roles = RolesLib._getRolesStorage();
-
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
-        FeeLib.takeFees($roles.feeReceiver, $roles.feeRegistry.protocolFeeReceiver());
+        FeeLib.takeManagementAndPerformanceFees();
+        ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
 
     /////////////////////////////
@@ -487,7 +499,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     }
 
     function isTotalAssetsValid() public view returns (bool) {
-        return block.timestamp < ERC7540Lib._getERC7540Storage().totalAssetsExpiration;
+        return VaultLib.isTotalAssetsValid();
     }
 
     function safe() public view override returns (address) {
