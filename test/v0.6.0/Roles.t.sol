@@ -89,4 +89,20 @@ contract TestRoles is BaseTest {
         vm.prank(vault.owner());
         vault.updateSafe(newSafe);
     }
+
+    function test_giveUpSafeUpgradeability_onlyOwner() public {
+        vm.prank(vault.owner());
+        vault.giveUpSafeUpgradeability();
+
+        assertTrue(vault.gaveUpSafeUpgradeability());
+
+        vm.prank(vault.owner());
+        vm.expectRevert(abi.encodeWithSelector(SafeUpgradeabilityNotAllowed.selector));
+        vault.updateSafe(address(0x43));
+    }
+
+    function test_giveUpSafeUpgradeability_notOwner() public {
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
+        vault.giveUpSafeUpgradeability();
+    }
 }

@@ -84,6 +84,9 @@ error OnlyWhitelistManager(address whitelistManager);
 /// @param valuationManager The address of the valuation manager.
 error OnlyValuationManager(address valuationManager);
 
+/// @notice Indicates that the safe upgradeability has been given up..
+error SafeUpgradeabilityNotAllowed();
+
 // ********************* WHITELISTABLE ********************* //
 
 /// @notice Indicates that the caller is not whitelisted.

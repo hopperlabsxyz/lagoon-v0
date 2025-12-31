@@ -161,6 +161,10 @@ contract VaultHelper is Vault {
         return RolesLib._getRolesStorage().feeRegistry.protocolFeeReceiver();
     }
 
+    function gaveUpSafeUpgradeability() public view returns (bool) {
+        return RolesLib._getRolesStorage().gaveUpSafeUpgradeability;
+    }
+
     function pendingSilo() public view returns (address) {
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
         return address($.pendingSilo);

@@ -83,7 +83,8 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
                 feeRegistry: FeeRegistry(feeRegistry),
-                valuationManager: init.valuationManager
+                valuationManager: init.valuationManager,
+                gaveUpSafeUpgradeability: false
             })
         );
         __ERC20_init(init.name, init.symbol);
@@ -104,10 +105,6 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
 
         emit StateUpdated(State.Open);
     }
-
-    /////////////////////
-    // ## MODIFIERS ## //
-    /////////////////////
 
     /////////////////////////////////////////////
     // ## DEPOSIT AND REDEEM FLOW FUNCTIONS ## //

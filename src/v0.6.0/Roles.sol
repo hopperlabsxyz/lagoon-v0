@@ -2,13 +2,21 @@
 pragma solidity 0.8.26;
 
 import {RolesLib} from "./libraries/RolesLib.sol";
-import {OnlySafe, OnlyValuationManager, OnlyWhitelistManager} from "./primitives/Errors.sol";
+import {
+    OnlySafe,
+    OnlyValuationManager,
+    OnlyWhitelistManager,
+    SafeUpgradeabilityNotAllowed
+} from "./primitives/Errors.sol";
 import {
     FeeReceiverUpdated,
     SafeUpdated,
+    SafeUpgradeabilityGivenUp,
     ValuationManagerUpdated,
     WhitelistManagerUpdated
-} from "./primitives/Events.sol";
+} from 
+
+"./primitives/Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 
@@ -31,6 +39,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
         address safe;
         FeeRegistry feeRegistry;
         address valuationManager;
+        bool gaveUpSafeUpgradeability;
     }
 
     /// @dev Initializes the roles of the vault.
@@ -112,6 +121,14 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function updateSafe(
         address _safe
     ) external onlyOwner {
+        if (RolesLib._getRolesStorage().gaveUpSafeUpgradeability) {
+            revert SafeUpgradeabilityNotAllowed();
+        }
         RolesLib.updateSafe(_safe);
+    }
+
+    function giveUpSafeUpgradeability() external onlyOwner {
+        RolesLib._getRolesStorage().gaveUpSafeUpgradeability = true;
+        emit SafeUpgradeabilityGivenUp();
     }
 }
