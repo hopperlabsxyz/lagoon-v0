@@ -39,10 +39,6 @@ library RolesLib {
         }
     }
 
-    function version() public pure returns (string memory) {
-        return Constant.version();
-    }
-
     function updateWhitelistManager(
         address _whitelistManager
     ) public {

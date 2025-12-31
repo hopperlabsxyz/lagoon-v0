@@ -72,9 +72,9 @@ contract BeaconProxyFactory is UpgradeableBeacon {
         bytes32 salt
     ) public returns (address) {
         address proxy = address(
-            new BeaconProxy{
-                salt: salt
-            }(address(this), abi.encodeWithSelector(IVault.initialize.selector, init, REGISTRY, WRAPPED_NATIVE))
+            new BeaconProxy{salt: salt}(
+                address(this), abi.encodeWithSelector(IVault.initialize.selector, init, REGISTRY, WRAPPED_NATIVE)
+            )
         );
         isInstance[proxy] = true;
         instances.push(proxy);
