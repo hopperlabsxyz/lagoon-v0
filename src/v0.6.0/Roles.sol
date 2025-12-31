@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {FeeRegistry} from "../protocol-v1/FeeRegistry.sol";
 import {RolesLib} from "./libraries/RolesLib.sol";
 import {OnlySafe, OnlyValuationManager, OnlyWhitelistManager} from "./primitives/Errors.sol";
 import {
@@ -113,7 +112,6 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function updateSafe(
         address _safe
     ) external onlyOwner {
-        emit SafeUpdated(RolesLib._getRolesStorage().safe, _safe);
-        RolesLib._getRolesStorage().safe = _safe;
+        RolesLib.updateSafe(_safe);
     }
 }

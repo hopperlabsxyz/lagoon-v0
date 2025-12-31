@@ -2,7 +2,12 @@
 pragma solidity 0.8.26;
 
 import {Roles} from "../Roles.sol";
-import {FeeReceiverUpdated, ValuationManagerUpdated, WhitelistManagerUpdated} from "../primitives/Events.sol";
+import {
+    FeeReceiverUpdated,
+    SafeUpdated,
+    ValuationManagerUpdated,
+    WhitelistManagerUpdated
+} from "../primitives/Events.sol";
 
 library RolesLib {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Roles")) - 1)) & ~bytes32(uint256(0xff))
@@ -41,5 +46,13 @@ library RolesLib {
         Roles.RolesStorage storage $ = _getRolesStorage();
         emit FeeReceiverUpdated($.feeReceiver, _feeReceiver);
         $.feeReceiver = _feeReceiver;
+    }
+
+    function updateSafe(
+        address _safe
+    ) public {
+        Roles.RolesStorage storage $ = _getRolesStorage();
+        emit SafeUpdated($.safe, _safe);
+        $.safe = _safe;
     }
 }
