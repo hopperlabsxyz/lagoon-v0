@@ -255,8 +255,9 @@ library ERC7540Lib {
         _totalAssets += _pendingAssets;
         _totalSupply += shares;
 
-        uint256 entryFeeShares = FeeLib.takeEntryFees(shares);
+        uint256 entryFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
         ERC7540(address(this)).forge(address(this), shares - entryFeeShares);
+        FeeLib.takeFees(entryFeeShares, FeeType.Entry);
 
         $.totalAssets = _totalAssets;
         $.depositSettleId = depositSettleId + 2;
@@ -281,8 +282,13 @@ library ERC7540Lib {
 
         address _asset = IERC4626(address(this)).asset();
 
+        // amount of shares that are pending to be redeemed
         uint256 pendingShares = $.settles[redeemSettleId].pendingShares;
-        uint256 exitFeeShares = FeeLib.calculateExitFees(pendingShares, false);
+
+        // out of this amount of shares, we compute the exit fees
+        uint256 exitFeeShares = FeeLib.computeFee(pendingShares, FeeLib.feeRates().exitRate);
+
+        // the actual amount of assets that will be withdrawn
         uint256 assetsToWithdraw = IERC4626(address(this)).convertToAssets(pendingShares - exitFeeShares);
 
         uint256 assetsInTheSafe = IERC20(_asset).balanceOf(assetsCustodian);
@@ -299,7 +305,10 @@ library ERC7540Lib {
         settleData.totalSupply = _totalSupply;
 
         // external call
+        // we burn the pending shares via a library function
         ERC7540(address(this)).void(address($.pendingSilo), pendingShares);
+
+        // we mint back shares as the exit fees
         FeeLib.takeFees(exitFeeShares, FeeType.Exit);
 
         _totalAssets -= assetsToWithdraw;
@@ -317,3 +326,4 @@ library ERC7540Lib {
         );
     }
 }
+

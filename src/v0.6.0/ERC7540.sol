@@ -299,7 +299,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         $.epochs[requestId].depositRequest[controller] -= assets;
-        uint256 entryFeeAssets = FeeLib.calculateEntryFees(assets, false);
+        uint256 entryFeeAssets = FeeLib.computeFee(assets, FeeLib.feeRates().entryRate);
         shares = convertToShares(assets - entryFeeAssets, requestId);
 
         _transfer(address(this), receiver, shares);
@@ -343,7 +343,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         assets = ERC7540Lib.convertToAssets(shares, requestId, Math.Rounding.Ceil);
-        assets += FeeLib.calculateEntryFees(assets, true);
+        // by doing so we make sure the user will request less shares to take into account the entry fees
+        assets += FeeLib.computeFeeReverse(assets, FeeLib.feeRates().entryRate);
         $.epochs[requestId].depositRequest[controller] -= assets;
 
         _transfer(address(this), receiver, shares);
@@ -424,7 +425,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         $.epochs[requestId].redeemRequest[controller] -= shares;
-        uint256 exitFeeShares = FeeLib.calculateExitFees(shares, false);
+        uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
         assets = ERC7540Lib.convertToAssets(shares - exitFeeShares, requestId, Math.Rounding.Floor);
         IERC20(asset()).safeTransfer(receiver, assets);
 
@@ -449,7 +450,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         shares = ERC7540Lib.convertToShares(assets, requestId, Math.Rounding.Ceil);
-        shares += FeeLib.calculateExitFees(shares, true);
+        // this will make sure the user will request less assets to take into account the exit fees
+        shares += FeeLib.computeFeeReverse(shares, FeeLib.feeRates().exitRate);
         $.epochs[requestId].redeemRequest[controller] -= shares;
 
         IERC20(asset()).safeTransfer(receiver, assets);

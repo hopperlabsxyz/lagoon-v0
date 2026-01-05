@@ -81,50 +81,55 @@ library FeeLib {
         }
     }
 
-    /// @dev Calculate entry fees when users deposit
-    /// @param amount the number of shares being minted
-    /// @param reverse if true, calculates the gross amount needed to achieve the desired net amount after fees;
-    ///                if false, calculates the fee amount to be deducted from the given amount
-    /// @return entryFeesShares the entry fee in shares
-    function calculateEntryFees(
-        uint256 amount,
-        bool reverse
-    ) public view returns (uint256 entryFeesShares) {
-        Rates memory _rates = feeRates();
-        if (reverse) return applyFeeReverse(amount, _rates.entryRate);
-        return applyFee(amount, _rates.entryRate);
-    }
+    // /// @dev Calculate entry fees when users deposit
+    // /// @param amount the number of shares being minted
+    // /// @param reverse if true, calculates the gross amount needed to achieve the desired net amount after fees;
+    // ///                if false, calculates the fee amount to be deducted from the given amount
+    // /// @return entryFeesShares the entry fee in shares
+    // function calculateEntryFees(
+    //     uint256 amount,
+    //     bool reverse
+    // ) public view returns (uint256 entryFeesShares) {
+    //     Rates memory _rates = feeRates();
+    //     if (reverse) return applyFeeReverse(amount, _rates.entryRate);
+    //     return applyFee(amount, _rates.entryRate);
+    // }
 
-    /// @dev Calculate exit fees when users withdraw
-    /// @param amount the number of shares being redeemed or 0
-    /// @param reverse if true, calculates the gross amount needed to achieve the desired net amount after fees;
-    ///                if false, calculates the fee amount to be deducted from the given amount
-    /// @return exitFees the exit fee amount
-    function calculateExitFees(
-        uint256 amount,
-        bool reverse
-    ) public view returns (uint256) {
-        Rates memory _rates = feeRates();
-        if (reverse) return applyFeeReverse(amount, _rates.exitRate);
-        return applyFee(amount, _rates.exitRate);
-    }
+    // /// @dev Calculate exit fees when users withdraw
+    // /// @param amount the number of shares being redeemed or 0
+    // /// @param reverse if true, calculates the gross amount needed to achieve the desired net amount after fees;
+    // ///                if false, calculates the fee amount to be deducted from the given amount
+    // /// @return exitFees the exit fee amount
+    // function calculateExitFees(
+    //     uint256 amount,
+    //     bool reverse
+    // ) public view returns (uint256) {
+    //     Rates memory _rates = feeRates();
+    //     if (reverse) return applyFeeReverse(amount, _rates.exitRate);
+    //     return applyFee(amount, _rates.exitRate);
+    // }
 
     // TODO: comments
-    function applyFee(
+    function computeFee(
         uint256 amount,
         uint256 rate
     ) public pure returns (uint256) {
+        if (rate == 0) return 0;
         return amount.mulDiv(rate, BPS_DIVIDER, Math.Rounding.Ceil);
     }
 
     // TODO: comments
-    function applyFeeReverse(
+    function computeFeeReverse(
         uint256 amount,
         uint256 rate
     ) public pure returns (uint256) {
         if (rate == 0) return 0;
         return amount.mulDiv(BPS_DIVIDER, (BPS_DIVIDER - rate), Math.Rounding.Ceil) - amount;
     }
+
+    // amount = 9_000, rate = 1000 <=> 10%
+    // 9_000 * 10_000 / (10_000 - 1000) - 9_000
+    // 90_000_000 / 9_000 - 9_000
 
     /// @dev Update the high water mark only if the new value is greater than the current one
     /// @dev The high water mark is the highest price per share ever reached
@@ -150,8 +155,8 @@ library FeeLib {
     ) public {
         Roles.RolesStorage storage $roles = RolesLib._getRolesStorage();
 
-        address feeReceiver = $roles.feeReceiver;
         address protocolFeeReceiver = $roles.feeRegistry.protocolFeeReceiver();
+        address feeReceiver = $roles.feeReceiver;
 
         // Fee repartition
         uint256 protocolShares = shares.mulDiv(protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
@@ -165,22 +170,6 @@ library FeeLib {
         }
         // TODO: test it
         emit FeeTaken(feeType, shares);
-    }
-
-    // TODO: comments
-    function takeEntryFees(
-        uint256 shares
-    ) public returns (uint256 entryFeeShares) {
-        entryFeeShares = calculateEntryFees(shares, false);
-        takeFees(entryFeeShares, FeeType.Entry);
-    }
-
-    // TODO: comments
-    function takeExitFees(
-        uint256 shares
-    ) public returns (uint256 entryFeeShares) {
-        entryFeeShares = calculateEntryFees(shares, true);
-        takeFees(entryFeeShares, FeeType.Entry);
     }
 
     /// @dev Calculate and return the manager and protocol shares to be minted as fees

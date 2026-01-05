@@ -190,11 +190,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             IERC20(asset()).safeTransferFrom(msg.sender, safe(), assets);
         }
         shares = _convertToShares(assets, Math.Rounding.Floor);
-        shares -= FeeLib.takeEntryFees(shares);
-        $.totalAssets += assets;
-        _mint(receiver, shares);
+        uint256 entryFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
+        FeeLib.takeFees(entryFeeShares, FeeType.Entry);
 
-        emit DepositSync(msg.sender, receiver, assets, shares);
+        $.totalAssets += assets;
+        _mint(receiver, shares - entryFeeShares);
+
+        emit DepositSync(msg.sender, receiver, assets, shares - entryFeeShares);
 
         emit Referral(referral, msg.sender, 0, assets);
     }
@@ -241,7 +243,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             uint256 shares = _convertToShares(assets, Math.Rounding.Ceil);
-            uint256 exitFeeShares = FeeLib.calculateExitFees(shares, true);
+            uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
             _withdraw(msg.sender, receiver, controller, assets, shares + exitFeeShares); // sync
             FeeLib.takeFees(exitFeeShares, FeeType.Exit);
             return shares + exitFeeShares;
@@ -272,7 +274,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             // TODO: add tests that demonstrates this working, no failed test if
             // this line is removed write now
             // move this to the function under
-            uint256 exitFeeShares = FeeLib.calculateExitFees(shares, false);
+            uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
             uint256 assets = _convertToAssets(shares - exitFeeShares, Math.Rounding.Floor);
             _withdraw(msg.sender, receiver, controller, assets, shares); // sync
             FeeLib.takeFees(exitFeeShares, FeeType.Exit);

@@ -223,7 +223,7 @@ contract TestFeeManager is BaseTest {
         uint256 user1AssetAfter = redeem(user1ShareBalance, user1.addr);
         // uint256 user2AssetAfter = redeem(user2ShareBalance, user2.addr);
         uint256 user2AssetsToWithdraw = vault.convertToAssets(user2ShareBalance, vault.lastRedeemRequestId(user2.addr));
-        user2AssetsToWithdraw -= FeeLib.applyFee(user2AssetsToWithdraw, vault.exitRate());
+        user2AssetsToWithdraw -= FeeLib.computeFee(user2AssetsToWithdraw, vault.exitRate());
         uint256 shares = withdraw(user2AssetsToWithdraw, user2.addr);
         uint256 user2AssetAfter = vault.convertToAssets(shares, vault.lastRedeemRequestId(user2.addr));
 
@@ -319,8 +319,8 @@ contract TestFeeManager is BaseTest {
         updateAndSettle(0);
 
         deposit(balance, user1.addr);
-        uint256 shares = vault.convertToShares(balance - FeeLib.applyFee(balance, vault.entryRate()));
-        console.log("b - f", balance - FeeLib.applyFee(balance, vault.entryRate()));
+        uint256 shares = vault.convertToShares(balance - FeeLib.computeFee(balance, vault.entryRate()));
+        console.log("b - f", balance - FeeLib.computeFee(balance, vault.entryRate()));
         console.log("balance", balance);
         mint(shares, user2.addr);
         ////
@@ -405,7 +405,7 @@ contract TestFeeManager is BaseTest {
 
         redeem(user1Shares, user1.addr);
         uint256 user2AssetsToWithdraw = vault.convertToAssets(user2Shares);
-        user2AssetsToWithdraw -= FeeLib.applyFee(user2AssetsToWithdraw, vault.exitRate());
+        user2AssetsToWithdraw -= FeeLib.computeFee(user2AssetsToWithdraw, vault.exitRate());
         withdraw(user2AssetsToWithdraw, user2.addr);
 
         uint256 balance1After = assetBalance(user1.addr);

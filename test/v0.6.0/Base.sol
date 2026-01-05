@@ -178,7 +178,7 @@ contract BaseTest is Test, Constants {
         uint256 assets = vault.mint(amount, user);
         assertEq(
             assets,
-            vault.convertToAssets(amount + FeeLib.applyFeeReverse(amount, vault.entryRate())),
+            vault.convertToAssets(amount + FeeLib.computeFeeReverse(amount, vault.entryRate())),
             "mint: wrong assets returned"
         );
         console.log("HERE assets", assets);
@@ -334,7 +334,7 @@ contract BaseTest is Test, Constants {
         console.log("HEY2");
 
         if (vault.state() == State.Closed && vault.claimableRedeemRequest(0, controller) == 0) {
-            shares -= FeeLib.applyFee(shares, vault.exitRate());
+            shares -= FeeLib.computeFee(shares, vault.exitRate());
             uint256 expectedAssets = vault.convertToAssets(shares);
             expectedAssets += assetsBeforeReceiver;
             assertEq(
@@ -343,7 +343,7 @@ contract BaseTest is Test, Constants {
                 "withdraw when closed: Receiver assets balance did not increase properly"
             );
         } else {
-            shares -= FeeLib.applyFee(shares, vault.exitRate());
+            shares -= FeeLib.computeFee(shares, vault.exitRate());
             uint256 expectedAssets = vault.convertToAssets(shares, lastRequestId);
             expectedAssets += assetsBeforeReceiver;
             assertEq(
