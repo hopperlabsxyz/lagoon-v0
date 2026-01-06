@@ -191,12 +191,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         }
         shares = _convertToShares(assets, Math.Rounding.Floor);
         uint256 entryFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
+        shares -= entryFeeShares;
         FeeLib.takeFees(entryFeeShares, FeeType.Entry);
 
         $.totalAssets += assets;
-        _mint(receiver, shares - entryFeeShares);
+        _mint(receiver, shares);
 
-        emit DepositSync(msg.sender, receiver, assets, shares - entryFeeShares);
+        emit DepositSync(msg.sender, receiver, assets, shares);
 
         emit Referral(referral, msg.sender, 0, assets);
     }
@@ -234,6 +235,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @dev Unusable when paused.
     /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
     /// @dev Second _withdraw path: whenNotPaused in ERC7540.
+    /// @return shares The number of shares withdrawn.
     function withdraw(
         uint256 assets,
         address receiver,
@@ -243,7 +245,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             uint256 shares = _convertToShares(assets, Math.Rounding.Ceil);
-            uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
+            uint256 exitFeeShares = FeeLib.computeFeeReverse(shares, FeeLib.feeRates().exitRate);
             _withdraw(msg.sender, receiver, controller, assets, shares + exitFeeShares); // sync
             FeeLib.takeFees(exitFeeShares, FeeType.Exit);
             return shares + exitFeeShares;
