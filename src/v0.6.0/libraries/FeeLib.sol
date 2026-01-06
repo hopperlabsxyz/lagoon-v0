@@ -237,6 +237,12 @@ library FeeLib {
         if (newRates.performanceRate > MAX_PERFORMANCE_RATE) {
             revert AboveMaxRate(MAX_PERFORMANCE_RATE);
         }
+        if (newRates.entryRate > MAX_ENTRY_RATE) {
+            revert AboveMaxRate(MAX_ENTRY_RATE);
+        }
+        if (newRates.exitRate > MAX_EXIT_RATE) {
+            revert AboveMaxRate(MAX_EXIT_RATE);
+        }
 
         uint256 newRatesTimestamp = block.timestamp + $.cooldown;
         Rates memory currentRates = $.rates;
