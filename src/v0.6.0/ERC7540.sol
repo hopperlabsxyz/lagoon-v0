@@ -326,7 +326,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     }
 
     /// @notice Mint shares from the vault.
-    /// @param shares The shares to mint.
+    /// @param shares The shares to mint after fees.
     /// @param receiver The receiver of the shares.
     /// @param controller The controller, who owns the mint request.
     /// @return assets The corresponding assets.

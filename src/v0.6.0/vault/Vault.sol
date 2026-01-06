@@ -459,24 +459,26 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     /// @notice Returns the amount of assets a controller will get if he redeem.
     /// @param controller The controller.
-    /// @return The maximum amount of assets to get.
     /// @dev This is the same philosophy as maxRedeem, except that we take care to convertToAssets the value before
     /// returning it
+    /// @return assets the maximum amount of assets to withdraw
     function maxWithdraw(
         address controller
-    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256 assets) {
         if (paused()) return 0;
-
         uint256 shares = claimableRedeemRequest(0, controller);
         if (shares == 0 && VaultLib._getVaultStorage().state == State.Closed) {
             // controller has no redeem claimable, we will use the synchronous flow
             return convertToAssets(balanceOf(controller));
+            // when the vault is closed, exit fees are already taken.
         }
         uint256 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
-        return convertToAssets(shares, lastRedeemId);
+        assets = convertToAssets(shares, lastRedeemId);
+
+        return assets - FeeLib.computeFee(assets, FeeLib.feeRates().exitRate);
     }
 
-    /// @notice Returns the amount of assets a controller will get if he redeem.
+    /// @notice Returns the maximun amount of assets a controller can use to claim shares.
     /// @param  controller address to check
     /// @dev    If the contract is paused no deposit/claims are possible.
     function maxDeposit(
@@ -486,12 +488,11 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         return claimableDepositRequest(0, controller);
     }
 
-    /// @notice Returns the amount of sharres a controller will get if he calls Deposit.
+    /// @notice Returns the maximun amount of shares a controller can get by claiming a deposit request.
     /// @param controller The controller.
     /// @dev    If the contract is paused no deposit/claims are possible.
     /// @dev    We read the claimableDepositRequest of the controller then convert it to shares using the
-    /// convertToShares
-    /// of the related epochId
+    /// convertToShares of the related epochId.
     /// @return The maximum amount of shares to get.
     function maxMint(
         address controller
@@ -499,7 +500,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         if (paused()) return 0;
         uint256 lastDepositId = ERC7540Lib._getERC7540Storage().lastDepositRequestId[controller];
         uint256 claimable = claimableDepositRequest(lastDepositId, controller);
-        return convertToShares(claimable, lastDepositId);
+        uint256 shares = convertToShares(claimable, lastDepositId);
+        // the maximun amount of shares a controller can claim is the normal claimable amount minus the entry fee
+        shares -= FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
+        return shares;
     }
 
     function isTotalAssetsValid() public view returns (bool) {
