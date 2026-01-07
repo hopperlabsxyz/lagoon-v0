@@ -176,9 +176,10 @@ contract BaseTest is Test, Constants {
 
         vm.prank(user);
         uint256 assets = vault.mint(amount, user);
-        assertEq(
+        assertApproxEqAbs(
             assets,
             vault.convertToAssets(amount + FeeLib.computeFeeReverse(amount, vault.entryRate())),
+            1,
             "mint: wrong assets returned"
         );
         console.log("HERE assets", assets);

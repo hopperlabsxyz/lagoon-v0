@@ -29,6 +29,8 @@ contract TestSyncDeposit is BaseTest {
         uint256 expectedShares = vault.convertToShares(
             userBalance - userBalance.mulDiv(entryFeeRate, FeeLib.BPS_DIVIDER, Math.Rounding.Ceil)
         );
+        uint256 previewSyncDeposit = vault.previewSyncDeposit(userBalance);
+        assertEq(previewSyncDeposit, expectedShares);
         // it will be equal since pps is 1:1
         vm.expectEmit(true, true, true, true);
         emit DepositSync(user1.addr, user1.addr, userBalance, expectedShares);

@@ -245,10 +245,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             uint256 shares = _convertToShares(assets, Math.Rounding.Ceil);
-            uint256 exitFeeShares = FeeLib.computeFeeReverse(shares, FeeLib.feeRates().exitRate);
-            _withdraw(msg.sender, receiver, controller, assets, shares + exitFeeShares); // sync
-            FeeLib.takeFees(exitFeeShares, FeeType.Exit);
-            return shares + exitFeeShares;
+            // uint256 exitFeeShares = FeeLib.computeFeeReverse(shares, FeeLib.feeRates().exitRate);
+            _withdraw(msg.sender, receiver, controller, assets, shares); // sync
+            // FeeLib.takeFees(exitFeeShares, FeeType.Exit);
+            return shares;
         } else {
             if (controller != msg.sender && !isOperator(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
@@ -273,13 +273,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
-            // TODO: add tests that demonstrates this working, no failed test if
-            // this line is removed write now
-            // move this to the function under
-            uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
-            uint256 assets = _convertToAssets(shares - exitFeeShares, Math.Rounding.Floor);
+            uint256 assets = _convertToAssets(shares, Math.Rounding.Floor);
             _withdraw(msg.sender, receiver, controller, assets, shares); // sync
-            FeeLib.takeFees(exitFeeShares, FeeType.Exit);
             return assets;
         } else {
             if (controller != msg.sender && !isOperator(controller, msg.sender)) {
@@ -503,6 +498,19 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 shares = convertToShares(claimable, lastDepositId);
         // the maximun amount of shares a controller can claim is the normal claimable amount minus the entry fee
         shares -= FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
+        return shares;
+    }
+
+    /// @notice Returns the amount of shares a controller can get by depositing assets in a synchronous fashion.
+    /// @param assets The amount of assets to deposit.
+    /// @return shares The amount of shares to get after fees.
+    function previewSyncDeposit(
+        uint256 assets
+    ) public view returns (uint256 shares) {
+        if (paused() || !isTotalAssetsValid()) return 0;
+        shares = _convertToShares(assets, Math.Rounding.Floor);
+        uint256 entryFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
+        shares -= entryFeeShares;
         return shares;
     }
 

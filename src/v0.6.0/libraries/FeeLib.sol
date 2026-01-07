@@ -81,34 +81,6 @@ library FeeLib {
         }
     }
 
-    // /// @dev Calculate entry fees when users deposit
-    // /// @param amount the number of shares being minted
-    // /// @param reverse if true, calculates the gross amount needed to achieve the desired net amount after fees;
-    // ///                if false, calculates the fee amount to be deducted from the given amount
-    // /// @return entryFeesShares the entry fee in shares
-    // function calculateEntryFees(
-    //     uint256 amount,
-    //     bool reverse
-    // ) public view returns (uint256 entryFeesShares) {
-    //     Rates memory _rates = feeRates();
-    //     if (reverse) return applyFeeReverse(amount, _rates.entryRate);
-    //     return applyFee(amount, _rates.entryRate);
-    // }
-
-    // /// @dev Calculate exit fees when users withdraw
-    // /// @param amount the number of shares being redeemed or 0
-    // /// @param reverse if true, calculates the gross amount needed to achieve the desired net amount after fees;
-    // ///                if false, calculates the fee amount to be deducted from the given amount
-    // /// @return exitFees the exit fee amount
-    // function calculateExitFees(
-    //     uint256 amount,
-    //     bool reverse
-    // ) public view returns (uint256) {
-    //     Rates memory _rates = feeRates();
-    //     if (reverse) return applyFeeReverse(amount, _rates.exitRate);
-    //     return applyFee(amount, _rates.exitRate);
-    // }
-
     // TODO: comments
     function computeFee(
         uint256 amount,
