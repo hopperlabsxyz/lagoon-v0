@@ -467,10 +467,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             return convertToAssets(balanceOf(controller));
             // when the vault is closed, exit fees are already taken.
         }
-        uint256 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
+        uint40 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
         assets = convertToAssets(shares, lastRedeemId);
 
-        return assets - FeeLib.computeFee(assets, FeeLib.feeRates().exitRate);
+        return assets - FeeLib.computeFee(assets, ERC7540Lib.getSettlementExitFeeRate((lastRedeemId)));
     }
 
     /// @notice Returns the maximun amount of assets a controller can use to claim shares.
@@ -493,11 +493,11 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller
     ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         if (paused()) return 0;
-        uint256 lastDepositId = ERC7540Lib._getERC7540Storage().lastDepositRequestId[controller];
+        uint40 lastDepositId = ERC7540Lib._getERC7540Storage().lastDepositRequestId[controller];
         uint256 claimable = claimableDepositRequest(lastDepositId, controller);
         uint256 shares = convertToShares(claimable, lastDepositId);
         // the maximun amount of shares a controller can claim is the normal claimable amount minus the entry fee
-        shares -= FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
+        shares -= FeeLib.computeFee(shares, ERC7540Lib.getSettlementEntryFeeRate(lastDepositId));
         return shares;
     }
 
