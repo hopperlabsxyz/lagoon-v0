@@ -245,9 +245,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             uint256 shares = _convertToShares(assets, Math.Rounding.Ceil);
-            // uint256 exitFeeShares = FeeLib.computeFeeReverse(shares, FeeLib.feeRates().exitRate);
             _withdraw(msg.sender, receiver, controller, assets, shares); // sync
-            // FeeLib.takeFees(exitFeeShares, FeeType.Exit);
             return shares;
         } else {
             if (controller != msg.sender && !isOperator(controller, msg.sender)) {

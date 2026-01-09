@@ -197,4 +197,11 @@ contract VaultHelper is Vault {
     function highWaterMark() public view returns (uint256) {
         return FeeLib._getFeeManagerStorage().highWaterMark;
     }
+
+    function convertToShares2(
+        uint256 assets,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return _convertToShares(assets, rounding);
+    }
 }

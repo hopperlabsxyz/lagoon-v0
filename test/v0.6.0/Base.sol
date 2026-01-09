@@ -319,6 +319,8 @@ contract BaseTest is Test, Constants {
 
         uint256 maxWithdraw = vault.maxWithdraw(controller);
 
+        uint256 convertedAssetsInShares = vault.convertToShares2(amount, Math.Rounding.Ceil);
+
         vm.prank(operator);
         uint256 shares = vault.withdraw(amount, receiver, controller);
 
@@ -331,21 +333,15 @@ contract BaseTest is Test, Constants {
         assertLe(assetsAfter.receiver - assetsBefore.receiver, maxWithdraw, "withdraw: wrong maxRedeem");
 
         if (vault.state() == State.Closed && vault.claimableRedeemRequest(0, controller) == 0) {
-            uint256 convertedAssetsInShares = vault.convertToShares(amount);
-            // uint256 totalSharesAsked =
-            //     convertedAssetsInShares + FeeLib.computeFeeReverse(convertedAssetsInShares, vault.exitRate());
             assertEq(
                 assetsBefore.receiver + amount,
                 assetsAfter.receiver,
                 "withdraw when closed: Receiver assets balance did not increase properly"
             );
-            assertApproxEqAbs(
-                convertedAssetsInShares, shares, 1, "withdraw when closed: shares taken from user is wrong"
-            );
-            assertApproxEqAbs(
+            assertEq(convertedAssetsInShares, shares, "withdraw when closed: shares taken from user is wrong");
+            assertEq(
                 sharesBefore.receiver - sharesAfter.receiver,
                 convertedAssetsInShares,
-                1,
                 "withdraw when closed: shares taken from user is wrong 2"
             );
         } else {
