@@ -468,9 +468,12 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             // when the vault is closed, exit fees are already taken.
         }
         uint40 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
-        assets = convertToAssets(shares, lastRedeemId);
+        // introduced in v0.6.0
+        // we need to take into account the exit fee to compute the assets
+        uint256 exitFeeShares = FeeLib.computeFee(shares, ERC7540Lib.getSettlementExitFeeRate(lastRedeemId));
+        assets = convertToAssets(shares - exitFeeShares, lastRedeemId);
 
-        return assets - FeeLib.computeFee(assets, ERC7540Lib.getSettlementExitFeeRate((lastRedeemId)));
+        return assets;
     }
 
     /// @notice Returns the maximun amount of assets a controller can use to claim shares.
