@@ -190,7 +190,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             IERC20(asset()).safeTransferFrom(msg.sender, safe(), assets);
         }
         shares = _convertToShares(assets, Math.Rounding.Floor);
-        shares -= FeeLib.takeEntryFees(shares);
+        uint256 entryFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
+        shares -= entryFeeShares;
+        FeeLib.takeFees(entryFeeShares, FeeType.Entry);
+
         $.totalAssets += assets;
         _mint(receiver, shares);
 
@@ -232,6 +235,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @dev Unusable when paused.
     /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
     /// @dev Second _withdraw path: whenNotPaused in ERC7540.
+    /// @return shares The number of shares withdrawn.
     function withdraw(
         uint256 assets,
         address receiver,
@@ -241,10 +245,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             uint256 shares = _convertToShares(assets, Math.Rounding.Ceil);
-            uint256 exitFeeShares = FeeLib.calculateExitFees(shares, true);
-            _withdraw(msg.sender, receiver, controller, assets, shares + exitFeeShares); // sync
-            FeeLib.takeFees(exitFeeShares, FeeType.Exit);
-            return shares + exitFeeShares;
+            _withdraw(msg.sender, receiver, controller, assets, shares); // sync
+            return shares;
         } else {
             if (controller != msg.sender && !isOperator(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
@@ -269,13 +271,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
-            // TODO: add tests that demonstrates this working, no failed test if
-            // this line is removed write now
-            // move this to the function under
-            uint256 exitFeeShares = FeeLib.calculateExitFees(shares, false);
-            uint256 assets = _convertToAssets(shares - exitFeeShares, Math.Rounding.Floor);
+            uint256 assets = _convertToAssets(shares, Math.Rounding.Floor);
             _withdraw(msg.sender, receiver, controller, assets, shares); // sync
-            FeeLib.takeFees(exitFeeShares, FeeType.Exit);
             return assets;
         } else {
             if (controller != msg.sender && !isOperator(controller, msg.sender)) {
@@ -455,24 +452,29 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     /// @notice Returns the amount of assets a controller will get if he redeem.
     /// @param controller The controller.
-    /// @return The maximum amount of assets to get.
     /// @dev This is the same philosophy as maxRedeem, except that we take care to convertToAssets the value before
     /// returning it
+    /// @return assets the maximum amount of assets to withdraw
     function maxWithdraw(
         address controller
-    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
+    ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256 assets) {
         if (paused()) return 0;
-
         uint256 shares = claimableRedeemRequest(0, controller);
         if (shares == 0 && VaultLib._getVaultStorage().state == State.Closed) {
             // controller has no redeem claimable, we will use the synchronous flow
             return convertToAssets(balanceOf(controller));
+            // when the vault is closed, exit fees are already taken.
         }
-        uint256 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
-        return convertToAssets(shares, lastRedeemId);
+        uint40 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
+        // introduced in v0.6.0
+        // we need to take into account the exit fee to compute the assets
+        uint256 exitFeeShares = FeeLib.computeFee(shares, ERC7540Lib.getSettlementExitFeeRate(lastRedeemId));
+        assets = convertToAssets(shares - exitFeeShares, lastRedeemId);
+
+        return assets;
     }
 
-    /// @notice Returns the amount of assets a controller will get if he redeem.
+    /// @notice Returns the maximun amount of assets a controller can use to claim shares.
     /// @param  controller address to check
     /// @dev    If the contract is paused no deposit/claims are possible.
     function maxDeposit(
@@ -482,20 +484,35 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         return claimableDepositRequest(0, controller);
     }
 
-    /// @notice Returns the amount of sharres a controller will get if he calls Deposit.
+    /// @notice Returns the maximun amount of shares a controller can get by claiming a deposit request.
     /// @param controller The controller.
     /// @dev    If the contract is paused no deposit/claims are possible.
     /// @dev    We read the claimableDepositRequest of the controller then convert it to shares using the
-    /// convertToShares
-    /// of the related epochId
+    /// convertToShares of the related epochId.
     /// @return The maximum amount of shares to get.
     function maxMint(
         address controller
     ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256) {
         if (paused()) return 0;
-        uint256 lastDepositId = ERC7540Lib._getERC7540Storage().lastDepositRequestId[controller];
+        uint40 lastDepositId = ERC7540Lib._getERC7540Storage().lastDepositRequestId[controller];
         uint256 claimable = claimableDepositRequest(lastDepositId, controller);
-        return convertToShares(claimable, lastDepositId);
+        uint256 shares = convertToShares(claimable, lastDepositId);
+        // the maximun amount of shares a controller can claim is the normal claimable amount minus the entry fee
+        shares -= FeeLib.computeFee(shares, ERC7540Lib.getSettlementEntryFeeRate(lastDepositId));
+        return shares;
+    }
+
+    /// @notice Returns the amount of shares a controller can get by depositing assets in a synchronous fashion.
+    /// @param assets The amount of assets to deposit.
+    /// @return shares The amount of shares to get after fees.
+    function previewSyncDeposit(
+        uint256 assets
+    ) public view returns (uint256 shares) {
+        if (paused() || !isTotalAssetsValid()) return 0;
+        shares = _convertToShares(assets, Math.Rounding.Floor);
+        uint256 entryFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
+        shares -= entryFeeShares;
+        return shares;
     }
 
     function isTotalAssetsValid() public view returns (bool) {

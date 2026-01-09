@@ -248,15 +248,20 @@ library ERC7540Lib {
         uint40 lastDepositEpochIdSettled = $.depositEpochId - 2;
 
         SettleData storage settleData = $.settles[depositSettleId];
+        uint16 _entryFeeRate = FeeLib.feeRates().entryRate;
 
         settleData.totalAssets = _totalAssets;
         settleData.totalSupply = _totalSupply;
+        // added in v0.6.0
+        // this will be used when a user claims his deposit request
+        settleData.entryFeeRate = _entryFeeRate;
 
         _totalAssets += _pendingAssets;
         _totalSupply += shares;
 
-        uint256 entryFeeShares = FeeLib.takeEntryFees(shares);
+        uint256 entryFeeShares = FeeLib.computeFee(shares, _entryFeeRate);
         ERC7540(address(this)).forge(address(this), shares - entryFeeShares);
+        FeeLib.takeFees(entryFeeShares, FeeType.Entry);
 
         $.totalAssets = _totalAssets;
         $.depositSettleId = depositSettleId + 2;
@@ -280,9 +285,15 @@ library ERC7540Lib {
         uint40 redeemSettleId = $.redeemSettleId;
 
         address _asset = IERC4626(address(this)).asset();
+        uint16 _exitFeeRate = FeeLib.feeRates().exitRate;
 
+        // amount of shares that are pending to be redeemed
         uint256 pendingShares = $.settles[redeemSettleId].pendingShares;
-        uint256 exitFeeShares = FeeLib.calculateExitFees(pendingShares, false);
+
+        // out of this amount of shares, we compute the exit fees
+        uint256 exitFeeShares = FeeLib.computeFee(pendingShares, _exitFeeRate);
+
+        // the actual amount of assets that will be withdrawn
         uint256 assetsToWithdraw = IERC4626(address(this)).convertToAssets(pendingShares - exitFeeShares);
 
         uint256 assetsInTheSafe = IERC20(_asset).balanceOf(assetsCustodian);
@@ -297,9 +308,15 @@ library ERC7540Lib {
 
         settleData.totalAssets = _totalAssets;
         settleData.totalSupply = _totalSupply;
+        // added in v0.6.0
+        // this will be used when a user claims his redeem request
+        settleData.exitFeeRate = _exitFeeRate;
 
         // external call
+        // we burn the pending shares via a library function
         ERC7540(address(this)).void(address($.pendingSilo), pendingShares);
+
+        // we mint back shares as the exit fees
         FeeLib.takeFees(exitFeeShares, FeeType.Exit);
 
         _totalAssets -= assetsToWithdraw;
@@ -316,4 +333,20 @@ library ERC7540Lib {
             lastRedeemEpochIdSettled, redeemSettleId, _totalAssets, _totalSupply, assetsToWithdraw, pendingShares
         );
     }
+
+    // Introduced with v0.6.0
+    function getSettlementExitFeeRate(
+        uint40 epochId
+    ) public view returns (uint16) {
+        uint40 settleId = _getERC7540Storage().epochs[epochId].settleId;
+        return _getERC7540Storage().settles[settleId].exitFeeRate;
+    }
+
+    function getSettlementEntryFeeRate(
+        uint40 epochId
+    ) public view returns (uint16) {
+        uint40 settleId = _getERC7540Storage().epochs[epochId].settleId;
+        return _getERC7540Storage().settles[settleId].entryFeeRate;
+    }
 }
+

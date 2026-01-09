@@ -34,4 +34,7 @@ struct SettleData {
     uint256 totalAssets;
     uint256 pendingAssets;
     uint256 pendingShares;
+    // new variables introduced with v0.6.0
+    uint16 entryFeeRate;
+    uint16 exitFeeRate;
 }
