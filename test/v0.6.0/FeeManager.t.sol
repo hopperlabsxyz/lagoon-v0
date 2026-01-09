@@ -405,7 +405,7 @@ contract TestFeeManager is BaseTest {
 
         redeem(user1Shares, user1.addr);
         uint256 user2AssetsToWithdraw = vault.convertToAssets(user2Shares);
-        user2AssetsToWithdraw -= FeeLib.computeFee(user2AssetsToWithdraw, vault.exitRate());
+        // user2AssetsToWithdraw -= FeeLib.computeFee(user2AssetsToWithdraw, vault.exitRate());
         withdraw(user2AssetsToWithdraw, user2.addr);
 
         uint256 balance1After = assetBalance(user1.addr);

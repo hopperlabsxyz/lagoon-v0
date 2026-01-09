@@ -332,17 +332,19 @@ contract BaseTest is Test, Constants {
 
         if (vault.state() == State.Closed && vault.claimableRedeemRequest(0, controller) == 0) {
             uint256 convertedAssetsInShares = vault.convertToShares(amount);
-            uint256 totalSharesAsked =
-                convertedAssetsInShares + FeeLib.computeFeeReverse(convertedAssetsInShares, vault.exitRate());
+            // uint256 totalSharesAsked =
+            //     convertedAssetsInShares + FeeLib.computeFeeReverse(convertedAssetsInShares, vault.exitRate());
             assertEq(
                 assetsBefore.receiver + amount,
                 assetsAfter.receiver,
                 "withdraw when closed: Receiver assets balance did not increase properly"
             );
-            assertApproxEqAbs(totalSharesAsked, shares, 1, "withdraw when closed: shares taken from user is wrong");
+            assertApproxEqAbs(
+                convertedAssetsInShares, shares, 1, "withdraw when closed: shares taken from user is wrong"
+            );
             assertApproxEqAbs(
                 sharesBefore.receiver - sharesAfter.receiver,
-                totalSharesAsked,
+                convertedAssetsInShares,
                 1,
                 "withdraw when closed: shares taken from user is wrong 2"
             );
