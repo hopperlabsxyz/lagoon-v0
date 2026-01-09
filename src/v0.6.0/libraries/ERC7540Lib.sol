@@ -344,7 +344,7 @@ library ERC7540Lib {
 
     function getSettlementEntryFeeRate(
         uint40 epochId
-    ) public view returns (uint256) {
+    ) public view returns (uint16) {
         uint40 settleId = _getERC7540Storage().epochs[epochId].settleId;
         return _getERC7540Storage().settles[settleId].entryFeeRate;
     }

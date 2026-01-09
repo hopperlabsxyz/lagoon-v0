@@ -8,6 +8,7 @@ import {Constants} from "./Constants.sol";
 
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract BaseTest is Test, Constants {
     using SafeERC20 for IERC20;
@@ -170,19 +171,18 @@ contract BaseTest is Test, Constants {
         address controller = user;
         uint256 sharesBefore = vault.balanceOf(receiver);
 
-        uint256 lastRequestId = vault.lastDepositRequestId(user);
+        uint40 lastRequestId = vault.lastDepositRequestId(user);
         uint256 maxDeposit = vault.convertToShares(vault.maxDeposit(controller), lastRequestId);
         uint256 maxMint = vault.maxMint(controller);
 
+        uint256 assetsExpected = vault.convertToAssetsRequestIdWithRounding(
+            amount + FeeLib.computeFeeReverse(amount, vault.getSettlementEntryFeeRate(lastRequestId)),
+            lastRequestId,
+            Math.Rounding.Ceil
+        );
         vm.prank(user);
         uint256 assets = vault.mint(amount, user);
-        assertApproxEqAbs(
-            assets,
-            vault.convertToAssets(amount + FeeLib.computeFeeReverse(amount, vault.entryRate())),
-            1,
-            "mint: wrong assets returned"
-        );
-        console.log("HERE assets", assets);
+        assertEq(assets, assetsExpected, "mint: wrong assets returned");
 
         uint256 sharesAfter = vault.balanceOf(receiver);
 
@@ -309,7 +309,7 @@ contract BaseTest is Test, Constants {
         address operator,
         address receiver
     ) internal returns (uint256) {
-        uint256 lastRequestId = vault.lastRedeemRequestId(controller);
+        uint40 lastRequestId = vault.lastRedeemRequestId(controller);
 
         Balances memory assetsBefore = Balances({
             receiver: assetBalance(receiver), controller: assetBalance(controller), operator: assetBalance(operator)
@@ -319,7 +319,9 @@ contract BaseTest is Test, Constants {
 
         uint256 maxWithdraw = vault.maxWithdraw(controller);
 
-        uint256 convertedAssetsInShares = vault.convertToShares2(amount, Math.Rounding.Ceil);
+        // this value doesn't take into account the exit fee
+        // it can only be used if the vault is closed
+        uint256 convertedAssetsInShares = vault.convertToSharesWithRounding(amount, Math.Rounding.Ceil);
 
         vm.prank(operator);
         uint256 shares = vault.withdraw(amount, receiver, controller);
@@ -341,11 +343,11 @@ contract BaseTest is Test, Constants {
             assertEq(convertedAssetsInShares, shares, "withdraw when closed: shares taken from user is wrong");
             assertEq(
                 sharesBefore.receiver - sharesAfter.receiver,
-                convertedAssetsInShares,
+                shares,
                 "withdraw when closed: shares taken from user is wrong 2"
             );
         } else {
-            shares -= FeeLib.computeFee(shares, vault.exitRate());
+            shares -= FeeLib.computeFee(shares, vault.getSettlementExitFeeRate(lastRequestId));
             uint256 expectedAssets = vault.convertToAssets(shares, lastRequestId);
             expectedAssets += assetsBefore.receiver;
             assertEq(

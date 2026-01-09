@@ -343,7 +343,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         assets = ERC7540Lib.convertToAssets(shares, requestId, Math.Rounding.Ceil);
-        // by doing so we make sure the user will request less shares to take into account the entry fees
+        // introduced in v0.6.0
+        // we need to take into account the entry fee to compute the assets
         assets += FeeLib.computeFeeReverse(assets, ERC7540Lib.getSettlementEntryFeeRate(requestId));
         $.epochs[requestId].depositRequest[controller] -= assets;
 
@@ -450,7 +451,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         shares = ERC7540Lib.convertToShares(assets, requestId, Math.Rounding.Ceil);
-        // this will make sure the user will request less assets to take into account the exit fees
+        // introduced in v0.6.0
+        // we need to take into account the exit fee to compute the shares
         shares += FeeLib.computeFeeReverse(shares, ERC7540Lib.getSettlementExitFeeRate(requestId));
         $.epochs[requestId].redeemRequest[controller] -= shares;
 

@@ -80,14 +80,16 @@ contract TestDeposit is BaseTest {
 
         uint256 user1MaxDepositSharesEquivalent = vault.convertToShares(user1MaxDeposit);
         uint256 user2MaxDepositSharesEquivalent = vault.convertToShares(user2MaxDeposit);
+        uint16 user1LastRequestIdRate = vault.getSettlementEntryFeeRate(vault.lastDepositRequestId(user1.addr));
+        uint16 user2LastRequestIdRate = vault.getSettlementEntryFeeRate(vault.lastDepositRequestId(user2.addr));
 
         assertEq(
             vault.maxMint(user1.addr),
-            user1MaxDepositSharesEquivalent - FeeLib.computeFee(user1MaxDepositSharesEquivalent, vault.entryRate())
+            user1MaxDepositSharesEquivalent - FeeLib.computeFee(user1MaxDepositSharesEquivalent, user1LastRequestIdRate)
         );
         assertEq(
             vault.maxMint(user2.addr),
-            user2MaxDepositSharesEquivalent - FeeLib.computeFee(user2MaxDepositSharesEquivalent, vault.entryRate())
+            user2MaxDepositSharesEquivalent - FeeLib.computeFee(user2MaxDepositSharesEquivalent, user2LastRequestIdRate)
         );
 
         deposit(user1MaxDeposit, user1.addr);

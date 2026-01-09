@@ -198,10 +198,45 @@ contract VaultHelper is Vault {
         return FeeLib._getFeeManagerStorage().highWaterMark;
     }
 
-    function convertToShares2(
+    function convertToSharesWithRounding(
         uint256 assets,
         Math.Rounding rounding
     ) public view returns (uint256) {
         return _convertToShares(assets, rounding);
+    }
+
+    function convertToSharesRequestIdWithRounding(
+        uint256 assets,
+        uint40 requestId,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return ERC7540Lib.convertToShares(assets, requestId, rounding);
+    }
+
+    function convertToAssetsWithRounding(
+        uint256 shares,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return _convertToAssets(shares, rounding);
+    }
+
+    function convertToAssetsRequestIdWithRounding(
+        uint256 shares,
+        uint40 requestId,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return ERC7540Lib.convertToAssets(shares, requestId, rounding);
+    }
+
+    function getSettlementEntryFeeRate(
+        uint40 requestId
+    ) public view returns (uint16) {
+        return ERC7540Lib.getSettlementEntryFeeRate(requestId);
+    }
+
+    function getSettlementExitFeeRate(
+        uint40 requestId
+    ) public view returns (uint16) {
+        return ERC7540Lib.getSettlementExitFeeRate(requestId);
     }
 }
