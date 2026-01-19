@@ -53,12 +53,17 @@ struct InitStruct {
     bool enableWhitelist;
     /// @notice Cooldown period for rate updates
     uint256 rateUpdateCooldown;
+    /// @notice Entry fee rate (in basis points)
+    uint16 entryRate;
+    /// @notice Exit fee rate (in basis points)
+    uint16 exitRate;
 }
 
 /// @title OptinProxyFactory
 /// @notice Factory contract for creating and managing OptinProxy instances
 /// @dev Inherits from OwnableUpgradeable to provide ownership functionality
 /// @custom:contact team@hopperlabs.xyz
+/// @custom:oz-upgrades-from src/protocol-v2/OptinProxyFactory.sol:OptinProxyFactory
 contract OptinProxyFactory is OwnableUpgradeable {
     /// @notice Emitted when a new proxy is deployed
     /// @param proxy Address of the newly deployed proxy
@@ -122,19 +127,6 @@ contract OptinProxyFactory is OwnableUpgradeable {
     ) external returns (address) {
         OptinProxyFactoryStorage storage $ = _getProxyFactoryStorage();
         bytes memory call_data = abi.encodeCall(IVault.initialize, (abi.encode(_init), $.REGISTRY, $.WRAPPED_NATIVE));
-        return createVaultProxy({
-            _logic: _logic, _initialOwner: _initialOwner, _initialDelay: _initialDelay, call_data: call_data, salt: salt
-        });
-    }
-
-    function createVaultProxy(
-        address _logic,
-        address _initialOwner,
-        uint256 _initialDelay,
-        bytes memory call_data,
-        bytes32 salt
-    ) public returns (address) {
-        OptinProxyFactoryStorage storage $ = _getProxyFactoryStorage();
 
         address proxy = address(
             new LagoonVault{salt: salt}({

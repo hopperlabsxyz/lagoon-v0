@@ -11,7 +11,9 @@ pragma solidity 0.8.26;
 struct Rates {
     uint16 managementRate;
     uint16 performanceRate;
-    // TODO: make sure there is no storage collision adding those fields
+    // added in v0.6.0
+    // The new two 16-bit values for entry and exit rates will be packed here
+    // into the same 32-byte slot currently used for the management and performance rates
     uint16 entryRate;
     uint16 exitRate;
 }

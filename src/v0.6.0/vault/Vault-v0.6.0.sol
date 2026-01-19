@@ -65,14 +65,16 @@ struct InitStruct {
     address feeReceiver;
     uint16 managementRate;
     uint16 performanceRate;
-    uint16 entryRate;
-    uint16 exitRate;
     bool enableWhitelist;
     uint256 rateUpdateCooldown;
+    // added in v0.6.0
+    uint16 entryRate;
+    uint16 exitRate;
 }
 
-/// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault
+/// @custom:oz-upgrades-from src/v0.5.0/Vault.sol:Vault
 contract Vault is ERC7540, Whitelistable, FeeManager {
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     VaultInit immutable init;
 
     /// @custom:oz-upgrades-unsafe-allow constructor

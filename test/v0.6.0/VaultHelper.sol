@@ -11,7 +11,7 @@ import "@src/v0.6.0/libraries/WhitelistableLib.sol";
 import "@src/v0.6.0/primitives/Errors.sol";
 import "@src/v0.6.0/primitives/Events.sol";
 import "@src/v0.6.0/primitives/Struct.sol";
-import "@src/v0.6.0/vault/Vault.sol";
+import "@src/v0.6.0/vault/Vault-v0.6.0.sol";
 
 contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor

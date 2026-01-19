@@ -17,7 +17,7 @@ import {
     OnlySyncDepositAllowed,
     ValuationUpdateNotAllowed
 } from "../primitives/Errors.sol";
-import {InitStruct} from "./Vault.sol";
+import {InitStruct} from "./Vault-v0.6.0.sol";
 
 import {FeeRegistry} from "../../protocol-v1/FeeRegistry.sol";
 import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
