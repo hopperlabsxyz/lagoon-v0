@@ -31,8 +31,10 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         uint256 newRatesTimestamp;
         uint256 lastFeeTime;
         uint256 highWaterMark;
+        // Deprecated in v0.6.0
         uint256 cooldown;
         Rates rates;
+        // Deprecated in v0.6.0
         Rates oldRates;
     }
 
