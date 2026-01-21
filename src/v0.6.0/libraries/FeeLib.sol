@@ -175,12 +175,10 @@ library FeeLib {
         if (newRates.performanceRate > MAX_PERFORMANCE_RATE) {
             revert AboveMaxRate(MAX_PERFORMANCE_RATE);
         }
-
-        uint256 newRatesTimestamp = block.timestamp + $.cooldown;
         Rates memory currentRates = $.rates;
+        uint256 newRatesTimestamp = block.timestamp + $.cooldown;
 
         $.newRatesTimestamp = newRatesTimestamp;
-        $.oldRates = currentRates;
         $.rates = newRates;
         emit RatesUpdated(currentRates, newRates, newRatesTimestamp);
     }
@@ -203,7 +201,6 @@ library FeeLib {
     function feeRates() public view returns (Rates memory) {
         FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        if ($.newRatesTimestamp <= block.timestamp) return $.rates;
-        return $.oldRates;
+        return $.rates;
     }
 }
