@@ -11,7 +11,9 @@ pragma solidity 0.8.26;
 struct Rates {
     uint16 managementRate;
     uint16 performanceRate;
-    // TODO: make sure there is no storage collision adding those fields
+    // added in v0.6.0
+    // The new two 16-bit values for entry and exit rates will be packed here
+    // into the same 32-byte slot currently used for the management and performance rates
     uint16 entryRate;
     uint16 exitRate;
 }
@@ -29,9 +31,16 @@ struct EpochData {
 /// @dev Holds settlement data for the vault.
 /// @param totalSupply Total number of shares for this settlement.
 /// @param totalAssets Total value of assets managed by the vault for this settlement.
+/// @param pendingAssets The amount of assets that were pending to be settled.
+/// @param pendingShares The amount of shares that were pending to be settled.
+/// @param entryFeeRate The entry fee rate for this settlement, expressed in basis points.
+/// @param exitFeeRate The exit fee rate for this settlement, expressed in basis points.
 struct SettleData {
     uint256 totalSupply;
     uint256 totalAssets;
     uint256 pendingAssets;
     uint256 pendingShares;
+    // new variables introduced with v0.6.0
+    uint16 entryFeeRate;
+    uint16 exitFeeRate;
 }

@@ -11,7 +11,7 @@ import "@src/v0.6.0/libraries/WhitelistableLib.sol";
 import "@src/v0.6.0/primitives/Errors.sol";
 import "@src/v0.6.0/primitives/Events.sol";
 import "@src/v0.6.0/primitives/Struct.sol";
-import "@src/v0.6.0/vault/Vault.sol";
+import "@src/v0.6.0/vault/Vault-v0.6.0.sol";
 
 contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -196,5 +196,47 @@ contract VaultHelper is Vault {
     /// @notice value of the high water mark, the highest price per share ever reached
     function highWaterMark() public view returns (uint256) {
         return FeeLib._getFeeManagerStorage().highWaterMark;
+    }
+
+    function convertToSharesWithRounding(
+        uint256 assets,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return _convertToShares(assets, rounding);
+    }
+
+    function convertToSharesRequestIdWithRounding(
+        uint256 assets,
+        uint40 requestId,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return ERC7540Lib.convertToShares(assets, requestId, rounding);
+    }
+
+    function convertToAssetsWithRounding(
+        uint256 shares,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return _convertToAssets(shares, rounding);
+    }
+
+    function convertToAssetsRequestIdWithRounding(
+        uint256 shares,
+        uint40 requestId,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return ERC7540Lib.convertToAssets(shares, requestId, rounding);
+    }
+
+    function getSettlementEntryFeeRate(
+        uint40 requestId
+    ) public view returns (uint16) {
+        return ERC7540Lib.getSettlementEntryFeeRate(requestId);
+    }
+
+    function getSettlementExitFeeRate(
+        uint40 requestId
+    ) public view returns (uint16) {
+        return ERC7540Lib.getSettlementExitFeeRate(requestId);
     }
 }

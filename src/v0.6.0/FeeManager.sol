@@ -33,6 +33,10 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
         uint256 lastFeeTime;
         uint256 highWaterMark;
         uint256 cooldown;
+        // v0.6.0 upgrade edit the Rates struct it is fine because both rates and oldRates
+        // are not stored in the same slot as stated in the documentation
+        // https://docs.soliditylang.org/en/v0.8.33/internals/layout_in_storage.html#layout-of-state-variables-in-storage-and-transient-storage
+        // "Structs and array data always start a new slot and their items are packed tightly according to these rules."
         Rates rates;
         Rates oldRates;
     }
