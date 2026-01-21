@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {State} from "./Enums.sol";
+import {WhitelistState} from "./Enums.sol";
 import {Rates} from "./Struct.sol";
 
 // ********************* VAULT ********************* //
@@ -45,6 +46,11 @@ event RootUpdated(bytes32 indexed root);
 /// @param account The address of the account being updated.
 /// @param authorized Indicates whether the account is authorized (true) or not (false).
 event WhitelistUpdated(address indexed account, bool authorized);
+
+/// @notice Emitted when a blacklist entry is updated.
+/// @param account The address of the account being updated.
+/// @param blacklisted Indicates whether the account is blacklisted (true) or not (false).
+event BlacklistUpdated(address indexed account, bool blacklisted);
 
 /// @notice Emitted when the whitelist is disabled.
 event WhitelistDisabled();
@@ -104,3 +110,10 @@ event TotalAssetsLifespanUpdated(uint128 oldLifespan, uint128 newLifespan);
 /// @param assets Amount of assets deposit
 /// @param shares Amount of shares minted to owner
 event DepositSync(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
+
+/// @notice Emitted when the whitelist is switched to blacklist.
+event BlacklistActivated();
+
+/// @notice Emitted when the whitelist is switched to whitelist.
+event WhitelistActivated();
+

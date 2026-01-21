@@ -5,7 +5,7 @@ import {ERC7540} from "../ERC7540.sol";
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
 import {Whitelistable} from "../Whitelistable.sol";
-import {State} from "../primitives/Enums.sol";
+import {State, WhitelistState} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
     Closed,
@@ -18,13 +18,13 @@ import {
     ValuationUpdateNotAllowed
 } from "../primitives/Errors.sol";
 
+import {FeeRegistry} from "../../protocol-v1/FeeRegistry.sol";
 import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 
 using SafeERC20 for IERC20;
 
@@ -54,7 +54,7 @@ struct InitStruct {
     address feeReceiver;
     uint16 managementRate;
     uint16 performanceRate;
-    bool enableWhitelist;
+    WhitelistState whitelistState;
     uint256 rateUpdateCooldown;
 }
 
@@ -90,7 +90,7 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
         __ERC20Pausable_init();
         __ERC4626_init(init.underlying);
         __ERC7540_init(init.underlying, wrappedNativeToken);
-        __Whitelistable_init(init.enableWhitelist);
+        __Whitelistable_init(init.whitelistState);
         __FeeManager_init(
             feeRegistry,
             init.managementRate,

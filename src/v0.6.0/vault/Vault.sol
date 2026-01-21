@@ -13,7 +13,7 @@ import {VaultInit} from "./VaultInit.sol";
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
 import {Whitelistable} from "../Whitelistable.sol";
-import {State} from "../primitives/Enums.sol";
+import {State, WhitelistState} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
     Closed,
@@ -62,7 +62,7 @@ struct InitStruct {
     address feeReceiver;
     uint16 managementRate;
     uint16 performanceRate;
-    bool enableWhitelist;
+    WhitelistState whitelistState;
     uint256 rateUpdateCooldown;
 }
 
