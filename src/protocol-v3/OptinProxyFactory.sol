@@ -109,10 +109,6 @@ contract OptinProxyFactory is OwnableUpgradeable {
         $.WRAPPED_NATIVE = _wrappedNativeToken;
     }
 
-    /// @notice Creates a new vault proxy with the given initialization parameters
-    /// @dev Uses CREATE2 with salt for deterministic address calculation
-    /// @param _logic Address of the initial logic implementation
-
     /// @param _initialOwner Address of the initial proxy owner
     /// @param _initialDelay The initial delay before which an upgrade can occur by the proxy admin
     /// @param _init Initialization parameters for the vault
@@ -127,6 +123,19 @@ contract OptinProxyFactory is OwnableUpgradeable {
     ) external returns (address) {
         OptinProxyFactoryStorage storage $ = _getProxyFactoryStorage();
         bytes memory call_data = abi.encodeCall(IVault.initialize, (abi.encode(_init), $.REGISTRY, $.WRAPPED_NATIVE));
+        return createVaultProxy({
+            _logic: _logic, _initialOwner: _initialOwner, _initialDelay: _initialDelay, call_data: call_data, salt: salt
+        });
+    }
+
+    function createVaultProxy(
+        address _logic,
+        address _initialOwner,
+        uint256 _initialDelay,
+        bytes memory call_data,
+        bytes32 salt
+    ) public returns (address) {
+        OptinProxyFactoryStorage storage $ = _getProxyFactoryStorage();
 
         address proxy = address(
             new LagoonVault{salt: salt}({
