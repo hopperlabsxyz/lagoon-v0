@@ -426,6 +426,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         $.epochs[requestId].redeemRequest[controller] -= shares;
+        // introduced in v0.6.0
         uint256 exitFeeShares = FeeLib.computeFee(shares, ERC7540Lib.getSettlementExitFeeRate(requestId));
         assets = ERC7540Lib.convertToAssets(shares - exitFeeShares, requestId, Math.Rounding.Floor);
         IERC20(asset()).safeTransfer(receiver, assets);

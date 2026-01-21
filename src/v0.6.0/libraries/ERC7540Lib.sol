@@ -259,6 +259,7 @@ library ERC7540Lib {
         _totalAssets += _pendingAssets;
         _totalSupply += shares;
 
+        // introduced in v0.6.0
         uint256 entryFeeShares = FeeLib.computeFee(shares, _entryFeeRate);
         ERC7540(address(this)).forge(address(this), shares - entryFeeShares);
         FeeLib.takeFees(entryFeeShares, FeeType.Entry);
@@ -308,6 +309,7 @@ library ERC7540Lib {
 
         settleData.totalAssets = _totalAssets;
         settleData.totalSupply = _totalSupply;
+
         // added in v0.6.0
         // this will be used when a user claims his redeem request
         settleData.exitFeeRate = _exitFeeRate;
@@ -335,6 +337,9 @@ library ERC7540Lib {
     }
 
     // Introduced with v0.6.0
+    /// @notice Returns the exit fee rate for the settlement matching the given epoch ID.
+    /// @param epochId The epoch ID.
+    /// @return exitFeeRate The exit fee rate.
     function getSettlementExitFeeRate(
         uint40 epochId
     ) public view returns (uint16) {
@@ -342,6 +347,9 @@ library ERC7540Lib {
         return _getERC7540Storage().settles[settleId].exitFeeRate;
     }
 
+    /// @notice Returns the entry fee rate for the settlement matching the given epoch ID.
+    /// @param epochId The epoch ID.
+    /// @return entryFeeRate The entry fee rate.
     function getSettlementEntryFeeRate(
         uint40 epochId
     ) public view returns (uint16) {

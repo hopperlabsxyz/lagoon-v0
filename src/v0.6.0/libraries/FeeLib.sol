@@ -81,7 +81,10 @@ library FeeLib {
         }
     }
 
-    // TODO: comments
+    /// @dev Compute the fee for a given amount and rate
+    /// @param amount The amount to compute the fee for
+    /// @param rate The rate to compute the fee for, expressed in BPS
+    /// @return fee The fee, expressed in the same unit as the amount
     function computeFee(
         uint256 amount,
         uint256 rate
@@ -90,7 +93,10 @@ library FeeLib {
         return amount.mulDiv(rate, BPS_DIVIDER, Math.Rounding.Ceil);
     }
 
-    // TODO: comments
+    /// @dev Compute the fee for a given amount and rate
+    /// @param amount The amount to compute the fee for
+    /// @param rate The rate to compute the fee for, expressed in BPS
+    /// @return fee The fee, expressed in the same unit as the amount
     function computeFeeReverse(
         uint256 amount,
         uint256 rate
@@ -98,10 +104,6 @@ library FeeLib {
         if (rate == 0) return 0;
         return amount.mulDiv(BPS_DIVIDER, (BPS_DIVIDER - rate), Math.Rounding.Ceil) - amount;
     }
-
-    // amount = 9_000, rate = 1000 <=> 10%
-    // 9_000 * 10_000 / (10_000 - 1000) - 9_000
-    // 90_000_000 / 9_000 - 9_000
 
     /// @dev Update the high water mark only if the new value is greater than the current one
     /// @dev The high water mark is the highest price per share ever reached
@@ -127,8 +129,8 @@ library FeeLib {
     ) public {
         Roles.RolesStorage storage $roles = RolesLib._getRolesStorage();
 
-        address protocolFeeReceiver = $roles.feeRegistry.protocolFeeReceiver();
         address feeReceiver = $roles.feeReceiver;
+        address protocolFeeReceiver = $roles.feeRegistry.protocolFeeReceiver();
 
         // Fee repartition
         uint256 protocolShares = shares.mulDiv(protocolRate(), BPS_DIVIDER, Math.Rounding.Ceil);
@@ -140,7 +142,6 @@ library FeeLib {
                 protocolShares > 0 // they can't be protocolShares without managerShares
             ) ERC7540(address(this)).forge(protocolFeeReceiver, protocolShares);
         }
-        // TODO: test it
         emit FeeTaken(feeType, shares);
     }
 

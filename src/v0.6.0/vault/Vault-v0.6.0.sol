@@ -27,13 +27,13 @@ import {
     ValuationUpdateNotAllowed
 } from "../primitives/Errors.sol";
 
+import {FeeRegistry} from "../../protocol-v1/FeeRegistry.sol";
 import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 
 using SafeERC20 for IERC20;
 
@@ -192,6 +192,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             IERC20(asset()).safeTransferFrom(msg.sender, safe(), assets);
         }
         shares = _convertToShares(assets, Math.Rounding.Floor);
+        // introduced in v0.6.0
         uint256 entryFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
         shares -= entryFeeShares;
         FeeLib.takeFees(entryFeeShares, FeeType.Entry);
@@ -247,6 +248,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             uint256 shares = _convertToShares(assets, Math.Rounding.Ceil);
+            // exit fees has already been taken in the close function
             _withdraw(msg.sender, receiver, controller, assets, shares); // sync
             return shares;
         } else {
@@ -274,6 +276,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
             uint256 assets = _convertToAssets(shares, Math.Rounding.Floor);
+            // exit fees has already been taken in the close function
             _withdraw(msg.sender, receiver, controller, assets, shares); // sync
             return assets;
         } else {
@@ -324,7 +327,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         }
     }
 
-    // TODO: units tests
     /// @notice Claims all available assets for a list of controller addresses.
     /// @dev Iterates over each controller address, checks for claimable redeems, and redeems them on their behalf.
     /// @param controllers The list of controller addresses for which to claim assets.
