@@ -464,7 +464,8 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_NoFeesAreTakenDuringFreeRide() public {
-        Rates memory rates = Rates(0, 2000, 0, 0);
+        Rates memory rates =
+            Rates({managementRate: 0, performanceRate: 2000, entryRate: 0, exitRate: 0, haircutRate: 0});
         vm.prank(vault.owner());
         vault.updateRates(rates);
         uint256 newTotalAssets = 0;
@@ -656,7 +657,8 @@ contract TestFeeManager is BaseTest {
             managementRate: MAX_MANAGEMENT_RATE + 1,
             performanceRate: MAX_PERFORMANCE_RATE - 1,
             entryRate: 0,
-            exitRate: 0
+            exitRate: 0,
+            haircutRate: 0
         });
 
         Rates memory ratesBefore = vault.feeRates();
@@ -681,7 +683,8 @@ contract TestFeeManager is BaseTest {
             managementRate: MAX_MANAGEMENT_RATE - 1,
             performanceRate: MAX_PERFORMANCE_RATE + 1,
             entryRate: 0,
-            exitRate: 0
+            exitRate: 0,
+            haircutRate: 0
         });
 
         Rates memory ratesBefore = vault.feeRates();

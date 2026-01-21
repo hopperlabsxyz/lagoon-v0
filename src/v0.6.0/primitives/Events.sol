@@ -109,3 +109,13 @@ event TotalAssetsLifespanUpdated(uint128 oldLifespan, uint128 newLifespan);
 /// @param assets Amount of assets deposit
 /// @param shares Amount of shares minted to owner
 event DepositSync(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
+
+/// @notice Same as a 4626 Withdraw event
+/// @param sender The address who called the withdraw
+/// @param receiver The receiver of the assets
+/// @param owner The owner of the shares
+/// @param assets Amount of assets withdrawn
+/// @param shares Amount of shares redeemed
+event WithdrawSync(
+    address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
+);

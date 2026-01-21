@@ -16,6 +16,7 @@ struct Rates {
     // into the same 32-byte slot currently used for the management and performance rates
     uint16 entryRate;
     uint16 exitRate;
+    uint16 haircutRate;
 }
 
 /// @dev Holds data for a specific epoch.

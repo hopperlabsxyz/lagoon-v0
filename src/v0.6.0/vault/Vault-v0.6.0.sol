@@ -28,7 +28,7 @@ import {
 } from "../primitives/Errors.sol";
 
 import {FeeRegistry} from "../../protocol-v1/FeeRegistry.sol";
-import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
+import {DepositSync, Referral, StateUpdated, WithdrawSync} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -165,9 +165,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         emit Referral(referral, owner, requestId, assets);
     }
 
-    /// @notice Deposit in a sychronous fashion into the vault.
+    /// @notice Deposit in a synchronous fashion into the vault.
     /// @param assets The assets to deposit.
     /// @param receiver The receiver of the shares.
+    /// @param referral The address who referred the deposit.
     /// @return shares The resulting shares.
     function syncDeposit(
         uint256 assets,
@@ -203,6 +204,34 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         emit DepositSync(msg.sender, receiver, assets, shares);
 
         emit Referral(referral, msg.sender, 0, assets);
+    }
+
+    /// @notice Deposit in a synchronous fashion into the vault.
+    /// @param shares The shares to redeem.
+    /// @param receiver The receiver of the assets.
+    /// @return assets The resulting assets.
+    function syncRedeem(
+        uint256 shares,
+        address receiver
+    ) public onlySyncDeposit onlyOpen returns (uint256 assets) {
+        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
+        ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+
+        // first we need to compute the exit fee
+        uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
+
+        uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, FeeLib.feeRates().haircutRate);
+        assets = _convertToAssets(shares - haircutShares - exitFeeShares, Math.Rounding.Floor);
+        IERC20(asset()).safeTransferFrom(safe(), receiver, assets);
+
+        $.totalAssets -= assets;
+
+        // burn all the shares
+        _burn(msg.sender, shares);
+
+        FeeLib.takeFees(exitFeeShares, FeeType.Exit);
+
+        emit WithdrawSync(msg.sender, receiver, msg.sender, assets, shares);
     }
 
     /// @notice Requests the redemption of tokens, subject to whitelist validation.
@@ -345,6 +374,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     // ## VALUATION UPDATING AND SETTLEMENT FUNCTIONS ## //
     ///////////////////////////////////////////////////////
 
+    /// @notice Function to update the total assets lifespan.
+    /// @param lifespan The lifespan of the total assets.
     function updateTotalAssetsLifespan(
         uint128 lifespan
     ) external onlySafe {
@@ -517,6 +548,16 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 entryFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
         shares -= entryFeeShares;
         return shares;
+    }
+
+    function previewSyncRedeem(
+        uint256 shares
+    ) public view returns (uint256 assets) {
+        if (paused() || !isTotalAssetsValid()) return 0;
+        uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
+        uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, FeeLib.feeRates().haircutRate);
+        assets = _convertToAssets(shares - exitFeeShares - haircutShares, Math.Rounding.Floor);
+        return assets;
     }
 
     function isTotalAssetsValid() public view returns (bool) {

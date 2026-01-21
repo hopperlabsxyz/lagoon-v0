@@ -70,8 +70,9 @@ contract testRateUpdates is BaseTest {
     function test_updateRatesOverMaxPerformanceRateShouldRevert() public {
         setUpVault(100, 200, 2000);
 
-        Rates memory newRates =
-            Rates({managementRate: MAX_MANAGEMENT_RATE + 1, performanceRate: 0, entryRate: 0, exitRate: 0});
+        Rates memory newRates = Rates({
+            managementRate: MAX_MANAGEMENT_RATE + 1, performanceRate: 0, entryRate: 0, exitRate: 0, haircutRate: 0
+        });
         vm.startPrank(vault.owner());
         vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
         vault.updateRates(newRates);
@@ -88,7 +89,11 @@ contract testRateUpdates is BaseTest {
         setUpVault(100, 200, 200);
 
         Rates memory newRates = Rates({
-            managementRate: MAX_MANAGEMENT_RATE, performanceRate: MAX_PERFORMANCE_RATE, entryRate: 0, exitRate: 0
+            managementRate: MAX_MANAGEMENT_RATE,
+            performanceRate: MAX_PERFORMANCE_RATE,
+            entryRate: 0,
+            exitRate: 0,
+            haircutRate: 0
         });
         assertNotEq(200, MAX_MANAGEMENT_RATE);
         assertNotEq(200, MAX_PERFORMANCE_RATE);
@@ -120,7 +125,11 @@ contract testRateUpdates is BaseTest {
         vm.warp(block.timestamp + 1 days);
         // owner updates rates
         Rates memory newRates = Rates({
-            managementRate: MAX_MANAGEMENT_RATE, performanceRate: MAX_PERFORMANCE_RATE, entryRate: 0, exitRate: 0
+            managementRate: MAX_MANAGEMENT_RATE,
+            performanceRate: MAX_PERFORMANCE_RATE,
+            entryRate: 0,
+            exitRate: 0,
+            haircutRate: 0
         });
 
         vm.startPrank(vault.owner());
