@@ -19,7 +19,7 @@ contract TestRedeemAssetsOnBehalf is BaseTest {
     function test_RedeemAssetsOnBehalf_onlySafe() public {
         address[] memory controllers = new address[](0);
         vm.expectRevert(abi.encodeWithSelector(OnlySafe.selector, vault.safe()));
-        vault.redeemAssetsOnBehalf(controllers);
+        vault.claimAssetsOnBehalf(controllers);
     }
 
     function test_RedeemAssetsOnBehalf() public {
@@ -59,7 +59,7 @@ contract TestRedeemAssetsOnBehalf is BaseTest {
 
         // // Claiming all users shares all at once
         vm.prank(safe.addr);
-        vault.redeemAssetsOnBehalf(controllers);
+        vault.claimAssetsOnBehalf(controllers);
 
         uint256 user1AssetAfterClaim = vault.convertToAssets(user1Shares, user1RequestId);
         assertEq(user1AssetAfterClaim, underlying.balanceOf(user1.addr), "user1 asset balance is wrong");

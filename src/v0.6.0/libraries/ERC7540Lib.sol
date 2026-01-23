@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
+import "forge-std/Test.sol";
+
 import {ERC7540} from "../ERC7540.sol";
+import {FeeLib} from "../FeeManager.sol";
+import {FeeType} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
     ERC7540InvalidOperator,
@@ -24,6 +28,7 @@ import {
     TotalAssetsUpdated
 } from "../primitives/Events.sol";
 import {EpochData, SettleData} from "../primitives/Struct.sol";
+import {Rates} from "../primitives/Struct.sol";
 import {PausableLib} from "./PausableLib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -44,6 +49,14 @@ library ERC7540Lib {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             _erc7540Storage.slot := erc7540Storage
+        }
+    }
+
+    function _onlyOperator(
+        address controller
+    ) internal view {
+        if (controller != msg.sender && !ERC7540(address(this)).isOperator(controller, msg.sender)) {
+            revert ERC7540InvalidOperator();
         }
     }
 
@@ -235,14 +248,21 @@ library ERC7540Lib {
         uint40 lastDepositEpochIdSettled = $.depositEpochId - 2;
 
         SettleData storage settleData = $.settles[depositSettleId];
+        uint16 _entryFeeRate = FeeLib.feeRates().entryRate;
 
         settleData.totalAssets = _totalAssets;
         settleData.totalSupply = _totalSupply;
+        // added in v0.6.0
+        // this will be used when a user claims his deposit request
+        settleData.entryFeeRate = _entryFeeRate;
 
         _totalAssets += _pendingAssets;
         _totalSupply += shares;
 
-        ERC7540(address(this)).forge(address(this), shares);
+        // introduced in v0.6.0
+        uint256 entryFeeShares = FeeLib.computeFee(shares, _entryFeeRate);
+        ERC7540(address(this)).forge(address(this), shares - entryFeeShares);
+        FeeLib.takeFees(entryFeeShares, FeeType.Entry);
 
         $.totalAssets = _totalAssets;
         $.depositSettleId = depositSettleId + 2;
@@ -266,9 +286,16 @@ library ERC7540Lib {
         uint40 redeemSettleId = $.redeemSettleId;
 
         address _asset = IERC4626(address(this)).asset();
+        uint16 _exitFeeRate = FeeLib.feeRates().exitRate;
 
+        // amount of shares that are pending to be redeemed
         uint256 pendingShares = $.settles[redeemSettleId].pendingShares;
-        uint256 assetsToWithdraw = IERC4626(address(this)).convertToAssets(pendingShares);
+
+        // out of this amount of shares, we compute the exit fees
+        uint256 exitFeeShares = FeeLib.computeFee(pendingShares, _exitFeeRate);
+
+        // the actual amount of assets that will be withdrawn
+        uint256 assetsToWithdraw = IERC4626(address(this)).convertToAssets(pendingShares - exitFeeShares);
 
         uint256 assetsInTheSafe = IERC20(_asset).balanceOf(assetsCustodian);
         if (assetsToWithdraw == 0 || assetsToWithdraw > assetsInTheSafe) return;
@@ -283,11 +310,19 @@ library ERC7540Lib {
         settleData.totalAssets = _totalAssets;
         settleData.totalSupply = _totalSupply;
 
+        // added in v0.6.0
+        // this will be used when a user claims his redeem request
+        settleData.exitFeeRate = _exitFeeRate;
+
         // external call
+        // we burn the pending shares via a library function
         ERC7540(address(this)).void(address($.pendingSilo), pendingShares);
 
+        // we mint back shares as the exit fees
+        FeeLib.takeFees(exitFeeShares, FeeType.Exit);
+
         _totalAssets -= assetsToWithdraw;
-        _totalSupply -= pendingShares;
+        _totalSupply -= (pendingShares - exitFeeShares);
 
         $.totalAssets = _totalAssets;
 
@@ -300,4 +335,26 @@ library ERC7540Lib {
             lastRedeemEpochIdSettled, redeemSettleId, _totalAssets, _totalSupply, assetsToWithdraw, pendingShares
         );
     }
+
+    // Introduced with v0.6.0
+    /// @notice Returns the exit fee rate for the settlement matching the given epoch ID.
+    /// @param epochId The epoch ID.
+    /// @return exitFeeRate The exit fee rate.
+    function getSettlementExitFeeRate(
+        uint40 epochId
+    ) public view returns (uint16) {
+        uint40 settleId = _getERC7540Storage().epochs[epochId].settleId;
+        return _getERC7540Storage().settles[settleId].exitFeeRate;
+    }
+
+    /// @notice Returns the entry fee rate for the settlement matching the given epoch ID.
+    /// @param epochId The epoch ID.
+    /// @return entryFeeRate The entry fee rate.
+    function getSettlementEntryFeeRate(
+        uint40 epochId
+    ) public view returns (uint16) {
+        uint40 settleId = _getERC7540Storage().epochs[epochId].settleId;
+        return _getERC7540Storage().settles[settleId].entryFeeRate;
+    }
 }
+

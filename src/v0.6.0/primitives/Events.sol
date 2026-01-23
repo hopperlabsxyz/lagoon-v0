@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {State} from "./Enums.sol";
+import {FeeType, State} from "./Enums.sol";
 import {Rates} from "./Struct.sol";
 
 // ********************* VAULT ********************* //
@@ -87,6 +87,11 @@ event RatesUpdated(Rates oldRates, Rates newRate, uint256 timestamp);
 /// @param newHighWaterMark The new highWaterMark.
 event HighWaterMarkUpdated(uint256 oldHighWaterMark, uint256 newHighWaterMark);
 
+/// @notice Emitted when a fee is taken from the vault.
+/// @param feeType The type of fee being taken.
+/// @param shares The number of shares minted as fees.
+event FeeTaken(FeeType indexed feeType, uint256 shares);
+
 // ********************* ERC7540 ********************* //
 /// @notice Emitted when the totalAssets variable is updated.
 /// @param totalAssets The new total assets value.
@@ -120,3 +125,12 @@ event MaxCapUpdated(uint256 previousMaxCap, uint256 maxCap);
 
 /// @notice Emitted when the operator privileges are given up.
 event GaveUpOperatorPrivileges();
+/// @notice Same as a 4626 Withdraw event
+/// @param sender The address who called the withdraw
+/// @param receiver The receiver of the assets
+/// @param owner The owner of the shares
+/// @param assets Amount of assets withdrawn
+/// @param shares Amount of shares redeemed
+event WithdrawSync(
+    address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
+);

@@ -17,46 +17,17 @@ import {
     OnlySyncDepositAllowed,
     ValuationUpdateNotAllowed
 } from "../primitives/Errors.sol";
+import {InitStruct} from "./Vault-v0.6.0.sol";
 
+import {FeeRegistry} from "../../protocol-v1/FeeRegistry.sol";
 import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 
 using SafeERC20 for IERC20;
-
-/// @custom:storage-definition erc7201:hopper.storage.vault
-/// @param underlying The address of the underlying asset.
-/// @param name The name of the vault and by extension the ERC20 token.
-/// @param symbol The symbol of the vault and by extension the ERC20 token.
-/// @param safe The address of the safe smart contract.
-/// @param whitelistManager The address of the whitelist manager.
-/// @param valuationManager The address of the valuation manager.
-/// @param admin The address of the owner of the vault.
-/// @param feeReceiver The address of the fee receiver.
-/// @param feeRegistry The address of the fee registry.
-/// @param wrappedNativeToken The address of the wrapped native token.
-/// @param managementRate The management fee rate.
-/// @param performanceRate The performance fee rate.
-/// @param rateUpdateCooldown The cooldown period for updating the fee rates.
-/// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
-struct InitStruct {
-    IERC20 underlying;
-    string name;
-    string symbol;
-    address safe;
-    address whitelistManager;
-    address valuationManager;
-    address admin;
-    address feeReceiver;
-    uint16 managementRate;
-    uint16 performanceRate;
-    bool enableWhitelist;
-    uint256 rateUpdateCooldown;
-}
 
 /// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault
 contract VaultInit is ERC7540, Whitelistable, FeeManager {
@@ -97,7 +68,9 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
             init.managementRate,
             init.performanceRate,
             IERC20Metadata(address(init.underlying)).decimals(),
-            init.rateUpdateCooldown
+            init.rateUpdateCooldown,
+            init.entryRate,
+            init.exitRate
         );
 
         // $.totalAssets = initialTotalAssets;

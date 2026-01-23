@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {OptinProxy} from "@src/proxy/OptinProxy.sol";
+import {LagoonVault} from "@src/proxy/OptinProxy.sol";
 
 import {ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 import {Script, console} from "forge-std/Script.sol";
@@ -33,7 +33,7 @@ contract DeployOptinProxyForVerification is Script {
         console.log("--- deployOptinProxy() ---");
 
         MockLogicRegistry mockLogicRegistry = new MockLogicRegistry();
-        OptinProxy optinProxy = new OptinProxy({
+        LagoonVault optinProxy = new LagoonVault({
             _logic: address(mockLogicRegistry), // we do not care about the logic used here
             _logicRegistry: address(mockLogicRegistry),
             _initialOwner: address(mockLogicRegistry), // can't be zero

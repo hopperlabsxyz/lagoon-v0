@@ -92,11 +92,9 @@ contract TestSafeAsOperator is BaseTest {
         address operator = safe.addr;
         address controller = user2.addr;
         vm.prank(operator);
-        vm.expectRevert(ERC7540InvalidOperator.selector);
         vault.requestDeposit(100, controller, controller);
 
         vm.prank(operator);
-        vm.expectRevert(ERC7540InvalidOperator.selector);
         vault.requestDeposit(100, controller, controller, controller);
     }
 

@@ -65,26 +65,19 @@ abstract contract Roles is Ownable2StepUpgradeable {
 
     /// @dev Modifier to check if the caller is the safe.
     modifier onlySafe() {
-        address _safe = RolesLib._getRolesStorage().safe;
-        if (_safe != msg.sender) revert OnlySafe(_safe);
+        RolesLib._onlySafe();
         _;
     }
 
     /// @dev Modifier to check if the caller is the whitelist manager.
     modifier onlyWhitelistManager() {
-        address _whitelistManager = RolesLib._getRolesStorage().whitelistManager;
-        if (_whitelistManager != msg.sender) {
-            revert OnlyWhitelistManager(_whitelistManager);
-        }
+        RolesLib._onlyWhitelistManager();
         _;
     }
 
     /// @dev Modifier to check if the caller is the valuation manager.
     modifier onlyValuationManager() {
-        address _valuationManager = RolesLib._getRolesStorage().valuationManager;
-        if (_valuationManager != msg.sender) {
-            revert OnlyValuationManager(_valuationManager);
-        }
+        RolesLib._onlyValuationManager();
         _;
     }
 

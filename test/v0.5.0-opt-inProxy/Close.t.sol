@@ -7,8 +7,6 @@ import "forge-std/Test.sol";
 import {BaseTest} from "./Base.sol";
 
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {VmSafe} from "forge-std/Vm.sol";
 
