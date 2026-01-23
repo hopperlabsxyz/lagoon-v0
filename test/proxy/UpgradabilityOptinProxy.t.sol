@@ -24,7 +24,6 @@ import {InitStruct} from "@src/protocol-v2/OptinProxyFactory.sol";
 import {Vault as Vault5} from "@src/v0.5.0/Vault.sol";
 import {Vault as Vault6} from "@src/v0.6.0/vault/Vault-v0.6.0.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {console} from "forge-std/console.sol";
 
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";

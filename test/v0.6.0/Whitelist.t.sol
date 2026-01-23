@@ -5,7 +5,7 @@ import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract TestWhitelist is BaseTest {
     function withWhitelistSetUp() public {
@@ -75,7 +75,7 @@ contract TestWhitelist is BaseTest {
         deposit(userBalance, user1.addr);
         address receiver = user2.addr;
         vm.prank(vault.owner());
-        vault.disableWhitelist();
+        vault.switchWhitelistMode(WhitelistState.Deactivated);
         vm.assertEq(vault.isWhitelistActivated(), false);
         uint256 shares = vault.balanceOf(user1.addr);
         vm.prank(user1.addr);

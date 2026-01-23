@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {FeeType, State} from "./Enums.sol";
+import {FeeType, State, WhitelistState} from "./Enums.sol";
 import {Rates} from "./Struct.sol";
 
 // ********************* VAULT ********************* //
@@ -45,6 +45,11 @@ event RootUpdated(bytes32 indexed root);
 /// @param account The address of the account being updated.
 /// @param authorized Indicates whether the account is authorized (true) or not (false).
 event WhitelistUpdated(address indexed account, bool authorized);
+
+/// @notice Emitted when a blacklist entry is updated.
+/// @param account The address of the account being updated.
+/// @param blacklisted Indicates whether the account is blacklisted (true) or not (false).
+event BlacklistUpdated(address indexed account, bool blacklisted);
 
 /// @notice Emitted when the whitelist is disabled.
 event WhitelistDisabled();
@@ -134,3 +139,9 @@ event GaveUpOperatorPrivileges();
 event WithdrawSync(
     address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
 );
+/// @notice Emitted when the whitelist is switched to blacklist.
+event BlacklistActivated();
+
+/// @notice Emitted when the whitelist is switched to whitelist.
+event WhitelistActivated();
+

@@ -18,7 +18,7 @@ import {
 
 "./primitives/Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
+import {FeeRegistry} from "@src/protocol-v2/FeeRegistry.sol";
 
 /// @title RolesUpgradeable
 /// @dev This contract is used to define the various roles needed for a vault to operate.

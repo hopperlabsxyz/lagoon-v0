@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 
 import "@src/v0.6.0/ERC7540.sol";
 import "@src/v0.6.0/FeeManager.sol";
-import "@src/v0.6.0/Roles.sol";
 import "@src/v0.6.0/libraries/FeeLib.sol";
 import "@src/v0.6.0/libraries/WhitelistableLib.sol";
 import "@src/v0.6.0/primitives/Errors.sol";
@@ -39,7 +38,15 @@ contract VaultHelper is Vault {
     /// @notice Returns if the whitelist is activated
     /// @return True if the whitelist is activated, false otherwise
     function isWhitelistActivated() public view returns (bool) {
-        return WhitelistableLib._getWhitelistableStorage().isActivated;
+        return WhitelistableLib._getWhitelistableStorage().whitelistState == WhitelistState.Whitelist;
+    }
+
+    function isBlacklistActivated() public view returns (bool) {
+        return WhitelistableLib._getWhitelistableStorage().whitelistState == WhitelistState.Blacklist;
+    }
+
+    function isWhitelistDeactivated() public view returns (bool) {
+        return WhitelistableLib._getWhitelistableStorage().whitelistState == WhitelistState.Deactivated;
     }
 
     function totalAssets(
@@ -164,7 +171,7 @@ contract VaultHelper is Vault {
     }
 
     function activateWhitelist() public {
-        WhitelistableLib._getWhitelistableStorage().isActivated = true;
+        WhitelistableLib._getWhitelistableStorage().whitelistState = WhitelistState.Whitelist;
     }
 
     function protocolFeeReceiver() public view returns (address) {

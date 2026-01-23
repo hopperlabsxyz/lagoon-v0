@@ -17,3 +17,10 @@ enum FeeType {
     Entry,
     Exit
 }
+
+// ********************* WHITELISTABLE ********************* //
+enum WhitelistState {
+    Blacklist,
+    Whitelist,
+    Deactivated
+}
