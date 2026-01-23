@@ -222,12 +222,12 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
         uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, FeeLib.feeRates().haircutRate);
         assets = _convertToAssets(shares - haircutShares - exitFeeShares, Math.Rounding.Floor);
-        IERC20(asset()).safeTransferFrom(safe(), receiver, assets);
 
+        // burn all the shares and remove the assets from the total assets
+        _burn(msg.sender, shares);
         $.totalAssets -= assets;
 
-        // burn all the shares
-        _burn(msg.sender, shares);
+        IERC20(asset()).safeTransferFrom(safe(), receiver, assets);
 
         FeeLib.takeFees(exitFeeShares, FeeType.Exit);
 
