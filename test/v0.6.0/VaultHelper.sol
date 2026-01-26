@@ -45,10 +45,6 @@ contract VaultHelper is Vault {
         return WhitelistableLib._getWhitelistableStorage().whitelistState == WhitelistState.Blacklist;
     }
 
-    function isWhitelistDeactivated() public view returns (bool) {
-        return WhitelistableLib._getWhitelistableStorage().whitelistState == WhitelistState.Deactivated;
-    }
-
     function totalAssets(
         uint256 epochId
     ) public view returns (uint256) {

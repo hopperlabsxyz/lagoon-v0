@@ -21,6 +21,5 @@ enum FeeType {
 // ********************* WHITELISTABLE ********************* //
 enum WhitelistState {
     Blacklist,
-    Whitelist,
-    Deactivated
+    Whitelist
 }

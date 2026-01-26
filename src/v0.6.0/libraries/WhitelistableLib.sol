@@ -95,13 +95,6 @@ library WhitelistableLib {
         }
     }
 
-    /// @notice Disables the whitelist
-    function disableWhitelist() public {
-        Whitelistable.WhitelistableStorage storage $ = _getWhitelistableStorage();
-        $.whitelistState = WhitelistState.Deactivated;
-        emit WhitelistDisabled();
-    }
-
     /// @notice Switches the whitelist mode
     /// @param newMode The new whitelist mode
     /// @dev If the whitelist is deactivated, it reverts
@@ -114,9 +107,6 @@ library WhitelistableLib {
     ) public {
         Whitelistable.WhitelistableStorage storage $ = _getWhitelistableStorage();
 
-        if ($.whitelistState == WhitelistState.Deactivated) {
-            revert AccessControlDisabled();
-        }
         $.whitelistState = newMode;
         // emit the appropriate event based on the new mode
         // for backward compatiblity we emit 3 different events for the 3 possible modes
@@ -125,8 +115,6 @@ library WhitelistableLib {
             emit BlacklistActivated();
         } else if (newMode == WhitelistState.Whitelist) {
             emit WhitelistActivated();
-        } else {
-            emit WhitelistDisabled();
         }
     }
 }

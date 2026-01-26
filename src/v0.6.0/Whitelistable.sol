@@ -48,10 +48,6 @@ abstract contract Whitelistable is Roles {
             // if the account is the protocol fee receiver, it is always whitelisted
             return true;
         }
-        if (_whitelistState == WhitelistState.Deactivated) {
-            // if the whitelist is deactivated, all accounts are whitelisted
-            return true;
-        }
         // if the whitelist is active, we check if the account is whitelisted
         // if the whitelist is in blacklist mode and the account is blacklisted we return false
         return _whitelistState == WhitelistState.Whitelist ? $.isWhitelisted[account] : !$.isBlacklisted[account];
