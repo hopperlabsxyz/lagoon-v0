@@ -9,10 +9,10 @@ import {WhitelistState} from "./primitives/Enums.sol";
 abstract contract Whitelistable is Roles {
     /// @custom:storage-definition erc7201:hopper.storage.Whitelistable
     /// @param isWhitelisted The mapping of whitelisted addresses.
-    /// @param isActivated The flag to check if the whitelist is activated.
+    /// @param whitelistState The current whitelist mode (whitelist or blacklist).
     struct WhitelistableStorage {
         mapping(address => bool) isWhitelisted;
-        // in v0.6.0, we replace the bool isActivated with a enum WhitelistState
+        // in v0.6.0, we replace the bool isActivated with an enum WhitelistState
         // bool isActivated; --> WhitelistState whitelistState;
         WhitelistState whitelistState;
         // added in v0.6.0
@@ -45,11 +45,11 @@ abstract contract Whitelistable is Roles {
         WhitelistState _whitelistState = $.whitelistState;
 
         if (RolesLib._getRolesStorage().feeRegistry.protocolFeeReceiver() == account) {
-            // if the account is the protocol fee receiver, it is always whitelisted
+            // the protocol fee receiver is always treated as whitelisted
             return true;
         }
-        // if the whitelist is active, we check if the account is whitelisted
-        // if the whitelist is in blacklist mode and the account is blacklisted we return false
+        // whitelist mode: only explicitly whitelisted accounts are allowed
+        // blacklist mode: every account is allowed except explicitly blacklisted ones
         return _whitelistState == WhitelistState.Whitelist ? $.isWhitelisted[account] : !$.isBlacklisted[account];
     }
 

@@ -51,9 +51,6 @@ event WhitelistUpdated(address indexed account, bool authorized);
 /// @param blacklisted Indicates whether the account is blacklisted (true) or not (false).
 event BlacklistUpdated(address indexed account, bool blacklisted);
 
-/// @notice Emitted when the whitelist is disabled.
-event WhitelistDisabled();
-
 // ********************* ROLES ********************* //
 
 /// @notice Emitted when the whitelist manager role is updated.

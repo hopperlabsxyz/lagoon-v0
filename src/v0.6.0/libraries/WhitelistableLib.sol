@@ -3,14 +3,7 @@ pragma solidity 0.8.26;
 
 import {Whitelistable} from "../Whitelistable.sol";
 import {WhitelistState} from "../primitives/Enums.sol";
-import {AccessControlDisabled} from "../primitives/Errors.sol";
-import {
-    BlacklistActivated,
-    BlacklistUpdated,
-    WhitelistActivated,
-    WhitelistDisabled,
-    WhitelistUpdated
-} from "../primitives/Events.sol";
+import {BlacklistActivated, BlacklistUpdated, WhitelistActivated, WhitelistUpdated} from "../primitives/Events.sol";
 
 library WhitelistableLib {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))

@@ -133,7 +133,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     ///////////////
 
     /// @notice Make sure the caller is an operator or the controller.
-    /// @param controller The controller.
+    /// @param controller The controller whose position is being operated.
+    /// @param allowSafeAsOperator Whether the Safe is allowed to act as an implicit operator for this call.
     modifier onlyOperator(
         address controller,
         bool allowSafeAsOperator

@@ -14,9 +14,7 @@ import {
     SafeUpgradeabilityGivenUp,
     ValuationManagerUpdated,
     WhitelistManagerUpdated
-} from 
-
-"./primitives/Events.sol";
+} from "./primitives/Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {FeeRegistry} from "@src/protocol-v2/FeeRegistry.sol";
 
@@ -53,7 +51,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
         $.whitelistManager = roles.whitelistManager;
         $.feeReceiver = roles.feeReceiver;
         $.safe = roles.safe;
-        $.feeRegistry = FeeRegistry(roles.feeRegistry);
+        $.feeRegistry = roles.feeRegistry;
         $.valuationManager = roles.valuationManager;
     }
 

@@ -8,7 +8,6 @@ import {ERC7540Lib} from "../libraries/ERC7540Lib.sol";
 import {FeeType} from "../primitives/Enums.sol";
 import {AboveMaxRate} from "../primitives/Errors.sol";
 import {FeeTaken, HighWaterMarkUpdated, RatesUpdated} from "../primitives/Events.sol";
-import {RatesUpdated} from "../primitives/Events.sol";
 import {Rates} from "../primitives/Struct.sol";
 import {RolesLib} from "./RolesLib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";

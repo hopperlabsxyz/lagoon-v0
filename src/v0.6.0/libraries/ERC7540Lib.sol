@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import "forge-std/Test.sol";
-
 import {ERC7540} from "../ERC7540.sol";
-import {FeeLib} from "../FeeManager.sol";
 import {FeeType} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
@@ -29,6 +26,7 @@ import {
 } from "../primitives/Events.sol";
 import {EpochData, SettleData} from "../primitives/Struct.sol";
 import {Rates} from "../primitives/Struct.sol";
+import {FeeLib} from "./FeeLib.sol";
 import {PausableLib} from "./PausableLib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";

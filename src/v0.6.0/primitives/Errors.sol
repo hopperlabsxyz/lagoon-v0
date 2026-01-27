@@ -91,10 +91,3 @@ error SafeUpgradeabilityNotAllowed();
 
 /// @notice Indicates that the caller is not whitelisted.
 error NotWhitelisted();
-
-/// @notice Indicates that the whitelist is not activated.
-/// @dev this error is not used in v0.6.0.
-error WhitelistNotActivated();
-
-/// @notice Indicates that the whitelist/blacklist is disabled.
-error AccessControlDisabled();
