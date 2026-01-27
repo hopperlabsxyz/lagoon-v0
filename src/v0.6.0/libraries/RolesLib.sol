@@ -2,10 +2,11 @@
 pragma solidity 0.8.26;
 
 import {Roles} from "../Roles.sol";
-import {OnlySafe, OnlyValuationManager, OnlyWhitelistManager} from "../primitives/Errors.sol";
+import {OnlySafe, OnlySecurityCouncil, OnlyValuationManager, OnlyWhitelistManager} from "../primitives/Errors.sol";
 import {
     FeeReceiverUpdated,
     SafeUpdated,
+    SecurityCouncilUpdated,
     ValuationManagerUpdated,
     WhitelistManagerUpdated
 } from "../primitives/Events.sol";
@@ -44,6 +45,13 @@ library RolesLib {
         }
     }
 
+    function _onlySecurityCouncil() internal view {
+        address _securityCouncil = _getRolesStorage().securityCouncil;
+        if (_securityCouncil != msg.sender) {
+            revert OnlySecurityCouncil(_securityCouncil);
+        }
+    }
+
     function updateWhitelistManager(
         address _whitelistManager
     ) public {
@@ -74,5 +82,13 @@ library RolesLib {
         Roles.RolesStorage storage $ = _getRolesStorage();
         emit SafeUpdated($.safe, _safe);
         $.safe = _safe;
+    }
+
+    function updateSecurityCouncil(
+        address _securityCouncil
+    ) public {
+        Roles.RolesStorage storage $ = _getRolesStorage();
+        emit SecurityCouncilUpdated($.securityCouncil, _securityCouncil);
+        $.securityCouncil = _securityCouncil;
     }
 }

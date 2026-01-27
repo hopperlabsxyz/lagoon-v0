@@ -45,3 +45,13 @@ struct SettleData {
     uint16 entryFeeRate;
     uint16 exitFeeRate;
 }
+
+// ********************* GUARDRAILS ********************* //
+
+/// @dev Holds guardrails data for the vault.
+/// @param upperRate Maximum rate evolution over 1 year in bps.
+/// @param lowerRate Minimum rate evolution over 1 year in bps.
+struct Guardrails {
+    uint256 upperRate;
+    int256 lowerRate;
+}

@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 import {FeeType, State, WhitelistState} from "./Enums.sol";
-import {Rates} from "./Struct.sol";
+import {Guardrails, Rates} from "./Struct.sol";
 
 // ********************* VAULT ********************* //
 
@@ -76,6 +76,11 @@ event SafeUpdated(address oldSafe, address newSafe);
 /// @notice Emitted when the safe upgradeability is given up.
 event SafeUpgradeabilityGivenUp();
 
+/// @notice Emitted when the security council role is updated.
+/// @param oldSecurityCouncil The address of the old security council.
+/// @param newSecurityCouncil The address of the new security council.
+event SecurityCouncilUpdated(address oldSecurityCouncil, address newSecurityCouncil);
+
 // ********************* FEE_MANAGER ********************* //
 
 /// @notice Emitted when the rates are updated.
@@ -142,3 +147,9 @@ event BlacklistActivated();
 /// @notice Emitted when the whitelist is switched to whitelist.
 event WhitelistActivated();
 
+// ********************* GUARDRAILS_MANAGER ********************* //
+
+/// @notice Emitted when the guardrails are updated.
+/// @param oldGuardrails The old guardrails.
+/// @param newGuardrails The new guardrails.
+event GuardrailsUpdated(Guardrails oldGuardrails, Guardrails newGuardrails);

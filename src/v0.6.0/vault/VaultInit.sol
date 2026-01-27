@@ -19,7 +19,9 @@ import {
 } from "../primitives/Errors.sol";
 import {InitStruct} from "./Vault-v0.6.0.sol";
 
+import {GuardrailsManager} from "../GuardRailsManager.sol";
 import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
+import {Guardrails} from "../primitives/Struct.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -30,7 +32,7 @@ import {FeeRegistry} from "@src/protocol-v2/FeeRegistry.sol";
 using SafeERC20 for IERC20;
 
 /// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault
-contract VaultInit is ERC7540, Whitelistable, FeeManager {
+contract VaultInit is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
     constructor(
@@ -55,7 +57,7 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
                 safe: init.safe,
                 feeRegistry: FeeRegistry(feeRegistry),
                 valuationManager: init.valuationManager,
-                gaveUpSafeUpgradeability: false
+                securityCouncil: init.securityCouncil
             })
         );
         __ERC20_init(init.name, init.symbol);
@@ -72,6 +74,7 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
             init.entryRate,
             init.exitRate
         );
+        __GuardrailsManager_init(Guardrails({upperRate: type(uint256).max, lowerRate: type(int256).max}));
 
         // $.totalAssets = initialTotalAssets;
         // mint(initialTotalAssets, address(init.safe));

@@ -28,13 +28,13 @@ import {
 } from "../primitives/Errors.sol";
 
 import {FeeRegistry} from "../../protocol-v1/FeeRegistry.sol";
+import {GuardrailsManager} from "../GuardRailsManager.sol";
 import {DepositSync, Referral, StateUpdated, WithdrawSync} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-
 using SafeERC20 for IERC20;
 
 /// @custom:storage-definition erc7201:hopper.storage.vault
@@ -70,10 +70,11 @@ struct InitStruct {
     // added in v0.6.0
     uint16 entryRate;
     uint16 exitRate;
+    address securityCouncil;
 }
 
 /// @custom:oz-upgrades-from src/v0.5.0/Vault.sol:Vault
-contract Vault is ERC7540, Whitelistable, FeeManager {
+contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     VaultInit immutable init;
 
