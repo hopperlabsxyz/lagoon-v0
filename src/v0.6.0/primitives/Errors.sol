@@ -95,3 +95,8 @@ error OnlySecurityCouncil(address securityCouncil);
 
 /// @notice Indicates that the caller is not whitelisted.
 error NotWhitelisted();
+
+// ********************* GUARDRAILS ********************* //
+
+/// @notice Indicates that the new total assets value is not compliant with the guardrails.
+error GuardrailsViolation();

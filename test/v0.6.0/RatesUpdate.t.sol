@@ -116,6 +116,7 @@ contract testRateUpdates is BaseTest {
         dealAmountAndApproveAndWhitelist(user1.addr, 1000);
         requestDeposit(1000, user1.addr);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
         assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, first settle");
         updateNewTotalAssets(2000);
         vm.warp(block.timestamp + 1 days);
@@ -134,7 +135,7 @@ contract testRateUpdates is BaseTest {
         vm.stopPrank();
         settle();
         assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, 2nd settle");
-
+        vm.warp(block.timestamp + 1);
         updateAndSettle(4000); // +100%
         assertNotEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have shares");
     }

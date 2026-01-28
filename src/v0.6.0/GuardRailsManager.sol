@@ -24,19 +24,20 @@ abstract contract GuardrailsManager is Roles {
 
     /**
      * @notice Checks if a price-per-share (PPS) update is compliant with the current guardrails.
-     * @param currentTargetPps The current price-per-share.
-     * @param nextTargetPps The proposed new price-per-share.
+     * @param currentPps The current price-per-share.
+     * @param nextPps The proposed new price-per-share.
      * @param _timePast The time elapsed since the last update.
      * @return bool True if the update is compliant, false otherwise.
      */
     function isCompliant(
-        uint256 currentTargetPps,
-        uint256 nextTargetPps,
+        uint256 currentPps,
+        uint256 nextPps,
         uint256 _timePast
     ) public view returns (bool) {
-        return GuardrailsLib.isCompliant(
-            currentTargetPps, nextTargetPps, _timePast, GuardrailsLib._getGuardrailsManagerStorage().guardrails
-        );
+        Guardrails memory guardrails = GuardrailsLib._getGuardrailsManagerStorage().guardrails;
+        return GuardrailsLib.isCompliant({
+            currentPps: currentPps, nextPps: nextPps, _timePast: _timePast, _guardrails: guardrails
+        });
     }
 
     // @inheritdoc GuardrailsLib

@@ -14,6 +14,7 @@ contract TestRedeemAssetsOnBehalf is BaseTest {
         dealAndApproveAndWhitelist(user1.addr);
         dealAndApproveAndWhitelist(user2.addr);
         dealAndApproveAndWhitelist(user3.addr);
+        vm.warp(block.timestamp + 1 days);
     }
 
     function test_RedeemAssetsOnBehalf_onlySafe() public {
@@ -31,6 +32,7 @@ contract TestRedeemAssetsOnBehalf is BaseTest {
 
         // First settlement
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
 
         vm.startPrank(user1.addr);
         vault.deposit(user1Balance, user1.addr);
@@ -46,6 +48,7 @@ contract TestRedeemAssetsOnBehalf is BaseTest {
 
         // Seconds settlement
         updateAndSettle(user1Balance + user2Balance);
+        vm.warp(block.timestamp + 1);
 
         assertEq(vault.maxRedeem(user1.addr), user1Shares, "wrong maxRedeem on user 1");
         assertEq(vault.maxRedeem(user2.addr), user2Shares, "wrong maxRedeem on user 2");

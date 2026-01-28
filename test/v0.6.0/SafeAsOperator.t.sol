@@ -81,6 +81,7 @@ contract TestSafeAsOperator is BaseTest {
     function test_safeAsOperator_forUser() public {
         requestDeposit(100 * 10 ** vault.underlyingDecimals(), user2.addr);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
 
         vm.prank(user2.addr);
         vault.claimSharesAndRequestRedeem(50 * 10 ** decimals);

@@ -84,6 +84,7 @@ contract TestMint is BaseTest {
 
         requestDeposit(2000, user3.addr);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
         deposit(2000, user3.addr);
 
         dealAndApproveAndWhitelist(user1.addr);
@@ -144,6 +145,7 @@ contract TestMint is BaseTest {
 
         requestDeposit(2000, user3.addr);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
         deposit(2000, user3.addr);
 
         dealAndApproveAndWhitelist(user1.addr);

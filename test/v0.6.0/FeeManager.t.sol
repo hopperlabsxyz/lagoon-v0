@@ -202,7 +202,6 @@ contract TestFeeManager is BaseTest {
 
         vm.warp(block.timestamp + 364 days);
         updateAndSettle(newTotalAssets);
-
         console.log("======");
         console.log("totalSupply        :", vault.totalSupply());
         console.log("totalAssets        :", vault.totalAssets());
@@ -296,9 +295,10 @@ contract TestFeeManager is BaseTest {
         requestRedeem(daoShareBalance, dao);
 
         // ------------ Settle ------------ //
-        console.log("total assets", vault.totalAssets());
+        vm.warp(block.timestamp + 1);
         updateNewTotalAssets(vault.totalAssets());
         settle();
+        // vm.warp(block.timestamp + 1);
 
         uint256 feeReceiverAssetAfter = redeem(feeReceiverShareBalance, feeReceiver);
         uint256 daoAssetAfter = redeem(daoShareBalance, dao);
@@ -524,6 +524,7 @@ contract TestFeeManager is BaseTest {
 
         // ------------ Settle ------------ //
         newTotalAssets = 5 * 10 ** (vault.underlyingDecimals() - 1);
+        vm.warp(block.timestamp + 1);
         updateAndSettle(newTotalAssets);
         console.log("======");
         console.log("totalSupply        :", vault.totalSupply());
@@ -560,6 +561,7 @@ contract TestFeeManager is BaseTest {
         // newTotalAssets = 2_000_001 * 10 ** vault.underlyingDecimals(); // vault
         // valo made a x2 for user2; and x1 for
         // user1
+        vm.warp(block.timestamp + 1);
         updateAndSettle(newTotalAssets);
         console.log("======");
         console.log("totalSupply        :", vault.totalSupply());
@@ -616,6 +618,7 @@ contract TestFeeManager is BaseTest {
         console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
         console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
         console.log("======");
+        vm.warp(block.timestamp + 1);
         updateAndSettle(newTotalAssets);
 
         // uint256 user1AssetBefore = assetBalance(user1.addr);

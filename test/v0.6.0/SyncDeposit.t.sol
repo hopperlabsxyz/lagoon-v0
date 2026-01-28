@@ -22,6 +22,7 @@ contract TestSyncDeposit is BaseTest {
         vm.prank(vault.safe());
         vault.updateTotalAssetsLifespan(1000);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
     }
 
     function test_syncDeposit_simple() public {

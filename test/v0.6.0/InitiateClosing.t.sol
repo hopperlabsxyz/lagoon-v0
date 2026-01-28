@@ -39,6 +39,7 @@ contract TestInitiateClosing is BaseTest {
         // user2: 50k shares claimable
         // user3: 50k shares claimable
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
 
         // User2 claims 50k shares
         vm.startPrank(user2.addr);
@@ -58,6 +59,7 @@ contract TestInitiateClosing is BaseTest {
         //    - 25k shares holding
         // user3: 50k shares holding
         updateAndSettle(150_000 * 10 ** vault.underlyingDecimals());
+        vm.warp(block.timestamp + 1);
 
         vm.warp(block.timestamp + 30 days);
 

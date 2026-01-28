@@ -63,28 +63,23 @@ library GuardrailsLib {
 
     /**
      * @notice Checks if a price-per-share (PPS) update is compliant with the current guardrails.
-     * @param currentTargetPps The current price-per-share.
-     * @param nextTargetPps The proposed new price-per-share.
+     * @param currentPps The current price-per-share.
+     * @param nextPps The proposed new price-per-share.
      * @param _timePast The time elapsed since the last update.
      * @return bool True if the update is compliant, false otherwise.
      */
     function isCompliant(
-        uint256 currentTargetPps,
-        uint256 nextTargetPps,
+        uint256 currentPps,
+        uint256 nextPps,
         uint256 _timePast,
         Guardrails calldata _guardrails
     ) public pure returns (bool) {
-        // in this case we enforce the need for an approval even if the variation
-        // is 0.
-        if (_guardrails.upperRate == 0 && _guardrails.lowerRate == 0) {
-            return false;
-        }
         // updating with a 0 second timepast will revert
         uint256 scaleToOneYear = ONE_YEAR / _timePast;
         int256 lowerRate = _guardrails.lowerRate;
 
-        if (nextTargetPps >= currentTargetPps) {
-            uint256 variation = (nextTargetPps - currentTargetPps) * scaleToOneYear * SCALE / currentTargetPps;
+        if (nextPps >= currentPps) {
+            uint256 variation = (nextPps - currentPps) * scaleToOneYear * SCALE / currentPps;
             uint256 upperRate = _guardrails.upperRate;
 
             if (lowerRate < 0) {
@@ -99,7 +94,7 @@ library GuardrailsLib {
             }
 
             // even if we have a decrease of pps we compute the variation as a positive integer.
-            uint256 variation = (currentTargetPps - nextTargetPps) * scaleToOneYear * SCALE / currentTargetPps;
+            uint256 variation = (currentPps - nextPps) * scaleToOneYear * SCALE / currentPps;
             // since variation is > 0, we have to inverse the check.
             // -10 >= -15 <=> 10 <= 15
             return variation <= uint256(-lowerRate);
