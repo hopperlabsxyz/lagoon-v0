@@ -57,6 +57,8 @@ struct InitStruct {
     uint16 entryRate;
     /// @notice Exit fee rate (in basis points)
     uint16 exitRate;
+    /// @notice Address of the security council
+    address securityCouncil;
 }
 
 /// @title OptinProxyFactory

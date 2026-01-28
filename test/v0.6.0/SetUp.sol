@@ -124,7 +124,8 @@ contract SetUp is Test {
             performanceRate: _performanceRate,
             rateUpdateCooldown: rateUpdateCooldown,
             entryRate: _entryRate,
-            exitRate: _exitRate
+            exitRate: _exitRate,
+            securityCouncil: admin.addr
         });
         // if proxy is true, we use the factory to create the vault proxy
         if (proxy) {
