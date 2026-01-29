@@ -147,7 +147,7 @@ contract TestSyncDeposit is BaseTest {
         // checking initial state
         uint256 safeAssetsBefore = assetBalance(address(vault.safe()));
         assertEq(assetBalance(address(vault.pendingSilo())), 0, "pending silo asset balance is not 0"); // pendingSilo
-            // has 0 assets
+        // has 0 assets
         uint256 safeEthBefore = address(vault.safe()).balance;
 
         if (!underlyingIsNativeToken) {
@@ -163,13 +163,13 @@ contract TestSyncDeposit is BaseTest {
             // vm.expectRevert(CantDepositNativeToken.selector);
             vault.syncDeposit{value: 1}(userBalance, user1.addr, user1.addr);
             assertEq(assetBalance(address(vault.safe())), safeAssetsBefore + 1, "safe should have received the weth"); // safe
-                // has received
-                // the weth
+            // has received
+            // the weth
             assertEq(assetBalance(address(vault.pendingSilo())), 0, "silo should have receiver 0"); // silo has received
-                // 0
+            // 0
             assertEq(address(vault.safe()).balance, safeEthBefore, "safe should have received 0 eth"); // safe has
-                // received 0 eth
-                // assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
+            // received 0 eth
+            // assertEq(vault.claimableRedeemRequest(0, user1.addr), 0);
         }
     }
 }

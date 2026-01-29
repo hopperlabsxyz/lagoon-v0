@@ -52,6 +52,7 @@ contract TestMisc is BaseTest {
 
         requestDeposit(10, user1.addr);
         updateAndSettle(1);
+        vm.warp(block.timestamp + 1);
         redeemId = vault.redeemEpochId();
 
         // redeemId didn't change because there is no redeem request
@@ -108,6 +109,7 @@ contract TestMisc is BaseTest {
         assertEq(vault.epochSettleId(2), 0);
 
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
 
         assertEq(vault.epochSettleId(0), 0);
         assertEq(vault.epochSettleId(1), 1);
@@ -175,6 +177,7 @@ contract TestMisc is BaseTest {
         assertEq(vault.lastDepositRequestId(user1.addr), requestId2);
 
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
 
         dealAndApproveAndWhitelist(user1.addr);
         uint256 requestId3 = requestDeposit(user1Balance, user1.addr);
@@ -182,6 +185,7 @@ contract TestMisc is BaseTest {
         assertEq(vault.lastDepositRequestId(user1.addr), requestId3);
 
         updateAndSettle(2 * user1Balance);
+        vm.warp(block.timestamp + 1);
 
         vm.prank(user1.addr);
         vault.deposit(user1Balance, user1.addr, user1.addr);
@@ -207,7 +211,7 @@ contract TestMisc is BaseTest {
         assertEq(rolesStorage.whitelistManager, whitelistManager.addr);
         assertEq(rolesStorage.feeReceiver, feeReceiver.addr);
         assertEq(rolesStorage.safe, safe.addr);
-        assertEq(address(rolesStorage.feeRegistry), address(feeRegistry));
+        assertEq(address(rolesStorage.feeRegistry), address(protocolRegistry));
         assertEq(rolesStorage.valuationManager, valuationManager.addr);
     }
 
@@ -218,10 +222,9 @@ contract TestMisc is BaseTest {
     function test_factory() public view {
         if (!proxy) return;
 
-        assertEq(factory.REGISTRY(), address(feeRegistry));
-        assertEq(factory.WRAPPED_NATIVE(), address(WRAPPED_NATIVE_TOKEN));
+        assertEq(factory.registry(), address(protocolRegistry));
+        assertEq(factory.wrappedNativeToken(), address(WRAPPED_NATIVE_TOKEN));
         assertTrue(factory.isInstance(address(vault)));
-        assertEq(factory.instances(0), address(vault));
     }
 
     function test_totalAssetsLifespan() public {
@@ -229,5 +232,12 @@ contract TestMisc is BaseTest {
         vm.prank(vault.safe());
         vault.updateTotalAssetsLifespan(1000);
         assertEq(vault.totalAssetsLifespan(), 1000);
+    }
+
+    function test_securityCouncilCanUpdateNewTotalAssets() public {
+        vm.prank(vault.securityCouncil());
+        vault.updateNewTotalAssets(1);
+
+        assertEq(vault.newTotalAssets(), 1);
     }
 }

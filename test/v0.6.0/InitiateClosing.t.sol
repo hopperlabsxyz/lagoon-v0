@@ -39,6 +39,7 @@ contract TestInitiateClosing is BaseTest {
         // user2: 50k shares claimable
         // user3: 50k shares claimable
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
 
         // User2 claims 50k shares
         vm.startPrank(user2.addr);
@@ -58,6 +59,7 @@ contract TestInitiateClosing is BaseTest {
         //    - 25k shares holding
         // user3: 50k shares holding
         updateAndSettle(150_000 * 10 ** vault.underlyingDecimals());
+        vm.warp(block.timestamp + 1);
 
         vm.warp(block.timestamp + 30 days);
 
@@ -72,7 +74,7 @@ contract TestInitiateClosing is BaseTest {
 
         // user 3 request deposit before vault goes into closing state
         requestDeposit(user3Assets / 2, user3.addr); // 50k assets
-            // user 3 request redeem before vault goes into closing state on half of his shares
+        // user 3 request redeem before vault goes into closing state on half of his shares
         requestRedeem(25_000 * 10 ** vault.decimals(), user3.addr); // 25k shares pending
     }
 
@@ -109,7 +111,7 @@ contract TestInitiateClosing is BaseTest {
 
         uint256 depositIdAfter = vault.depositEpochId();
         assertEq(depositIdBefore, depositIdAfter); // we are sure no epoch increased, so it means not
-            // _updateTotalAssetsCalled
+        // _updateTotalAssetsCalled
         uint256 newTTA = vault.newTotalAssets();
         vm.startPrank(safe.addr);
         vm.expectRevert(NewTotalAssetsMissing.selector); // cant close without nav

@@ -1,11 +1,22 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {FeeRegistry} from "../protocol-v1/FeeRegistry.sol";
 import {RolesLib} from "./libraries/RolesLib.sol";
-import {OnlySafe, OnlyValuationManager, OnlyWhitelistManager} from "./primitives/Errors.sol";
-import {FeeReceiverUpdated, ValuationManagerUpdated, WhitelistManagerUpdated} from "./primitives/Events.sol";
+import {
+    OnlySafe,
+    OnlyValuationManagerOrSecurityCouncil,
+    OnlyWhitelistManager,
+    SafeUpgradeabilityNotAllowed
+} from "./primitives/Errors.sol";
+import {
+    FeeReceiverUpdated,
+    SafeUpdated,
+    SafeUpgradeabilityGivenUp,
+    ValuationManagerUpdated,
+    WhitelistManagerUpdated
+} from "./primitives/Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {FeeRegistry} from "@src/protocol-v2/FeeRegistry.sol";
 
 /// @title RolesUpgradeable
 /// @dev This contract is used to define the various roles needed for a vault to operate.
@@ -26,6 +37,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
         address safe;
         FeeRegistry feeRegistry;
         address valuationManager;
+        address securityCouncil;
     }
 
     /// @dev Initializes the roles of the vault.
@@ -39,8 +51,9 @@ abstract contract Roles is Ownable2StepUpgradeable {
         $.whitelistManager = roles.whitelistManager;
         $.feeReceiver = roles.feeReceiver;
         $.safe = roles.safe;
-        $.feeRegistry = FeeRegistry(roles.feeRegistry);
+        $.feeRegistry = roles.feeRegistry;
         $.valuationManager = roles.valuationManager;
+        $.securityCouncil = roles.securityCouncil;
     }
 
     /// @dev Returns the storage struct of the roles.
@@ -51,26 +64,25 @@ abstract contract Roles is Ownable2StepUpgradeable {
 
     /// @dev Modifier to check if the caller is the safe.
     modifier onlySafe() {
-        address _safe = RolesLib._getRolesStorage().safe;
-        if (_safe != msg.sender) revert OnlySafe(_safe);
+        RolesLib._onlySafe();
         _;
     }
 
     /// @dev Modifier to check if the caller is the whitelist manager.
     modifier onlyWhitelistManager() {
-        address _whitelistManager = RolesLib._getRolesStorage().whitelistManager;
-        if (_whitelistManager != msg.sender) {
-            revert OnlyWhitelistManager(_whitelistManager);
-        }
+        RolesLib._onlyWhitelistManager();
         _;
     }
 
     /// @dev Modifier to check if the caller is the valuation manager.
-    modifier onlyValuationManager() {
-        address _valuationManager = RolesLib._getRolesStorage().valuationManager;
-        if (_valuationManager != msg.sender) {
-            revert OnlyValuationManager(_valuationManager);
-        }
+    modifier onlyValuationManagerOrSecurityCouncil() {
+        RolesLib._onlyValuationManagerOrSecurityCouncil();
+        _;
+    }
+
+    /// @dev Modifier to check if the caller is the security council.
+    modifier onlySecurityCouncil() {
+        RolesLib._onlySecurityCouncil();
         _;
     }
 
@@ -99,5 +111,23 @@ abstract contract Roles is Ownable2StepUpgradeable {
         address _feeReceiver
     ) external onlyOwner {
         RolesLib.updateFeeReceiver(_feeReceiver);
+    }
+
+    /// @notice Updates the address of the safe.
+    /// @param _safe The new address of the safe.
+    /// @dev Only the owner can call this function.
+    function updateSafe(
+        address _safe
+    ) external onlyOwner {
+        RolesLib.updateSafe(_safe);
+    }
+
+    /// @notice Updates the address of the security council.
+    /// @param _securityCouncil The new address of the security council.
+    /// @dev Only the owner can call this function.
+    function updateSecurityCouncil(
+        address _securityCouncil
+    ) external onlyOwner {
+        RolesLib.updateSecurityCouncil(_securityCouncil);
     }
 }

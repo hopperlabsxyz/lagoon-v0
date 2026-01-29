@@ -4,44 +4,53 @@ pragma solidity 0.8.26;
 import {Roles} from "./Roles.sol";
 import {RolesLib} from "./libraries/RolesLib.sol";
 import {WhitelistableLib} from "./libraries/WhitelistableLib.sol";
+import {WhitelistState} from "./primitives/Enums.sol";
 
 abstract contract Whitelistable is Roles {
     /// @custom:storage-definition erc7201:hopper.storage.Whitelistable
     /// @param isWhitelisted The mapping of whitelisted addresses.
-    /// @param isActivated The flag to check if the whitelist is activated.
+    /// @param whitelistState The current whitelist mode (whitelist or blacklist).
     struct WhitelistableStorage {
         mapping(address => bool) isWhitelisted;
-        bool isActivated;
+        // in v0.6.0, we replace the bool isActivated with an enum WhitelistState
+        // bool isActivated; --> WhitelistState whitelistState;
+        WhitelistState whitelistState;
+        // added in v0.6.0
+        mapping(address => bool) isBlacklisted;
     }
 
     /// @dev Initializes the whitelist.
-    /// @param activate if the whitelist should be activated.
+    /// @param whitelistState the state of the whitelist.
     // solhint-disable-next-line func-name-mixedcase
     function __Whitelistable_init(
-        bool activate
+        WhitelistState whitelistState
     ) internal onlyInitializing {
-        if (activate) {
-            WhitelistableStorage storage $ = WhitelistableLib._getWhitelistableStorage();
-            $.isActivated = true;
-        }
+        WhitelistableLib.switchWhitelistMode(whitelistState);
     }
 
-    /// @notice Deactivates the whitelist
-    function disableWhitelist() public onlyOwner {
-        WhitelistableLib.disableWhitelist();
+    function switchWhitelistMode(
+        WhitelistState newMode
+    ) public onlyOwner {
+        WhitelistableLib.switchWhitelistMode(newMode);
     }
 
-    /// @notice Checks if an account is whitelisted
+    /// @notice Checks if an account is whitelisted or blacklisted
+    /// @dev In v0.6.0, this function is extended to also enforce blacklist checks.
     /// @param account The address of the account to check
-    /// @return True if the account is whitelisted, false otherwise
+    /// @return True if the account is whitelisted or not blacklisted, false otherwise
     function isWhitelisted(
         address account
     ) public view returns (bool) {
         WhitelistableStorage storage $ = WhitelistableLib._getWhitelistableStorage();
+        WhitelistState _whitelistState = $.whitelistState;
+
         if (RolesLib._getRolesStorage().feeRegistry.protocolFeeReceiver() == account) {
+            // the protocol fee receiver is always treated as whitelisted
             return true;
         }
-        return $.isActivated ? $.isWhitelisted[account] : true;
+        // whitelist mode: only explicitly whitelisted accounts are allowed
+        // blacklist mode: every account is allowed except explicitly blacklisted ones
+        return _whitelistState == WhitelistState.Whitelist ? $.isWhitelisted[account] : !$.isBlacklisted[account];
     }
 
     /// @notice Adds multiple accounts to the whitelist
@@ -58,4 +67,75 @@ abstract contract Whitelistable is Roles {
     ) external onlyWhitelistManager {
         WhitelistableLib.revokeFromWhitelist(accounts);
     }
+
+    /// @notice Adds multiple accounts to the blacklist
+    function addToBlacklist(
+        address[] memory accounts
+    ) external onlyWhitelistManager {
+        WhitelistableLib.addToBlacklist(accounts);
+    }
+
+    /// @notice Removes multiple accounts from the blacklist
+    function revokeFromBlacklist(
+        address[] memory accounts
+    ) external onlyWhitelistManager {
+        WhitelistableLib.revokeFromBlacklist(accounts);
+    }
 }
+
+// v0.6.0 storage layout changes:
+
+// ==================== ORIGINAL STORAGE LAYOUT ====================
+// slot 0: isWhitelisted (mapping pointer)
+// Type: mapping(address => bool)
+// Description: Pointer to the mapping of whitelisted addresses
+// Visual representation (bytes32):
+// 0x0000000000000000000000000000000000000000000000000000000000000000
+//   |                           32 bytes                            |
+
+// slot 1: isActivated
+// Type: bool
+// Description: Activation flag (only 1 byte used, right-aligned)
+// Visual representation (bytes32):
+//                                                          isActivated
+// 0x0000000000000000000000000000000000000000000000000000000000000000
+//   |                      31 bytes unused                      |xx|
+//                                                               (1 byte)
+
+// ==================== NEW STORAGE LAYOUT ====================
+// slot 0: isWhitelisted (mapping pointer)
+// Type: mapping(address => bool)
+// Description: Pointer to the mapping of whitelisted addresses
+// Visual representation (bytes32):
+// 0x0000000000000000000000000000000000000000000000000000000000000000
+//   |                           32 bytes                            |
+// Note: The actual mapping data is stored at keccak256(key . slot)
+
+// slot 1: whitelistState
+// Type: enum WhitelistState (uint8)
+// Description: Whitelist state enum value (only 1 byte used, right-aligned)
+// Possible values: 0x00 (BlacklistMode), 0x01 (WhitelistMode), 0x02 (Deactivated), etc.
+// Visual representation (bytes32):
+//                                                          whitelistState
+// 0x0000000000000000000000000000000000000000000000000000000000000001
+//   |                      31 bytes unused                      |xx|
+//                                                               (1 byte)
+
+// slot 2: isBlacklisted (mapping pointer)
+// Type: mapping(address => bool)
+// Description: Pointer to the mapping of blacklisted addresses
+// Visual representation (bytes32):
+// 0x0000000000000000000000000000000000000000000000000000000000000000
+//   |                           32 bytes                            |
+// Note: The actual mapping data is stored at keccak256(key . slot)
+
+// Upgrades scenario:
+// we upgrade the whitelistable contract from v0.5.0 to v0.6.0
+// 1) isActivated is 0 (deactivated)
+//   1.1) whitelistState is 0 (blacklist)
+// --> vault remains as accessible as before the upgrade
+//     if the admin wants to disable the blacklist, he can call the disableWhitelist function
+// 2) isActivated is 1 (activated)
+//   2.1) whitelistState is 1 (whitelist)
+// --> vault remains in whitelist mode
+//     if the admin wants to disable the whitelist, he can call the disableWhitelist function

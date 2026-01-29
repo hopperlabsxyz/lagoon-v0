@@ -5,7 +5,7 @@ import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract TestWhitelist is BaseTest {
     function withWhitelistSetUp() public {
@@ -75,7 +75,7 @@ contract TestWhitelist is BaseTest {
         deposit(userBalance, user1.addr);
         address receiver = user2.addr;
         vm.prank(vault.owner());
-        vault.disableWhitelist();
+        vault.switchWhitelistMode(WhitelistState.Blacklist);
         vm.assertEq(vault.isWhitelistActivated(), false);
         uint256 shares = vault.balanceOf(user1.addr);
         vm.prank(user1.addr);
@@ -204,5 +204,23 @@ contract TestWhitelist is BaseTest {
         vm.prank(receiver);
         vm.expectRevert(NotWhitelisted.selector);
         vault.requestRedeem(shares, receiver, receiver);
+    }
+
+    function test_whitelistedUserRemainsWhitelistedWhenSwitchingModes() public {
+        withWhitelistSetUp();
+
+        // whitelist user1 in whitelist mode
+        whitelist(user1.addr);
+        assertTrue(vault.isWhitelisted(user1.addr), "user1 should be whitelisted in whitelist mode");
+
+        // switch to blacklist mode, user1 should remain effectively whitelisted
+        vm.prank(vault.owner());
+        vault.switchWhitelistMode(WhitelistState.Blacklist);
+        assertTrue(vault.isWhitelisted(user1.addr), "user1 should remain whitelisted in blacklist mode");
+
+        // switch back to whitelist mode, user1 should still be whitelisted
+        vm.prank(vault.owner());
+        vault.switchWhitelistMode(WhitelistState.Whitelist);
+        assertTrue(vault.isWhitelisted(user1.addr), "user1 should remain whitelisted after switching back");
     }
 }

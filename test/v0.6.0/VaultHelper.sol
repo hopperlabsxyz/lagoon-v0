@@ -5,13 +5,12 @@ import "forge-std/Test.sol";
 
 import "@src/v0.6.0/ERC7540.sol";
 import "@src/v0.6.0/FeeManager.sol";
-import "@src/v0.6.0/Roles.sol";
 import "@src/v0.6.0/libraries/FeeLib.sol";
 import "@src/v0.6.0/libraries/WhitelistableLib.sol";
 import "@src/v0.6.0/primitives/Errors.sol";
 import "@src/v0.6.0/primitives/Events.sol";
 import "@src/v0.6.0/primitives/Struct.sol";
-import "@src/v0.6.0/vault/Vault.sol";
+import "@src/v0.6.0/vault/Vault-v0.6.0.sol";
 
 contract VaultHelper is Vault {
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -39,7 +38,11 @@ contract VaultHelper is Vault {
     /// @notice Returns if the whitelist is activated
     /// @return True if the whitelist is activated, false otherwise
     function isWhitelistActivated() public view returns (bool) {
-        return WhitelistableLib._getWhitelistableStorage().isActivated;
+        return WhitelistableLib._getWhitelistableStorage().whitelistState == WhitelistState.Whitelist;
+    }
+
+    function isBlacklistActivated() public view returns (bool) {
+        return WhitelistableLib._getWhitelistableStorage().whitelistState == WhitelistState.Blacklist;
     }
 
     function totalAssets(
@@ -70,6 +73,16 @@ contract VaultHelper is Vault {
 
     function protocolRate() public view returns (uint256) {
         return FeeLib.protocolRate();
+    }
+
+    function entryRate() public view returns (uint256) {
+        Rates memory _rates = feeRates();
+        return _rates.entryRate;
+    }
+
+    function exitRate() public view returns (uint256) {
+        Rates memory _rates = feeRates();
+        return _rates.exitRate;
     }
 
     function lastDepositEpochIdSettled_debug() public view returns (uint256) {
@@ -154,7 +167,7 @@ contract VaultHelper is Vault {
     }
 
     function activateWhitelist() public {
-        WhitelistableLib._getWhitelistableStorage().isActivated = true;
+        WhitelistableLib._getWhitelistableStorage().whitelistState = WhitelistState.Whitelist;
     }
 
     function protocolFeeReceiver() public view returns (address) {
@@ -186,5 +199,71 @@ contract VaultHelper is Vault {
     /// @notice value of the high water mark, the highest price per share ever reached
     function highWaterMark() public view returns (uint256) {
         return FeeLib._getFeeManagerStorage().highWaterMark;
+    }
+
+    function gaveUpOperatorPrivileges() public view returns (bool) {
+        return ERC7540Lib._getERC7540Storage().gaveUpOperatorPrivileges;
+    }
+
+    function pendingDeposit(
+        uint40 epochId
+    ) public view returns (uint256) {
+        return ERC7540Lib._getERC7540Storage().settles[epochId].pendingAssets;
+    }
+
+    function pendingRedeem(
+        uint40 epochId
+    ) public view returns (uint256) {
+        return ERC7540Lib._getERC7540Storage().settles[epochId].pendingShares;
+    }
+
+    function convertToSharesWithRounding(
+        uint256 assets,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return _convertToShares(assets, rounding);
+    }
+
+    function convertToSharesRequestIdWithRounding(
+        uint256 assets,
+        uint40 requestId,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return ERC7540Lib.convertToShares(assets, requestId, rounding);
+    }
+
+    function convertToAssetsWithRounding(
+        uint256 shares,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return _convertToAssets(shares, rounding);
+    }
+
+    function convertToAssetsRequestIdWithRounding(
+        uint256 shares,
+        uint40 requestId,
+        Math.Rounding rounding
+    ) public view returns (uint256) {
+        return ERC7540Lib.convertToAssets(shares, requestId, rounding);
+    }
+
+    function getSettlementEntryFeeRate(
+        uint40 requestId
+    ) public view returns (uint16) {
+        return ERC7540Lib.getSettlementEntryFeeRate(requestId);
+    }
+
+    function getSettlementExitFeeRate(
+        uint40 requestId
+    ) public view returns (uint16) {
+        return ERC7540Lib.getSettlementExitFeeRate(requestId);
+    }
+
+    function securityCouncil() public view returns (address) {
+        return RolesLib._getRolesStorage().securityCouncil;
+    }
+
+    function guardrails() public view returns (Guardrails memory) {
+        return GuardrailsLib._getGuardrailsManagerStorage().guardrails;
     }
 }

@@ -2,12 +2,8 @@
 pragma solidity 0.8.26;
 
 import "./VaultHelper.sol";
-import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
-import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 
 contract testRateUpdates is BaseTest {
     uint16 public constant MAX_MANAGEMENT_RATE = 1000; // 10 %
@@ -24,53 +20,12 @@ contract testRateUpdates is BaseTest {
         assertEq(vault.feeRates().managementRate, managementRate, "managementRate");
     }
 
-    // function test_ratesShouldRevertAtInitWhenToHigh() public {
-    //     uint16 protocolRate = MAX_PROTOCOL_RATE + 1;
-    //     uint16 managementRate = MAX_MANAGEMENT_RATE + 1;
-    //     uint16 performanceRate = MAX_PERFORMANCE_RATE + 1;
-
-    //     feeRegistry = new FeeRegistry(false);
-    //     feeRegistry.initialize(dao.addr, dao.addr);
-
-    //     vm.prank(dao.addr);
-    //     feeRegistry.updateDefaultRate(protocolRate);
-    //     vault = new VaultHelper(false);
-
-    //     Vault.InitStruct memory v = Vault.InitStruct({
-    //         underlying: underlying,
-    //         name: vaultName,
-    //         symbol: vaultSymbol,
-    //         safe: safe.addr,
-    //         whitelistManager: whitelistManager.addr,
-    //         valuationManager: valuationManager.addr,
-    //         admin: admin.addr,
-    //         feeReceiver: feeReceiver.addr,
-    //         feeRegistry: address(feeRegistry),
-    //         managementRate: managementRate,
-    //         performanceRate: performanceRate,
-    //         wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
-    //         rateUpdateCooldown: rateUpdateCooldown,
-    //         enableWhitelist: enableWhitelist
-    //     });
-    //     vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
-
-    //     vault.initialize(v);
-
-    //     v.managementRate = MAX_MANAGEMENT_RATE;
-
-    //     vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE));
-
-    //     vault.initialize(v);
-    //     v.performanceRate = MAX_PERFORMANCE_RATE;
-
-    //     vault.initialize(v);
-    //     assertEq(vault.protocolRate(), MAX_PROTOCOL_RATE, "protocol rate should be MAX_PROTOCOL_RATE");
-    // }
-
     function test_updateRatesOverMaxPerformanceRateShouldRevert() public {
         setUpVault(100, 200, 2000);
 
-        Rates memory newRates = Rates({managementRate: MAX_MANAGEMENT_RATE + 1, performanceRate: 0});
+        Rates memory newRates = Rates({
+            managementRate: MAX_MANAGEMENT_RATE + 1, performanceRate: 0, entryRate: 0, exitRate: 0, haircutRate: 0
+        });
         vm.startPrank(vault.owner());
         vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
         vault.updateRates(newRates);
@@ -86,7 +41,13 @@ contract testRateUpdates is BaseTest {
     function test_updateRatesShouldBeApplyed24HoursAfter() public {
         setUpVault(100, 200, 200);
 
-        Rates memory newRates = Rates({managementRate: MAX_MANAGEMENT_RATE, performanceRate: MAX_PERFORMANCE_RATE});
+        Rates memory newRates = Rates({
+            managementRate: MAX_MANAGEMENT_RATE,
+            performanceRate: MAX_PERFORMANCE_RATE,
+            entryRate: 0,
+            exitRate: 0,
+            haircutRate: 0
+        });
         assertNotEq(200, MAX_MANAGEMENT_RATE);
         assertNotEq(200, MAX_PERFORMANCE_RATE);
         vm.startPrank(vault.owner());
@@ -112,11 +73,18 @@ contract testRateUpdates is BaseTest {
         dealAmountAndApproveAndWhitelist(user1.addr, 1000);
         requestDeposit(1000, user1.addr);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
         assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, first settle");
         updateNewTotalAssets(2000);
         vm.warp(block.timestamp + 1 days);
         // owner updates rates
-        Rates memory newRates = Rates({managementRate: MAX_MANAGEMENT_RATE, performanceRate: MAX_PERFORMANCE_RATE});
+        Rates memory newRates = Rates({
+            managementRate: MAX_MANAGEMENT_RATE,
+            performanceRate: MAX_PERFORMANCE_RATE,
+            entryRate: 0,
+            exitRate: 0,
+            haircutRate: 0
+        });
 
         vm.startPrank(vault.owner());
 
@@ -124,7 +92,7 @@ contract testRateUpdates is BaseTest {
         vm.stopPrank();
         settle();
         assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, 2nd settle");
-
+        vm.warp(block.timestamp + 1);
         updateAndSettle(4000); // +100%
         assertNotEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have shares");
     }

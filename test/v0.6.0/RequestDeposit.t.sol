@@ -5,8 +5,6 @@ import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract TestRequestDeposit is BaseTest {
     function setUp() public {
@@ -52,7 +50,6 @@ contract TestRequestDeposit is BaseTest {
         if (underlyingIsNativeToken) {
             vm.startPrank(user1.addr);
             uint256 requestId = vault.requestDeposit{value: userBalance}(0, user1.addr, user1.addr);
-            console.log("requestId", requestId);
             vm.stopPrank();
 
             assertEq(assetBalance(address(vault)), 0);
@@ -89,7 +86,7 @@ contract TestRequestDeposit is BaseTest {
         assertEq(requestId_1 + 2, vault.depositEpochId(), "wrong deposit id");
         assertEq(
             vault.lastDepositRequestId_debug(user1.addr), // keep track of the last deposit id of the user, only one
-                // requestId is allowed by settle period by user
+            // requestId is allowed by settle period by user
             requestId_1,
             "wrong internal lastDepositRequestId"
         );
@@ -227,6 +224,7 @@ contract TestRequestDeposit is BaseTest {
 
         /// ------------------ settlement ------------------ ///
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
 
         // pendings
         assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), 0, "[1 - pending - requestId 1]: wrong amount");
@@ -257,6 +255,7 @@ contract TestRequestDeposit is BaseTest {
 
         /// ------------------ settlement ------------------ ///
         updateAndSettle(100);
+        vm.warp(block.timestamp + 1);
 
         // pendings
         assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), 0, "[3 - pending - requestId 1]: wrong amount");
@@ -326,6 +325,7 @@ contract TestRequestDeposit is BaseTest {
 
         // Then the NAV commity commit a new NAV
         updateNewTotalAssets(0);
+        vm.warp(block.timestamp + 1);
 
         // Now user 1 is not able to cancel his request - The assets are still in the pending silo waiting for being
         // settle
@@ -341,6 +341,7 @@ contract TestRequestDeposit is BaseTest {
 
         // the asset manager settle the vault
         settle();
+        vm.warp(block.timestamp + 1);
 
         // We expect the pending Silo to only send the assets of the first deposit and not the one from user2
         assertEq(assetBalance(vault.pendingSilo()), amountToDeposit);

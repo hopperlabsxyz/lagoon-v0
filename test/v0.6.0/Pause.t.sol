@@ -17,6 +17,7 @@ contract TestPause is BaseTest {
         dealAmountAndApproveAndWhitelist(user1.addr, amount);
         requestDeposit(amount / 2, user1.addr);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
         vm.prank(vault.owner());
         vault.pause();
     }
@@ -141,6 +142,7 @@ contract TestPause is BaseTest {
 
         vm.stopPrank();
         updateAndSettle(vault.totalAssets());
+        vm.warp(block.timestamp + 1);
 
         updateNewTotalAssets(vault.totalAssets());
 

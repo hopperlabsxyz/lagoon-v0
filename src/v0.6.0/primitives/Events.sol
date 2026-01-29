@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {State} from "./Enums.sol";
-import {Rates} from "./Struct.sol";
+import {FeeType, State, WhitelistState} from "./Enums.sol";
+import {Guardrails, Rates} from "./Struct.sol";
 
 // ********************* VAULT ********************* //
 
@@ -46,8 +46,10 @@ event RootUpdated(bytes32 indexed root);
 /// @param authorized Indicates whether the account is authorized (true) or not (false).
 event WhitelistUpdated(address indexed account, bool authorized);
 
-/// @notice Emitted when the whitelist is disabled.
-event WhitelistDisabled();
+/// @notice Emitted when a blacklist entry is updated.
+/// @param account The address of the account being updated.
+/// @param blacklisted Indicates whether the account is blacklisted (true) or not (false).
+event BlacklistUpdated(address indexed account, bool blacklisted);
 
 // ********************* ROLES ********************* //
 
@@ -66,6 +68,19 @@ event FeeReceiverUpdated(address oldReceiver, address newReceiver);
 /// @param newManager The address of the new Valuation manager.
 event ValuationManagerUpdated(address oldManager, address newManager);
 
+/// @notice Emitted when the safe role is updated.
+/// @param oldSafe The address of the old safe.
+/// @param newSafe The address of the new safe.
+event SafeUpdated(address oldSafe, address newSafe);
+
+/// @notice Emitted when the safe upgradeability is given up.
+event SafeUpgradeabilityGivenUp();
+
+/// @notice Emitted when the security council role is updated.
+/// @param oldSecurityCouncil The address of the old security council.
+/// @param newSecurityCouncil The address of the new security council.
+event SecurityCouncilUpdated(address oldSecurityCouncil, address newSecurityCouncil);
+
 // ********************* FEE_MANAGER ********************* //
 
 /// @notice Emitted when the rates are updated.
@@ -78,6 +93,11 @@ event RatesUpdated(Rates oldRates, Rates newRate, uint256 timestamp);
 /// @param oldHighWaterMark The old highWaterMark.
 /// @param newHighWaterMark The new highWaterMark.
 event HighWaterMarkUpdated(uint256 oldHighWaterMark, uint256 newHighWaterMark);
+
+/// @notice Emitted when a fee is taken from the vault.
+/// @param feeType The type of fee being taken.
+/// @param shares The number of shares minted as fees.
+event FeeTaken(FeeType indexed feeType, uint256 shares);
 
 // ********************* ERC7540 ********************* //
 /// @notice Emitted when the totalAssets variable is updated.
@@ -104,3 +124,32 @@ event TotalAssetsLifespanUpdated(uint128 oldLifespan, uint128 newLifespan);
 /// @param assets Amount of assets deposit
 /// @param shares Amount of shares minted to owner
 event DepositSync(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
+
+/// @notice Emitted when the max cap is updated.
+/// @param previousMaxCap The previous max cap.
+/// @param maxCap The new max cap.
+event MaxCapUpdated(uint256 previousMaxCap, uint256 maxCap);
+
+/// @notice Emitted when the operator privileges are given up.
+event GaveUpOperatorPrivileges();
+/// @notice Same as a 4626 Withdraw event
+/// @param sender The address who called the withdraw
+/// @param receiver The receiver of the assets
+/// @param owner The owner of the shares
+/// @param assets Amount of assets withdrawn
+/// @param shares Amount of shares redeemed
+event WithdrawSync(
+    address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
+);
+/// @notice Emitted when the whitelist is switched to blacklist.
+event BlacklistActivated();
+
+/// @notice Emitted when the whitelist is switched to whitelist.
+event WhitelistActivated();
+
+// ********************* GUARDRAILS_MANAGER ********************* //
+
+/// @notice Emitted when the guardrails are updated.
+/// @param oldGuardrails The old guardrails.
+/// @param newGuardrails The new guardrails.
+event GuardrailsUpdated(Guardrails oldGuardrails, Guardrails newGuardrails);
