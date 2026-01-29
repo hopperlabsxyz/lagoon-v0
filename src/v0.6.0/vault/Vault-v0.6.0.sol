@@ -474,20 +474,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         if (paused()) return 0;
         uint256 shares = claimableRedeemRequest(0, controller);
         if (shares == 0 && VaultLib._getVaultStorage().state == State.Closed) {
-            // controller has no redeem claimable, we will use the synchronous flow
-            // exit fees will be taken when the user withdraws
             uint256 controllerShares = balanceOf(controller);
-            uint16 exitRate = FeeLib.feeRates().exitRate;
-            // Align with withdraw() which uses computeFeeReverse:
-            //   totalShares = netShares + computeFeeReverse(netShares)
-            //   where computeFeeReverse(x) = ceil(x * BPS / (BPS - rate)) - x
-            //   So: totalShares = ceil(netShares * BPS / (BPS - rate))
-            //
-            // Solving for max netShares where totalShares <= controllerShares:
-            //   netShares <= controllerShares * (BPS - rate) / BPS
-            uint256 netShares =
-                controllerShares.mulDiv(FeeLib.BPS_DIVIDER - exitRate, FeeLib.BPS_DIVIDER, Math.Rounding.Floor);
-            return convertToAssets(netShares);
+            uint256 exitFeeShares = FeeLib.computeFee(controllerShares, FeeLib.feeRates().exitRate);
+            return convertToAssets(controllerShares - exitFeeShares);
         }
         uint40 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
         // introduced in v0.6.0
