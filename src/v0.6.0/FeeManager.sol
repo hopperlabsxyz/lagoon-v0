@@ -90,7 +90,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
     function updateRates(
         Rates memory newRates
     ) external onlyOwner {
-        VaultLib._onlyOpen();
+        VaultLib._onlyNotClosed();
         FeeLib.updateRates(FeeLib._getFeeManagerStorage(), newRates);
     }
 

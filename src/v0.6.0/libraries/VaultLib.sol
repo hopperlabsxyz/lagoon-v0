@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import {ERC7540} from "../ERC7540.sol";
 import {FeeLib} from "../libraries/FeeLib.sol";
 import {State} from "../primitives/Enums.sol";
-import {NotClosing, NotOpen, OnlyAsyncDepositAllowed, OnlySyncDepositAllowed} from "../primitives/Errors.sol";
+import {Closed, NotClosing, NotOpen, OnlyAsyncDepositAllowed, OnlySyncDepositAllowed} from "../primitives/Errors.sol";
 import {StateUpdated} from "../primitives/Events.sol";
 import {VaultStorage} from "../primitives/VaultStorage.sol";
 import {ERC7540Lib} from "./ERC7540Lib.sol";
@@ -36,6 +36,11 @@ library VaultLib {
     function _onlyClosing() internal view {
         State _state = _getVaultStorage().state;
         if (_state != State.Closing) revert NotClosing(_state);
+    }
+
+    function _onlyNotClosed() internal view {
+        State _state = _getVaultStorage().state;
+        if (_state == State.Closed) revert Closed();
     }
 
     function _onlySyncDeposit() internal view {
