@@ -138,9 +138,7 @@ contract OptinProxyFactory is OwnableUpgradeable {
         OptinProxyFactoryStorage storage $ = _getProxyFactoryStorage();
 
         address proxy = address(
-            new LagoonVault{
-                salt: salt
-            }({
+            new LagoonVault{salt: salt}({
                 _logic: _logic,
                 _logicRegistry: $.REGISTRY,
                 _initialOwner: _initialOwner,

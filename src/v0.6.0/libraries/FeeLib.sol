@@ -182,21 +182,26 @@ library FeeLib {
         /// Performance fee computation ///
 
         uint256 _totalSupply = ERC7540(address(this)).totalSupply();
-        uint256 performanceFees =
-            calculatePerformanceFee(performanceRate, _totalSupply, pricePerShare, $.highWaterMark, _decimals);
+        uint256 performanceFees = calculatePerformanceFee(
+            performanceRate, ERC7540(address(this)).totalSupply(), pricePerShare, $.highWaterMark, _decimals
+        );
 
         // since we are minting shares without actually increasing the totalAssets, we need to compensate the future
         // dilution of price per share by virtually decreasing totalAssets in our computation
-        // reusing _decimals to store supply offset, and pricePerShare to store adjusted assets
-        _decimals = _totalSupply + 10 ** ERC7540Lib.decimalsOffset();
-        pricePerShare = (_totalAssets - managementFees - performanceFees) + 1;
+        uint256 managementShares = managementFees.mulDiv(
+            _totalSupply + 10 ** ERC7540Lib.decimalsOffset(),
+            (_totalAssets - (managementFees + performanceFees)) + 1,
+            Math.Rounding.Ceil
+        );
 
-        uint256 managementShares = managementFees.mulDiv(_decimals, pricePerShare, Math.Rounding.Ceil);
-        uint256 performanceShares = performanceFees.mulDiv(_decimals, pricePerShare, Math.Rounding.Ceil);
+        uint256 performanceShares = performanceFees.mulDiv(
+            _totalSupply + 10 ** ERC7540Lib.decimalsOffset(),
+            (_totalAssets - (managementFees + performanceFees)) + 1,
+            Math.Rounding.Ceil
+        );
 
         takeFees(managementShares, FeeType.Management, managementRate, contextId);
         takeFees(performanceShares, FeeType.Performance, performanceRate, contextId);
-
         pricePerShare = ERC7540(address(this)).convertToAssets(10 ** ERC7540(address(this)).decimals());
         setHighWaterMark(pricePerShare);
 

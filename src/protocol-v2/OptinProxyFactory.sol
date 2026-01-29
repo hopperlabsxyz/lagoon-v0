@@ -121,9 +121,7 @@ contract OptinProxyFactory is OwnableUpgradeable {
         bytes memory call_data = abi.encodeCall(IVault.initialize, (abi.encode(_init), $.REGISTRY, $.WRAPPED_NATIVE));
 
         address proxy = address(
-            new LagoonVault{
-                salt: salt
-            }({
+            new LagoonVault{salt: salt}({
                 _logic: _logic,
                 _logicRegistry: $.REGISTRY,
                 _initialOwner: _initialOwner,
