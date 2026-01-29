@@ -132,6 +132,8 @@ library FeeLib {
         uint16 rate,
         uint40 contextId
     ) public {
+        if (shares == 0) return;
+
         Roles.RolesStorage storage $roles = RolesLib._getRolesStorage();
 
         address feeReceiver = $roles.feeReceiver;

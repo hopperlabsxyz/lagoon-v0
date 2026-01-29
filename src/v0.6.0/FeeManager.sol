@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {FeeLib} from "./libraries/FeeLib.sol";
+import {VaultLib} from "./libraries/VaultLib.sol";
 import {AboveMaxRate} from "./primitives/Errors.sol";
 import {HighWaterMarkUpdated, RatesUpdated} from "./primitives/Events.sol";
 import {Rates} from "./primitives/Struct.sol";
@@ -89,6 +90,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
     function updateRates(
         Rates memory newRates
     ) external onlyOwner {
+        VaultLib._onlyOpen();
         FeeLib.updateRates(FeeLib._getFeeManagerStorage(), newRates);
     }
 

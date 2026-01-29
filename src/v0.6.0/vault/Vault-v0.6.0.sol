@@ -36,6 +36,7 @@ import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 using SafeERC20 for IERC20;
+using Math for uint256;
 
 /// @custom:storage-definition erc7201:hopper.storage.vault
 /// @param underlying The address of the underlying asset.
@@ -477,8 +478,16 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             // exit fees will be taken when the user withdraws
             uint256 controllerShares = balanceOf(controller);
             uint16 exitRate = FeeLib.feeRates().exitRate;
-            uint256 syncExitFeeShares = FeeLib.computeFee(controllerShares, exitRate);
-            return convertToAssets(controllerShares - syncExitFeeShares);
+            // Align with withdraw() which uses computeFeeReverse:
+            //   totalShares = netShares + computeFeeReverse(netShares)
+            //   where computeFeeReverse(x) = ceil(x * BPS / (BPS - rate)) - x
+            //   So: totalShares = ceil(netShares * BPS / (BPS - rate))
+            //
+            // Solving for max netShares where totalShares <= controllerShares:
+            //   netShares <= controllerShares * (BPS - rate) / BPS
+            uint256 netShares =
+                controllerShares.mulDiv(FeeLib.BPS_DIVIDER - exitRate, FeeLib.BPS_DIVIDER, Math.Rounding.Floor);
+            return convertToAssets(netShares);
         }
         uint40 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
         // introduced in v0.6.0
