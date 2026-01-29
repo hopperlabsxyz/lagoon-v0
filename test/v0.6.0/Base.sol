@@ -340,7 +340,10 @@ contract BaseTest is Test, SetUp {
                 assetsAfter.receiver,
                 "withdraw when closed: Receiver assets balance did not increase properly"
             );
-            assertEq(convertedAssetsInShares, shares, "withdraw when closed: shares taken from user is wrong");
+            // With exit fees: shares returned = netShares + exitFeeShares
+            uint256 exitFeeShares = FeeLib.computeFeeReverse(convertedAssetsInShares, vault.exitRate());
+            uint256 expectedShares = convertedAssetsInShares + exitFeeShares;
+            assertEq(expectedShares, shares, "withdraw when closed: shares taken from user is wrong");
             assertEq(
                 sharesBefore.receiver - sharesAfter.receiver,
                 shares,
