@@ -299,7 +299,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         $.epochs[requestId].depositRequest[controller] -= assets;
-        uint256 entryFeeAssets = FeeLib.calculateEntryFees(assets, false);
+        uint256 entryFeeAssets = FeeLib.computeFee(assets, ERC7540Lib.getSettlementEntryFeeRate(requestId));
         shares = convertToShares(assets - entryFeeAssets, requestId);
 
         _transfer(address(this), receiver, shares);
@@ -326,7 +326,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     }
 
     /// @notice Mint shares from the vault.
-    /// @param shares The shares to mint.
+    /// @param shares The shares to mint after fees.
     /// @param receiver The receiver of the shares.
     /// @param controller The controller, who owns the mint request.
     /// @return assets The corresponding assets.
@@ -343,7 +343,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         assets = ERC7540Lib.convertToAssets(shares, requestId, Math.Rounding.Ceil);
-        assets += FeeLib.calculateEntryFees(assets, true);
+        // introduced in v0.6.0
+        // we need to take into account the entry fee to compute the assets
+        assets += FeeLib.computeFeeReverse(assets, ERC7540Lib.getSettlementEntryFeeRate(requestId));
         $.epochs[requestId].depositRequest[controller] -= assets;
 
         _transfer(address(this), receiver, shares);
@@ -424,7 +426,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         $.epochs[requestId].redeemRequest[controller] -= shares;
-        uint256 exitFeeShares = FeeLib.calculateExitFees(shares, false);
+        // introduced in v0.6.0
+        uint256 exitFeeShares = FeeLib.computeFee(shares, ERC7540Lib.getSettlementExitFeeRate(requestId));
         assets = ERC7540Lib.convertToAssets(shares - exitFeeShares, requestId, Math.Rounding.Floor);
         IERC20(asset()).safeTransfer(receiver, assets);
 
@@ -449,7 +452,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
 
         shares = ERC7540Lib.convertToShares(assets, requestId, Math.Rounding.Ceil);
-        shares += FeeLib.calculateExitFees(shares, true);
+        // introduced in v0.6.0
+        // we need to take into account the exit fee to compute the shares
+        shares += FeeLib.computeFeeReverse(shares, ERC7540Lib.getSettlementExitFeeRate(requestId));
         $.epochs[requestId].redeemRequest[controller] -= shares;
 
         IERC20(asset()).safeTransfer(receiver, assets);
@@ -564,6 +569,18 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             || interfaceId == 0x620ee8e4 // IERC7540Redeem
             || interfaceId == 0xe3bc4e65 // IERC7540
             || interfaceId == type(IERC165).interfaceId;
+    }
+
+    function settlementEntryFeeRate(
+        uint40 settleId
+    ) public view returns (uint16) {
+        return ERC7540Lib._getERC7540Storage().settles[settleId].entryFeeRate;
+    }
+
+    function settlementExitFeeRate(
+        uint40 settleId
+    ) public view returns (uint16) {
+        return ERC7540Lib._getERC7540Storage().settles[settleId].exitFeeRate;
     }
 
     //////////////////////////////////

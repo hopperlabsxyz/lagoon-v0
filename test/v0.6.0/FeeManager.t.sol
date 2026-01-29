@@ -222,10 +222,14 @@ contract TestFeeManager is BaseTest {
 
         uint256 user1AssetAfter = redeem(user1ShareBalance, user1.addr);
         // uint256 user2AssetAfter = redeem(user2ShareBalance, user2.addr);
-        uint256 user2AssetsToWithdraw = vault.convertToAssets(user2ShareBalance, vault.lastRedeemRequestId(user2.addr));
-        user2AssetsToWithdraw -= FeeLib.applyFee(user2AssetsToWithdraw, vault.exitRate());
+        uint40 user2LastRequestId = vault.lastRedeemRequestId(user2.addr);
+        uint256 user2AssetsToWithdraw = vault.convertToAssets(user2ShareBalance, user2LastRequestId);
+
+        user2AssetsToWithdraw -= FeeLib.computeFee(
+            user2AssetsToWithdraw, vault.getSettlementExitFeeRate(user2LastRequestId)
+        );
         uint256 shares = withdraw(user2AssetsToWithdraw, user2.addr);
-        uint256 user2AssetAfter = vault.convertToAssets(shares, vault.lastRedeemRequestId(user2.addr));
+        uint256 user2AssetAfter = vault.convertToAssets(shares, user2LastRequestId);
 
         assetBalance(user1.addr);
         assetBalance(user2.addr);
@@ -319,9 +323,13 @@ contract TestFeeManager is BaseTest {
         updateAndSettle(0);
 
         deposit(balance, user1.addr);
-        uint256 shares = vault.convertToShares(balance - FeeLib.applyFee(balance, vault.entryRate()));
-        console.log("b - f", balance - FeeLib.applyFee(balance, vault.entryRate()));
-        console.log("balance", balance);
+        uint40 user2LastRequestId = vault.lastDepositRequestId(user1.addr);
+        console.log("-----user1LastRequestId", user2LastRequestId);
+        console.log("-----historical entryFeeRate", vault.getSettlementEntryFeeRate(user2LastRequestId));
+        console.log("-----current entryFeeRate", vault.entryRate());
+        uint256 shares = vault.convertToShares(
+            balance - FeeLib.computeFee(balance, vault.getSettlementEntryFeeRate(user2LastRequestId))
+        );
         mint(shares, user2.addr);
         ////
 
@@ -404,8 +412,8 @@ contract TestFeeManager is BaseTest {
         updateAndClose(4 * balance);
 
         redeem(user1Shares, user1.addr);
-        uint256 user2AssetsToWithdraw = vault.convertToAssets(user2Shares);
-        user2AssetsToWithdraw -= FeeLib.applyFee(user2AssetsToWithdraw, vault.exitRate());
+        // use maxWithdraw which accounts for exit fees taken during sync withdraw
+        uint256 user2AssetsToWithdraw = vault.maxWithdraw(user2.addr);
         withdraw(user2AssetsToWithdraw, user2.addr);
 
         uint256 balance1After = assetBalance(user1.addr);

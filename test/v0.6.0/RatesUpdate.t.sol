@@ -133,4 +133,39 @@ contract testRateUpdates is BaseTest {
         updateAndSettle(4000); // +100%
         assertNotEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have shares");
     }
+
+    function test_updateRates_shouldWorkWhenClosing() public {
+        setUpVault(100, 200, 200);
+
+        vm.prank(vault.owner());
+        vault.initiateClosing();
+        assertEq(uint256(vault.state()), uint256(State.Closing), "vault should be in Closing state");
+
+        Rates memory newRates = Rates({managementRate: 300, performanceRate: 300, entryRate: 0, exitRate: 0});
+        vm.prank(vault.owner());
+        vault.updateRates(newRates);
+    }
+
+    function test_updateRates_shouldRevertWhenClosed() public {
+        setUpVault(100, 200, 200);
+        dealAndApproveAndWhitelist(user1.addr);
+
+        // Need some activity to close properly
+        requestDeposit(1000, user1.addr);
+        updateAndSettle(0);
+        deposit(1000, user1.addr);
+
+        // Initiate closing then close
+        vm.prank(vault.owner());
+        vault.initiateClosing();
+
+        updateAndClose(1000);
+        assertEq(uint256(vault.state()), uint256(State.Closed), "vault should be in Closed state");
+
+        // Update rates should revert in Closed state
+        Rates memory newRates = Rates({managementRate: 300, performanceRate: 300, entryRate: 0, exitRate: 0});
+        vm.prank(vault.owner());
+        vm.expectRevert(Closed.selector);
+        vault.updateRates(newRates);
+    }
 }

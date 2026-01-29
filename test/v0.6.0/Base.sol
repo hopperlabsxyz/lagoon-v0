@@ -4,12 +4,13 @@ pragma solidity 0.8.26;
 import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
-import {Constants} from "./Constants.sol";
+import {SetUp} from "./SetUp.sol";
 
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract BaseTest is Test, Constants {
+contract BaseTest is Test, SetUp {
     using SafeERC20 for IERC20;
 
     function requestDeposit(
@@ -170,18 +171,18 @@ contract BaseTest is Test, Constants {
         address controller = user;
         uint256 sharesBefore = vault.balanceOf(receiver);
 
-        uint256 lastRequestId = vault.lastDepositRequestId(user);
+        uint40 lastRequestId = vault.lastDepositRequestId(user);
         uint256 maxDeposit = vault.convertToShares(vault.maxDeposit(controller), lastRequestId);
         uint256 maxMint = vault.maxMint(controller);
 
+        uint256 assetsExpected = vault.convertToAssetsRequestIdWithRounding(
+            amount + FeeLib.computeFeeReverse(amount, vault.getSettlementEntryFeeRate(lastRequestId)),
+            lastRequestId,
+            Math.Rounding.Ceil
+        );
         vm.prank(user);
         uint256 assets = vault.mint(amount, user);
-        assertEq(
-            assets,
-            vault.convertToAssets(amount + FeeLib.applyFeeReverse(amount, vault.entryRate())),
-            "mint: wrong assets returned"
-        );
-        console.log("HERE assets", assets);
+        assertEq(assets, assetsExpected, "mint: wrong assets returned");
 
         uint256 sharesAfter = vault.balanceOf(receiver);
 
@@ -296,56 +297,62 @@ contract BaseTest is Test, Constants {
         return withdraw(amount, user, user, user);
     }
 
+    struct Balances {
+        uint256 receiver;
+        uint256 controller;
+        uint256 operator;
+    }
+
     function withdraw(
         uint256 amount,
         address controller,
         address operator,
         address receiver
     ) internal returns (uint256) {
-        uint256 lastRequestId = vault.lastRedeemRequestId(controller);
-        console.log("---------");
-        console.log("amount               ", amount);
-        console.log("total assets         ", vault.totalAssets());
-        console.log("asset balance vault  ", assetBalance(address(vault)));
-        console.log("asset balance safe   ", assetBalance(safe.addr));
-        console.log("current epoch id     ", vault.redeemSettleId());
-        console.log("redeem id            ", lastRequestId);
-        console.log("claimable redeems    ", vault.claimableRedeemRequest(lastRequestId, controller));
-        console.log("max redeem           ", vault.maxRedeem(controller));
-        console.log("max redeem converted ", vault.convertToAssets(vault.maxRedeem(controller), lastRequestId));
-        console.log("max withdraw         ", vault.maxWithdraw(controller));
-        console.log("user bal             ", vault.balanceOf(controller));
-        console.log("---------");
-        uint256 assetsBeforeReceiver = assetBalance(receiver);
-        uint256 assetsBeforeController = assetBalance(controller);
-        uint256 assetsBeforeOperator = assetBalance(operator);
+        uint40 lastRequestId = vault.lastRedeemRequestId(controller);
+
+        Balances memory assetsBefore = Balances({
+            receiver: assetBalance(receiver), controller: assetBalance(controller), operator: assetBalance(operator)
+        });
+        Balances memory sharesBefore =
+            Balances({receiver: balance(receiver), controller: balance(controller), operator: balance(operator)});
 
         uint256 maxWithdraw = vault.maxWithdraw(controller);
-        // console.log("maxRedeemAssets", maxRedeemAssets);
 
-        console.log("HEY0");
+        // this value doesn't take into account the exit fee
+        // it can only be used if the vault is closed
+        uint256 convertedAssetsInShares = vault.convertToSharesWithRounding(amount, Math.Rounding.Ceil);
+
         vm.prank(operator);
         uint256 shares = vault.withdraw(amount, receiver, controller);
-        console.log("HEY1");
 
-        uint256 assetsAfterReceiver = assetBalance(receiver);
+        Balances memory assetsAfter = Balances({
+            receiver: assetBalance(receiver), controller: assetBalance(controller), operator: assetBalance(operator)
+        });
+        Balances memory sharesAfter =
+            Balances({receiver: balance(receiver), controller: balance(controller), operator: balance(operator)});
 
-        assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxWithdraw, "withdraw: wrong maxRedeem");
-        console.log("HEY2");
+        assertLe(assetsAfter.receiver - assetsBefore.receiver, maxWithdraw, "withdraw: wrong maxRedeem");
 
         if (vault.state() == State.Closed && vault.claimableRedeemRequest(0, controller) == 0) {
-            shares -= FeeLib.applyFee(shares, vault.exitRate());
-            uint256 expectedAssets = vault.convertToAssets(shares);
-            expectedAssets += assetsBeforeReceiver;
             assertEq(
-                expectedAssets,
-                assetBalance(receiver),
+                assetsBefore.receiver + amount,
+                assetsAfter.receiver,
                 "withdraw when closed: Receiver assets balance did not increase properly"
             );
+            // With exit fees: shares returned = netShares + exitFeeShares
+            uint256 exitFeeShares = FeeLib.computeFeeReverse(convertedAssetsInShares, vault.exitRate());
+            uint256 expectedShares = convertedAssetsInShares + exitFeeShares;
+            assertEq(expectedShares, shares, "withdraw when closed: shares taken from user is wrong");
+            assertEq(
+                sharesBefore.receiver - sharesAfter.receiver,
+                shares,
+                "withdraw when closed: shares taken from user is wrong 2"
+            );
         } else {
-            shares -= FeeLib.applyFee(shares, vault.exitRate());
+            shares -= FeeLib.computeFee(shares, vault.getSettlementExitFeeRate(lastRequestId));
             uint256 expectedAssets = vault.convertToAssets(shares, lastRequestId);
-            expectedAssets += assetsBeforeReceiver;
+            expectedAssets += assetsBefore.receiver;
             assertEq(
                 expectedAssets,
                 assetBalance(receiver),
@@ -354,14 +361,14 @@ contract BaseTest is Test, Constants {
         }
         if (controller != receiver) {
             assertEq(
-                assetsBeforeController,
+                assetsBefore.controller,
                 assetBalance(controller),
                 "withdraw: Controller assets balance should remain the same after redeem"
             );
         }
         if (operator != receiver) {
             assertEq(
-                assetsBeforeOperator,
+                assetsBefore.operator,
                 assetBalance(operator),
                 "withdraw: Operator assets balance should remain the same after redeem"
             );
