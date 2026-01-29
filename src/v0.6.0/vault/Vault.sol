@@ -64,6 +64,7 @@ struct InitStruct {
     uint16 performanceRate;
     WhitelistState whitelistState;
     uint256 rateUpdateCooldown;
+    address externalSanctionsList;
 }
 
 /// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault

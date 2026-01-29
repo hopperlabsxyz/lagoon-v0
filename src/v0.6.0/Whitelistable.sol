@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {Roles} from "./Roles.sol";
+import {SanctionsList} from "./interfaces/SanctionsList.sol";
 import {RolesLib} from "./libraries/RolesLib.sol";
 import {WhitelistableLib} from "./libraries/WhitelistableLib.sol";
 import {WhitelistState} from "./primitives/Enums.sol";
@@ -17,15 +18,18 @@ abstract contract Whitelistable is Roles {
         WhitelistState whitelistState;
         // added in v0.6.0
         mapping(address => bool) isBlacklisted;
+        SanctionsList externalSanctionList;
     }
 
     /// @dev Initializes the whitelist.
     /// @param whitelistState the state of the whitelist.
     // solhint-disable-next-line func-name-mixedcase
     function __Whitelistable_init(
-        WhitelistState whitelistState
+        WhitelistState whitelistState,
+        address externalSanctionsList
     ) internal onlyInitializing {
         WhitelistableLib.switchWhitelistMode(whitelistState);
+        WhitelistableLib.setExternalSanctionsList(SanctionsList(externalSanctionsList));
     }
 
     function switchWhitelistMode(
@@ -41,20 +45,7 @@ abstract contract Whitelistable is Roles {
     function isWhitelisted(
         address account
     ) public view returns (bool) {
-        WhitelistableStorage storage $ = WhitelistableLib._getWhitelistableStorage();
-        WhitelistState _whitelistState = $.whitelistState;
-
-        if (RolesLib._getRolesStorage().feeRegistry.protocolFeeReceiver() == account) {
-            // if the account is the protocol fee receiver, it is always whitelisted
-            return true;
-        }
-        if (_whitelistState == WhitelistState.Deactivated) {
-            // if the whitelist is deactivated, all accounts are whitelisted
-            return true;
-        }
-        // if the whitelist is active, we check if the account is whitelisted
-        // if the whitelist is in blacklist mode and the account is blacklisted we return false
-        return _whitelistState == WhitelistState.Whitelist ? $.isWhitelisted[account] : !$.isBlacklisted[account];
+        return WhitelistableLib.isWhitelisted(account);
     }
 
     /// @notice Adds multiple accounts to the whitelist
@@ -84,6 +75,13 @@ abstract contract Whitelistable is Roles {
         address[] memory accounts
     ) external onlyWhitelistManager {
         WhitelistableLib.revokeFromBlacklist(accounts);
+    }
+
+    /// @notice Sets the external sanctions list
+    function setExternalSanctionsList(
+        SanctionsList sanctionsList
+    ) external onlyWhitelistManager {
+        WhitelistableLib.setExternalSanctionsList(sanctionsList);
     }
 }
 

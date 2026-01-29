@@ -90,7 +90,7 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
         __ERC20Pausable_init();
         __ERC4626_init(init.underlying);
         __ERC7540_init(init.underlying, wrappedNativeToken);
-        __Whitelistable_init(init.whitelistState);
+        __Whitelistable_init(init.whitelistState, address(0));
         __FeeManager_init(
             feeRegistry,
             init.managementRate,
@@ -101,10 +101,6 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
 
         emit StateUpdated(State.Open);
     }
-
-    /////////////////////
-    // ## MODIFIERS ## //
-    /////////////////////
 
     /////////////////////////////////////////////
     // ## DEPOSIT AND REDEEM FLOW FUNCTIONS ## //

@@ -55,6 +55,11 @@ event BlacklistUpdated(address indexed account, bool blacklisted);
 /// @notice Emitted when the whitelist is disabled.
 event WhitelistDisabled();
 
+/// @notice Emitted when the external sanctions list is updated.
+/// @param oldExternalSanctionList The old external sanctions list.
+/// @param newExternalSanctionList The new external sanctions list.
+event ExternalSanctionsListUpdated(address oldExternalSanctionList, address newExternalSanctionList);
+
 // ********************* ROLES ********************* //
 
 /// @notice Emitted when the whitelist manager role is updated.
