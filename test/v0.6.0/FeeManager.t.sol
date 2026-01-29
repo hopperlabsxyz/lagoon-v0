@@ -412,8 +412,8 @@ contract TestFeeManager is BaseTest {
         updateAndClose(4 * balance);
 
         redeem(user1Shares, user1.addr);
-        uint256 user2AssetsToWithdraw = vault.convertToAssets(user2Shares);
-        // user2AssetsToWithdraw -= FeeLib.computeFee(user2AssetsToWithdraw, vault.exitRate());
+        // use maxWithdraw which accounts for exit fees taken during sync withdraw
+        uint256 user2AssetsToWithdraw = vault.maxWithdraw(user2.addr);
         withdraw(user2AssetsToWithdraw, user2.addr);
 
         uint256 balance1After = assetBalance(user1.addr);
