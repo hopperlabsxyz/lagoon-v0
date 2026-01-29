@@ -262,7 +262,7 @@ library ERC7540Lib {
         // introduced in v0.6.0
         uint256 entryFeeShares = FeeLib.computeFee(shares, _entryFeeRate);
         ERC7540(address(this)).forge(address(this), shares - entryFeeShares);
-        FeeLib.takeFees(entryFeeShares, FeeType.Entry);
+        FeeLib.takeFees(entryFeeShares, FeeType.Entry, _entryFeeRate, depositSettleId);
 
         $.totalAssets = _totalAssets;
         $.depositSettleId = depositSettleId + 2;
@@ -319,7 +319,7 @@ library ERC7540Lib {
         ERC7540(address(this)).void(address($.pendingSilo), pendingShares);
 
         // we mint back shares as the exit fees
-        FeeLib.takeFees(exitFeeShares, FeeType.Exit);
+        FeeLib.takeFees(exitFeeShares, FeeType.Exit, _exitFeeRate, redeemSettleId);
 
         _totalAssets -= assetsToWithdraw;
         _totalSupply -= (pendingShares - exitFeeShares);

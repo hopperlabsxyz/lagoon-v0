@@ -193,9 +193,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         }
         shares = _convertToShares(assets, Math.Rounding.Floor);
         // introduced in v0.6.0
-        uint256 entryFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
+        uint16 entryRate = FeeLib.feeRates().entryRate;
+        uint256 entryFeeShares = FeeLib.computeFee(shares, entryRate);
         shares -= entryFeeShares;
-        FeeLib.takeFees(entryFeeShares, FeeType.Entry);
+        FeeLib.takeFees(entryFeeShares, FeeType.Entry, entryRate, 0);
 
         $.totalAssets += assets;
         _mint(receiver, shares);
@@ -247,10 +248,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
-            uint256 shares = _convertToShares(assets, Math.Rounding.Ceil);
-            // exit fees has already been taken in the close function
-            _withdraw(msg.sender, receiver, controller, assets, shares); // sync
-            return shares;
+            uint256 netShares = _convertToShares(assets, Math.Rounding.Ceil);
+            uint16 exitRate = FeeLib.feeRates().exitRate;
+            uint256 exitFeeShares = FeeLib.computeFeeReverse(netShares, exitRate);
+            uint256 totalShares = netShares + exitFeeShares;
+            FeeLib.takeFees(exitFeeShares, FeeType.Exit, exitRate, 0);
+            _withdraw(msg.sender, receiver, controller, assets, totalShares); // sync
+            return totalShares;
         } else {
             if (controller != msg.sender && !isOperator(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
@@ -275,8 +279,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
-            uint256 assets = _convertToAssets(shares, Math.Rounding.Floor);
-            // exit fees has already been taken in the close function
+            uint16 exitRate = FeeLib.feeRates().exitRate;
+            uint256 exitFeeShares = FeeLib.computeFee(shares, exitRate);
+            uint256 assets = _convertToAssets(shares - exitFeeShares, Math.Rounding.Floor);
+            FeeLib.takeFees(exitFeeShares, FeeType.Exit, exitRate, 0);
             _withdraw(msg.sender, receiver, controller, assets, shares); // sync
             return assets;
         } else {
@@ -377,7 +383,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
-        FeeLib.takeManagementAndPerformanceFees();
+        uint40 contextId = ERC7540Lib._getERC7540Storage().depositSettleId;
+        FeeLib.takeManagementAndPerformanceFees(contextId);
         ERC7540Lib.settleDeposit(msg.sender);
         ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
@@ -390,7 +397,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
-        FeeLib.takeManagementAndPerformanceFees();
+        uint40 contextId = ERC7540Lib._getERC7540Storage().redeemSettleId;
+        FeeLib.takeManagementAndPerformanceFees(contextId);
         ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
 
@@ -466,8 +474,11 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 shares = claimableRedeemRequest(0, controller);
         if (shares == 0 && VaultLib._getVaultStorage().state == State.Closed) {
             // controller has no redeem claimable, we will use the synchronous flow
-            return convertToAssets(balanceOf(controller));
-            // when the vault is closed, exit fees are already taken.
+            // exit fees will be taken when the user withdraws
+            uint256 controllerShares = balanceOf(controller);
+            uint16 exitRate = FeeLib.feeRates().exitRate;
+            uint256 syncExitFeeShares = FeeLib.computeFee(controllerShares, exitRate);
+            return convertToAssets(controllerShares - syncExitFeeShares);
         }
         uint40 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
         // introduced in v0.6.0
