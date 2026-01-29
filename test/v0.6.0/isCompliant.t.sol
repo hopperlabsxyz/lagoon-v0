@@ -3,28 +3,15 @@ pragma solidity 0.8.26;
 
 import {BaseTest} from "./Base.sol";
 import {GuardrailsLib} from "@src/v0.6.0/libraries/GuardrailsLib.sol";
+import {GuardrailsViolation, LowerRateCannotBeInt256Min, OnlySecurityCouncil} from "@src/v0.6.0/primitives/Errors.sol";
 import {Guardrails} from "@src/v0.6.0/primitives/Struct.sol";
 
-contract TestisCompliant is BaseTest {
+contract TestIsCompliant is BaseTest {
     function setUp() public {
         setUpVault(0, 0, 0);
     }
 
-    // Helper function to convert percentage per year to scaled bips (multiplied by 1e18)
-    // Example: ratePerYearToBips(20) returns 20% * 1e18 = 2e17
-    function ratePerYearToBips(
-        uint256 ratePercent
-    ) internal pure returns (uint256) {
-        return ratePercent * 1e16; // ratePercent * 1e16 = (ratePercent / 100) * 1e18
-    }
-
-    // Helper function to convert negative percentage per year to scaled bips
-    // Example: negRatePerYearToBips(-10) returns -10% * 1e18 = -1e17
-    function negRatePerYearToBips(
-        int256 ratePercent
-    ) internal pure returns (int256) {
-        return ratePercent * int256(1e16);
-    }
+    // Those tests focus on the isCompliant function. //
 
     function test_NoPpsVariation() public {
         Guardrails memory guardrails = Guardrails({upperRate: ratePerYearToBips(1), lowerRate: negRatePerYearToBips(0)});
@@ -230,5 +217,20 @@ contract TestisCompliant is BaseTest {
 
         bool isValid = vault.isCompliant(pps, proposedPps, timePast);
         assertFalse(isValid, "guardrails is not valid");
+    }
+
+    // test when both upper and lower rate are 0 and evolution is 0
+    function test_bothRatesAre0AndEvolutionIs0() public {
+        Guardrails memory guardrails = Guardrails({upperRate: 0, lowerRate: 0});
+
+        vm.prank(admin.addr);
+        vault.updateGuardrails(guardrails);
+
+        uint256 pps = 1e18;
+        uint256 proposedPps = 1e18;
+        uint256 timePast = GuardrailsLib.ONE_YEAR / 2; // 6 months
+
+        bool isValid = vault.isCompliant(pps, proposedPps, timePast);
+        assertTrue(isValid, "guardrails is not valid");
     }
 }

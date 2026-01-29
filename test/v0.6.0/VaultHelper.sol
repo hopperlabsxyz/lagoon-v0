@@ -258,4 +258,12 @@ contract VaultHelper is Vault {
     ) public view returns (uint16) {
         return ERC7540Lib.getSettlementExitFeeRate(requestId);
     }
+
+    function securityCouncil() public view returns (address) {
+        return RolesLib._getRolesStorage().securityCouncil;
+    }
+
+    function guardrails() public view returns (Guardrails memory) {
+        return GuardrailsLib._getGuardrailsManagerStorage().guardrails;
+    }
 }

@@ -271,7 +271,11 @@ contract TestSettle is BaseTest {
     }
 
     function test_updateNewTotalAssets_revertIfNotTotalAssetsManager() public {
-        vm.expectRevert(abi.encodeWithSelector(OnlyValuationManager.selector, vault.valuationManager()));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                OnlyValuationManagerOrSecurityCouncil.selector, vault.valuationManager(), vault.securityCouncil()
+            )
+        );
         vault.updateNewTotalAssets(0);
     }
 

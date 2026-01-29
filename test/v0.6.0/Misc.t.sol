@@ -233,4 +233,11 @@ contract TestMisc is BaseTest {
         vault.updateTotalAssetsLifespan(1000);
         assertEq(vault.totalAssetsLifespan(), 1000);
     }
+
+    function test_securityCouncilCanUpdateNewTotalAssets() public {
+        vm.prank(vault.securityCouncil());
+        vault.updateNewTotalAssets(1);
+
+        assertEq(vault.newTotalAssets(), 1);
+    }
 }

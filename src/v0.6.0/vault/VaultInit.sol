@@ -74,7 +74,7 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
             init.entryRate,
             init.exitRate
         );
-        __GuardrailsManager_init(Guardrails({upperRate: type(uint256).max, lowerRate: type(int256).max}));
+        __GuardrailsManager_init(Guardrails({upperRate: type(uint256).max, lowerRate: type(int256).min + 1}));
 
         // $.totalAssets = initialTotalAssets;
         // mint(initialTotalAssets, address(init.safe));

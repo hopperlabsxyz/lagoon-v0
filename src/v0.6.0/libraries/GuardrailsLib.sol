@@ -3,32 +3,10 @@ pragma solidity 0.8.26;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+import {LowerRateCannotBeInt256Min} from "../primitives/Errors.sol";
 import {GuardrailsUpdated} from "../primitives/Events.sol";
 import {Guardrails} from "../primitives/Struct.sol";
 using Math for uint256;
-
-// ex: upperRate = 15% / year
-// 15% / 365j / 24h = 0.00171232876%
-//
-// with 10_000 bips:
-// 10_000 bips => 100%
-// 0 bips      => 0.001712%
-//
-// with 1_000_000 bips:
-// 1_000_000 bips => 100%
-// 17 bips        => 0.001712%
-//
-// with 1_000_000 bips:
-// 1_000_000_000 bips  => 100%
-// 1712 bips           => 0.001712%
-//
-// =====================================
-// ex: upperRate = 15% / year
-// 15% / 365j / 24h / 60m = 0.00002853881%
-//
-// with 1_000_000 bips:
-// 1_000_000_000 bips  => 100%
-// 28 bips             => 0.00002853881%
 
 library GuardrailsLib {
     // one year in seconds
@@ -79,21 +57,29 @@ library GuardrailsLib {
         int256 lowerRate = _guardrails.lowerRate;
 
         if (nextPps >= currentPps) {
+            // we know that the variation is positive
             uint256 variation = (nextPps - currentPps) * scaleToOneYear * SCALE / currentPps;
             uint256 upperRate = _guardrails.upperRate;
 
             if (lowerRate < 0) {
+                // if the lower rate is negative, we only need to check if the variation is greater than the upper rate
                 return upperRate >= variation;
             }
 
+            // if the lower rate is positive, we need to check if the variation is greater than the lower rate
+            // and less than the upper rate
             return upperRate >= variation && variation >= uint256(lowerRate);
         } else {
+            // we know that the variation is negative
+            // the upper rate is always positive, no need to check if it's greater than the variation
+
             // if the policy doesn't accept decrease we can return false
             if (lowerRate >= 0) {
                 return false;
             }
 
-            // even if we have a decrease of pps we compute the variation as a positive integer.
+            // even if pps is decreasing, we compute the variation as a positive integer to avoid types conversions
+            // errors. a - b / b <=> -(b - a) / b
             uint256 variation = (currentPps - nextPps) * scaleToOneYear * SCALE / currentPps;
             // since variation is > 0, we have to inverse the check.
             // -10 >= -15 <=> 10 <= 15
@@ -109,6 +95,9 @@ library GuardrailsLib {
         Guardrails memory guardrails_
     ) external {
         GuardrailsManagerStorage storage $ = _getGuardrailsManagerStorage();
+        if (guardrails_.lowerRate == type(int256).min) {
+            revert LowerRateCannotBeInt256Min();
+        }
         emit GuardrailsUpdated($.guardrails, guardrails_);
         $.guardrails = guardrails_;
     }

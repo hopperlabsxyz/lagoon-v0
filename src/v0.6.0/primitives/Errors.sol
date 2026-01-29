@@ -80,9 +80,10 @@ error OnlySafe(address safe);
 /// @param whitelistManager The address of the whitelist manager.
 error OnlyWhitelistManager(address whitelistManager);
 
-/// @notice Indicates that the caller is not the valuation manager.
+/// @notice Indicates that the caller is not the valuation manager or the security council.
 /// @param valuationManager The address of the valuation manager.
-error OnlyValuationManager(address valuationManager);
+/// @param securityCouncil The address of the security council.
+error OnlyValuationManagerOrSecurityCouncil(address valuationManager, address securityCouncil);
 
 /// @notice Indicates that the safe upgradeability has been given up..
 error SafeUpgradeabilityNotAllowed();
@@ -100,3 +101,6 @@ error NotWhitelisted();
 
 /// @notice Indicates that the new total assets value is not compliant with the guardrails.
 error GuardrailsViolation();
+
+/// @notice Indicates that the lower rate cannot be set to the minimum value of int256.
+error LowerRateCannotBeInt256Min();

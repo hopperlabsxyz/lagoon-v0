@@ -396,7 +396,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     /// @param _newTotalAssets The new total assets of the vault.
     function updateNewTotalAssets(
         uint256 _newTotalAssets
-    ) public onlyValuationManager {
+    ) public onlyValuationManagerOrSecurityCouncil {
         if (VaultLib._getVaultStorage().state == State.Closed) {
             revert Closed();
         }
@@ -413,10 +413,18 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         uint256 nextPps = oneShare.mulDiv(
             _newTotalAssets + 1, totalSupply() + 10 ** ERC7540Lib.decimalsOffset(), Math.Rounding.Floor
         );
-        uint256 timePastSinceLastValuationUpdate = block.timestamp - FeeLib._getFeeManagerStorage().lastFeeTime;
+
+        uint256 lastFeeTime = FeeLib._getFeeManagerStorage().lastFeeTime;
+        uint256 timePastSinceLastValuationUpdate = block.timestamp - lastFeeTime;
         // we are going to check that the new total assets respect the guardrails
-        if (GuardrailsManager.isCompliant(currentPps, nextPps, timePastSinceLastValuationUpdate)) {
-            revert GuardrailsViolation();
+        // only if the caller is the valuation manager
+        if (
+            msg.sender == RolesLib._getRolesStorage().valuationManager && lastFeeTime != 0
+                && timePastSinceLastValuationUpdate != 0
+        ) {
+            if (!GuardrailsManager.isCompliant(currentPps, nextPps, timePastSinceLastValuationUpdate)) {
+                revert GuardrailsViolation();
+            }
         }
         ERC7540Lib.updateNewTotalAssets(_newTotalAssets);
     }

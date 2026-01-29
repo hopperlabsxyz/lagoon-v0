@@ -569,4 +569,20 @@ contract BaseTest is Test, SetUp {
 
         assertEq(totalAssetsExpiration, block.timestamp + totalAssetsLifespan);
     }
+
+    // Helper function to convert percentage per year to scaled bips (multiplied by 1e18)
+    // Example: ratePerYearToBips(20) returns 20% * 1e18 = 2e17
+    function ratePerYearToBips(
+        uint256 ratePercent
+    ) internal pure returns (uint256) {
+        return ratePercent * 1e16; // ratePercent * 1e16 = (ratePercent / 100) * 1e18
+    }
+
+    // Helper function to convert negative percentage per year to scaled bips
+    // Example: negRatePerYearToBips(-10) returns -10% * 1e18 = -1e17
+    function negRatePerYearToBips(
+        int256 ratePercent
+    ) internal pure returns (int256) {
+        return ratePercent * int256(1e16);
+    }
 }

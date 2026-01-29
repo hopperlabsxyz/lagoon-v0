@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import {RolesLib} from "./libraries/RolesLib.sol";
 import {
     OnlySafe,
-    OnlyValuationManager,
+    OnlyValuationManagerOrSecurityCouncil,
     OnlyWhitelistManager,
     SafeUpgradeabilityNotAllowed
 } from "./primitives/Errors.sol";
@@ -75,8 +75,8 @@ abstract contract Roles is Ownable2StepUpgradeable {
     }
 
     /// @dev Modifier to check if the caller is the valuation manager.
-    modifier onlyValuationManager() {
-        RolesLib._onlyValuationManager();
+    modifier onlyValuationManagerOrSecurityCouncil() {
+        RolesLib._onlyValuationManagerOrSecurityCouncil();
         _;
     }
 
