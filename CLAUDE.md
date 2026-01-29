@@ -49,7 +49,7 @@ When reporting issues or suggesting fixes:
 Review all changes against:
 
 - [ ] **Reentrancy**: Check external calls, state changes order, use of ReentrancyGuard
-- [ ] **Access Control**: Verify role checks (KEEPER, SAFE, VALUER roles)
+- [ ] **Access Control**: Verify role checks (see [Actors & Roles](#actors--roles) section below)
 - [ ] **Integer Overflow**: Solidity 0.8.26 has built-in checks, but verify unchecked blocks
 - [ ] **Front-running**: MEV considerations for deposit/redeem operations
 - [ ] **Oracle Manipulation**: Price/share calculations in vault operations
@@ -57,6 +57,32 @@ Review all changes against:
 - [ ] **Storage Collisions**: Upgradeable contract storage layout
 - [ ] **Initialization**: Proper initializer usage, no uninitialized proxies
 - [ ] **ERC Compliance**: Adherence to ERC7540/ERC4626 specifications
+
+### Actors & Roles
+
+#### Vault-Level Roles (defined in `Roles.sol`)
+
+| Role | Modifier | Responsibilities |
+|------|----------|------------------|
+| **Owner** | `onlyOwner` | Admin: manages all other roles, pause/unpause, fee rate updates, initiate vault closing |
+| **Safe** | `onlySafe` | Asset custodian: settles deposits/redeems, holds vault assets |
+| **Whitelist Manager** | `onlyWhitelistManager` | Manages whitelist: add/revoke addresses from whitelist |
+| **Valuation Manager** | `onlyValuationManager` | Updates vault's `newTotalAssets` valuation |
+| **Fee Receiver** | N/A (role-based) | Recipient of vault fees (management, performance, entry, exit) |
+
+#### ERC7540 Operator Pattern
+
+| Role | Modifier | Responsibilities |
+|------|----------|------------------|
+| **Operator** | `onlyOperator(controller)` | Delegated per-user: can request deposits/redeems and claim on behalf of a controller |
+
+#### Protocol-Level Roles
+
+| Role | Location | Responsibilities |
+|------|----------|------------------|
+| **Protocol Owner** | `FeeRegistry.sol`, `LogicRegistry.sol` | Manages protocol fee rates, default/custom rates, logic registry |
+| **Protocol Fee Receiver** | `FeeRegistry.sol` | Receives protocol-level fees (fraction of vault fees) |
+| **Proxy Admin** | `DelayProxyAdmin.sol` | Manages implementation upgrades with timelock (1-30 days delay) |
 
 ### Common Vulnerability Patterns
 
