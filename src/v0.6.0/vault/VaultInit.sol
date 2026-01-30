@@ -18,13 +18,13 @@ import {
     ValuationUpdateNotAllowed
 } from "../primitives/Errors.sol";
 
-import {FeeRegistry} from "../../protocol-v1/FeeRegistry.sol";
 import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {FeeRegistry} from "@src/protocol-v2/FeeRegistry.sol";
 
 using SafeERC20 for IERC20;
 
@@ -83,8 +83,9 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
                 whitelistManager: init.whitelistManager,
                 feeReceiver: init.feeReceiver,
                 safe: init.safe,
-                feeRegistry: FeeRegistry((feeRegistry)),
-                valuationManager: init.valuationManager
+                feeRegistry: FeeRegistry(feeRegistry),
+                valuationManager: init.valuationManager,
+                gaveUpSafeUpgradeability: false
             })
         );
         __ERC20_init(init.name, init.symbol);
@@ -101,12 +102,11 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
             _exitRate: init.exitRate
         });
 
+        // $.totalAssets = initialTotalAssets;
+        // mint(initialTotalAssets, address(init.safe));
+
         emit StateUpdated(State.Open);
     }
-
-    /////////////////////
-    // ## MODIFIERS ## //
-    /////////////////////
 
     /////////////////////////////////////////////
     // ## DEPOSIT AND REDEEM FLOW FUNCTIONS ## //
@@ -141,6 +141,10 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
     }
 
     function safe() public view override returns (address) {
+        return address(0);
+    }
+
+    function _protocolFeeReceiver() internal view override returns (address) {
         return address(0);
     }
 }

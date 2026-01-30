@@ -1,11 +1,22 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {FeeRegistry} from "../protocol-v1/FeeRegistry.sol";
 import {RolesLib} from "./libraries/RolesLib.sol";
-import {OnlySafe, OnlyValuationManager, OnlyWhitelistManager} from "./primitives/Errors.sol";
-import {FeeReceiverUpdated} from "./primitives/Events.sol";
+import {
+    OnlySafe,
+    OnlyValuationManager,
+    OnlyWhitelistManager,
+    SafeUpgradeabilityNotAllowed
+} from "./primitives/Errors.sol";
+import {
+    FeeReceiverUpdated,
+    SafeUpdated,
+    SafeUpgradeabilityGivenUp,
+    ValuationManagerUpdated,
+    WhitelistManagerUpdated
+} from "./primitives/Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {FeeRegistry} from "@src/protocol-v2/FeeRegistry.sol";
 
 /// @title RolesUpgradeable
 /// @dev This contract is used to define the various roles needed for a vault to operate.
@@ -26,6 +37,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
         address safe;
         FeeRegistry feeRegistry;
         address valuationManager;
+        bool gaveUpSafeUpgradeability;
     }
 
     /// @dev Initializes the roles of the vault.
@@ -92,5 +104,22 @@ abstract contract Roles is Ownable2StepUpgradeable {
         address _feeReceiver
     ) external onlyOwner {
         RolesLib.updateFeeReceiver(_feeReceiver);
+    }
+
+    /// @notice Updates the address of the safe.
+    /// @param _safe The new address of the safe.
+    /// @dev Only the owner can call this function.
+    function updateSafe(
+        address _safe
+    ) external onlyOwner {
+        if (RolesLib._getRolesStorage().gaveUpSafeUpgradeability) {
+            revert SafeUpgradeabilityNotAllowed();
+        }
+        RolesLib.updateSafe(_safe);
+    }
+
+    function giveUpSafeUpgradeability() external onlyOwner {
+        RolesLib._getRolesStorage().gaveUpSafeUpgradeability = true;
+        emit SafeUpgradeabilityGivenUp();
     }
 }

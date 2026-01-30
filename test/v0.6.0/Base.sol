@@ -388,8 +388,8 @@ contract BaseTest is Test, SetUp {
         uint256 depositSettleIdBefore = vault.depositSettleId();
         uint256 redeemSettleIdBefore = vault.redeemSettleId();
 
-        uint256 pendingDepositAmount = vault.pendingDeposit();
-        uint256 pendingRedeemAmount = vault.pendingRedeem();
+        uint256 pendingDepositAmount = vault.pendingDeposit(uint40(depositSettleIdBefore));
+        uint256 pendingRedeemAmount = vault.pendingRedeem(uint40(redeemSettleIdBefore));
 
         vm.startPrank(vault.safe());
         vault.settleDeposit(vault.newTotalAssets());
@@ -399,14 +399,14 @@ contract BaseTest is Test, SetUp {
         uint256 redeemSettleIdAfter = vault.redeemSettleId();
 
         if (pendingDepositAmount == 0) {
-            assertEq(depositSettleIdBefore, depositSettleIdAfter);
+            assertEq(depositSettleIdBefore, depositSettleIdAfter, "wrong depositSettleId after settle 1");
         } else {
-            assertEq(depositSettleIdBefore + 2, depositSettleIdAfter);
+            assertEq(depositSettleIdBefore + 2, depositSettleIdAfter, "wrong depositSettleId after settle 2");
         }
         if (pendingRedeemAmount == 0) {
-            assertEq(redeemSettleIdBefore, redeemSettleIdAfter);
+            assertEq(redeemSettleIdBefore, redeemSettleIdAfter, "wrong redeemSettleId after settle 1");
         } else {
-            assertEq(redeemSettleIdBefore + 2, redeemSettleIdAfter);
+            assertEq(redeemSettleIdBefore + 2, redeemSettleIdAfter, "wrong redeemSettleId after settle 2");
         }
     }
 

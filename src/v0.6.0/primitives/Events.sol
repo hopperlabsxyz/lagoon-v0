@@ -66,6 +66,14 @@ event FeeReceiverUpdated(address oldReceiver, address newReceiver);
 /// @param newManager The address of the new Valuation manager.
 event ValuationManagerUpdated(address oldManager, address newManager);
 
+/// @notice Emitted when the safe role is updated.
+/// @param oldSafe The address of the old safe.
+/// @param newSafe The address of the new safe.
+event SafeUpdated(address oldSafe, address newSafe);
+
+/// @notice Emitted when the safe upgradeability is given up.
+event SafeUpgradeabilityGivenUp();
+
 // ********************* FEE_MANAGER ********************* //
 
 /// @notice Emitted when the rates are updated.
@@ -120,3 +128,11 @@ event TotalAssetsLifespanUpdated(uint128 oldLifespan, uint128 newLifespan);
 /// @param assets Amount of assets deposit
 /// @param shares Amount of shares minted to owner
 event DepositSync(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
+
+/// @notice Emitted when the max cap is updated.
+/// @param previousMaxCap The previous max cap.
+/// @param maxCap The new max cap.
+event MaxCapUpdated(uint256 previousMaxCap, uint256 maxCap);
+
+/// @notice Emitted when the operator privileges are given up.
+event GaveUpOperatorPrivileges();
