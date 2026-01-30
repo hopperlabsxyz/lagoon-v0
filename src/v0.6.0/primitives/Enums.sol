@@ -9,6 +9,11 @@ enum State {
     Closed // The vault is closed; settlement are locked; withdrawals are guaranteed at fixed price per share
 }
 
+// ********************* WHITELISTABLE ********************* //
+enum WhitelistState {
+    Blacklist,
+    Whitelist
+}
 // ********************* FEE MANAGER ********************* //
 
 enum FeeType {
