@@ -83,7 +83,7 @@ contract testRateUpdates is BaseTest {
         vault.updateRates(newRates);
     }
 
-    function test_updateRatesShouldBeApplyed24HoursAfter() public {
+    function test_updateRatesShouldBeAppliedImmediately() public {
         setUpVault(100, 200, 200);
 
         Rates memory newRates = Rates({managementRate: MAX_MANAGEMENT_RATE, performanceRate: MAX_PERFORMANCE_RATE});
@@ -96,7 +96,7 @@ contract testRateUpdates is BaseTest {
         assertEq(MAX_MANAGEMENT_RATE, vault.feeRates().managementRate, "management rate after update");
     }
 
-    function test_updateRatesShouldBeApplyed24HoursAfter_VerifyThroughASettle() public {
+    function test_updateRatesShouldBeAppliedImmediately_VerifyThroughASettle() public {
         setUpVault(100, 0, 0); // no fees will be taken
         address feeReceiver = vault.feeReceiver();
         assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, init");

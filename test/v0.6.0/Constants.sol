@@ -31,7 +31,7 @@ contract Constants is Test {
     FeeRegistry feeRegistry;
     string vaultName = "vault_name";
     string vaultSymbol = "vault_symbol";
-    uint256 rateUpdateCooldown = 1 days;
+    uint256 rateUpdateCooldown = 0;
 
     // Users
     VmSafe.Wallet user1 = vm.createWallet("user1");

@@ -43,14 +43,12 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// @param _managementRate the management rate, expressed in BPS
     /// @param _performanceRate the performance rate, expressed in BPS
     /// @param _decimals the number of decimals of the shares
-    /// @param _cooldown the time to wait before applying new rates
     // solhint-disable-next-line func-name-mixedcase
     function __FeeManager_init(
         address _registry,
         uint16 _managementRate,
         uint16 _performanceRate,
-        uint256 _decimals,
-        uint256 _cooldown
+        uint256 _decimals
     ) internal onlyInitializing {
         if (_managementRate > MAX_MANAGEMENT_RATE) {
             revert AboveMaxRate(MAX_MANAGEMENT_RATE);
@@ -61,10 +59,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
 
         FeeManagerStorage storage $ = FeeLib._getFeeManagerStorage();
 
-        $.newRatesTimestamp = block.timestamp;
-
-        $.cooldown = _cooldown;
-
         $.feeRegistry = FeeRegistry(_registry);
         $.highWaterMark = 10 ** _decimals;
 
@@ -72,7 +66,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         $.rates.performanceRate = _performanceRate;
     }
 
-    /// @notice update the fee rates, the new rates will be applied after the cooldown period
+    /// @notice update the fee rates, applied immediately
     /// @param newRates the new fee rates
     function updateRates(
         Rates memory newRates
@@ -80,9 +74,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         FeeLib.updateRates(FeeLib._getFeeManagerStorage(), newRates);
     }
 
-    /// @dev Since we have a cooldown period and to avoid a double call
-    /// to update the feeRates, this function returns a different rate
-    /// following the timestamp
     /// @notice the current fee rates
     function feeRates() public view returns (Rates memory) {
         return FeeLib.feeRates();

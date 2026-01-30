@@ -51,7 +51,7 @@ struct InitStruct {
     uint16 performanceRate;
     /// @notice Flag to enable whitelist functionality
     bool enableWhitelist;
-    /// @notice Cooldown period for rate updates
+    /// @notice Rate update cooldown for v0.5.0 compatibility, pass 0 for v0.6.0+
     uint256 rateUpdateCooldown;
 }
 
