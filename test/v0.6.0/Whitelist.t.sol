@@ -5,9 +5,14 @@ import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SanctionsList} from "@src/v0.6.0/interfaces/SanctionsList.sol";
+import {WhitelistState} from "@src/v0.6.0/primitives/Enums.sol";
 
 contract TestWhitelist is BaseTest {
+    address constant EXTERNAL_SANCTIONS_LIST = 0x40C57923924B5c5c5455c48D93317139ADDaC8fb;
+    address constant SANCTIONED_ADDRESS = 0xd5ED34b52AC4ab84d8FA8A231a3218bbF01Ed510;
+
     function withWhitelistSetUp() public {
         whitelistInit.push(user5.addr);
         setUpVault(0, 0, 0);
@@ -75,7 +80,8 @@ contract TestWhitelist is BaseTest {
         deposit(userBalance, user1.addr);
         address receiver = user2.addr;
         vm.prank(vault.owner());
-        vault.disableWhitelist();
+        vault.switchWhitelistMode(WhitelistState.Blacklist);
+        vm.assertEq(vault.isBlacklistActivated(), true);
         vm.assertEq(vault.isWhitelistActivated(), false);
         uint256 shares = vault.balanceOf(user1.addr);
         vm.prank(user1.addr);
@@ -204,5 +210,47 @@ contract TestWhitelist is BaseTest {
         vm.prank(receiver);
         vm.expectRevert(NotWhitelisted.selector);
         vault.requestRedeem(shares, receiver, receiver);
+    }
+
+    function test_sanctionedAddress_ShouldReturnFalseInWhitelistMode() public {
+        if (block.chainid != 1) return;
+        withWhitelistSetUp();
+
+        vm.prank(vault.whitelistManager());
+        vault.setExternalSanctionsList(SanctionsList(EXTERNAL_SANCTIONS_LIST));
+
+        // Ensure we're in Whitelist mode
+        vm.prank(vault.owner());
+        vault.switchWhitelistMode(WhitelistState.Whitelist);
+
+        // Manually whitelist the sanctioned address
+        address[] memory accounts = new address[](1);
+        accounts[0] = SANCTIONED_ADDRESS;
+        vm.prank(vault.whitelistManager());
+        vault.addToWhitelist(accounts);
+
+        // Even though manually whitelisted, the sanctioned address should return false
+        assertFalse(
+            vault.isWhitelisted(SANCTIONED_ADDRESS),
+            "Sanctioned address should return false even when manually whitelisted in Whitelist mode"
+        );
+    }
+
+    function test_sanctionedAddress_ShouldReturnFalseInBlacklistMode() public {
+        if (block.chainid != 1) return;
+        withWhitelistSetUp();
+
+        vm.prank(vault.whitelistManager());
+        vault.setExternalSanctionsList(SanctionsList(EXTERNAL_SANCTIONS_LIST));
+
+        // Switch to Blacklist mode
+        vm.prank(vault.owner());
+        vault.switchWhitelistMode(WhitelistState.Blacklist);
+
+        // We make sure that the sanctioned address is blacklisted
+        assertFalse(
+            vault.isWhitelisted(SANCTIONED_ADDRESS),
+            "Sanctioned address should return false even when manually whitelisted in Blacklist mode"
+        );
     }
 }

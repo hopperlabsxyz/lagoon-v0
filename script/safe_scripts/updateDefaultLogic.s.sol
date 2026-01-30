@@ -6,22 +6,11 @@ import {
     ProxyAdmin
 } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {BeaconProxyFactory} from "@src/protocol-v1/BeaconProxyFactory.sol";
-import {OptinProxyFactory} from "@src/protocol-v2/OptinProxyFactory.sol";
-import {LogicRegistry, ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
-import {Script, console} from "forge-std/Script.sol";
+import {LogicRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 
 // import {Vault} from "../src/v0.5.0/Vault.sol";
 
 import {BatchScript} from "../tools/BatchScript.sol";
-import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
-
-/*
- This script will deploy the OptinProxyFactory, propose safe txs to:
- - update the fee registry with the logicRegistry
- - update the default implementation in the logic registry
- - upgrade the set of signers of the DAO multisig
-*/
 
 contract UpgradeProtocolRegistry is BatchScript {
     address registry;

@@ -14,7 +14,7 @@ import {VaultInit} from "./VaultInit.sol";
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
 import {Whitelistable} from "../Whitelistable.sol";
-import {State} from "../primitives/Enums.sol";
+import {State, WhitelistState} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
     Closed,
@@ -37,6 +37,37 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 using SafeERC20 for IERC20;
 using Math for uint256;
+
+/// @custom:storage-definition erc7201:hopper.storage.vault
+/// @param underlying The address of the underlying asset.
+/// @param name The name of the vault and by extension the ERC20 token.
+/// @param symbol The symbol of the vault and by extension the ERC20 token.
+/// @param safe The address of the safe smart contract.
+/// @param whitelistManager The address of the whitelist manager.
+/// @param valuationManager The address of the valuation manager.
+/// @param admin The address of the owner of the vault.
+/// @param feeReceiver The address of the fee receiver.
+/// @param feeRegistry The address of the fee registry.
+/// @param wrappedNativeToken The address of the wrapped native token.
+/// @param managementRate The management fee rate.
+/// @param performanceRate The performance fee rate.
+/// @param rateUpdateCooldown The cooldown period for updating the fee rates.
+/// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
+struct InitStruct {
+    IERC20 underlying;
+    string name;
+    string symbol;
+    address safe;
+    address whitelistManager;
+    address valuationManager;
+    address admin;
+    address feeReceiver;
+    uint16 managementRate;
+    uint16 performanceRate;
+    WhitelistState whitelistState;
+    uint256 rateUpdateCooldown;
+    address externalSanctionsList;
+}
 
 /// @custom:oz-upgrades-from src/v0.5.0/Vault.sol:Vault
 contract Vault is ERC7540, Whitelistable, FeeManager {

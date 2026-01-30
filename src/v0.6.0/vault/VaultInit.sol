@@ -5,7 +5,7 @@ import {ERC7540} from "../ERC7540.sol";
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
 import {Whitelistable} from "../Whitelistable.sol";
-import {State} from "../primitives/Enums.sol";
+import {State, WhitelistState} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
     Closed,
@@ -41,7 +41,9 @@ using SafeERC20 for IERC20;
 /// @param wrappedNativeToken The address of the wrapped native token.
 /// @param managementRate The management fee rate.
 /// @param performanceRate The performance fee rate.
-/// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
+/// @param whitelistState The state of the whitelist.
+/// @param entryRate The entry fee rate.
+/// @param exitRate The exit fee rate.
 struct InitStruct {
     IERC20 underlying;
     string name;
@@ -53,7 +55,7 @@ struct InitStruct {
     address feeReceiver;
     uint16 managementRate;
     uint16 performanceRate;
-    bool enableWhitelist;
+    WhitelistState whitelistState;
     // added in v0.6.0
     uint16 entryRate;
     uint16 exitRate;
@@ -91,7 +93,7 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
         __ERC20Pausable_init();
         __ERC4626_init(init.underlying);
         __ERC7540_init(init.underlying, wrappedNativeToken);
-        __Whitelistable_init(init.enableWhitelist);
+        __Whitelistable_init(init.whitelistState, address(0));
         __FeeManager_init({
             _registry: feeRegistry,
             _managementRate: init.managementRate,
@@ -103,10 +105,6 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
 
         emit StateUpdated(State.Open);
     }
-
-    /////////////////////
-    // ## MODIFIERS ## //
-    /////////////////////
 
     /////////////////////////////////////////////
     // ## DEPOSIT AND REDEEM FLOW FUNCTIONS ## //
