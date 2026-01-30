@@ -72,7 +72,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         $.rates.performanceRate = _performanceRate;
     }
 
-    /// @notice update the fee rates, the new rates will be applied after the cooldown period
+    /// @notice update the fee rates, applied immediately
     /// @param newRates the new fee rates
     function updateRates(
         Rates memory newRates
@@ -80,9 +80,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         FeeLib.updateRates(FeeLib._getFeeManagerStorage(), newRates);
     }
 
-    /// @dev Since we have a cooldown period and to avoid a double call
-    /// to update the feeRates, this function returns a different rate
-    /// following the timestamp
     /// @notice the current fee rates
     function feeRates() public view returns (Rates memory) {
         return FeeLib.feeRates();
