@@ -44,7 +44,7 @@ contract DeployVault is Script {
             managementRate: MANAGEMENT_RATE,
             performanceRate: PERFORMANCE_RATE,
             enableWhitelist: ENABLE_WHITELIST,
-            rateUpdateCooldown: RATE_UPDATE_COOLDOWN
+            deprecatedRateUpdateCooldown: 0
         });
     }
 
@@ -61,7 +61,7 @@ contract DeployVault is Script {
         console.log("Enable_whitelist:    ", init.enableWhitelist);
         console.log("Management_rate:     ", init.managementRate);
         console.log("Performance_rate:    ", init.performanceRate);
-        console.log("Rate_update_cooldown:", init.rateUpdateCooldown);
+        console.log("Deprecated_cooldown: ", init.deprecatedRateUpdateCooldown);
         console.log("Safe:                ", init.safe);
         console.log("Fee_receiver:        ", init.feeReceiver);
         console.log("Admin:               ", init.admin);

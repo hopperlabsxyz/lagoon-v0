@@ -43,15 +43,18 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// @param _managementRate the management rate, expressed in BPS
     /// @param _performanceRate the performance rate, expressed in BPS
     /// @param _decimals the number of decimals of the shares
-    /// @param _cooldown the time to wait before applying new rates
+    /// @param _deprecatedCooldown deprecated, kept for backwards compatibility, pass 0
     // solhint-disable-next-line func-name-mixedcase
     function __FeeManager_init(
         address _registry,
         uint16 _managementRate,
         uint16 _performanceRate,
         uint256 _decimals,
-        uint256 _cooldown
+        uint256 _deprecatedCooldown
     ) internal onlyInitializing {
+        // silence unused variable warning
+        _deprecatedCooldown;
+
         if (_managementRate > MAX_MANAGEMENT_RATE) {
             revert AboveMaxRate(MAX_MANAGEMENT_RATE);
         }
@@ -60,10 +63,6 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         }
 
         FeeManagerStorage storage $ = FeeLib._getFeeManagerStorage();
-
-        $.newRatesTimestamp = block.timestamp;
-
-        $.cooldown = _cooldown;
 
         $.feeRegistry = FeeRegistry(_registry);
         $.highWaterMark = 10 ** _decimals;

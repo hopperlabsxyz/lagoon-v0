@@ -51,8 +51,8 @@ struct InitStruct {
     uint16 performanceRate;
     /// @notice Flag to enable whitelist functionality
     bool enableWhitelist;
-    /// @notice Cooldown period for rate updates
-    uint256 rateUpdateCooldown;
+    /// @notice Deprecated, kept for backwards compatibility, pass 0
+    uint256 deprecatedRateUpdateCooldown;
 }
 
 /// @title OptinProxyFactory

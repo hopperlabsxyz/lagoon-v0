@@ -16,7 +16,7 @@ struct InitStruct {
     uint16 managementRate;
     uint16 performanceRate;
     bool enableWhitelist;
-    uint256 rateUpdateCooldown;
+    uint256 deprecatedRateUpdateCooldown;
 }
 
 interface IVault {

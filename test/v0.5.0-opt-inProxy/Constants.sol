@@ -32,7 +32,7 @@ contract Constants is Test {
     ProtocolRegistry protocolRegistry;
     string vaultName = "vault_name";
     string vaultSymbol = "vault_symbol";
-    uint256 rateUpdateCooldown = 1 days;
+    uint256 deprecatedRateUpdateCooldown = 1 days; // v0.5.0 still uses cooldown
 
     // Users
     VmSafe.Wallet user1 = vm.createWallet("user1");
@@ -111,7 +111,7 @@ contract Constants is Test {
             feeReceiver: feeReceiver.addr,
             managementRate: _managementRate,
             performanceRate: _performanceRate,
-            rateUpdateCooldown: rateUpdateCooldown,
+            deprecatedRateUpdateCooldown: deprecatedRateUpdateCooldown,
             enableWhitelist: enableWhitelist
         });
 

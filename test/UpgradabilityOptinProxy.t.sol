@@ -41,7 +41,7 @@ contract Upgradable is Test {
 
     string vaultName = "vault_name";
     string vaultSymbol = "vault_symbol";
-    uint256 rateUpdateCooldown = 1 days;
+    uint256 deprecatedRateUpdateCooldown = 0;
 
     // Users
     VmSafe.Wallet owner = vm.createWallet("owner");
@@ -110,7 +110,7 @@ contract Upgradable is Test {
             managementRate: 200,
             performanceRate: 2000,
             enableWhitelist: enableWhitelist,
-            rateUpdateCooldown: rateUpdateCooldown
+            deprecatedRateUpdateCooldown: deprecatedRateUpdateCooldown
         });
 
         // first we create a vault whome logic is a vault v0.5
