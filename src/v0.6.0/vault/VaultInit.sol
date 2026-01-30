@@ -17,7 +17,6 @@ import {
     OnlySyncDepositAllowed,
     ValuationUpdateNotAllowed
 } from "../primitives/Errors.sol";
-import {InitStruct} from "./Vault-v0.6.0.sol";
 
 import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
@@ -28,6 +27,37 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol-v2/FeeRegistry.sol";
 
 using SafeERC20 for IERC20;
+
+/// @custom:storage-definition erc7201:hopper.storage.vault
+/// @param underlying The address of the underlying asset.
+/// @param name The name of the vault and by extension the ERC20 token.
+/// @param symbol The symbol of the vault and by extension the ERC20 token.
+/// @param safe The address of the safe smart contract.
+/// @param whitelistManager The address of the whitelist manager.
+/// @param valuationManager The address of the valuation manager.
+/// @param admin The address of the owner of the vault.
+/// @param feeReceiver The address of the fee receiver.
+/// @param feeRegistry The address of the fee registry.
+/// @param wrappedNativeToken The address of the wrapped native token.
+/// @param managementRate The management fee rate.
+/// @param performanceRate The performance fee rate.
+/// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
+struct InitStruct {
+    IERC20 underlying;
+    string name;
+    string symbol;
+    address safe;
+    address whitelistManager;
+    address valuationManager;
+    address admin;
+    address feeReceiver;
+    uint16 managementRate;
+    uint16 performanceRate;
+    bool enableWhitelist;
+    // added in v0.6.0
+    uint16 entryRate;
+    uint16 exitRate;
+}
 
 /// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault
 contract VaultInit is ERC7540, Whitelistable, FeeManager {
@@ -63,15 +93,14 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
         __ERC4626_init(init.underlying);
         __ERC7540_init(init.underlying, wrappedNativeToken);
         __Whitelistable_init(init.enableWhitelist);
-        __FeeManager_init(
-            feeRegistry,
-            init.managementRate,
-            init.performanceRate,
-            IERC20Metadata(address(init.underlying)).decimals(),
-            init.rateUpdateCooldown,
-            init.entryRate,
-            init.exitRate
-        );
+        __FeeManager_init({
+            _registry: feeRegistry,
+            _managementRate: init.managementRate,
+            _performanceRate: init.performanceRate,
+            _decimals: IERC20Metadata(address(init.underlying)).decimals(),
+            _entryRate: init.entryRate,
+            _exitRate: init.exitRate
+        });
 
         // $.totalAssets = initialTotalAssets;
         // mint(initialTotalAssets, address(init.safe));

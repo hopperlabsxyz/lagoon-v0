@@ -51,8 +51,6 @@ struct InitStruct {
     uint16 performanceRate;
     /// @notice Flag to enable whitelist functionality
     bool enableWhitelist;
-    /// @notice Cooldown period for rate updates
-    uint256 rateUpdateCooldown;
     /// @notice Entry fee rate (in basis points)
     uint16 entryRate;
     /// @notice Exit fee rate (in basis points)

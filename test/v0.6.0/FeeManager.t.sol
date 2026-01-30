@@ -34,7 +34,13 @@ contract TestFeeManager is BaseTest {
         // 20% performance fee
         // 10% entry fee (new)
         // 0% exit fee (new)
-        setUpVault(protocolFee, managementFee, performanceFee, entryFee, exitFee);
+        setUpVault({
+            _protocolRate: protocolFee,
+            _managementRate: managementFee,
+            _performanceRate: performanceFee,
+            _entryRate: entryFee,
+            _exitRate: exitFee
+        });
 
         _1 = 1 * 10 ** vault.underlyingDecimals();
         _1K = 1000 * 10 ** vault.underlyingDecimals();

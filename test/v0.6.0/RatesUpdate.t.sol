@@ -84,7 +84,7 @@ contract testRateUpdates is BaseTest {
         vault.updateRates(newRates);
     }
 
-    function test_updateRatesShouldBeApplyed24HoursAfter() public {
+    function test_updateRatesShouldBeAppliedImmediately() public {
         setUpVault(100, 200, 200);
 
         Rates memory newRates = Rates({
@@ -95,20 +95,11 @@ contract testRateUpdates is BaseTest {
         vm.startPrank(vault.owner());
         vault.updateRates(newRates);
 
-        assertEq(200, vault.feeRates().performanceRate, "performance rate after update");
-        assertEq(200, vault.feeRates().managementRate, "management rate after update");
-
-        vm.warp(block.timestamp + 1 days - 1);
-        assertEq(200, vault.feeRates().performanceRate, "performance rate after 1st warp");
-        assertEq(200, vault.feeRates().managementRate, "management rate after 1st warp");
-
-        vm.warp(block.timestamp + 1 days);
-
-        assertEq(MAX_PERFORMANCE_RATE, vault.feeRates().performanceRate, "performance rate after 2nd warp");
-        assertEq(MAX_MANAGEMENT_RATE, vault.feeRates().managementRate, "management rate after 2nd warp");
+        assertEq(MAX_PERFORMANCE_RATE, vault.feeRates().performanceRate, "performance rate after update");
+        assertEq(MAX_MANAGEMENT_RATE, vault.feeRates().managementRate, "management rate after update");
     }
 
-    function test_updateRatesShouldBeApplyed24HoursAfter_VerifyThroughASettle() public {
+    function test_updateRatesShouldBeAppliedImmediately_VerifyThroughASettle() public {
         setUpVault(100, 0, 0); // no fees will be taken
         address feeReceiver = vault.feeReceiver();
         assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, init");
@@ -128,9 +119,7 @@ contract testRateUpdates is BaseTest {
         vault.updateRates(newRates);
         vm.stopPrank();
         settle();
-        assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, 2nd settle");
 
-        updateAndSettle(4000); // +100%
         assertNotEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have shares");
     }
 

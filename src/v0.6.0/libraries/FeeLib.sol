@@ -208,7 +208,7 @@ library FeeLib {
         $.lastFeeTime = block.timestamp;
     }
 
-    /// @notice update the fee rates, the new rates will be applied after the cooldown period
+    /// @notice update the fee rates, applied immediately
     /// @param newRates the new fee rates
     function updateRates(
         FeeManager.FeeManagerStorage storage $,
@@ -227,13 +227,9 @@ library FeeLib {
             revert AboveMaxRate(MAX_EXIT_RATE);
         }
 
-        uint256 newRatesTimestamp = block.timestamp + $.cooldown;
         Rates memory currentRates = $.rates;
-
-        $.newRatesTimestamp = newRatesTimestamp;
-        $.oldRates = currentRates;
         $.rates = newRates;
-        emit RatesUpdated(currentRates, newRates, newRatesTimestamp);
+        emit RatesUpdated(currentRates, newRates, block.timestamp);
     }
 
     /// @dev Read the protocol rate from the fee registry
@@ -247,14 +243,10 @@ library FeeLib {
         return _protocolRate;
     }
 
-    /// @dev Since we have a cooldown period and to avoid a double call
-    /// to update the feeRates, this function returns a different rate
-    /// following the timestamp
     /// @notice the current fee rates
     function feeRates() public view returns (Rates memory) {
         FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        if ($.newRatesTimestamp <= block.timestamp) return $.rates;
-        return $.oldRates;
+        return $.rates;
     }
 }
