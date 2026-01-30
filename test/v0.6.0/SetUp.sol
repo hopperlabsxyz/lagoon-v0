@@ -33,7 +33,7 @@ contract SetUp is Test {
     ProtocolRegistry protocolRegistry;
     string vaultName = "vault_name";
     string vaultSymbol = "vault_symbol";
-    uint256 rateUpdateCooldown = 1 days;
+    uint256 rateUpdateCooldown = 0;
 
     // Users
     VmSafe.Wallet user1 = vm.createWallet("user1");
@@ -121,7 +121,6 @@ contract SetUp is Test {
             enableWhitelist: enableWhitelist,
             managementRate: _managementRate,
             performanceRate: _performanceRate,
-            rateUpdateCooldown: rateUpdateCooldown,
             entryRate: _entryRate,
             exitRate: _exitRate
         });
