@@ -66,7 +66,8 @@ contract testRateUpdates is BaseTest {
     function test_updateRatesOverMaxPerformanceRateShouldRevert() public {
         setUpVault(100, 200, 2000);
 
-        Rates memory newRates = Rates({managementRate: MAX_MANAGEMENT_RATE + 1, performanceRate: 0});
+        Rates memory newRates =
+            Rates({managementRate: MAX_MANAGEMENT_RATE + 1, performanceRate: 0, entryRate: 0, exitRate: 0});
         vm.startPrank(vault.owner());
         vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
         vault.updateRates(newRates);
@@ -79,29 +80,22 @@ contract testRateUpdates is BaseTest {
         vault.updateRates(newRates);
     }
 
-    function test_updateRatesShouldBeApplyed24HoursAfter() public {
+    function test_updateRatesShouldBeAppliedImmediately() public {
         setUpVault(100, 200, 200);
 
-        Rates memory newRates = Rates({managementRate: MAX_MANAGEMENT_RATE, performanceRate: MAX_PERFORMANCE_RATE});
+        Rates memory newRates = Rates({
+            managementRate: MAX_MANAGEMENT_RATE, performanceRate: MAX_PERFORMANCE_RATE, entryRate: 0, exitRate: 0
+        });
         assertNotEq(200, MAX_MANAGEMENT_RATE);
         assertNotEq(200, MAX_PERFORMANCE_RATE);
         vm.startPrank(vault.owner());
         vault.updateRates(newRates);
 
-        assertEq(200, vault.feeRates().performanceRate, "performance rate after update");
-        assertEq(200, vault.feeRates().managementRate, "management rate after update");
-
-        vm.warp(block.timestamp + 1 days - 1);
-        assertEq(200, vault.feeRates().performanceRate, "performance rate after 1st warp");
-        assertEq(200, vault.feeRates().managementRate, "management rate after 1st warp");
-
-        vm.warp(block.timestamp + 1 days);
-
-        assertEq(MAX_PERFORMANCE_RATE, vault.feeRates().performanceRate, "performance rate after 2nd warp");
-        assertEq(MAX_MANAGEMENT_RATE, vault.feeRates().managementRate, "management rate after 2nd warp");
+        assertEq(MAX_PERFORMANCE_RATE, vault.feeRates().performanceRate, "performance rate after update");
+        assertEq(MAX_MANAGEMENT_RATE, vault.feeRates().managementRate, "management rate after update");
     }
 
-    function test_updateRatesShouldBeApplyed24HoursAfter_VerifyThroughASettle() public {
+    function test_updateRatesShouldBeAppliedImmediately_VerifyThroughASettle() public {
         setUpVault(100, 0, 0); // no fees will be taken
         address feeReceiver = vault.feeReceiver();
         assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, init");
@@ -112,16 +106,51 @@ contract testRateUpdates is BaseTest {
         updateNewTotalAssets(2000);
         vm.warp(block.timestamp + 1 days);
         // owner updates rates
-        Rates memory newRates = Rates({managementRate: MAX_MANAGEMENT_RATE, performanceRate: MAX_PERFORMANCE_RATE});
+        Rates memory newRates = Rates({
+            managementRate: MAX_MANAGEMENT_RATE, performanceRate: MAX_PERFORMANCE_RATE, entryRate: 0, exitRate: 0
+        });
 
         vm.startPrank(vault.owner());
 
         vault.updateRates(newRates);
         vm.stopPrank();
         settle();
-        assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, 2nd settle");
 
-        updateAndSettle(4000); // +100%
         assertNotEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have shares");
+    }
+
+    function test_updateRates_shouldWorkWhenClosing() public {
+        setUpVault(100, 200, 200);
+
+        vm.prank(vault.owner());
+        vault.initiateClosing();
+        assertEq(uint256(vault.state()), uint256(State.Closing), "vault should be in Closing state");
+
+        Rates memory newRates = Rates({managementRate: 300, performanceRate: 300, entryRate: 0, exitRate: 0});
+        vm.prank(vault.owner());
+        vault.updateRates(newRates);
+    }
+
+    function test_updateRates_shouldRevertWhenClosed() public {
+        setUpVault(100, 200, 200);
+        dealAndApproveAndWhitelist(user1.addr);
+
+        // Need some activity to close properly
+        requestDeposit(1000, user1.addr);
+        updateAndSettle(0);
+        deposit(1000, user1.addr);
+
+        // Initiate closing then close
+        vm.prank(vault.owner());
+        vault.initiateClosing();
+
+        updateAndClose(1000);
+        assertEq(uint256(vault.state()), uint256(State.Closed), "vault should be in Closed state");
+
+        // Update rates should revert in Closed state
+        Rates memory newRates = Rates({managementRate: 300, performanceRate: 300, entryRate: 0, exitRate: 0});
+        vm.prank(vault.owner());
+        vm.expectRevert(Closed.selector);
+        vault.updateRates(newRates);
     }
 }

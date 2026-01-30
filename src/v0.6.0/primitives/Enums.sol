@@ -12,6 +12,13 @@ enum State {
 // ********************* WHITELISTABLE ********************* //
 enum WhitelistState {
     Blacklist,
-    Whitelist,
-    Deactivated
+    Whitelist
+}
+// ********************* FEE MANAGER ********************* //
+
+enum FeeType {
+    Management,
+    Performance,
+    Entry,
+    Exit
 }

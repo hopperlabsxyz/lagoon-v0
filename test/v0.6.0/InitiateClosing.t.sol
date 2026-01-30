@@ -5,8 +5,6 @@ import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
-import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract TestInitiateClosing is BaseTest {
     uint256 user1AssetsBeginning = 0;
