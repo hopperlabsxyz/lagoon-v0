@@ -41,7 +41,6 @@ using SafeERC20 for IERC20;
 /// @param wrappedNativeToken The address of the wrapped native token.
 /// @param managementRate The management fee rate.
 /// @param performanceRate The performance fee rate.
-/// @param deprecatedRateUpdateCooldown deprecated, kept for backwards compatibility, pass 0
 /// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
 struct InitStruct {
     IERC20 underlying;
@@ -55,7 +54,6 @@ struct InitStruct {
     uint16 managementRate;
     uint16 performanceRate;
     bool enableWhitelist;
-    uint256 deprecatedRateUpdateCooldown;
 }
 
 /// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault
@@ -92,11 +90,7 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
         __ERC7540_init(init.underlying, wrappedNativeToken);
         __Whitelistable_init(init.enableWhitelist);
         __FeeManager_init(
-            feeRegistry,
-            init.managementRate,
-            init.performanceRate,
-            IERC20Metadata(address(init.underlying)).decimals(),
-            init.deprecatedRateUpdateCooldown
+            feeRegistry, init.managementRate, init.performanceRate, IERC20Metadata(address(init.underlying)).decimals()
         );
 
         emit StateUpdated(State.Open);
