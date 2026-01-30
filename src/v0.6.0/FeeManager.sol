@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {ERC7540} from "./ERC7540.sol";
 import {FeeLib} from "./libraries/FeeLib.sol";
+import {VaultLib} from "./libraries/VaultLib.sol";
 import {AboveMaxRate} from "./primitives/Errors.sol";
 import {HighWaterMarkUpdated, RatesUpdated} from "./primitives/Events.sol";
 import {Rates} from "./primitives/Struct.sol";
@@ -10,11 +10,13 @@ import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/acces
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
 
-abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
+abstract contract FeeManager is Ownable2StepUpgradeable {
     using Math for uint256;
 
     uint16 public constant MAX_MANAGEMENT_RATE = FeeLib.MAX_MANAGEMENT_RATE;
     uint16 public constant MAX_PERFORMANCE_RATE = FeeLib.MAX_PERFORMANCE_RATE;
+    uint16 public constant MAX_ENTRY_RATE = FeeLib.MAX_ENTRY_RATE;
+    uint16 public constant MAX_EXIT_RATE = FeeLib.MAX_EXIT_RATE;
     uint16 public constant MAX_PROTOCOL_RATE = FeeLib.MAX_PROTOCOL_RATE;
 
     /// @custom:storage-definition erc7201:hopper.storage.FeeManager
@@ -32,6 +34,10 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         uint256 lastFeeTime;
         uint256 highWaterMark;
         uint256 cooldown;
+        // v0.6.0 upgrade edit the Rates struct it is fine because both rates and oldRates
+        // are not stored in the same slot as stated in the documentation
+        // https://docs.soliditylang.org/en/v0.8.33/internals/layout_in_storage.html#layout-of-state-variables-in-storage-and-transient-storage
+        // "Structs and array data always start a new slot and their items are packed tightly according to these rules."
         Rates rates;
         Rates oldRates;
     }
@@ -48,7 +54,9 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         uint16 _managementRate,
         uint16 _performanceRate,
         uint256 _decimals,
-        uint256 _cooldown
+        uint256 _cooldown,
+        uint16 _entryRate,
+        uint16 _exitRate
     ) internal onlyInitializing {
         if (_managementRate > MAX_MANAGEMENT_RATE) {
             revert AboveMaxRate(MAX_MANAGEMENT_RATE);
@@ -56,7 +64,12 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
         if (_performanceRate > MAX_PERFORMANCE_RATE) {
             revert AboveMaxRate(MAX_PERFORMANCE_RATE);
         }
-
+        if (_entryRate > MAX_ENTRY_RATE) {
+            revert AboveMaxRate(MAX_ENTRY_RATE);
+        }
+        if (_exitRate > MAX_EXIT_RATE) {
+            revert AboveMaxRate(MAX_EXIT_RATE);
+        }
         FeeManagerStorage storage $ = FeeLib._getFeeManagerStorage();
 
         $.newRatesTimestamp = block.timestamp;
@@ -68,6 +81,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
 
         $.rates.managementRate = _managementRate;
         $.rates.performanceRate = _performanceRate;
+        $.rates.entryRate = _entryRate;
+        $.rates.exitRate = _exitRate;
     }
 
     /// @notice update the fee rates, the new rates will be applied after the cooldown period
@@ -75,6 +90,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     function updateRates(
         Rates memory newRates
     ) external onlyOwner {
+        VaultLib._onlyNotClosed();
         FeeLib.updateRates(FeeLib._getFeeManagerStorage(), newRates);
     }
 

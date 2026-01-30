@@ -15,6 +15,8 @@ struct InitStruct {
     address feeReceiver;
     uint16 managementRate;
     uint16 performanceRate;
+    uint16 entryRate;
+    uint16 exitRate;
     bool enableWhitelist;
     uint256 rateUpdateCooldown;
 }
@@ -70,9 +72,9 @@ contract BeaconProxyFactory is UpgradeableBeacon {
         bytes32 salt
     ) public returns (address) {
         address proxy = address(
-            new BeaconProxy{
-                salt: salt
-            }(address(this), abi.encodeWithSelector(IVault.initialize.selector, init, REGISTRY, WRAPPED_NATIVE))
+            new BeaconProxy{salt: salt}(
+                address(this), abi.encodeWithSelector(IVault.initialize.selector, init, REGISTRY, WRAPPED_NATIVE)
+            )
         );
         isInstance[proxy] = true;
         instances.push(proxy);
