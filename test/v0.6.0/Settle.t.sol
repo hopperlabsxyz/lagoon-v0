@@ -39,6 +39,7 @@ contract TestSettle is BaseTest {
         // user2:
         //  - 100_000 assets
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
 
         // user1 claims 50_000 shares
         deposit(user1Assets / 2, user1.addr);
@@ -127,11 +128,12 @@ contract TestSettle is BaseTest {
 
     function test_settleDepositThenRedeemAfterUpdate() public {
         updateNewTotalAssets(10 ** vault.underlyingDecimals());
-
+        vm.warp(block.timestamp + 1);
         uint256 hwmBefore = vault.highWaterMark();
         vm.startPrank(vault.safe());
         vault.settleDeposit(vault.newTotalAssets());
         vm.stopPrank();
+        vm.warp(block.timestamp + 1);
         assertEq(vault.highWaterMark(), hwmBefore, "assertion 0");
 
         updateNewTotalAssets(1);
@@ -156,6 +158,7 @@ contract TestSettle is BaseTest {
         vm.expectRevert(NewTotalAssetsMissing.selector);
         vault.settleDeposit(1);
         vm.stopPrank();
+        vm.warp(block.timestamp + 1);
 
         uint256 hwmBefore = vault.highWaterMark();
         updateNewTotalAssets(0);
@@ -163,6 +166,7 @@ contract TestSettle is BaseTest {
         vm.startPrank(vault.safe());
         vault.settleDeposit(vault.newTotalAssets());
         vm.stopPrank();
+        vm.warp(block.timestamp + 1);
         assertEq(vault.highWaterMark(), hwmBefore);
 
         vm.prank(vault.safe());
@@ -209,6 +213,7 @@ contract TestSettle is BaseTest {
 
         uint256 hwmBefore = vault.highWaterMark();
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
         assertEq(vault.highWaterMark(), hwmBefore);
 
         vm.prank(user1.addr);
@@ -227,6 +232,7 @@ contract TestSettle is BaseTest {
         vm.startPrank(vault.safe());
         vault.settleRedeem(vault.newTotalAssets());
         vm.stopPrank();
+        vm.warp(block.timestamp + 1);
         assertEq(vault.highWaterMark(), hwmBefore);
 
         vm.prank(vault.safe());
@@ -240,11 +246,9 @@ contract TestSettle is BaseTest {
         uint256 expectedRedeemId = vault.redeemEpochId();
 
         updateNewTotalAssets(0);
-        vm.warp(block.timestamp + 1 days);
         assertEq(vault.redeemEpochId(), expectedRedeemId, "wrong redeemId 1");
 
         updateNewTotalAssets(0);
-        vm.warp(block.timestamp + 1 days);
         assertEq(vault.redeemEpochId(), expectedRedeemId, "wrong redeemId 2");
 
         uint256 userRequestId = requestRedeem(user1Shares / 2, user1.addr);
@@ -267,7 +271,11 @@ contract TestSettle is BaseTest {
     }
 
     function test_updateNewTotalAssets_revertIfNotTotalAssetsManager() public {
-        vm.expectRevert(abi.encodeWithSelector(OnlyValuationManager.selector, vault.valuationManager()));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                OnlyValuationManagerOrSecurityCouncil.selector, vault.valuationManager(), vault.securityCouncil()
+            )
+        );
         vault.updateNewTotalAssets(0);
     }
 

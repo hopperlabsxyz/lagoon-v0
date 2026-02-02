@@ -6,18 +6,21 @@ import {VaultHelper as VaultHelper_v0_6_0} from "../v0.6.0/VaultHelper.sol";
 import {VaultHelper} from "./VaultHelper.sol";
 
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
+import {WhitelistState} from "@src/v0.6.0/primitives/Enums.sol";
 
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+
 import {ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 
 import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
-import {InitStruct, OptinProxyFactory as OptionProxyFactory_protocolV3} from "@src/protocol-v3/OptinProxyFactory.sol";
+import {OptinProxyFactory as OptionProxyFactory_protocolV3} from "@src/protocol-v3/OptinProxyFactory.sol";
+import {InitStruct, VaultInit} from "@src/v0.6.0/vault/VaultInit.sol";
 
 contract SetUp is Test {
     // ERC20 tokens
@@ -119,11 +122,14 @@ contract SetUp is Test {
             valuationManager: valuationManager.addr,
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
-            enableWhitelist: enableWhitelist,
+            whitelistState: enableWhitelist ? WhitelistState.Whitelist : WhitelistState.Blacklist,
             managementRate: _managementRate,
             performanceRate: _performanceRate,
+            externalSanctionsList: address(0),
             entryRate: _entryRate,
-            exitRate: _exitRate
+            exitRate: _exitRate,
+            haircutRate: 0,
+            securityCouncil: admin.addr
         });
         // if proxy is true, we use the factory to create the vault proxy
         if (proxy) {
@@ -131,7 +137,9 @@ contract SetUp is Test {
                 _logic: address(0),
                 _initialOwner: initStruct.admin,
                 _initialDelay: 86_400,
-                _init: initStruct,
+                call_data: abi.encodeCall(
+                    VaultInit.initialize, (abi.encode(initStruct), address(protocolRegistry), WRAPPED_NATIVE_TOKEN)
+                ),
                 salt: keccak256("42")
             });
             vault = VaultHelper(vaultHelper);

@@ -21,6 +21,7 @@ contract TestDeposit is BaseTest {
         updateAndSettle(0);
         deposit(balance, user1.addr);
         deposit(balance, user2.addr);
+        vm.warp(block.timestamp + 1 days);
     }
 
     function test_claimSharesAndRequestRedeem_allPossibleShares() public {
@@ -169,6 +170,7 @@ contract TestDeposit is BaseTest {
         /// ------------------ settlement ------------------ ///
 
         updateAndSettle(assetBalance(vault.safe()));
+        vm.warp(block.timestamp + 1);
 
         // pendings
         assertEq(vault.pendingRedeemRequest(requestId_1, user1.addr), 0, "[1 - pending - requestId 1]: wrong amount");
@@ -214,7 +216,7 @@ contract TestDeposit is BaseTest {
 
         /// ------------------ settlement ------------------ ///
         updateAndSettle(assetBalance(vault.safe()));
-
+        vm.warp(block.timestamp + 1);
         // pendings
         assertEq(vault.pendingRedeemRequest(requestId_1, user1.addr), 0, "[3 - pending - requestId 1]: wrong amount");
         assertEq(vault.pendingRedeemRequest(requestId_2, user1.addr), 0, "[3 - pending - requestId 2]: wrong amount");
@@ -269,6 +271,7 @@ contract TestDeposit is BaseTest {
         // /// ------------------ settlement ------------------ ///
         uint256 assetBalance = assetBalance(vault.safe());
         updateAndSettle(assetBalance);
+        vm.warp(block.timestamp + 1);
 
         // pendings
         assertEq(vault.pendingRedeemRequest(requestId_1, user1.addr), 0, "[5 - pending - requestId 1]: wrong amount");

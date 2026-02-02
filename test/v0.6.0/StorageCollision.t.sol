@@ -86,10 +86,13 @@ contract TestStorageCollision is BaseTest {
         assertEq(proxyV0_6_0.feeRates().performanceRate, _performanceRate);
         assertEq(proxyV0_6_0.feeRates().entryRate, 0);
         assertEq(proxyV0_6_0.feeRates().exitRate, 0);
+        assertEq(proxyV0_6_0.feeRates().haircutRate, 0);
 
         // we update the fees rates
         vm.prank(owner);
-        proxyV0_6_0.updateRates(Rates({managementRate: 10, performanceRate: 11, entryRate: 12, exitRate: 13}));
+        proxyV0_6_0.updateRates(
+            Rates({managementRate: 10, performanceRate: 11, entryRate: 12, exitRate: 13, haircutRate: 0})
+        );
 
         vm.warp(block.timestamp + 1 days + 1);
 
@@ -97,5 +100,6 @@ contract TestStorageCollision is BaseTest {
         assertEq(proxyV0_6_0.feeRates().performanceRate, 11);
         assertEq(proxyV0_6_0.feeRates().entryRate, 12);
         assertEq(proxyV0_6_0.feeRates().exitRate, 13);
+        assertEq(proxyV0_6_0.feeRates().haircutRate, 0);
     }
 }

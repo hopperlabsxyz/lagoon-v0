@@ -2,10 +2,16 @@
 pragma solidity 0.8.26;
 
 import {Roles} from "../Roles.sol";
-import {OnlySafe, OnlyValuationManager, OnlyWhitelistManager} from "../primitives/Errors.sol";
+import {
+    OnlySafe,
+    OnlySecurityCouncil,
+    OnlyValuationManagerOrSecurityCouncil,
+    OnlyWhitelistManager
+} from "../primitives/Errors.sol";
 import {
     FeeReceiverUpdated,
     SafeUpdated,
+    SecurityCouncilUpdated,
     ValuationManagerUpdated,
     WhitelistManagerUpdated
 } from "../primitives/Events.sol";
@@ -37,10 +43,18 @@ library RolesLib {
         }
     }
 
-    function _onlyValuationManager() internal view {
+    function _onlyValuationManagerOrSecurityCouncil() internal view {
         address _valuationManager = _getRolesStorage().valuationManager;
-        if (_valuationManager != msg.sender) {
-            revert OnlyValuationManager(_valuationManager);
+        address _securityCouncil = _getRolesStorage().securityCouncil;
+        if (_valuationManager != msg.sender && _securityCouncil != msg.sender) {
+            revert OnlyValuationManagerOrSecurityCouncil(_valuationManager, _securityCouncil);
+        }
+    }
+
+    function _onlySecurityCouncil() internal view {
+        address _securityCouncil = _getRolesStorage().securityCouncil;
+        if (_securityCouncil != msg.sender) {
+            revert OnlySecurityCouncil(_securityCouncil);
         }
     }
 
@@ -74,5 +88,13 @@ library RolesLib {
         Roles.RolesStorage storage $ = _getRolesStorage();
         emit SafeUpdated($.safe, _safe);
         $.safe = _safe;
+    }
+
+    function updateSecurityCouncil(
+        address _securityCouncil
+    ) public {
+        Roles.RolesStorage storage $ = _getRolesStorage();
+        emit SecurityCouncilUpdated($.securityCouncil, _securityCouncil);
+        $.securityCouncil = _securityCouncil;
     }
 }

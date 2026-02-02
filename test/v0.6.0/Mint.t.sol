@@ -84,6 +84,7 @@ contract TestMint is BaseTest {
 
         requestDeposit(2000, user3.addr);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
         deposit(2000, user3.addr);
 
         dealAndApproveAndWhitelist(user1.addr);
@@ -144,6 +145,7 @@ contract TestMint is BaseTest {
 
         requestDeposit(2000, user3.addr);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
         deposit(2000, user3.addr);
 
         dealAndApproveAndWhitelist(user1.addr);
@@ -157,7 +159,7 @@ contract TestMint is BaseTest {
 
         vm.prank(vault.owner());
 
-        vault.updateRates(Rates({managementRate: 0, performanceRate: 0, entryRate: 500, exitRate: 0}));
+        vault.updateRates(Rates({managementRate: 0, performanceRate: 0, entryRate: 500, exitRate: 0, haircutRate: 0}));
         vm.warp(block.timestamp + rateUpdateCooldown + 1);
 
         uint256 user1MaxDeposit = vault.maxDeposit(user1.addr);

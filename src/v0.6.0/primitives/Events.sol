@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 import {FeeType, State, WhitelistState} from "./Enums.sol";
-import {Rates} from "./Struct.sol";
+import {Guardrails, Rates} from "./Struct.sol";
 
 // ********************* VAULT ********************* //
 
@@ -51,9 +51,6 @@ event WhitelistUpdated(address indexed account, bool authorized);
 /// @param blacklisted Indicates whether the account is blacklisted (true) or not (false).
 event BlacklistUpdated(address indexed account, bool blacklisted);
 
-/// @notice Emitted when the whitelist is disabled.
-event WhitelistDisabled();
-
 /// @notice Emitted when the external sanctions list is updated.
 /// @param oldExternalSanctionList The old external sanctions list.
 /// @param newExternalSanctionList The new external sanctions list.
@@ -83,6 +80,11 @@ event SafeUpdated(address oldSafe, address newSafe);
 
 /// @notice Emitted when the safe upgradeability is given up.
 event SafeUpgradeabilityGivenUp();
+
+/// @notice Emitted when the security council role is updated.
+/// @param oldSecurityCouncil The address of the old security council.
+/// @param newSecurityCouncil The address of the new security council.
+event SecurityCouncilUpdated(address oldSecurityCouncil, address newSecurityCouncil);
 
 // ********************* FEE_MANAGER ********************* //
 
@@ -146,9 +148,24 @@ event MaxCapUpdated(uint256 previousMaxCap, uint256 maxCap);
 
 /// @notice Emitted when the operator privileges are given up.
 event GaveUpOperatorPrivileges();
+/// @notice Same as a 4626 Withdraw event
+/// @param sender The address who called the withdraw
+/// @param receiver The receiver of the assets
+/// @param owner The owner of the shares
+/// @param assets Amount of assets withdrawn
+/// @param shares Amount of shares redeemed
+event WithdrawSync(
+    address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
+);
 /// @notice Emitted when the whitelist is switched to blacklist.
 event BlacklistActivated();
 
 /// @notice Emitted when the whitelist is switched to whitelist.
 event WhitelistActivated();
 
+// ********************* GUARDRAILS_MANAGER ********************* //
+
+/// @notice Emitted when the guardrails are updated.
+/// @param oldGuardrails The old guardrails.
+/// @param newGuardrails The new guardrails.
+event GuardrailsUpdated(Guardrails oldGuardrails, Guardrails newGuardrails);

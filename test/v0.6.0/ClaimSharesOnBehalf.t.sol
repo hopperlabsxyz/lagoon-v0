@@ -34,6 +34,7 @@ contract TestClaimSharesOnBehalf is BaseTest {
 
         // First settlement
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
 
         uint256 user3Balance = assetBalance(user3.addr);
         uint256 user3RequestId = requestDeposit(user3Balance, user3.addr);
@@ -43,12 +44,14 @@ contract TestClaimSharesOnBehalf is BaseTest {
 
         // Seconds settlement
         updateAndSettle(user1Balance + user2Balance);
+        vm.warp(block.timestamp + 1);
 
         uint256 user5Balance = assetBalance(user5.addr);
         uint256 user5RequestId = requestDeposit(user5Balance, user5.addr);
 
         // Third settlement
         updateAndSettle(user1Balance + user2Balance + user3Balance + user4Balance);
+        vm.warp(block.timestamp + 1);
 
         assertEq(vault.maxDeposit(user1.addr), user1Balance, "wrong maxDeposit on user 1");
         assertEq(vault.maxDeposit(user2.addr), user2Balance, "wrong maxDeposit on user 2");

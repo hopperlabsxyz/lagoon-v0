@@ -58,7 +58,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
         uint16 _performanceRate,
         uint256 _decimals,
         uint16 _entryRate,
-        uint16 _exitRate
+        uint16 _exitRate,
+        uint16 _haircutRate
     ) internal onlyInitializing {
         FeeManagerStorage storage $ = FeeLib._getFeeManagerStorage();
         FeeLib.updateRates(
@@ -67,7 +68,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
                 managementRate: _managementRate,
                 performanceRate: _performanceRate,
                 entryRate: _entryRate,
-                exitRate: _exitRate
+                exitRate: _exitRate,
+                haircutRate: _haircutRate
             })
         );
 

@@ -14,11 +14,14 @@ import {VaultInit} from "./VaultInit.sol";
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
 import {Whitelistable} from "../Whitelistable.sol";
+import {FeeLib} from "../libraries/FeeLib.sol";
+import {GuardrailsLib} from "../libraries/GuardrailsLib.sol";
 import {State, WhitelistState} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
     Closed,
     ERC7540InvalidOperator,
+    GuardrailsViolation,
     NotClosing,
     NotOpen,
     NotWhitelisted,
@@ -28,49 +31,19 @@ import {
 } from "../primitives/Errors.sol";
 
 import {FeeRegistry} from "../../protocol-v1/FeeRegistry.sol";
-import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
+import {GuardrailsManager} from "../GuardRailsManager.sol";
+import {GuardrailsLib} from "../libraries/GuardrailsLib.sol";
+import {DepositSync, Referral, StateUpdated, WithdrawSync} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-
 using SafeERC20 for IERC20;
 using Math for uint256;
 
-/// @custom:storage-definition erc7201:hopper.storage.vault
-/// @param underlying The address of the underlying asset.
-/// @param name The name of the vault and by extension the ERC20 token.
-/// @param symbol The symbol of the vault and by extension the ERC20 token.
-/// @param safe The address of the safe smart contract.
-/// @param whitelistManager The address of the whitelist manager.
-/// @param valuationManager The address of the valuation manager.
-/// @param admin The address of the owner of the vault.
-/// @param feeReceiver The address of the fee receiver.
-/// @param feeRegistry The address of the fee registry.
-/// @param wrappedNativeToken The address of the wrapped native token.
-/// @param managementRate The management fee rate.
-/// @param performanceRate The performance fee rate.
-/// @param rateUpdateCooldown The cooldown period for updating the fee rates.
-/// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
-struct InitStruct {
-    IERC20 underlying;
-    string name;
-    string symbol;
-    address safe;
-    address whitelistManager;
-    address valuationManager;
-    address admin;
-    address feeReceiver;
-    uint16 managementRate;
-    uint16 performanceRate;
-    WhitelistState whitelistState;
-    uint256 rateUpdateCooldown;
-    address externalSanctionsList;
-}
-
 /// @custom:oz-upgrades-from src/v0.5.0/Vault.sol:Vault
-contract Vault is ERC7540, Whitelistable, FeeManager {
+contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     VaultInit immutable init;
 
@@ -162,9 +135,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         emit Referral(referral, owner, requestId, assets);
     }
 
-    /// @notice Deposit in a sychronous fashion into the vault.
+    /// @notice Deposit in a synchronous fashion into the vault.
     /// @param assets The assets to deposit.
     /// @param receiver The receiver of the shares.
+    /// @param referral The address who referred the deposit.
     /// @return shares The resulting shares.
     function syncDeposit(
         uint256 assets,
@@ -191,8 +165,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             IERC20(asset()).safeTransferFrom(msg.sender, safe(), assets);
         }
         shares = _convertToShares(assets, Math.Rounding.Floor);
-        // introduced in v0.6.0
         uint16 entryRate = FeeLib.feeRates().entryRate;
+        // introduced in v0.6.0
         uint256 entryFeeShares = FeeLib.computeFee(shares, entryRate);
         shares -= entryFeeShares;
         FeeLib.takeFees(entryFeeShares, FeeType.Entry, entryRate, 0);
@@ -203,6 +177,34 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         emit DepositSync(msg.sender, receiver, assets, shares);
 
         emit Referral(referral, msg.sender, 0, assets);
+    }
+
+    /// @notice Deposit in a synchronous fashion into the vault.
+    /// @param shares The shares to redeem.
+    /// @param receiver The receiver of the assets.
+    /// @return assets The resulting assets.
+    function syncRedeem(
+        uint256 shares,
+        address receiver
+    ) public onlySyncDeposit onlyOpen returns (uint256 assets) {
+        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
+        ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+
+        // first we need to compute the exit fee
+        uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
+
+        uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, FeeLib.feeRates().haircutRate);
+        assets = _convertToAssets(shares - haircutShares - exitFeeShares, Math.Rounding.Floor);
+
+        // burn all the shares and remove the assets from the total assets
+        _burn(msg.sender, shares);
+        $.totalAssets -= assets;
+
+        IERC20(asset()).safeTransferFrom(safe(), receiver, assets);
+
+        FeeLib.takeFees(exitFeeShares, FeeType.Exit, FeeLib.feeRates().exitRate, 0);
+
+        emit WithdrawSync(msg.sender, receiver, msg.sender, assets, shares);
     }
 
     /// @notice Requests the redemption of tokens, subject to whitelist validation.
@@ -333,7 +335,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     }
 
     /// @notice Claims all available assets for a list of controller addresses.
-
     /// @dev Iterates over each controller address, checks for claimable redeems, and redeems them on their behalf.
     /// @param controllers The list of controller addresses for which to claim assets.
     function claimAssetsOnBehalf(
@@ -351,6 +352,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     // ## VALUATION UPDATING AND SETTLEMENT FUNCTIONS ## //
     ///////////////////////////////////////////////////////
 
+    /// @notice Function to update the total assets lifespan.
+    /// @param lifespan The lifespan of the total assets.
     function updateTotalAssetsLifespan(
         uint128 lifespan
     ) external onlySafe {
@@ -362,7 +365,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     /// @param _newTotalAssets The new total assets of the vault.
     function updateNewTotalAssets(
         uint256 _newTotalAssets
-    ) public onlyValuationManager {
+    ) public onlyValuationManagerOrSecurityCouncil {
         if (VaultLib._getVaultStorage().state == State.Closed) {
             revert Closed();
         }
@@ -372,6 +375,25 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         // he must call unvalidateTotalAssets first.
         if (isTotalAssetsValid()) {
             revert ValuationUpdateNotAllowed();
+        }
+
+        uint256 oneShare = 10 ** decimals();
+        uint256 currentPps = convertToAssets(oneShare);
+        uint256 nextPps = oneShare.mulDiv(
+            _newTotalAssets + 1, totalSupply() + 10 ** ERC7540Lib.decimalsOffset(), Math.Rounding.Floor
+        );
+
+        uint256 lastFeeTime = FeeLib._getFeeManagerStorage().lastFeeTime;
+        uint256 timePastSinceLastValuationUpdate = block.timestamp - lastFeeTime;
+        // we are going to check that the new total assets respect the guardrails
+        // only if the caller is the valuation manager
+        if (
+            msg.sender == RolesLib._getRolesStorage().valuationManager && lastFeeTime != 0
+                && timePastSinceLastValuationUpdate != 0
+        ) {
+            if (!GuardrailsManager.isCompliant(currentPps, nextPps, timePastSinceLastValuationUpdate)) {
+                revert GuardrailsViolation();
+            }
         }
         ERC7540Lib.updateNewTotalAssets(_newTotalAssets);
     }
@@ -543,6 +565,16 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 entryFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
         shares -= entryFeeShares;
         return shares;
+    }
+
+    function previewSyncRedeem(
+        uint256 shares
+    ) public view returns (uint256 assets) {
+        if (paused() || !isTotalAssetsValid()) return 0;
+        uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
+        uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, FeeLib.feeRates().haircutRate);
+        assets = _convertToAssets(shares - exitFeeShares - haircutShares, Math.Rounding.Floor);
+        return assets;
     }
 
     function isTotalAssetsValid() public view returns (bool) {

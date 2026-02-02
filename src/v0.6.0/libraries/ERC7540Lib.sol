@@ -29,6 +29,7 @@ import {
 } from "../primitives/Events.sol";
 import {EpochData, SettleData} from "../primitives/Struct.sol";
 import {Rates} from "../primitives/Struct.sol";
+import {FeeLib} from "./FeeLib.sol";
 import {PausableLib} from "./PausableLib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";

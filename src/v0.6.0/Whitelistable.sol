@@ -10,10 +10,10 @@ import {WhitelistState} from "./primitives/Enums.sol";
 abstract contract Whitelistable is Roles {
     /// @custom:storage-definition erc7201:hopper.storage.Whitelistable
     /// @param isWhitelisted The mapping of whitelisted addresses.
-    /// @param isActivated The flag to check if the whitelist is activated.
+    /// @param whitelistState The current whitelist mode (whitelist or blacklist).
     struct WhitelistableStorage {
         mapping(address => bool) isWhitelisted;
-        // in v0.6.0, we replace the bool isActivated with a enum WhitelistState
+        // in v0.6.0, we replace the bool isActivated with an enum WhitelistState
         // bool isActivated; --> WhitelistState whitelistState;
         WhitelistState whitelistState;
         // added in v0.6.0

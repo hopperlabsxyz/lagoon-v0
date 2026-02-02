@@ -4,13 +4,11 @@ pragma solidity 0.8.26;
 import {Whitelistable} from "../Whitelistable.sol";
 import {SanctionsList} from "../interfaces/SanctionsList.sol";
 import {WhitelistState} from "../primitives/Enums.sol";
-import {AccessControlDisabled} from "../primitives/Errors.sol";
 import {
     BlacklistActivated,
     BlacklistUpdated,
     ExternalSanctionsListUpdated,
     WhitelistActivated,
-    WhitelistDisabled,
     WhitelistUpdated
 } from "../primitives/Events.sol";
 import {RolesLib} from "./RolesLib.sol";

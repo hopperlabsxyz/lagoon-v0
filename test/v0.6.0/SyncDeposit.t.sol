@@ -22,6 +22,7 @@ contract TestSyncDeposit is BaseTest {
         vm.prank(vault.safe());
         vault.updateTotalAssetsLifespan(1000);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
     }
 
     function test_syncDeposit_simple() public {
@@ -75,15 +76,6 @@ contract TestSyncDeposit is BaseTest {
 
         assertEq(shares, vault.balanceOf(user2.addr));
         assertEq(shares, expectedShares);
-    }
-
-    function test_syncDeposit_addressZeroReceiver() public {
-        test_syncDeposit_simple();
-        // dealAndApproveAndWhitelist(user1.addr);
-
-        // vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidReceiver.selector, address(0)));
-        // vm.prank(user1.addr);
-        // vault.syncDeposit(1, address(0), address(0));
     }
 
     function test_syncDeposit_whenPaused() public {

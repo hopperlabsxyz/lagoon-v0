@@ -20,54 +20,12 @@ contract testRateUpdates is BaseTest {
         assertEq(vault.feeRates().managementRate, managementRate, "managementRate");
     }
 
-    // function test_ratesShouldRevertAtInitWhenToHigh() public {
-    //     uint16 protocolRate = MAX_PROTOCOL_RATE + 1;
-    //     uint16 managementRate = MAX_MANAGEMENT_RATE + 1;
-    //     uint16 performanceRate = MAX_PERFORMANCE_RATE + 1;
-
-    //     feeRegistry = new FeeRegistry(false);
-    //     feeRegistry.initialize(dao.addr, dao.addr);
-
-    //     vm.prank(dao.addr);
-    //     feeRegistry.updateDefaultRate(protocolRate);
-    //     vault = new VaultHelper(false);
-
-    //     Vault.InitStruct memory v = Vault.InitStruct({
-    //         underlying: underlying,
-    //         name: vaultName,
-    //         symbol: vaultSymbol,
-    //         safe: safe.addr,
-    //         whitelistManager: whitelistManager.addr,
-    //         valuationManager: valuationManager.addr,
-    //         admin: admin.addr,
-    //         feeReceiver: feeReceiver.addr,
-    //         feeRegistry: address(feeRegistry),
-    //         managementRate: managementRate,
-    //         performanceRate: performanceRate,
-    //         wrappedNativeToken: WRAPPED_NATIVE_TOKEN,
-    //         rateUpdateCooldown: rateUpdateCooldown,
-    //         enableWhitelist: enableWhitelist
-    //     });
-    //     vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
-
-    //     vault.initialize(v);
-
-    //     v.managementRate = MAX_MANAGEMENT_RATE;
-
-    //     vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_PERFORMANCE_RATE));
-
-    //     vault.initialize(v);
-    //     v.performanceRate = MAX_PERFORMANCE_RATE;
-
-    //     vault.initialize(v);
-    //     assertEq(vault.protocolRate(), MAX_PROTOCOL_RATE, "protocol rate should be MAX_PROTOCOL_RATE");
-    // }
-
     function test_updateRatesOverMaxPerformanceRateShouldRevert() public {
         setUpVault(100, 200, 2000);
 
-        Rates memory newRates =
-            Rates({managementRate: MAX_MANAGEMENT_RATE + 1, performanceRate: 0, entryRate: 0, exitRate: 0});
+        Rates memory newRates = Rates({
+            managementRate: MAX_MANAGEMENT_RATE + 1, performanceRate: 0, entryRate: 0, exitRate: 0, haircutRate: 0
+        });
         vm.startPrank(vault.owner());
         vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_MANAGEMENT_RATE));
         vault.updateRates(newRates);
@@ -84,7 +42,11 @@ contract testRateUpdates is BaseTest {
         setUpVault(100, 200, 200);
 
         Rates memory newRates = Rates({
-            managementRate: MAX_MANAGEMENT_RATE, performanceRate: MAX_PERFORMANCE_RATE, entryRate: 0, exitRate: 0
+            managementRate: MAX_MANAGEMENT_RATE,
+            performanceRate: MAX_PERFORMANCE_RATE,
+            entryRate: 0,
+            exitRate: 0,
+            haircutRate: 0
         });
         assertNotEq(200, MAX_MANAGEMENT_RATE);
         assertNotEq(200, MAX_PERFORMANCE_RATE);
@@ -107,7 +69,11 @@ contract testRateUpdates is BaseTest {
         vm.warp(block.timestamp + 1 days);
         // owner updates rates
         Rates memory newRates = Rates({
-            managementRate: MAX_MANAGEMENT_RATE, performanceRate: MAX_PERFORMANCE_RATE, entryRate: 0, exitRate: 0
+            managementRate: MAX_MANAGEMENT_RATE,
+            performanceRate: MAX_PERFORMANCE_RATE,
+            entryRate: 0,
+            exitRate: 0,
+            haircutRate: 0
         });
 
         vm.startPrank(vault.owner());
@@ -126,7 +92,8 @@ contract testRateUpdates is BaseTest {
         vault.initiateClosing();
         assertEq(uint256(vault.state()), uint256(State.Closing), "vault should be in Closing state");
 
-        Rates memory newRates = Rates({managementRate: 300, performanceRate: 300, entryRate: 0, exitRate: 0});
+        Rates memory newRates =
+            Rates({managementRate: 300, performanceRate: 300, entryRate: 0, exitRate: 0, haircutRate: 0});
         vm.prank(vault.owner());
         vault.updateRates(newRates);
     }
@@ -148,7 +115,8 @@ contract testRateUpdates is BaseTest {
         assertEq(uint256(vault.state()), uint256(State.Closed), "vault should be in Closed state");
 
         // Update rates should revert in Closed state
-        Rates memory newRates = Rates({managementRate: 300, performanceRate: 300, entryRate: 0, exitRate: 0});
+        Rates memory newRates =
+            Rates({managementRate: 300, performanceRate: 300, entryRate: 0, exitRate: 0, haircutRate: 0});
         vm.prank(vault.owner());
         vm.expectRevert(Closed.selector);
         vault.updateRates(newRates);

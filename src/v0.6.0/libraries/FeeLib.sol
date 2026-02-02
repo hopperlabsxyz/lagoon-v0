@@ -25,6 +25,7 @@ library FeeLib {
     uint16 constant MAX_PERFORMANCE_RATE = 5000; // 50 %
     uint16 constant MAX_ENTRY_RATE = 1000; // 10 %
     uint16 constant MAX_EXIT_RATE = 1000; // 10 %
+    uint16 constant MAX_HAIRCUT_RATE = 1000; // 10 %
     uint16 constant MAX_PROTOCOL_RATE = 3000; // 30 %
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));

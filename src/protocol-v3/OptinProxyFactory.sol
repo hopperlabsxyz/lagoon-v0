@@ -3,7 +3,9 @@ pragma solidity 0.8.26;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {InitStruct} from "@src/protocol-v2/OptinProxyFactory.sol";
 import {LagoonVault} from "@src/proxy/OptinProxy.sol";
+import {WhitelistState} from "@src/v0.6.0/primitives/Enums.sol";
 
 interface IVault {
     function initialize(
@@ -23,38 +25,6 @@ struct OptinProxyFactoryStorage {
     address WRAPPED_NATIVE;
     /// @notice Mapping to track whether an address is a proxy instance created by this factory
     mapping(address => bool) isInstance;
-}
-
-/// @title InitStruct
-/// @notice Initialization structure for creating new vault proxies
-/// @dev Contains all necessary parameters to initialize a vault
-struct InitStruct {
-    /// @notice Underlying ERC20 token for the vault
-    IERC20 underlying;
-    /// @notice Name of the vault token
-    string name;
-    /// @notice Symbol of the vault token
-    string symbol;
-    /// @notice Address of the safe/multisig
-    address safe;
-    /// @notice Address of the whitelist manager
-    address whitelistManager;
-    /// @notice Address of the valuation manager
-    address valuationManager;
-    /// @notice Admin address for the vault
-    address admin;
-    /// @notice Fee receiver address
-    address feeReceiver;
-    /// @notice Management fee rate (in basis points)
-    uint16 managementRate;
-    /// @notice Performance fee rate (in basis points)
-    uint16 performanceRate;
-    /// @notice Flag to enable whitelist functionality
-    bool enableWhitelist;
-    /// @notice Entry fee rate (in basis points)
-    uint16 entryRate;
-    /// @notice Exit fee rate (in basis points)
-    uint16 exitRate;
 }
 
 /// @title OptinProxyFactory
