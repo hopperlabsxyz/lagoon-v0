@@ -401,18 +401,26 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     // ## MAX CAP FUNCTIONS ## //
     /////////////////////////////
 
-    function updateMaxCap(
-        uint256 maxCap
-    ) external onlySafe {
-        _updateMaxCap(maxCap);
+    function maxCap() external view returns (uint256) {
+        return ERC7540Lib._getERC7540Storage().maxCap;
     }
 
-    //////////////////////////////
-    // ## OPERATOR PRIVILEGES ## //
-    //////////////////////////////
+    function updateMaxCap(
+        uint256 _maxCap
+    ) external onlySafe {
+        _updateMaxCap(_maxCap);
+    }
 
-    function giveUpOperatorPrivileges() external onlyOwner {
-        _giveUpOperatorPrivileges();
+    ///////////////////////////
+    // ## SAFE PRIVILEGES ## //
+    ///////////////////////////
+
+    function gaveUpSafePrivileges() external view returns (bool) {
+        return ERC7540Lib._getERC7540Storage().gaveUpSafePrivileges;
+    }
+
+    function giveUpSafePrivileges() external onlyOwner {
+        _giveUpSafePrivileges();
     }
 
     /////////////////////////////

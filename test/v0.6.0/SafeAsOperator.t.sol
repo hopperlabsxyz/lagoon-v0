@@ -54,18 +54,18 @@ contract TestSafeAsOperator is BaseTest {
         dealAndApproveAndWhitelist(protocolFeeReceiver);
     }
 
-    function test_giveUpOperatorPrivileges_onlyOwner() public {
+    function test_giveUpSafePrivileges_onlyOwner() public {
         vm.prank(user1.addr);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, user1.addr));
-        vault.giveUpOperatorPrivileges();
+        vault.giveUpSafePrivileges();
     }
 
     function test_safeAsOperator_afterGivingUpOperatorPrivileges_shouldRevert() public {
         // owner decides to give up this right
-        assertFalse(vault.gaveUpOperatorPrivileges(), "gaveUpOperatorPrivileges should be false");
+        assertFalse(vault.gaveUpSafePrivileges(), "gaveUpSafePrivileges should be false");
         vm.prank(vault.owner());
-        vault.giveUpOperatorPrivileges();
-        assertTrue(vault.gaveUpOperatorPrivileges(), "gaveUpOperatorPrivileges should be true");
+        vault.giveUpSafePrivileges();
+        assertTrue(vault.gaveUpSafePrivileges(), "gaveUpSafePrivileges should be true");
 
         _callAllFunctionsExpectRevert(user2.addr, user2.addr);
     }
@@ -74,7 +74,7 @@ contract TestSafeAsOperator is BaseTest {
         _callAllFunctionsExpectRevert(protocolFeeReceiver, protocolFeeReceiver);
 
         vm.prank(vault.owner());
-        vault.giveUpOperatorPrivileges();
+        vault.giveUpSafePrivileges();
         _callAllFunctionsExpectRevert(protocolFeeReceiver, protocolFeeReceiver);
     }
 

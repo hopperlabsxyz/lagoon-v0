@@ -23,7 +23,7 @@ import {
 } from "./primitives/Errors.sol";
 import {
     DepositRequestCanceled,
-    GaveUpOperatorPrivileges,
+    GaveUpSafePrivileges,
     MaxCapUpdated,
     NewTotalAssetsUpdated,
     SettleDeposit,
@@ -91,7 +91,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint128 totalAssetsLifespan;
         // New variables introduce with v0.6.0
         uint256 maxCap;
-        bool gaveUpOperatorPrivileges;
+        bool gaveUpSafePrivileges;
     }
 
     /// @notice Initializes the ERC7540 contract.
@@ -214,7 +214,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     ) internal view returns (bool) {
         // safe as operator is possible if the operator is safe address, if the privileges were not gave up, the
         // target controller is not the protocolFeeReceiver and in this particular context we allow it
-        bool safeAsOperator = operator == safe() && !ERC7540Lib._getERC7540Storage().gaveUpOperatorPrivileges
+        bool safeAsOperator = operator == safe() && !ERC7540Lib._getERC7540Storage().gaveUpSafePrivileges
             && controller != _protocolFeeReceiver() && allowSafeAsOperator;
         if (safeAsOperator) {
             return true;
@@ -523,10 +523,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         $.maxCap = _maxCap;
     }
 
-    function _giveUpOperatorPrivileges() internal {
+    function _giveUpSafePrivileges() internal {
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
-        $.gaveUpOperatorPrivileges = true;
-        emit GaveUpOperatorPrivileges();
+        $.gaveUpSafePrivileges = true;
+        emit GaveUpSafePrivileges();
     }
 
     //////////////////////////

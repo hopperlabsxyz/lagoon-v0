@@ -192,10 +192,6 @@ contract VaultHelper is Vault {
         return FeeLib._getFeeManagerStorage().highWaterMark;
     }
 
-    function gaveUpOperatorPrivileges() public view returns (bool) {
-        return ERC7540Lib._getERC7540Storage().gaveUpOperatorPrivileges;
-    }
-
     function pendingDeposit(
         uint40 epochId
     ) public view returns (uint256) {
