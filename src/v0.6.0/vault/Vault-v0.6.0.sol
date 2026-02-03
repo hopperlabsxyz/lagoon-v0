@@ -173,6 +173,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     ) public payable onlySyncDeposit onlyOpen returns (uint256 shares) {
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
 
+        _onlyUnderMaxCap(assets);
+
         if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
 
         if (msg.value != 0) {
@@ -253,7 +255,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             _withdraw(msg.sender, receiver, controller, assets, totalShares); // sync
             return totalShares;
         } else {
-            if (controller != msg.sender && !isOperator(controller, msg.sender)) {
+            if (controller != msg.sender && !isOperatorOrSafe(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
             }
             return _withdraw(assets, receiver, controller); // async
@@ -283,7 +285,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
             _withdraw(msg.sender, receiver, controller, assets, shares); // sync
             return assets;
         } else {
-            if (controller != msg.sender && !isOperator(controller, msg.sender)) {
+            if (controller != msg.sender && !isOperatorOrSafe(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
             }
             return _redeem(shares, receiver, controller);
@@ -303,7 +305,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
-        if (caller != owner && !isOperator(owner, caller)) {
+        if (caller != owner && !isOperatorOrSafe(owner, caller)) {
             _spendAllowance(owner, caller, shares);
         }
 
@@ -317,7 +319,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     }
 
     /// @notice Claims all available shares for a list of controller addresses.
-    /// @dev Iterates over each controller address, checks for claimable deposits, and deposits them on their behalf.
+    /// @dev Iterates over each controller address, checks for claimable deposits, and claims them on their behalf.
     /// @param controllers The list of controller addresses for which to claim shares.
     function claimSharesOnBehalf(
         address[] memory controllers
@@ -331,6 +333,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     }
 
     /// @notice Claims all available assets for a list of controller addresses.
+
     /// @dev Iterates over each controller address, checks for claimable redeems, and redeems them on their behalf.
     /// @param controllers The list of controller addresses for which to claim assets.
     function claimAssetsOnBehalf(
@@ -397,6 +400,28 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint40 contextId = ERC7540Lib._getERC7540Storage().redeemSettleId;
         FeeLib.takeManagementAndPerformanceFees(contextId);
         ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
+    }
+
+    /////////////////////////////
+    // ## MAX CAP FUNCTIONS ## //
+    /////////////////////////////
+
+    function maxCap() external view returns (uint256) {
+        return ERC7540Lib._getERC7540Storage().maxCap;
+    }
+
+    function updateMaxCap(
+        uint256 _maxCap
+    ) external onlySafe {
+        _updateMaxCap(_maxCap);
+    }
+
+    ///////////////////////////
+    // ## SAFE PRIVILEGES ## //
+    ///////////////////////////
+
+    function giveUpSafePrivileges() external onlyOwner {
+        _giveUpSafePrivileges();
     }
 
     /////////////////////////////

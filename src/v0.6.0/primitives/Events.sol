@@ -76,6 +76,14 @@ event FeeReceiverUpdated(address oldReceiver, address newReceiver);
 /// @param newManager The address of the new Valuation manager.
 event ValuationManagerUpdated(address oldManager, address newManager);
 
+/// @notice Emitted when the safe role is updated.
+/// @param oldSafe The address of the old safe.
+/// @param newSafe The address of the new safe.
+event SafeUpdated(address oldSafe, address newSafe);
+
+/// @notice Emitted when the safe upgradeability is given up.
+event SafeUpgradeabilityGivenUp();
+
 // ********************* FEE_MANAGER ********************* //
 
 /// @notice Emitted when the rates are updated.
@@ -134,4 +142,3 @@ event DepositSync(address indexed sender, address indexed owner, uint256 assets,
 /// @notice Emitted when the access mode is updated.
 /// @param newMode The new access mode (Blacklist or Whitelist).
 event AccessModeUpdated(AccessMode newMode);
-

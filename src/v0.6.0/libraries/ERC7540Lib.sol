@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 
 import {ERC7540} from "../ERC7540.sol";
 import {FeeLib} from "../FeeManager.sol";
+import {RolesLib} from "../Roles.sol";
 import {FeeType} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
@@ -34,6 +35,10 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+interface Vault {
+    function safe() external view returns (address);
+}
+
 library ERC7540Lib {
     using Math for uint256;
     using SafeERC20 for IERC20;
@@ -52,10 +57,44 @@ library ERC7540Lib {
         }
     }
 
+    function _isOperatorOrSafe(
+        address controller,
+        address operator
+    ) internal view returns (bool) {
+        return _isOperator(controller, operator) || _isSafeAnOperator(controller, operator);
+    }
+
+    function _isOperator(
+        address controller,
+        address operator
+    ) internal view returns (bool) {
+        return _getERC7540Storage().isOperator[controller][operator];
+    }
+
+    function _isSafeAnOperator(
+        address controller,
+        address operator
+    ) internal view returns (bool) {
+        // safe as operator is possible if the operator is safe address, if the privileges were not gave up, the
+        // target controller is not the protocolFeeReceiver and in this particular context we allow it
+        return operator == Vault(address(this)).safe() && !_getERC7540Storage().gaveUpSafePrivileges
+            && controller != RolesLib._protocolFeeReceiver();
+    }
+
+    function _onlyOperatorOrSafe(
+        address controller
+    ) internal view {
+        // Include safe as operator
+        if (controller != msg.sender && !_isOperatorOrSafe(controller, msg.sender)) {
+            revert ERC7540InvalidOperator();
+        }
+    }
+
     function _onlyOperator(
         address controller
     ) internal view {
-        if (controller != msg.sender && !ERC7540(address(this)).isOperator(controller, msg.sender)) {
+        // Exclude safe as operator
+        if (controller != msg.sender && !_isOperator(controller, msg.sender)) {
             revert ERC7540InvalidOperator();
         }
     }
@@ -357,4 +396,3 @@ library ERC7540Lib {
         return _getERC7540Storage().settles[settleId].entryFeeRate;
     }
 }
-
