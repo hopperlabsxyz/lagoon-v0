@@ -14,7 +14,7 @@ import {VaultInit} from "./VaultInit.sol";
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
 import {Whitelistable} from "../Whitelistable.sol";
-import {State, WhitelistState} from "../primitives/Enums.sol";
+import {AccessMode, State} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
     Closed,
@@ -52,7 +52,7 @@ using Math for uint256;
 /// @param managementRate The management fee rate.
 /// @param performanceRate The performance fee rate.
 /// @param rateUpdateCooldown The cooldown period for updating the fee rates.
-/// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
+/// @param accessMode The access mode (Whitelist or Blacklist).
 struct InitStruct {
     IERC20 underlying;
     string name;
@@ -64,7 +64,7 @@ struct InitStruct {
     address feeReceiver;
     uint16 managementRate;
     uint16 performanceRate;
-    WhitelistState whitelistState;
+    AccessMode accessMode;
     uint256 rateUpdateCooldown;
     address externalSanctionsList;
 }

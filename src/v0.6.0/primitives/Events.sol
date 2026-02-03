@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {FeeType, State, WhitelistState} from "./Enums.sol";
+import {AccessMode, FeeType, State} from "./Enums.sol";
 import {Rates} from "./Struct.sol";
 
 // ********************* VAULT ********************* //
@@ -131,9 +131,7 @@ event TotalAssetsLifespanUpdated(uint128 oldLifespan, uint128 newLifespan);
 /// @param shares Amount of shares minted to owner
 event DepositSync(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
 
-/// @notice Emitted when the whitelist is switched to blacklist.
-event BlacklistActivated();
-
-/// @notice Emitted when the whitelist is switched to whitelist.
-event WhitelistActivated();
+/// @notice Emitted when the access mode is updated.
+/// @param newMode The new access mode (Blacklist or Whitelist).
+event AccessModeUpdated(AccessMode newMode);
 

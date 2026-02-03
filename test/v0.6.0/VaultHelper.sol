@@ -39,11 +39,11 @@ contract VaultHelper is Vault {
     /// @notice Returns if the whitelist is activated
     /// @return True if the whitelist is activated, false otherwise
     function isWhitelistActivated() public view returns (bool) {
-        return WhitelistableLib._getWhitelistableStorage().whitelistState == WhitelistState.Whitelist;
+        return WhitelistableLib._getWhitelistableStorage().accessMode == AccessMode.Whitelist;
     }
 
     function isBlacklistActivated() public view returns (bool) {
-        return WhitelistableLib._getWhitelistableStorage().whitelistState == WhitelistState.Blacklist;
+        return WhitelistableLib._getWhitelistableStorage().accessMode == AccessMode.Blacklist;
     }
 
     function totalAssets(
@@ -168,7 +168,7 @@ contract VaultHelper is Vault {
     }
 
     function activateWhitelist() public {
-        WhitelistableLib._getWhitelistableStorage().whitelistState = WhitelistState.Whitelist;
+        WhitelistableLib._getWhitelistableStorage().accessMode = AccessMode.Whitelist;
     }
 
     function protocolFeeReceiver() public view returns (address) {

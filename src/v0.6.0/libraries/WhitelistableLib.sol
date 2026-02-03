@@ -3,13 +3,11 @@ pragma solidity 0.8.26;
 
 import {Whitelistable} from "../Whitelistable.sol";
 import {SanctionsList} from "../interfaces/SanctionsList.sol";
-import {WhitelistState} from "../primitives/Enums.sol";
-import {AccessControlDisabled} from "../primitives/Errors.sol";
+import {AccessMode} from "../primitives/Enums.sol";
 import {
-    BlacklistActivated,
+    AccessModeUpdated,
     BlacklistUpdated,
     ExternalSanctionsListUpdated,
-    WhitelistActivated,
     WhitelistDisabled,
     WhitelistUpdated
 } from "../primitives/Events.sol";
@@ -98,22 +96,16 @@ library WhitelistableLib {
         }
     }
 
-    /// @notice Switches the whitelist mode
-    /// @param newMode The new whitelist mode
-    /// @dev If the whitelist is switched to blacklist, it emits a BlacklistActivated event
-    /// @dev If the whitelist is switched to whitelist, it emits a WhitelistActivated event
-    /// event
-    function switchWhitelistMode(
-        WhitelistState newMode
+    /// @notice Switches the access mode
+    /// @param newMode The new access mode
+    /// @dev Emits an AccessModeUpdated event with the new mode
+    function switchAccessMode(
+        AccessMode newMode
     ) public {
         Whitelistable.WhitelistableStorage storage $ = _getWhitelistableStorage();
 
-        $.whitelistState = newMode;
-        if (newMode == WhitelistState.Blacklist) {
-            emit BlacklistActivated();
-        } else if (newMode == WhitelistState.Whitelist) {
-            emit WhitelistActivated();
-        }
+        $.accessMode = newMode;
+        emit AccessModeUpdated(newMode);
     }
 
     /// @notice Sets the external sanctions list
@@ -133,7 +125,7 @@ library WhitelistableLib {
         address account
     ) public view returns (bool) {
         Whitelistable.WhitelistableStorage storage $ = _getWhitelistableStorage();
-        WhitelistState _whitelistState = $.whitelistState;
+        AccessMode _accessMode = $.accessMode;
 
         if (RolesLib._getRolesStorage().feeRegistry.protocolFeeReceiver() == account) {
             // if the account is the protocol fee receiver, it is always whitelisted
@@ -142,7 +134,7 @@ library WhitelistableLib {
         // if the whitelist is active, we check if the account is whitelisted
         // if the whitelist is in blacklist mode and the account is blacklisted we return false
         bool internalListApproval =
-            _whitelistState == WhitelistState.Whitelist ? $.isWhitelisted[account] : !$.isBlacklisted[account];
+            _accessMode == AccessMode.Whitelist ? $.isWhitelisted[account] : !$.isBlacklisted[account];
 
         // by default, we consider that the external sanctions list is not set, so we set it to true
         bool externalListApproval = true;

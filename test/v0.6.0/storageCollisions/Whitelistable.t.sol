@@ -22,7 +22,7 @@
 
 // contract WhitelistableStorageV0_6_0 {
 //     mapping(address => bool) public isWhitelisted;
-//     WhitelistState public whitelistState;
+//     AccessMode public accessMode;
 //     mapping(address => bool) public isBlacklisted;
 // }
 
