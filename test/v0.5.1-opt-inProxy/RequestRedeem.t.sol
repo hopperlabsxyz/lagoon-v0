@@ -7,6 +7,7 @@ import "forge-std/Test.sol";
 import {BaseTest} from "./Base.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ControllerCannotBeZeroAddress} from "@src/v0.5.1/primitives/Errors.sol";
 
 contract TestRequestRedeem is BaseTest {
     function setUp() public {
@@ -97,6 +98,14 @@ contract TestRequestRedeem is BaseTest {
         vm.prank(user1.addr);
         vm.expectRevert(OnlyOneRequestAllowed.selector);
         vault.requestRedeem(userBalance / 2, user1.addr, user1.addr);
+    }
+
+    function test_requestRedeem_revertIfControllerIsZeroAddress() public {
+        uint256 userBalance = balance(user1.addr);
+        vm.startPrank(user1.addr);
+        vm.expectRevert(ControllerCannotBeZeroAddress.selector);
+        vault.requestRedeem(userBalance, address(0), user1.addr);
+        vm.stopPrank();
     }
 
     function test_requestRedeem_updateClaimableDepositRequestAndPendingDepositRequest() public {

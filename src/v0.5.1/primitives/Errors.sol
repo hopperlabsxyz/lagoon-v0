@@ -61,6 +61,9 @@ error OnlyAsyncDepositAllowed();
 /// @notice Indicates that deposit can only happen via the synchronous path.
 error OnlySyncDepositAllowed();
 
+/// @notice Indicates that the controller cannot be a zero address.
+error ControllerCannotBeZeroAddress();
+
 // ********************* FEE MANAGER ********************* //
 
 /// @notice Indicates that the provided rate exceeds the maximum allowed rate.
