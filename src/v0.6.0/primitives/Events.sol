@@ -134,5 +134,5 @@ event DepositSync(address indexed sender, address indexed owner, uint256 assets,
 /// @param maxCap The new max cap.
 event MaxCapUpdated(uint256 previousMaxCap, uint256 maxCap);
 
-/// @notice Emitted when the operator privileges are given up.
-event GaveUpOperatorPrivileges();
+/// @notice Emitted when the safe privileges are given up.
+event GaveUpSafePrivileges();
