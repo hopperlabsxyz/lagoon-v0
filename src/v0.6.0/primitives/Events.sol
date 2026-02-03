@@ -142,3 +142,11 @@ event DepositSync(address indexed sender, address indexed owner, uint256 assets,
 /// @notice Emitted when the access mode is updated.
 /// @param newMode The new access mode (Blacklist or Whitelist).
 event AccessModeUpdated(AccessMode newMode);
+
+/// @notice Emitted when the max cap is updated.
+/// @param previousMaxCap The previous max cap.
+/// @param maxCap The new max cap.
+event MaxCapUpdated(uint256 previousMaxCap, uint256 maxCap);
+
+/// @notice Emitted when the safe privileges are given up.
+event GaveUpSafePrivileges();
