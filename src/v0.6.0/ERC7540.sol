@@ -132,25 +132,22 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     // MODIFIERS //
     ///////////////
 
-    /// @notice Make sure the caller is an operator or the controller.
+    /// @notice Make sure the caller is an operator or the safe (if activated) or the controller.
     /// @param controller The controller.
-    modifier onlyOperator(
-        address controller,
-        bool allowSafeAsOperator
+    modifier onlyOperatorOrSafe(
+        address controller
     ) {
-        _onlyOperator(controller, allowSafeAsOperator);
+        ERC7540Lib._onlyOperatorOrSafe(controller);
         _;
     }
 
     /// @notice Make sure the caller is an operator or the controller.
     /// @param controller The controller.
-    function _onlyOperator(
-        address controller,
-        bool allowSafeAsOperator
-    ) private view {
-        if (controller != msg.sender && !_isOperator(controller, msg.sender, allowSafeAsOperator)) {
-            revert ERC7540InvalidOperator();
-        }
+    modifier onlyOperator(
+        address controller
+    ) {
+        ERC7540Lib._onlyOperator(controller);
+        _;
     }
 
     /// @notice Make sure new deposit request is under the max cap.
@@ -205,22 +202,14 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address controller,
         address operator
     ) public view returns (bool) {
-        return (_isOperator(controller, operator, true));
+        return ERC7540Lib._isOperator(controller, operator);
     }
 
-    function _isOperator(
+    function isOperatorOrSafe(
         address controller,
-        address operator,
-        bool allowSafeAsOperator
-    ) internal view returns (bool) {
-        // safe as operator is possible if the operator is safe address, if the privileges were not gave up, the
-        // target controller is not the protocolFeeReceiver and in this particular context we allow it
-        bool safeAsOperator = operator == safe() && !ERC7540Lib._getERC7540Storage().gaveUpSafePrivileges
-            && controller != _protocolFeeReceiver() && allowSafeAsOperator;
-        if (safeAsOperator) {
-            return true;
-        }
-        return ERC7540Lib._getERC7540Storage().isOperator[controller][operator];
+        address operator
+    ) public view returns (bool) {
+        return ERC7540Lib._isOperatorOrSafe(controller, operator);
     }
 
     /// @dev should not be usable when contract is paused
@@ -325,7 +314,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 assets,
         address receiver,
         address controller
-    ) external virtual onlyOperator(controller, true) returns (uint256) {
+    ) external virtual onlyOperatorOrSafe(controller) returns (uint256) {
         return _deposit(assets, receiver, controller);
     }
 
@@ -369,7 +358,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 shares,
         address receiver,
         address controller
-    ) external virtual onlyOperator(controller, true) returns (uint256) {
+    ) external virtual onlyOperatorOrSafe(controller) returns (uint256) {
         return _mint(shares, receiver, controller);
     }
 
@@ -434,7 +423,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address controller,
         address owner
     ) internal returns (uint256) {
-        if (msg.sender != owner && !_isOperator(owner, msg.sender, true)) {
+        if (msg.sender != owner && !isOperatorOrSafe(owner, msg.sender)) {
             _spendAllowance(owner, msg.sender, shares);
         }
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
@@ -664,5 +653,4 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     ) public virtual;
 
     function safe() public view virtual returns (address);
-    function _protocolFeeReceiver() internal view virtual returns (address);
 }

@@ -44,6 +44,10 @@ library RolesLib {
         }
     }
 
+    function _protocolFeeReceiver() internal view returns (address) {
+        return _getRolesStorage().feeRegistry.protocolFeeReceiver();
+    }
+
     function updateWhitelistManager(
         address _whitelistManager
     ) public {
