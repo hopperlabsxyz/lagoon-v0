@@ -34,7 +34,7 @@ contract TestRoles is BaseTest {
     }
 
     function test_feeRegistry() public view {
-        assertEq(vault.feeRegistry(), address(feeRegistry));
+        assertEq(vault.feeRegistry(), address(protocolRegistry));
     }
 
     function test_updateWhitelistManager() public {

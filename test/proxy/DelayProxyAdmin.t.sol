@@ -5,7 +5,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 
 import {ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 import {DelayProxyAdmin} from "@src/proxy/DelayProxyAdmin.sol";
-import {OptinProxy} from "@src/proxy/OptinProxy.sol";
+import {LagoonVault} from "@src/proxy/OptinProxy.sol";
 
 import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -151,7 +151,7 @@ contract DelayProxyAdminTest is Test {
         vm.prank(owner);
         registry.addLogic((address(impl2)));
 
-        OptinProxy proxy = new OptinProxy({
+        LagoonVault proxy = new LagoonVault({
             _logic: address(impl1),
             _initialOwner: owner,
             _logicRegistry: address(registry),

@@ -8,7 +8,7 @@ import {BaseTest} from "./Base.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract TestRedeemAssetsOnBehalf is BaseTest {
+contract TestClaimAssetsOnBehalf is BaseTest {
     function setUp() public {
         setUpVault(0, 0, 0);
         dealAndApproveAndWhitelist(user1.addr);
@@ -16,13 +16,13 @@ contract TestRedeemAssetsOnBehalf is BaseTest {
         dealAndApproveAndWhitelist(user3.addr);
     }
 
-    function test_RedeemAssetsOnBehalf_onlySafe() public {
+    function test_claimAssetsOnBehalf_onlySafe() public {
         address[] memory controllers = new address[](0);
         vm.expectRevert(abi.encodeWithSelector(OnlySafe.selector, vault.safe()));
-        vault.redeemAssetsOnBehalf(controllers);
+        vault.claimAssetsOnBehalf(controllers);
     }
 
-    function test_RedeemAssetsOnBehalf() public {
+    function test_claimAssetsOnBehalf() public {
         uint256 user1Balance = assetBalance(user1.addr);
         uint256 user1RequestId = requestDeposit(user1Balance, user1.addr);
 
@@ -59,7 +59,7 @@ contract TestRedeemAssetsOnBehalf is BaseTest {
 
         // // Claiming all users shares all at once
         vm.prank(safe.addr);
-        vault.redeemAssetsOnBehalf(controllers);
+        vault.claimAssetsOnBehalf(controllers);
 
         uint256 user1AssetAfterClaim = vault.convertToAssets(user1Shares, user1RequestId);
         assertEq(user1AssetAfterClaim, underlying.balanceOf(user1.addr), "user1 asset balance is wrong");

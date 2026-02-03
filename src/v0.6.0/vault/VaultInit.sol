@@ -24,7 +24,7 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {FeeRegistry} from "@src/protocol-v1/FeeRegistry.sol";
+import {FeeRegistry} from "@src/protocol-v2/FeeRegistry.sol";
 
 using SafeERC20 for IERC20;
 
@@ -41,7 +41,6 @@ using SafeERC20 for IERC20;
 /// @param wrappedNativeToken The address of the wrapped native token.
 /// @param managementRate The management fee rate.
 /// @param performanceRate The performance fee rate.
-/// @param rateUpdateCooldown The cooldown period for updating the fee rates.
 /// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
 struct InitStruct {
     IERC20 underlying;
@@ -55,7 +54,9 @@ struct InitStruct {
     uint16 managementRate;
     uint16 performanceRate;
     bool enableWhitelist;
-    uint256 rateUpdateCooldown;
+    // added in v0.6.0
+    uint16 entryRate;
+    uint16 exitRate;
 }
 
 /// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault
@@ -92,13 +93,14 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
         __ERC4626_init(init.underlying);
         __ERC7540_init(init.underlying, wrappedNativeToken);
         __Whitelistable_init(init.enableWhitelist);
-        __FeeManager_init(
-            feeRegistry,
-            init.managementRate,
-            init.performanceRate,
-            IERC20Metadata(address(init.underlying)).decimals(),
-            init.rateUpdateCooldown
-        );
+        __FeeManager_init({
+            _registry: feeRegistry,
+            _managementRate: init.managementRate,
+            _performanceRate: init.performanceRate,
+            _decimals: IERC20Metadata(address(init.underlying)).decimals(),
+            _entryRate: init.entryRate,
+            _exitRate: init.exitRate
+        });
 
         // $.totalAssets = initialTotalAssets;
         // mint(initialTotalAssets, address(init.safe));

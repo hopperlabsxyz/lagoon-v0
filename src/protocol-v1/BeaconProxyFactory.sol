@@ -15,6 +15,8 @@ struct InitStruct {
     address feeReceiver;
     uint16 managementRate;
     uint16 performanceRate;
+    uint16 entryRate;
+    uint16 exitRate;
     bool enableWhitelist;
     uint256 rateUpdateCooldown;
 }
