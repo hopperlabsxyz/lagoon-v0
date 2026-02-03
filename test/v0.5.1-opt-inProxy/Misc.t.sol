@@ -217,7 +217,7 @@ contract TestMisc is BaseTest {
 
     function test_version() public view {
         console.log(vault.version());
-        assertEq(keccak256(abi.encode(vault.version())), keccak256(abi.encode("v0.5.0")));
+        assertEq(keccak256(abi.encode(vault.version())), keccak256(abi.encode("v0.5.1")));
     }
 
     function test_factory() public view {

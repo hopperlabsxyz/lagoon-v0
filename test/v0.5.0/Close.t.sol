@@ -76,7 +76,7 @@ contract TestInitiateClosing is BaseTest {
 
         // user 3 request deposit before vault goes into closing state
         requestDeposit(user3Assets / 2, user3.addr); // 50k assets
-            // user 3 request redeem before vault goes into closing state on half of his shares
+        // user 3 request redeem before vault goes into closing state on half of his shares
         requestRedeem(25_000 * 10 ** vault.decimals(), user3.addr); // 25k shares pending
 
         vm.prank(admin.addr);
@@ -439,7 +439,7 @@ contract TestInitiateClosing is BaseTest {
         // no profit here because settle associated with this request did not bring any profits
         uint256 secondRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
         assertEq(secondRedeem, (25_000 / 2) * 10 ** vault.underlyingDecimals(), "did not received expected assets 2"); // same
-            // here
+        // here
 
         uint256 thirdRedeem = redeem(25_000 * 10 ** vault.decimals(), user2.addr);
         assertApproxEqAbs(

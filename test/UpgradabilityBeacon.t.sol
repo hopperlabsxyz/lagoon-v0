@@ -108,8 +108,8 @@ contract Upgradable is Test {
         assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.3.0")));
         Upgrades.upgradeBeacon(address(beacon), "v0.4.0/Vault.sol:Vault", opts);
         assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.4.0")));
-        Upgrades.upgradeBeacon(address(beacon), "v0.5.0/Vault.sol:Vault", opts);
-        assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.5.0")));
+        Upgrades.upgradeBeacon(address(beacon), "v0.5.1/Vault.sol:Vault", opts);
+        assertEq(keccak256(abi.encode(IVersion(vault).version())), keccak256(abi.encode("v0.5.1")));
         vm.stopPrank();
     }
 }

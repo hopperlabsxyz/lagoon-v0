@@ -81,7 +81,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         IWETH9 wrappedNativeToken;
         uint8 decimals;
         uint8 decimalsOffset;
-        // New variables introduce with v0.5.0
+        // New variables introduce with v0.5.1
         uint128 totalAssetsExpiration;
         uint128 totalAssetsLifespan;
     }

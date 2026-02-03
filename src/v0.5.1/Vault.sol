@@ -537,6 +537,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     }
 
     function version() public pure returns (string memory) {
-        return "v0.5.0";
+        return "v0.5.1";
     }
 }
