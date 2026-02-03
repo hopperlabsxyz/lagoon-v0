@@ -5,7 +5,6 @@ import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract TestRequestDeposit is BaseTest {
     function setUp() public {
