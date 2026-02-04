@@ -25,7 +25,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
     /// @param feeRegistry The address of the FeeRegistry contract.
     /// @param valuationManager This address is responsible of updating the newTotalAssets value of the vault.
     /// @param securityCouncil The address of the security council that can update total assets without guardrails.
-    /// @param owner The address of the owner of the contract. It considered as the admin. It is not visible in the
+    /// @dev owner The address of the owner of the contract. It considered as the admin. It is not visible in the
     /// struct. It can change the others roles and itself. Initiate the fund closing. Disable the whitelist.
     struct RolesStorage {
         address whitelistManager;

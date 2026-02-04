@@ -75,6 +75,7 @@ contract OptinProxyFactory is OwnableUpgradeable {
         $.WRAPPED_NATIVE = _wrappedNativeToken;
     }
 
+    /// @param _logic Address of the vault logic implementation
     /// @param _initialOwner Address of the initial proxy owner
     /// @param _initialDelay The initial delay before which an upgrade can occur by the proxy admin
     /// @param _init Initialization parameters for the vault

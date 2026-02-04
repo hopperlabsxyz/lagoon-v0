@@ -128,13 +128,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         _;
     }
 
-    // @notice Reverts if totalAssets is expired.
+    /// @notice Reverts if totalAssets is expired.
     modifier onlySyncDeposit() {
         VaultLib._onlySyncDeposit();
         _;
     }
 
-    // @notice Reverts if totalAssets is valid.
+    /// @notice Reverts if totalAssets is valid.
     modifier onlyAsyncDeposit() {
         VaultLib._onlyAsyncDeposit();
         _;
@@ -268,6 +268,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     /// @notice Function to bundle a claim of shares and a request redeem. It can be convenient for UX.
     /// @dev if claimable == 0, it has the same behavior as requestRedeem function.
     /// @dev if claimable > 0, user shares follow this path: vault --> user ; user --> pendingSilo
+    /// @param sharesToRedeem The number of shares to redeem.
     function claimSharesAndRequestRedeem(
         uint256 sharesToRedeem
     ) public onlyOpen whenNotPaused returns (uint40 requestId) {
@@ -587,7 +588,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         return assets;
     }
 
-    /// @notice Returns the maximun amount of assets a controller can use to claim shares.
+    /// @notice Returns the maximum amount of assets a controller can use to claim shares.
     /// @param  controller address to check
     /// @dev    If the contract is paused no deposit/claims are possible.
     function maxDeposit(
@@ -597,7 +598,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         return claimableDepositRequest(0, controller);
     }
 
-    /// @notice Returns the maximun amount of shares a controller can get by claiming a deposit request.
+    /// @notice Returns the maximum amount of shares a controller can get by claiming a deposit request.
     /// @param controller The controller.
     /// @dev    If the contract is paused no deposit/claims are possible.
     /// @dev    We read the claimableDepositRequest of the controller then convert it to shares using the
@@ -610,7 +611,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         uint40 lastDepositId = ERC7540Lib._getERC7540Storage().lastDepositRequestId[controller];
         uint256 claimable = claimableDepositRequest(lastDepositId, controller);
         uint256 shares = convertToShares(claimable, lastDepositId);
-        // the maximun amount of shares a controller can claim is the normal claimable amount minus the entry fee
+        // the maximum amount of shares a controller can claim is the normal claimable amount minus the entry fee
         shares -= FeeLib.computeFee(shares, ERC7540Lib.getSettlementEntryFeeRate(lastDepositId));
         return shares;
     }

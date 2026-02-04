@@ -46,7 +46,7 @@ library FeeLib {
     /// @param assets the total assets under management
     /// @param annualRate the management rate, expressed in BPS and corresponding to the annual
     /// @param timeElapsed the time elapsed since the last fee calculation in seconds
-    /// @return managementFee the management fee express in assets
+    /// @return managementFee the management fee expressed in assets
     function calculateManagementFee(
         uint256 assets,
         uint256 annualRate,
