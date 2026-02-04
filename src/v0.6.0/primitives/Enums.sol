@@ -19,7 +19,8 @@ enum FeeType {
 }
 
 // ********************* WHITELISTABLE ********************* //
-enum WhitelistState {
+
+enum AccessMode {
     Blacklist,
     Whitelist
 }

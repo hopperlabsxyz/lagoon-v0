@@ -5,7 +5,7 @@ import {ERC7540} from "../ERC7540.sol";
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
 import {Whitelistable} from "../Whitelistable.sol";
-import {State, WhitelistState} from "../primitives/Enums.sol";
+import {AccessMode, State} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
     Closed,
@@ -64,16 +64,15 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         __ERC20Pausable_init();
         __ERC4626_init(init.underlying);
         __ERC7540_init(init.underlying, wrappedNativeToken);
-        __Whitelistable_init(init.whitelistState);
-        __FeeManager_init(
-            feeRegistry,
-            init.managementRate,
-            init.performanceRate,
-            IERC20Metadata(address(init.underlying)).decimals(),
-            init.rateUpdateCooldown,
-            init.entryRate,
-            init.exitRate
-        );
+        __Whitelistable_init(init.accessMode, address(0));
+        __FeeManager_init({
+            _registry: feeRegistry,
+            _managementRate: init.managementRate,
+            _performanceRate: init.performanceRate,
+            _decimals: IERC20Metadata(address(init.underlying)).decimals(),
+            _entryRate: init.entryRate,
+            _exitRate: init.exitRate
+        });
         __GuardrailsManager_init(Guardrails({upperRate: type(uint256).max, lowerRate: type(int256).min + 1}));
 
         // $.totalAssets = initialTotalAssets;
@@ -115,10 +114,6 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     }
 
     function safe() public view override returns (address) {
-        return address(0);
-    }
-
-    function _protocolFeeReceiver() internal view override returns (address) {
         return address(0);
     }
 }

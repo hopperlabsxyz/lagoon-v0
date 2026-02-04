@@ -51,6 +51,11 @@ library VaultLib {
         if (_state != State.Closing) revert NotClosing(_state);
     }
 
+    function _onlyNotClosed() internal view {
+        State _state = _getVaultStorage().state;
+        if (_state == State.Closed) revert Closed();
+    }
+
     function _onlySyncDeposit() internal view {
         // if total assets is not valid we can only do asynchronous deposit
         if (!isTotalAssetsValid()) {
@@ -86,23 +91,15 @@ library VaultLib {
         uint256 _newTotalAssets
     ) public {
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
-        FeeLib.takeManagementAndPerformanceFees();
+        uint40 contextId = ERC7540Lib._getERC7540Storage().depositSettleId;
+        FeeLib.takeManagementAndPerformanceFees(contextId);
         ERC7540Lib.settleDeposit(msg.sender);
         ERC7540Lib.settleRedeem(msg.sender);
         _getVaultStorage().state = State.Closed;
 
-        // we take the exit fees here here
-        uint256 _totalAssets = ERC7540Lib._getERC7540Storage().totalAssets;
-        uint256 _totalSupply = ERC7540(address(this)).totalSupply();
-        uint256 exitFee = _totalAssets.mulDiv(FeeLib.feeRates().exitRate, FeeLib.BPS_DIVIDER, Math.Rounding.Ceil);
-
-        uint256 exitFeeShares = exitFee.mulDiv(
-            _totalSupply + 10 ** ERC7540Lib.decimalsOffset(), (_totalAssets - exitFee) + 1, Math.Rounding.Ceil
-        );
-        FeeLib.takeFees(exitFeeShares, FeeType.Exit);
-
         // Transfer will fail if there are not enough assets inside the safe, making sure that redeem requests are
         // fulfilled
+        uint256 _totalAssets = ERC7540Lib._getERC7540Storage().totalAssets;
         IERC20(IERC4626(address(this)).asset()).safeTransferFrom(msg.sender, address(this), _totalAssets);
 
         emit StateUpdated(State.Closed);

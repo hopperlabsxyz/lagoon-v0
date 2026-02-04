@@ -8,6 +8,7 @@ import {ERC7540Lib} from "../libraries/ERC7540Lib.sol";
 import {FeeType} from "../primitives/Enums.sol";
 import {AboveMaxRate} from "../primitives/Errors.sol";
 import {FeeTaken, HighWaterMarkUpdated, RatesUpdated} from "../primitives/Events.sol";
+import {RatesUpdated} from "../primitives/Events.sol";
 import {Rates} from "../primitives/Struct.sol";
 import {RolesLib} from "./RolesLib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
@@ -123,10 +124,17 @@ library FeeLib {
 
     /// @notice Take the fees by minting the manager and protocol shares
     /// @param shares the amount of fee shares to distribute
+    /// @param feeType the type of fee
+    /// @param rate the fee rate applied
+    /// @param contextId the settleId for settlement fees (0 if not relevant)
     function takeFees(
         uint256 shares,
-        FeeType feeType
+        FeeType feeType,
+        uint16 rate,
+        uint40 contextId
     ) public {
+        if (shares == 0) return;
+
         Roles.RolesStorage storage $roles = RolesLib._getRolesStorage();
 
         address feeReceiver = $roles.feeReceiver;
@@ -142,7 +150,7 @@ library FeeLib {
                 protocolShares > 0 // they can't be protocolShares without managerShares
             ) ERC7540(address(this)).forge(protocolFeeReceiver, protocolShares);
         }
-        emit FeeTaken(feeType, shares);
+        emit FeeTaken(feeType, shares, rate, contextId, managerShares, protocolShares);
     }
 
     /// @dev Calculate and return the manager and protocol shares to be minted as fees
@@ -150,18 +158,19 @@ library FeeLib {
     /// @dev manager shares are the fees that go to the manager, it is the difference between the total fees and the
     /// protocol fees
     /// @dev protocol shares are the fees that go to the protocol
-    function takeManagementAndPerformanceFees() public {
+    /// @param contextId the settleId for settlement fees (0 if not relevant)
+    function takeManagementAndPerformanceFees(
+        uint40 contextId
+    ) public {
         FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
-
+        uint16 managementRate = feeRates().managementRate;
+        uint16 performanceRate = feeRates().performanceRate;
         uint256 _decimals = ERC7540(address(this)).decimals();
-
-        Rates memory _rates = feeRates();
 
         /// Management fee computation ///
 
-        uint256 timeElapsed = block.timestamp - $.lastFeeTime;
         uint256 _totalAssets = ERC7540(address(this)).totalAssets();
-        uint256 managementFees = calculateManagementFee(_totalAssets, _rates.managementRate, timeElapsed);
+        uint256 managementFees = calculateManagementFee(_totalAssets, managementRate, block.timestamp - $.lastFeeTime);
 
         // by taking management fees the price per share decreases
         uint256 pricePerShare = (10 ** _decimals)
@@ -174,31 +183,33 @@ library FeeLib {
         /// Performance fee computation ///
 
         uint256 _totalSupply = ERC7540(address(this)).totalSupply();
-        uint256 performanceFees =
-            calculatePerformanceFee(_rates.performanceRate, _totalSupply, pricePerShare, $.highWaterMark, _decimals);
-
-        uint256 totalFees = managementFees + performanceFees;
+        uint256 performanceFees = calculatePerformanceFee(
+            performanceRate, ERC7540(address(this)).totalSupply(), pricePerShare, $.highWaterMark, _decimals
+        );
 
         // since we are minting shares without actually increasing the totalAssets, we need to compensate the future
         // dilution of price per share by virtually decreasing totalAssets in our computation
         uint256 managementShares = managementFees.mulDiv(
-            _totalSupply + 10 ** ERC7540Lib.decimalsOffset(), (_totalAssets - totalFees) + 1, Math.Rounding.Ceil
+            _totalSupply + 10 ** ERC7540Lib.decimalsOffset(),
+            (_totalAssets - (managementFees + performanceFees)) + 1,
+            Math.Rounding.Ceil
         );
 
         uint256 performanceShares = performanceFees.mulDiv(
-            _totalSupply + 10 ** ERC7540Lib.decimalsOffset(), (_totalAssets - totalFees) + 1, Math.Rounding.Ceil
+            _totalSupply + 10 ** ERC7540Lib.decimalsOffset(),
+            (_totalAssets - (managementFees + performanceFees)) + 1,
+            Math.Rounding.Ceil
         );
 
-        takeFees(managementShares, FeeType.Management);
-        takeFees(performanceShares, FeeType.Performance);
-
+        takeFees(managementShares, FeeType.Management, managementRate, contextId);
+        takeFees(performanceShares, FeeType.Performance, performanceRate, contextId);
         pricePerShare = ERC7540(address(this)).convertToAssets(10 ** ERC7540(address(this)).decimals());
         setHighWaterMark(pricePerShare);
 
         $.lastFeeTime = block.timestamp;
     }
 
-    /// @notice update the fee rates, the new rates will be applied after the cooldown period
+    /// @notice update the fee rates, applied immediately
     /// @param newRates the new fee rates
     function updateRates(
         FeeManager.FeeManagerStorage storage $,
@@ -217,13 +228,9 @@ library FeeLib {
             revert AboveMaxRate(MAX_EXIT_RATE);
         }
 
-        uint256 newRatesTimestamp = block.timestamp + $.cooldown;
         Rates memory currentRates = $.rates;
-
-        $.newRatesTimestamp = newRatesTimestamp;
-        $.oldRates = currentRates;
         $.rates = newRates;
-        emit RatesUpdated(currentRates, newRates, newRatesTimestamp);
+        emit RatesUpdated(currentRates, newRates, block.timestamp);
     }
 
     /// @dev Read the protocol rate from the fee registry
@@ -237,14 +244,10 @@ library FeeLib {
         return _protocolRate;
     }
 
-    /// @dev Since we have a cooldown period and to avoid a double call
-    /// to update the feeRates, this function returns a different rate
-    /// following the timestamp
     /// @notice the current fee rates
     function feeRates() public view returns (Rates memory) {
         FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
 
-        if ($.newRatesTimestamp <= block.timestamp) return $.rates;
-        return $.oldRates;
+        return $.rates;
     }
 }

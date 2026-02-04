@@ -16,7 +16,7 @@ import {Roles} from "../Roles.sol";
 import {Whitelistable} from "../Whitelistable.sol";
 import {FeeLib} from "../libraries/FeeLib.sol";
 import {GuardrailsLib} from "../libraries/GuardrailsLib.sol";
-import {State, WhitelistState} from "../primitives/Enums.sol";
+import {AccessMode, State} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
     Closed,
@@ -59,7 +59,7 @@ using Math for uint256;
 /// @param entryRate The entry fee rate.
 /// @param exitRate The exit fee rate.
 /// @param rateUpdateCooldown The cooldown period for updating the fee rates.
-/// @param enableWhitelist A boolean indicating whether the whitelist is enabled.
+/// @param accessMode The access mode (Whitelist or Blacklist).
 struct InitStruct {
     IERC20 underlying;
     string name;
@@ -71,12 +71,12 @@ struct InitStruct {
     address feeReceiver;
     uint16 managementRate;
     uint16 performanceRate;
-    WhitelistState whitelistState;
-    uint256 rateUpdateCooldown;
+    AccessMode accessMode;
     // added in v0.6.0
     uint16 entryRate;
     uint16 exitRate;
     address securityCouncil;
+    address externalSanctionsList;
 }
 
 /// @custom:oz-upgrades-from src/v0.5.0/Vault.sol:Vault
@@ -86,7 +86,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
-
     constructor(
         bool disable
     ) {
@@ -150,7 +149,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         uint256 assets,
         address controller,
         address owner
-    ) public payable override onlyOperator(owner, false) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
+    ) public payable override onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         return _requestDeposit(assets, controller, owner);
     }
@@ -165,7 +164,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         address controller,
         address owner,
         address referral
-    ) public payable onlyOperator(owner, false) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
+    ) public payable onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
         if (!isWhitelisted(owner)) revert NotWhitelisted();
         requestId = _requestDeposit(assets, controller, owner);
 
@@ -203,9 +202,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         }
         shares = _convertToShares(assets, Math.Rounding.Floor);
         // introduced in v0.6.0
-        uint256 entryFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
+        uint16 entryRate = FeeLib.feeRates().entryRate;
+        uint256 entryFeeShares = FeeLib.computeFee(shares, entryRate);
         shares -= entryFeeShares;
-        FeeLib.takeFees(entryFeeShares, FeeType.Entry);
+        FeeLib.takeFees(entryFeeShares, FeeType.Entry, entryRate, 0);
 
         $.totalAssets += assets;
         _mint(receiver, shares);
@@ -226,8 +226,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
 
+        uint16 exitRate = FeeLib.feeRates().exitRate;
         // first we need to compute the exit fee
-        uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
+        uint256 exitFeeShares = FeeLib.computeFee(shares, exitRate);
 
         uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, FeeLib.feeRates().haircutRate);
         assets = _convertToAssets(shares - haircutShares - exitFeeShares, Math.Rounding.Floor);
@@ -238,7 +239,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
 
         IERC20(asset()).safeTransferFrom(safe(), receiver, assets);
 
-        FeeLib.takeFees(exitFeeShares, FeeType.Exit);
+        // missing haircut event !
+
+        FeeLib.takeFees(exitFeeShares, FeeType.Exit, exitRate, 0);
 
         emit WithdrawSync(msg.sender, receiver, msg.sender, assets, shares);
     }
@@ -285,12 +288,15 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
-            uint256 shares = _convertToShares(assets, Math.Rounding.Ceil);
-            // exit fees has already been taken in the close function
-            _withdraw(msg.sender, receiver, controller, assets, shares); // sync
-            return shares;
+            uint256 netShares = _convertToShares(assets, Math.Rounding.Ceil);
+            uint16 exitRate = FeeLib.feeRates().exitRate;
+            uint256 exitFeeShares = FeeLib.computeFeeReverse(netShares, exitRate);
+            uint256 totalShares = netShares + exitFeeShares;
+            FeeLib.takeFees(exitFeeShares, FeeType.Exit, exitRate, 0);
+            _withdraw(msg.sender, receiver, controller, assets, totalShares); // sync
+            return totalShares;
         } else {
-            if (controller != msg.sender && !_isOperator(controller, msg.sender, true)) {
+            if (controller != msg.sender && !isOperatorOrSafe(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
             }
             return _withdraw(assets, receiver, controller); // async
@@ -313,12 +319,14 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         VaultStorage storage $ = VaultLib._getVaultStorage();
 
         if ($.state == State.Closed && claimableRedeemRequest(0, controller) == 0) {
-            uint256 assets = _convertToAssets(shares, Math.Rounding.Floor);
-            // exit fees has already been taken in the close function
+            uint16 exitRate = FeeLib.feeRates().exitRate;
+            uint256 exitFeeShares = FeeLib.computeFee(shares, exitRate);
+            uint256 assets = _convertToAssets(shares - exitFeeShares, Math.Rounding.Floor);
+            FeeLib.takeFees(exitFeeShares, FeeType.Exit, exitRate, 0);
             _withdraw(msg.sender, receiver, controller, assets, shares); // sync
             return assets;
         } else {
-            if (controller != msg.sender && !_isOperator(controller, msg.sender, true)) {
+            if (controller != msg.sender && !isOperatorOrSafe(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
             }
             return _redeem(shares, receiver, controller);
@@ -338,7 +346,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
-        if (caller != owner && !_isOperator(owner, caller, true)) {
+        if (caller != owner && !isOperatorOrSafe(owner, caller)) {
             _spendAllowance(owner, caller, shares);
         }
 
@@ -436,7 +444,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
-        FeeLib.takeManagementAndPerformanceFees();
+        uint40 contextId = ERC7540Lib._getERC7540Storage().depositSettleId;
+        FeeLib.takeManagementAndPerformanceFees(contextId);
         ERC7540Lib.settleDeposit(msg.sender);
         ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
@@ -449,7 +458,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
-        FeeLib.takeManagementAndPerformanceFees();
+        uint40 contextId = ERC7540Lib._getERC7540Storage().redeemSettleId;
+        FeeLib.takeManagementAndPerformanceFees(contextId);
         ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
 
@@ -457,18 +467,22 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     // ## MAX CAP FUNCTIONS ## //
     /////////////////////////////
 
-    function updateMaxCap(
-        uint256 maxCap
-    ) external onlySafe {
-        _updateMaxCap(maxCap);
+    function maxCap() external view returns (uint256) {
+        return ERC7540Lib._getERC7540Storage().maxCap;
     }
 
-    //////////////////////////////
-    // ## OPERATOR PRIVILEGES ## //
-    //////////////////////////////
+    function updateMaxCap(
+        uint256 _maxCap
+    ) external onlySafe {
+        _updateMaxCap(_maxCap);
+    }
 
-    function giveUpOperatorPrivileges() external onlyOwner {
-        _giveUpOperatorPrivileges();
+    ///////////////////////////
+    // ## SAFE PRIVILEGES ## //
+    ///////////////////////////
+
+    function giveUpSafePrivileges() external onlyOwner {
+        _giveUpSafePrivileges();
     }
 
     /////////////////////////////
@@ -542,9 +556,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         if (paused()) return 0;
         uint256 shares = claimableRedeemRequest(0, controller);
         if (shares == 0 && VaultLib._getVaultStorage().state == State.Closed) {
-            // controller has no redeem claimable, we will use the synchronous flow
-            return convertToAssets(balanceOf(controller));
-            // when the vault is closed, exit fees are already taken.
+            uint256 controllerShares = balanceOf(controller);
+            uint256 exitFeeShares = FeeLib.computeFee(controllerShares, FeeLib.feeRates().exitRate);
+            return convertToAssets(controllerShares - exitFeeShares);
         }
         uint40 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
         // introduced in v0.6.0
@@ -616,9 +630,5 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
 
     function version() public pure returns (string memory) {
         return "v0.6.0";
-    }
-
-    function _protocolFeeReceiver() internal view override returns (address) {
-        return RolesLib._getRolesStorage().feeRegistry.protocolFeeReceiver();
     }
 }

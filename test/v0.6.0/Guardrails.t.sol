@@ -28,7 +28,7 @@ contract TestGuardrails is BaseTest {
 
     function test_updateNewTotalAssets_RevertsIfGuardrailsAreNotCompliant() public {
         dealAndApproveAndWhitelist(user1.addr);
-        requestDeposit(10 ** vault.decimals(), user1.addr);
+        requestDeposit(10 ** vault.underlyingDecimals(), user1.addr);
         updateAndSettle(0);
         vm.warp(block.timestamp + 12);
 
@@ -45,7 +45,7 @@ contract TestGuardrails is BaseTest {
 
     function test_updateNewTotalAssets_PassesIfSubmittedBySecurityCouncil() public {
         dealAndApproveAndWhitelist(user1.addr);
-        requestDeposit(10 ** vault.decimals(), user1.addr);
+        requestDeposit(10 ** vault.underlyingDecimals(), user1.addr);
         updateAndSettle(0);
         vm.warp(block.timestamp + 12);
 

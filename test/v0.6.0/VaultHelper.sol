@@ -38,11 +38,11 @@ contract VaultHelper is Vault {
     /// @notice Returns if the whitelist is activated
     /// @return True if the whitelist is activated, false otherwise
     function isWhitelistActivated() public view returns (bool) {
-        return WhitelistableLib._getWhitelistableStorage().whitelistState == WhitelistState.Whitelist;
+        return WhitelistableLib._getWhitelistableStorage().accessMode == AccessMode.Whitelist;
     }
 
     function isBlacklistActivated() public view returns (bool) {
-        return WhitelistableLib._getWhitelistableStorage().whitelistState == WhitelistState.Blacklist;
+        return WhitelistableLib._getWhitelistableStorage().accessMode == AccessMode.Blacklist;
     }
 
     function totalAssets(
@@ -167,7 +167,7 @@ contract VaultHelper is Vault {
     }
 
     function activateWhitelist() public {
-        WhitelistableLib._getWhitelistableStorage().whitelistState = WhitelistState.Whitelist;
+        WhitelistableLib._getWhitelistableStorage().accessMode = AccessMode.Whitelist;
     }
 
     function protocolFeeReceiver() public view returns (address) {
@@ -201,8 +201,8 @@ contract VaultHelper is Vault {
         return FeeLib._getFeeManagerStorage().highWaterMark;
     }
 
-    function gaveUpOperatorPrivileges() public view returns (bool) {
-        return ERC7540Lib._getERC7540Storage().gaveUpOperatorPrivileges;
+    function gaveUpSafePrivileges() public view returns (bool) {
+        return ERC7540Lib._getERC7540Storage().gaveUpSafePrivileges;
     }
 
     function pendingDeposit(
