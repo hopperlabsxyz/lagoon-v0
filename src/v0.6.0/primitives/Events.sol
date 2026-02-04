@@ -37,10 +37,6 @@ event SettleRedeem(
 
 // ********************* WHITELISTABLE ********************* //
 
-/// @notice Emitted when the Merkle tree root is updated.
-/// @param root The new Merkle tree root.
-event RootUpdated(bytes32 indexed root);
-
 /// @notice Emitted when a whitelist entry is updated.
 /// @param account The address of the account being updated.
 /// @param authorized Indicates whether the account is authorized (true) or not (false).
