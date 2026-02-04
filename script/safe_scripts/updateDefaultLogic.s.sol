@@ -11,12 +11,6 @@ import {LogicRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 // import {Vault} from "../src/v0.5.0/Vault.sol";
 
 import {BatchScript} from "../tools/BatchScript.sol";
-/*
- This script will deploy the OptinProxyFactory, propose safe txs to:
- - update the fee registry with the logicRegistry
- - update the default implementation in the logic registry
- - upgrade the set of signers of the DAO multisig
-*/
 
 contract UpgradeProtocolRegistry is BatchScript {
     address registry;

@@ -11,10 +11,8 @@ import {Vault} from "@src/v0.5.0/Vault.sol";
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
 import {OptinProxyFactory} from "@src/protocol-v2/OptinProxyFactory.sol";
 import {LagoonVault} from "@src/proxy/OptinProxy.sol";
@@ -41,7 +39,7 @@ contract Upgradable is Test {
 
     string vaultName = "vault_name";
     string vaultSymbol = "vault_symbol";
-    uint256 rateUpdateCooldown = 1 days;
+    uint256 rateUpdateCooldown = 0;
 
     // Users
     VmSafe.Wallet owner = vm.createWallet("owner");

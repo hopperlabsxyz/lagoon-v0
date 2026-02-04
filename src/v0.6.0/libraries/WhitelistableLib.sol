@@ -2,8 +2,16 @@
 pragma solidity 0.8.26;
 
 import {Whitelistable} from "../Whitelistable.sol";
-import {WhitelistState} from "../primitives/Enums.sol";
-import {BlacklistActivated, BlacklistUpdated, WhitelistActivated, WhitelistUpdated} from "../primitives/Events.sol";
+import {SanctionsList} from "../interfaces/SanctionsList.sol";
+import {AccessMode} from "../primitives/Enums.sol";
+import {
+    AccessModeUpdated,
+    BlacklistUpdated,
+    ExternalSanctionsListUpdated,
+    WhitelistDisabled,
+    WhitelistUpdated
+} from "../primitives/Events.sol";
+import {RolesLib} from "./RolesLib.sol";
 
 library WhitelistableLib {
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))
@@ -88,26 +96,55 @@ library WhitelistableLib {
         }
     }
 
-    /// @notice Switches the whitelist mode
-    /// @param newMode The new whitelist mode
-    /// @dev If the whitelist is deactivated, it reverts
-    /// @dev If the whitelist is switched to blacklist, it emits a WhitelistModeSwitched event
-    /// @dev If the whitelist is switched to whitelist, it emits a WhitelistModeSwitched event
-    /// @dev If the whitelist is switched to deactivated, it emits a WhitelistModeSwitched event and a WhitelistDisabled
-    /// event
-    function switchWhitelistMode(
-        WhitelistState newMode
+    /// @notice Switches the access mode
+    /// @param newMode The new access mode
+    /// @dev Emits an AccessModeUpdated event with the new mode
+    function switchAccessMode(
+        AccessMode newMode
     ) public {
         Whitelistable.WhitelistableStorage storage $ = _getWhitelistableStorage();
 
-        $.whitelistState = newMode;
-        // emit the appropriate event based on the new mode
-        // for backward compatiblity we emit 3 different events for the 3 possible modes
-        // instead of emitting a single event with the new mode
-        if (newMode == WhitelistState.Blacklist) {
-            emit BlacklistActivated();
-        } else if (newMode == WhitelistState.Whitelist) {
-            emit WhitelistActivated();
+        $.accessMode = newMode;
+        emit AccessModeUpdated(newMode);
+    }
+
+    /// @notice Sets the external sanctions list
+    function setExternalSanctionsList(
+        SanctionsList externalSanctionList
+    ) public {
+        Whitelistable.WhitelistableStorage storage $ = _getWhitelistableStorage();
+        emit ExternalSanctionsListUpdated(address($.externalSanctionList), address(externalSanctionList));
+        $.externalSanctionList = externalSanctionList;
+    }
+
+    /// @notice Checks if an account is whitelisted or blacklisted
+    /// @dev In v0.6.0, this function is extended to also enforce blacklist checks.
+    /// @param account The address of the account to check
+    /// @return True if the account is whitelisted or not blacklisted, false otherwise
+    function isWhitelisted(
+        address account
+    ) public view returns (bool) {
+        Whitelistable.WhitelistableStorage storage $ = _getWhitelistableStorage();
+        AccessMode _accessMode = $.accessMode;
+
+        if (RolesLib._getRolesStorage().feeRegistry.protocolFeeReceiver() == account) {
+            // if the account is the protocol fee receiver, it is always whitelisted
+            return true;
         }
+        // if the whitelist is active, we check if the account is whitelisted
+        // if the whitelist is in blacklist mode and the account is blacklisted we return false
+        bool internalListApproval =
+            _accessMode == AccessMode.Whitelist ? $.isWhitelisted[account] : !$.isBlacklisted[account];
+
+        // by default, we consider that the external sanctions list is not set, so we set it to true
+        bool externalListApproval = true;
+
+        // if the external sanctions list is set, we check if the account is not sanctioned
+        if ($.externalSanctionList != SanctionsList(address(0))) {
+            externalListApproval = !$.externalSanctionList.isSanctioned(account);
+        }
+
+        // if the account is whitelisted and not sanctioned, we return true
+        return internalListApproval && externalListApproval;
     }
 }

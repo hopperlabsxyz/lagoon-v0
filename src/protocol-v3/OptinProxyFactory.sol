@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {LagoonVault} from "@src/proxy/OptinProxy.sol";
+import {AccessMode} from "@src/v0.6.0/primitives/Enums.sol";
 
 interface IVault {
     function initialize(
@@ -49,16 +50,16 @@ struct InitStruct {
     uint16 managementRate;
     /// @notice Performance fee rate (in basis points)
     uint16 performanceRate;
-    /// @notice Flag to enable whitelist functionality
-    bool enableWhitelist;
-    /// @notice Cooldown period for rate updates
-    uint256 rateUpdateCooldown;
+    /// @notice Access mode (Whitelist or Blacklist)
+    AccessMode accessMode;
     /// @notice Entry fee rate (in basis points)
     uint16 entryRate;
     /// @notice Exit fee rate (in basis points)
     uint16 exitRate;
     /// @notice Address of the security council
     address securityCouncil;
+    /// @notice Address of the external sanctions list
+    address externalSanctionsList;
 }
 
 /// @title OptinProxyFactory

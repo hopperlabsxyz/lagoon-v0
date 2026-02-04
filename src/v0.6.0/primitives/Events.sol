@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {FeeType, State, WhitelistState} from "./Enums.sol";
-import {Guardrails, Rates} from "./Struct.sol";
+import {AccessMode, FeeType, State} from "./Enums.sol";
+import {Rates} from "./Struct.sol";
+import {Guardrails} from "./Struct.sol";
 
 // ********************* VAULT ********************* //
 
@@ -51,6 +52,14 @@ event WhitelistUpdated(address indexed account, bool authorized);
 /// @param blacklisted Indicates whether the account is blacklisted (true) or not (false).
 event BlacklistUpdated(address indexed account, bool blacklisted);
 
+/// @notice Emitted when the whitelist is disabled.
+event WhitelistDisabled();
+
+/// @notice Emitted when the external sanctions list is updated.
+/// @param oldExternalSanctionList The old external sanctions list.
+/// @param newExternalSanctionList The new external sanctions list.
+event ExternalSanctionsListUpdated(address oldExternalSanctionList, address newExternalSanctionList);
+
 // ********************* ROLES ********************* //
 
 /// @notice Emitted when the whitelist manager role is updated.
@@ -97,7 +106,18 @@ event HighWaterMarkUpdated(uint256 oldHighWaterMark, uint256 newHighWaterMark);
 /// @notice Emitted when a fee is taken from the vault.
 /// @param feeType The type of fee being taken.
 /// @param shares The number of shares minted as fees.
-event FeeTaken(FeeType indexed feeType, uint256 shares);
+/// @param rate The fee rate applied.
+/// @param contextId The settleId for settlement fees (0 if not relevant).
+/// @param managerShares The shares minted to the manager.
+/// @param protocolShares The shares minted to the protocol.
+event FeeTaken(
+    FeeType indexed feeType,
+    uint256 shares,
+    uint16 rate,
+    uint40 contextId,
+    uint256 managerShares,
+    uint256 protocolShares
+);
 
 // ********************* ERC7540 ********************* //
 /// @notice Emitted when the totalAssets variable is updated.
@@ -125,13 +145,18 @@ event TotalAssetsLifespanUpdated(uint128 oldLifespan, uint128 newLifespan);
 /// @param shares Amount of shares minted to owner
 event DepositSync(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
 
+/// @notice Emitted when the access mode is updated.
+/// @param newMode The new access mode (Blacklist or Whitelist).
+event AccessModeUpdated(AccessMode newMode);
+
 /// @notice Emitted when the max cap is updated.
 /// @param previousMaxCap The previous max cap.
 /// @param maxCap The new max cap.
 event MaxCapUpdated(uint256 previousMaxCap, uint256 maxCap);
 
-/// @notice Emitted when the operator privileges are given up.
-event GaveUpOperatorPrivileges();
+/// @notice Emitted when the safe privileges are given up.
+event GaveUpSafePrivileges();
+
 /// @notice Same as a 4626 Withdraw event
 /// @param sender The address who called the withdraw
 /// @param receiver The receiver of the assets
@@ -141,11 +166,6 @@ event GaveUpOperatorPrivileges();
 event WithdrawSync(
     address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
 );
-/// @notice Emitted when the whitelist is switched to blacklist.
-event BlacklistActivated();
-
-/// @notice Emitted when the whitelist is switched to whitelist.
-event WhitelistActivated();
 
 // ********************* GUARDRAILS_MANAGER ********************* //
 

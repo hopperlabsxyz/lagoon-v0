@@ -2,9 +2,10 @@
 pragma solidity 0.8.26;
 
 import {Roles} from "./Roles.sol";
+import {SanctionsList} from "./interfaces/SanctionsList.sol";
 import {RolesLib} from "./libraries/RolesLib.sol";
 import {WhitelistableLib} from "./libraries/WhitelistableLib.sol";
-import {WhitelistState} from "./primitives/Enums.sol";
+import {AccessMode} from "./primitives/Enums.sol";
 
 abstract contract Whitelistable is Roles {
     /// @custom:storage-definition erc7201:hopper.storage.Whitelistable
@@ -12,26 +13,29 @@ abstract contract Whitelistable is Roles {
     /// @param whitelistState The current whitelist mode (whitelist or blacklist).
     struct WhitelistableStorage {
         mapping(address => bool) isWhitelisted;
-        // in v0.6.0, we replace the bool isActivated with an enum WhitelistState
-        // bool isActivated; --> WhitelistState whitelistState;
-        WhitelistState whitelistState;
+        // in v0.6.0, we replace the bool isActivated with a enum AccessMode
+        // bool isActivated; --> AccessMode accessMode;
+        AccessMode accessMode;
         // added in v0.6.0
         mapping(address => bool) isBlacklisted;
+        SanctionsList externalSanctionList;
     }
 
     /// @dev Initializes the whitelist.
-    /// @param whitelistState the state of the whitelist.
+    /// @param accessMode the access mode of the whitelist.
     // solhint-disable-next-line func-name-mixedcase
     function __Whitelistable_init(
-        WhitelistState whitelistState
+        AccessMode accessMode,
+        address externalSanctionsList
     ) internal onlyInitializing {
-        WhitelistableLib.switchWhitelistMode(whitelistState);
+        WhitelistableLib.switchAccessMode(accessMode);
+        WhitelistableLib.setExternalSanctionsList(SanctionsList(externalSanctionsList));
     }
 
-    function switchWhitelistMode(
-        WhitelistState newMode
+    function switchAccessMode(
+        AccessMode newMode
     ) public onlyOwner {
-        WhitelistableLib.switchWhitelistMode(newMode);
+        WhitelistableLib.switchAccessMode(newMode);
     }
 
     /// @notice Checks if an account is whitelisted or blacklisted
@@ -41,16 +45,7 @@ abstract contract Whitelistable is Roles {
     function isWhitelisted(
         address account
     ) public view returns (bool) {
-        WhitelistableStorage storage $ = WhitelistableLib._getWhitelistableStorage();
-        WhitelistState _whitelistState = $.whitelistState;
-
-        if (RolesLib._getRolesStorage().feeRegistry.protocolFeeReceiver() == account) {
-            // the protocol fee receiver is always treated as whitelisted
-            return true;
-        }
-        // whitelist mode: only explicitly whitelisted accounts are allowed
-        // blacklist mode: every account is allowed except explicitly blacklisted ones
-        return _whitelistState == WhitelistState.Whitelist ? $.isWhitelisted[account] : !$.isBlacklisted[account];
+        return WhitelistableLib.isWhitelisted(account);
     }
 
     /// @notice Adds multiple accounts to the whitelist
@@ -80,6 +75,13 @@ abstract contract Whitelistable is Roles {
         address[] memory accounts
     ) external onlyWhitelistManager {
         WhitelistableLib.revokeFromBlacklist(accounts);
+    }
+
+    /// @notice Sets the external sanctions list
+    function setExternalSanctionsList(
+        SanctionsList sanctionsList
+    ) external onlyWhitelistManager {
+        WhitelistableLib.setExternalSanctionsList(sanctionsList);
     }
 }
 
@@ -111,12 +113,12 @@ abstract contract Whitelistable is Roles {
 //   |                           32 bytes                            |
 // Note: The actual mapping data is stored at keccak256(key . slot)
 
-// slot 1: whitelistState
-// Type: enum WhitelistState (uint8)
-// Description: Whitelist state enum value (only 1 byte used, right-aligned)
+// slot 1: accessMode
+// Type: enum AccessMode (uint8)
+// Description: Access mode enum value (only 1 byte used, right-aligned)
 // Possible values: 0x00 (BlacklistMode), 0x01 (WhitelistMode), 0x02 (Deactivated), etc.
 // Visual representation (bytes32):
-//                                                          whitelistState
+//                                                          accessMode
 // 0x0000000000000000000000000000000000000000000000000000000000000001
 //   |                      31 bytes unused                      |xx|
 //                                                               (1 byte)
@@ -132,10 +134,10 @@ abstract contract Whitelistable is Roles {
 // Upgrades scenario:
 // we upgrade the whitelistable contract from v0.5.0 to v0.6.0
 // 1) isActivated is 0 (deactivated)
-//   1.1) whitelistState is 0 (blacklist)
+//   1.1) accessMode is 0 (blacklist)
 // --> vault remains as accessible as before the upgrade
 //     if the admin wants to disable the blacklist, he can call the disableWhitelist function
 // 2) isActivated is 1 (activated)
-//   2.1) whitelistState is 1 (whitelist)
+//   2.1) accessMode is 1 (whitelist)
 // --> vault remains in whitelist mode
 //     if the admin wants to disable the whitelist, he can call the disableWhitelist function

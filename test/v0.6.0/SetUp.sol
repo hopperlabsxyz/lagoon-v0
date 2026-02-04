@@ -18,6 +18,7 @@ import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
 import {InitStruct, OptinProxyFactory as OptionProxyFactory_protocolV3} from "@src/protocol-v3/OptinProxyFactory.sol";
+import {AccessMode} from "@src/v0.6.0/primitives/Enums.sol";
 
 contract SetUp is Test {
     // ERC20 tokens
@@ -33,8 +34,8 @@ contract SetUp is Test {
     ProtocolRegistry protocolRegistry;
     string vaultName = "vault_name";
     string vaultSymbol = "vault_symbol";
-    uint256 rateUpdateCooldown = 1 days;
-    uint8 decimals = 18;
+    uint256 rateUpdateCooldown = 0;
+    uint8 decimals;
 
     // Users
     VmSafe.Wallet user1 = vm.createWallet("user1");
@@ -119,13 +120,13 @@ contract SetUp is Test {
             valuationManager: valuationManager.addr,
             admin: admin.addr,
             feeReceiver: feeReceiver.addr,
-            enableWhitelist: enableWhitelist,
             managementRate: _managementRate,
             performanceRate: _performanceRate,
-            rateUpdateCooldown: rateUpdateCooldown,
+            accessMode: enableWhitelist ? AccessMode.Whitelist : AccessMode.Blacklist,
             entryRate: _entryRate,
             exitRate: _exitRate,
-            securityCouncil: admin.addr
+            securityCouncil: admin.addr,
+            externalSanctionsList: address(0)
         });
         // if proxy is true, we use the factory to create the vault proxy
         if (proxy) {

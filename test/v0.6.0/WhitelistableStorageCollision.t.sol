@@ -15,7 +15,7 @@ import {
 
 import {ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 import {DelayProxyAdmin} from "@src/proxy/DelayProxyAdmin.sol";
-import {WhitelistState} from "@src/v0.6.0/primitives/Enums.sol";
+import {AccessMode} from "@src/v0.6.0/primitives/Enums.sol";
 
 contract TestWhitelistableStorageCollision is BaseTest {
     // Storage slot for WhitelistableStorage
@@ -106,7 +106,7 @@ contract TestWhitelistableStorageCollision is BaseTest {
         storageValue = vm.load(address(_vault), WHITELIST_STATE_SLOT);
         uint8 enumValue = uint8(uint256(storageValue));
         assertEq(enumValue, 0, "v0.6.0: storage slot should contain 0 (Blacklist)");
-        assertEq(enumValue, uint8(WhitelistState.Blacklist), "v0.6.0: enum value should match Blacklist");
+        assertEq(enumValue, uint8(AccessMode.Blacklist), "v0.6.0: enum value should match Blacklist");
 
         // Test that isWhitelisted works correctly with Blacklist mode
         // In Blacklist mode, all addresses are whitelisted unless they are blacklisted
@@ -154,7 +154,7 @@ contract TestWhitelistableStorageCollision is BaseTest {
         storageValue = vm.load(address(_vault), WHITELIST_STATE_SLOT);
         uint8 enumValue = uint8(uint256(storageValue));
         assertEq(enumValue, 1, "v0.6.0: storage slot should contain 1 (Whitelist)");
-        assertEq(enumValue, uint8(WhitelistState.Whitelist), "v0.6.0: enum value should match Whitelist");
+        assertEq(enumValue, uint8(AccessMode.Whitelist), "v0.6.0: enum value should match Whitelist");
 
         // Test that isWhitelisted works correctly with Whitelist mode
         // In Whitelist mode, only whitelisted addresses are allowed
@@ -206,7 +206,7 @@ contract TestWhitelistableStorageCollision is BaseTest {
         storageValue = vm.load(address(_vault), WHITELIST_STATE_SLOT);
         uint8 enumValue = uint8(uint256(storageValue));
         assertEq(enumValue, 0, "v0.6.0: storage slot should contain 0 (Blacklist)");
-        assertEq(enumValue, uint8(WhitelistState.Blacklist), "v0.6.0: enum value should match Blacklist");
+        assertEq(enumValue, uint8(AccessMode.Blacklist), "v0.6.0: enum value should match Blacklist");
 
         // Test that isWhitelisted works correctly with Blacklist mode
         // In Blacklist mode, all addresses are whitelisted unless they are blacklisted
@@ -286,7 +286,7 @@ contract TestWhitelistableStorageCollision is BaseTest {
         storageValue = vm.load(address(_vault), WHITELIST_STATE_SLOT);
         uint8 enumValue = uint8(uint256(storageValue));
         assertEq(enumValue, 1, "v0.6.0: storage slot should contain 1 (Whitelist)");
-        assertEq(enumValue, uint8(WhitelistState.Whitelist), "v0.6.0: enum value should match Whitelist");
+        assertEq(enumValue, uint8(AccessMode.Whitelist), "v0.6.0: enum value should match Whitelist");
 
         // Test that isWhitelisted works correctly with Whitelist mode
         // In Whitelist mode, only whitelisted addresses are allowed

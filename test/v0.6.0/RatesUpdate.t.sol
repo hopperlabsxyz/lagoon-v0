@@ -38,7 +38,7 @@ contract testRateUpdates is BaseTest {
         vault.updateRates(newRates);
     }
 
-    function test_updateRatesShouldBeApplyed24HoursAfter() public {
+    function test_updateRatesShouldBeAppliedImmediately() public {
         setUpVault(100, 200, 200);
 
         Rates memory newRates = Rates({
@@ -53,20 +53,11 @@ contract testRateUpdates is BaseTest {
         vm.startPrank(vault.owner());
         vault.updateRates(newRates);
 
-        assertEq(200, vault.feeRates().performanceRate, "performance rate after update");
-        assertEq(200, vault.feeRates().managementRate, "management rate after update");
-
-        vm.warp(block.timestamp + 1 days - 1);
-        assertEq(200, vault.feeRates().performanceRate, "performance rate after 1st warp");
-        assertEq(200, vault.feeRates().managementRate, "management rate after 1st warp");
-
-        vm.warp(block.timestamp + 1 days);
-
-        assertEq(MAX_PERFORMANCE_RATE, vault.feeRates().performanceRate, "performance rate after 2nd warp");
-        assertEq(MAX_MANAGEMENT_RATE, vault.feeRates().managementRate, "management rate after 2nd warp");
+        assertEq(MAX_PERFORMANCE_RATE, vault.feeRates().performanceRate, "performance rate after update");
+        assertEq(MAX_MANAGEMENT_RATE, vault.feeRates().managementRate, "management rate after update");
     }
 
-    function test_updateRatesShouldBeApplyed24HoursAfter_VerifyThroughASettle() public {
+    function test_updateRatesShouldBeAppliedImmediately_VerifyThroughASettle() public {
         setUpVault(100, 0, 0); // no fees will be taken
         address feeReceiver = vault.feeReceiver();
         assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, init");
@@ -91,9 +82,46 @@ contract testRateUpdates is BaseTest {
         vault.updateRates(newRates);
         vm.stopPrank();
         settle();
-        assertEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have 0 shares, 2nd settle");
+        // Note: fees ARE taken here because rates are applied immediately and time has passed
         vm.warp(block.timestamp + 1);
         updateAndSettle(4000); // +100%
         assertNotEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have shares");
+    }
+
+    function test_updateRates_shouldWorkWhenClosing() public {
+        setUpVault(100, 200, 200);
+
+        vm.prank(vault.owner());
+        vault.initiateClosing();
+        assertEq(uint256(vault.state()), uint256(State.Closing), "vault should be in Closing state");
+
+        Rates memory newRates =
+            Rates({managementRate: 300, performanceRate: 300, entryRate: 0, exitRate: 0, haircutRate: 0});
+        vm.prank(vault.owner());
+        vault.updateRates(newRates);
+    }
+
+    function test_updateRates_shouldRevertWhenClosed() public {
+        setUpVault(100, 200, 200);
+        dealAndApproveAndWhitelist(user1.addr);
+
+        // Need some activity to close properly
+        requestDeposit(1000, user1.addr);
+        updateAndSettle(0);
+        deposit(1000, user1.addr);
+
+        // Initiate closing then close
+        vm.prank(vault.owner());
+        vault.initiateClosing();
+
+        updateAndClose(1000);
+        assertEq(uint256(vault.state()), uint256(State.Closed), "vault should be in Closed state");
+
+        // Update rates should revert in Closed state
+        Rates memory newRates =
+            Rates({managementRate: 300, performanceRate: 300, entryRate: 0, exitRate: 0, haircutRate: 0});
+        vm.prank(vault.owner());
+        vm.expectRevert(Closed.selector);
+        vault.updateRates(newRates);
     }
 }

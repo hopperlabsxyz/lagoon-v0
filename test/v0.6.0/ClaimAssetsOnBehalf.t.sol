@@ -8,7 +8,7 @@ import {BaseTest} from "./Base.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract TestRedeemAssetsOnBehalf is BaseTest {
+contract TestClaimAssetsOnBehalf is BaseTest {
     function setUp() public {
         setUpVault(0, 0, 0);
         dealAndApproveAndWhitelist(user1.addr);
@@ -17,13 +17,13 @@ contract TestRedeemAssetsOnBehalf is BaseTest {
         vm.warp(block.timestamp + 1 days);
     }
 
-    function test_RedeemAssetsOnBehalf_onlySafe() public {
+    function test_claimAssetsOnBehalf_onlySafe() public {
         address[] memory controllers = new address[](0);
         vm.expectRevert(abi.encodeWithSelector(OnlySafe.selector, vault.safe()));
         vault.claimAssetsOnBehalf(controllers);
     }
 
-    function test_RedeemAssetsOnBehalf() public {
+    function test_claimAssetsOnBehalf() public {
         uint256 user1Balance = assetBalance(user1.addr);
         uint256 user1RequestId = requestDeposit(user1Balance, user1.addr);
 

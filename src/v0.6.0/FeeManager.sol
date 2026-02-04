@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {FeeLib} from "./libraries/FeeLib.sol";
+import {VaultLib} from "./libraries/VaultLib.sol";
 import {AboveMaxRate} from "./primitives/Errors.sol";
 import {HighWaterMarkUpdated, RatesUpdated} from "./primitives/Events.sol";
 import {Rates} from "./primitives/Struct.sol";
@@ -32,12 +33,14 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
         uint256 newRatesTimestamp;
         uint256 lastFeeTime;
         uint256 highWaterMark;
+        // Deprecated in v0.6.0
         uint256 cooldown;
         // v0.6.0 upgrade edit the Rates struct it is fine because both rates and oldRates
         // are not stored in the same slot as stated in the documentation
         // https://docs.soliditylang.org/en/v0.8.33/internals/layout_in_storage.html#layout-of-state-variables-in-storage-and-transient-storage
         // "Structs and array data always start a new slot and their items are packed tightly according to these rules."
         Rates rates;
+        // Deprecated in v0.6.0
         Rates oldRates;
     }
 
@@ -46,55 +49,42 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
     /// @param _managementRate the management rate, expressed in BPS
     /// @param _performanceRate the performance rate, expressed in BPS
     /// @param _decimals the number of decimals of the shares
-    /// @param _cooldown the time to wait before applying new rates
+    /// @param _entryRate the entry fee rate, expressed in BPS
+    /// @param _exitRate the exit fee rate, expressed in BPS
     // solhint-disable-next-line func-name-mixedcase
     function __FeeManager_init(
         address _registry,
         uint16 _managementRate,
         uint16 _performanceRate,
         uint256 _decimals,
-        uint256 _cooldown,
         uint16 _entryRate,
         uint16 _exitRate
     ) internal onlyInitializing {
-        if (_managementRate > MAX_MANAGEMENT_RATE) {
-            revert AboveMaxRate(MAX_MANAGEMENT_RATE);
-        }
-        if (_performanceRate > MAX_PERFORMANCE_RATE) {
-            revert AboveMaxRate(MAX_PERFORMANCE_RATE);
-        }
-        if (_entryRate > MAX_ENTRY_RATE) {
-            revert AboveMaxRate(MAX_ENTRY_RATE);
-        }
-        if (_exitRate > MAX_EXIT_RATE) {
-            revert AboveMaxRate(MAX_EXIT_RATE);
-        }
         FeeManagerStorage storage $ = FeeLib._getFeeManagerStorage();
-
-        $.newRatesTimestamp = block.timestamp;
-
-        $.cooldown = _cooldown;
+        FeeLib.updateRates(
+            $,
+            Rates({
+                managementRate: _managementRate,
+                performanceRate: _performanceRate,
+                entryRate: _entryRate,
+                exitRate: _exitRate,
+                haircutRate: 0 // ????????????
+            })
+        );
 
         $.feeRegistry = FeeRegistry(_registry);
         $.highWaterMark = 10 ** _decimals;
-
-        $.rates.managementRate = _managementRate;
-        $.rates.performanceRate = _performanceRate;
-        $.rates.entryRate = _entryRate;
-        $.rates.exitRate = _exitRate;
     }
 
-    /// @notice update the fee rates, the new rates will be applied after the cooldown period
+    /// @notice update the fee rates, applied immediately
     /// @param newRates the new fee rates
     function updateRates(
         Rates memory newRates
     ) external onlyOwner {
+        VaultLib._onlyNotClosed();
         FeeLib.updateRates(FeeLib._getFeeManagerStorage(), newRates);
     }
 
-    /// @dev Since we have a cooldown period and to avoid a double call
-    /// to update the feeRates, this function returns a different rate
-    /// following the timestamp
     /// @notice the current fee rates
     function feeRates() public view returns (Rates memory) {
         return FeeLib.feeRates();
