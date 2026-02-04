@@ -414,7 +414,7 @@ library ERC7540Lib {
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view returns (bool) {
+    ) public pure returns (bool) {
         return interfaceId == 0x2f0a18c5 // IERC7575
             || interfaceId == 0xf815c03d // IERC7575 shares
             || interfaceId == 0xce3bbe50 // IERC7540Deposit
