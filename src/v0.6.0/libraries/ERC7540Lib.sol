@@ -29,6 +29,7 @@ import {
 import {EpochData, SettleData} from "../primitives/Struct.sol";
 import {Rates} from "../primitives/Struct.sol";
 import {PausableLib} from "./PausableLib.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -392,5 +393,33 @@ library ERC7540Lib {
     ) public view returns (uint16) {
         uint40 settleId = _getERC7540Storage().epochs[epochId].settleId;
         return _getERC7540Storage().settles[settleId].entryFeeRate;
+    }
+
+    /// @notice Cancel a deposit request.
+    /// @dev It can only be called in the same epoch.
+    function cancelRequestDeposit() external {
+        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+
+        uint40 requestId = $.lastDepositRequestId[msg.sender];
+        if (requestId != $.depositEpochId) {
+            revert RequestNotCancelable(requestId);
+        }
+
+        uint256 requestedAmount = $.epochs[requestId].depositRequest[msg.sender];
+        $.epochs[requestId].depositRequest[msg.sender] = 0;
+        IERC20(IERC4626(address(this)).asset()).safeTransferFrom(address($.pendingSilo), msg.sender, requestedAmount);
+
+        emit DepositRequestCanceled(requestId, msg.sender);
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view returns (bool) {
+        return interfaceId == 0x2f0a18c5 // IERC7575
+            || interfaceId == 0xf815c03d // IERC7575 shares
+            || interfaceId == 0xce3bbe50 // IERC7540Deposit
+            || interfaceId == 0x620ee8e4 // IERC7540Redeem
+            || interfaceId == 0xe3bc4e65 // IERC7540
+            || interfaceId == type(IERC165).interfaceId;
     }
 }
