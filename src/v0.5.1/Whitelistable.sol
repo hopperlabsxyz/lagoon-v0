@@ -63,10 +63,14 @@ abstract contract Whitelistable is Roles {
         address[] memory accounts
     ) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-
-        for (uint256 i = 0; i < accounts.length; i++) {
+        uint256 i = 0;
+        for (; i < accounts.length;) {
             $.isWhitelisted[accounts[i]] = true;
             emit WhitelistUpdated(accounts[i], true);
+            // solhint-disable-next-line no-inline-assembly
+            unchecked {
+                ++i;
+            }
         }
     }
 
