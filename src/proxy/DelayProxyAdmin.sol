@@ -17,7 +17,7 @@ contract DelayProxyAdmin is ProxyAdmin {
     error DelayTooHigh(uint256 maxDelay);
 
     ///@notice The implemenation to update to must the one submitted previously.
-    error ImplenentationInconsistent(address expected);
+    error ImplementationInconsistent(address expected);
 
     /// @notice The `newImplementation` address will be enforcable at `implementationUpdateTime`
     event ImplementationUpdateSubmited(address indexed newImplementation, uint256 implementationUpdateTime);
@@ -137,7 +137,7 @@ contract DelayProxyAdmin is ProxyAdmin {
             revert DelayIsNotOver();
         }
         if (_newImplementation != newImplementation) {
-            revert ImplenentationInconsistent(newImplementation);
+            revert ImplementationInconsistent(newImplementation);
         }
         proxy.upgradeToAndCall{value: msg.value}(newImplementation, data);
         newImplementation = address(0);

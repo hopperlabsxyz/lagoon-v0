@@ -226,7 +226,7 @@ contract DelayProxyAdminTest is Test {
 
         vm.prank(owner);
         vm.expectRevert(
-            abi.encodeWithSelector(DelayProxyAdmin.ImplenentationInconsistent.selector, submittedImplementation)
+            abi.encodeWithSelector(DelayProxyAdmin.ImplementationInconsistent.selector, submittedImplementation)
         );
         proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(0x789)), wrongImplementation, "");
     }
