@@ -71,6 +71,7 @@ contract TestDeposit is BaseTest {
 
         // we settle deposits with a pps != 1:1 to complexify the situation
         updateAndSettle(2001);
+
         uint256 user1MaxDeposit = vault.maxDeposit(user1.addr);
         uint256 user2MaxDeposit = vault.maxDeposit(user2.addr);
 

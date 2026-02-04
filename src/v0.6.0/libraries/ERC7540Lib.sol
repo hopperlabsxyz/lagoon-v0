@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
+import "forge-std/Test.sol";
+
 import {ERC7540} from "../ERC7540.sol";
 import {FeeLib} from "../FeeManager.sol";
 import {RolesLib} from "../Roles.sol";

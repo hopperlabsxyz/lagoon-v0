@@ -85,6 +85,7 @@ contract testRateUpdates is BaseTest {
         // Note: fees ARE taken here because rates are applied immediately and time has passed
         vm.warp(block.timestamp + 1);
         updateAndSettle(4000); // +100%
+
         assertNotEq(vault.balanceOf(feeReceiver), 0, "fee receiver should have shares");
     }
 

@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {Roles} from "../Roles.sol";
+import {OnlySafe, OnlyWhitelistManager} from "../primitives/Errors.sol";
 import {
     OnlySafe,
     OnlySecurityCouncil,
