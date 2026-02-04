@@ -10,7 +10,7 @@ import {AccessMode} from "./primitives/Enums.sol";
 abstract contract Whitelistable is Roles {
     /// @custom:storage-definition erc7201:hopper.storage.Whitelistable
     /// @param isWhitelisted The mapping of whitelisted addresses.
-    /// @param whitelistState The current whitelist mode (whitelist or blacklist).
+    /// @param accessMode The current access mode (whitelist or blacklist).
     struct WhitelistableStorage {
         mapping(address => bool) isWhitelisted;
         // in v0.6.0, we replace the bool isActivated with a enum AccessMode

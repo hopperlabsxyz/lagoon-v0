@@ -34,7 +34,7 @@ import {FeeRegistry} from "../../protocol-v1/FeeRegistry.sol";
 import {GuardrailsManager} from "../GuardRailsManager.sol";
 
 import {GuardrailsLib} from "../libraries/GuardrailsLib.sol";
-import {DepositSync, Referral, StateUpdated, WithdrawSync} from "../primitives/Events.sol";
+import {DepositSync, HaircutTaken, Referral, StateUpdated, WithdrawSync} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -53,14 +53,14 @@ using Math for uint256;
 /// @param valuationManager The address of the valuation manager.
 /// @param admin The address of the owner of the vault.
 /// @param feeReceiver The address of the fee receiver.
-/// @param feeRegistry The address of the fee registry.
-/// @param wrappedNativeToken The address of the wrapped native token.
 /// @param managementRate The management fee rate.
 /// @param performanceRate The performance fee rate.
+/// @param accessMode The access mode (Whitelist or Blacklist).
 /// @param entryRate The entry fee rate.
 /// @param exitRate The exit fee rate.
-/// @param rateUpdateCooldown The cooldown period for updating the fee rates.
-/// @param accessMode The access mode (Whitelist or Blacklist).
+/// @param haircutRate The haircut fee rate for synchronous redeems.
+/// @param securityCouncil The address of the security council.
+/// @param externalSanctionsList The address of the external sanctions list.
 struct InitStruct {
     IERC20 underlying;
     string name;
@@ -76,6 +76,7 @@ struct InitStruct {
     // added in v0.6.0
     uint16 entryRate;
     uint16 exitRate;
+    uint16 haircutRate;
     address securityCouncil;
     address externalSanctionsList;
 }
@@ -216,7 +217,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         emit Referral(referral, msg.sender, 0, assets);
     }
 
-    /// @notice Deposit in a synchronous fashion into the vault.
+    /// @notice Redeem in a synchronous fashion from the vault.
     /// @param shares The shares to redeem.
     /// @param receiver The receiver of the assets.
     /// @return assets The resulting assets.
@@ -231,7 +232,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         // first we need to compute the exit fee
         uint256 exitFeeShares = FeeLib.computeFee(shares, exitRate);
 
-        uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, FeeLib.feeRates().haircutRate);
+        uint16 haircutRate = FeeLib.feeRates().haircutRate;
+        uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, haircutRate);
         assets = _convertToAssets(shares - haircutShares - exitFeeShares, Math.Rounding.Floor);
 
         // burn all the shares and remove the assets from the total assets
@@ -240,7 +242,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
 
         IERC20(asset()).safeTransferFrom(safe(), receiver, assets);
 
-        // missing haircut event !
+        if (haircutShares > 0) {
+            emit HaircutTaken(msg.sender, haircutShares, haircutRate);
+        }
 
         FeeLib.takeFees(exitFeeShares, FeeType.Exit, exitRate, 0);
 
@@ -401,17 +405,17 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     }
 
     /// @notice Function to propose a new valuation for the vault.
-    /// @notice It can only be called by the ValueManager.
+    /// @notice It can only be called by the valuation manager.
     /// @param _newTotalAssets The new total assets of the vault.
     function updateNewTotalAssets(
         uint256 _newTotalAssets
-    ) public onlyValuationManagerOrSecurityCouncil {
+    ) public onlyValuationManager {
         if (VaultLib._getVaultStorage().state == State.Closed) {
             revert Closed();
         }
 
         // if totalAssets is not expired yet it means syncDeposit are allowed
-        // in this case we do not allow onlyValuationManager to propose a new nav
+        // in this case we do not allow the valuation manager to propose a new nav
         // he must call unvalidateTotalAssets first.
         if (isTotalAssetsValid()) {
             revert ValuationUpdateNotAllowed();
@@ -425,16 +429,29 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
 
         uint256 lastFeeTime = FeeLib._getFeeManagerStorage().lastFeeTime;
         uint256 timePastSinceLastValuationUpdate = block.timestamp - lastFeeTime;
-        // we are going to check that the new total assets respect the guardrails
-        // only if the caller is the valuation manager
-        if (
-            msg.sender == RolesLib._getRolesStorage().valuationManager && lastFeeTime != 0
-                && timePastSinceLastValuationUpdate != 0
-        ) {
+        // check that the new total assets respect the guardrails
+        if (lastFeeTime != 0 && timePastSinceLastValuationUpdate != 0) {
             if (!GuardrailsManager.isCompliant(currentPps, nextPps, timePastSinceLastValuationUpdate)) {
                 revert GuardrailsViolation();
             }
         }
+        ERC7540Lib.updateNewTotalAssets(_newTotalAssets);
+    }
+
+    /// @notice Function for the security council to update the total assets without guardrails.
+    /// @notice It can only be called by the security council.
+    /// @param _newTotalAssets The new total assets of the vault.
+    function securityCouncilUpdateTotalAssets(
+        uint256 _newTotalAssets
+    ) public onlySecurityCouncil {
+        if (VaultLib._getVaultStorage().state == State.Closed) {
+            revert Closed();
+        }
+
+        if (isTotalAssetsValid()) {
+            revert ValuationUpdateNotAllowed();
+        }
+
         ERC7540Lib.updateNewTotalAssets(_newTotalAssets);
     }
 

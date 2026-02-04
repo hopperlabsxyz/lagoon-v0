@@ -2,13 +2,7 @@
 pragma solidity 0.8.26;
 
 import {Roles} from "../Roles.sol";
-import {OnlySafe, OnlyWhitelistManager} from "../primitives/Errors.sol";
-import {
-    OnlySafe,
-    OnlySecurityCouncil,
-    OnlyValuationManagerOrSecurityCouncil,
-    OnlyWhitelistManager
-} from "../primitives/Errors.sol";
+import {OnlySafe, OnlySecurityCouncil, OnlyValuationManager, OnlyWhitelistManager} from "../primitives/Errors.sol";
 import {
     FeeReceiverUpdated,
     SafeUpdated,
@@ -44,11 +38,10 @@ library RolesLib {
         }
     }
 
-    function _onlyValuationManagerOrSecurityCouncil() internal view {
+    function _onlyValuationManager() internal view {
         address _valuationManager = _getRolesStorage().valuationManager;
-        address _securityCouncil = _getRolesStorage().securityCouncil;
-        if (_valuationManager != msg.sender && _securityCouncil != msg.sender) {
-            revert OnlyValuationManagerOrSecurityCouncil(_valuationManager, _securityCouncil);
+        if (_valuationManager != msg.sender) {
+            revert OnlyValuationManager(_valuationManager);
         }
     }
 
