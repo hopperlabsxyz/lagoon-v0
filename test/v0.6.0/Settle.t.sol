@@ -270,12 +270,8 @@ contract TestSettle is BaseTest {
         vault.settleRedeem(1);
     }
 
-    function test_updateNewTotalAssets_revertIfNotTotalAssetsManager() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                OnlyValuationManagerOrSecurityCouncil.selector, vault.valuationManager(), vault.securityCouncil()
-            )
-        );
+    function test_updateNewTotalAssets_revertIfNotValuationManager() public {
+        vm.expectRevert(abi.encodeWithSelector(OnlyValuationManager.selector, vault.valuationManager()));
         vault.updateNewTotalAssets(0);
     }
 

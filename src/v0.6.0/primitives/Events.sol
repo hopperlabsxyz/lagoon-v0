@@ -119,6 +119,12 @@ event FeeTaken(
     uint256 protocolShares
 );
 
+/// @notice Emitted when haircut shares are burned during synchronous redeem.
+/// @param owner The address whose shares were subject to haircut.
+/// @param shares The number of shares taken as haircut.
+/// @param rate The haircut rate applied.
+event HaircutTaken(address indexed owner, uint256 shares, uint16 rate);
+
 // ********************* ERC7540 ********************* //
 /// @notice Emitted when the totalAssets variable is updated.
 /// @param totalAssets The new total assets value.

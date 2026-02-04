@@ -2,9 +2,8 @@
 pragma solidity 0.8.26;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {LagoonVault} from "@src/proxy/OptinProxy.sol";
-import {AccessMode} from "@src/v0.6.0/primitives/Enums.sol";
+import {InitStruct} from "@src/v0.6.0/vault/Vault-v0.6.0.sol";
 
 interface IVault {
     function initialize(
@@ -24,42 +23,6 @@ struct OptinProxyFactoryStorage {
     address WRAPPED_NATIVE;
     /// @notice Mapping to track whether an address is a proxy instance created by this factory
     mapping(address => bool) isInstance;
-}
-
-/// @title InitStruct
-/// @notice Initialization structure for creating new vault proxies
-/// @dev Contains all necessary parameters to initialize a vault
-struct InitStruct {
-    /// @notice Underlying ERC20 token for the vault
-    IERC20 underlying;
-    /// @notice Name of the vault token
-    string name;
-    /// @notice Symbol of the vault token
-    string symbol;
-    /// @notice Address of the safe/multisig
-    address safe;
-    /// @notice Address of the whitelist manager
-    address whitelistManager;
-    /// @notice Address of the valuation manager
-    address valuationManager;
-    /// @notice Admin address for the vault
-    address admin;
-    /// @notice Fee receiver address
-    address feeReceiver;
-    /// @notice Management fee rate (in basis points)
-    uint16 managementRate;
-    /// @notice Performance fee rate (in basis points)
-    uint16 performanceRate;
-    /// @notice Access mode (Whitelist or Blacklist)
-    AccessMode accessMode;
-    /// @notice Entry fee rate (in basis points)
-    uint16 entryRate;
-    /// @notice Exit fee rate (in basis points)
-    uint16 exitRate;
-    /// @notice Address of the security council
-    address securityCouncil;
-    /// @notice Address of the external sanctions list
-    address externalSanctionsList;
 }
 
 /// @title OptinProxyFactory
@@ -112,6 +75,7 @@ contract OptinProxyFactory is OwnableUpgradeable {
         $.WRAPPED_NATIVE = _wrappedNativeToken;
     }
 
+    /// @param _logic Address of the vault logic implementation
     /// @param _initialOwner Address of the initial proxy owner
     /// @param _initialDelay The initial delay before which an upgrade can occur by the proxy admin
     /// @param _init Initialization parameters for the vault

@@ -71,7 +71,8 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
             _performanceRate: init.performanceRate,
             _decimals: IERC20Metadata(address(init.underlying)).decimals(),
             _entryRate: init.entryRate,
-            _exitRate: init.exitRate
+            _exitRate: init.exitRate,
+            _haircutRate: init.haircutRate
         });
         __GuardrailsManager_init(Guardrails({upperRate: type(uint256).max, lowerRate: type(int256).min + 1}));
 

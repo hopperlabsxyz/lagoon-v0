@@ -25,8 +25,8 @@ library FeeLib {
     uint16 constant MAX_PERFORMANCE_RATE = 5000; // 50 %
     uint16 constant MAX_ENTRY_RATE = 1000; // 10 %
     uint16 constant MAX_EXIT_RATE = 1000; // 10 %
-    uint16 constant MAX_HAIRCUT_RATE = 1000; // 10 %
     uint16 constant MAX_PROTOCOL_RATE = 3000; // 30 %
+    uint16 constant MAX_HAIRCUT_RATE = 1000; // 10 %
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
     /// @custom:storage-location erc7201:hopper.storage.FeeManager
@@ -46,7 +46,7 @@ library FeeLib {
     /// @param assets the total assets under management
     /// @param annualRate the management rate, expressed in BPS and corresponding to the annual
     /// @param timeElapsed the time elapsed since the last fee calculation in seconds
-    /// @return managementFee the management fee express in assets
+    /// @return managementFee the management fee expressed in assets
     function calculateManagementFee(
         uint256 assets,
         uint256 annualRate,
@@ -226,6 +226,9 @@ library FeeLib {
         }
         if (newRates.exitRate > MAX_EXIT_RATE) {
             revert AboveMaxRate(MAX_EXIT_RATE);
+        }
+        if (newRates.haircutRate > MAX_HAIRCUT_RATE) {
+            revert AboveMaxRate(MAX_HAIRCUT_RATE);
         }
 
         Rates memory currentRates = $.rates;

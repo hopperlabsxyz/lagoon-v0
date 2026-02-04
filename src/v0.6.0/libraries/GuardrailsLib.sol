@@ -14,7 +14,7 @@ library GuardrailsLib {
     // scale to avoid loss of precision
     uint256 public constant SCALE = 1e18;
 
-    /// @custom:storage-definition erc7201:hopper.storage.FeeManager
+    /// @custom:storage-definition erc7201:hopper.storage.GuardrailsManager
     /// @param guardrails The current guardrails.
     struct GuardrailsManagerStorage {
         Guardrails guardrails;
@@ -39,13 +39,11 @@ library GuardrailsLib {
         }
     }
 
-    /**
-     * @notice Checks if a price-per-share (PPS) update is compliant with the current guardrails.
-     * @param currentPps The current price-per-share.
-     * @param nextPps The proposed new price-per-share.
-     * @param _timePast The time elapsed since the last update.
-     * @return bool True if the update is compliant, false otherwise.
-     */
+    /// @notice Checks if a price-per-share (PPS) update is compliant with the current guardrails.
+    /// @param currentPps The current price-per-share.
+    /// @param nextPps The proposed new price-per-share.
+    /// @param _timePast The time elapsed since the last update.
+    /// @return bool True if the update is compliant, false otherwise.
     function isCompliant(
         uint256 currentPps,
         uint256 nextPps,
@@ -87,10 +85,8 @@ library GuardrailsLib {
         }
     }
 
-    /**
-     * @notice Updates the current policy with a new one.
-     * @param guardrails_ The new guardrails to be set.
-     */
+    /// @notice Updates the current policy with a new one.
+    /// @param guardrails_ The new guardrails to be set.
     function updateGuardrails(
         Guardrails memory guardrails_
     ) external {

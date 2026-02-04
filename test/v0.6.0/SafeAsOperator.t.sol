@@ -90,8 +90,15 @@ contract TestSafeAsOperator is BaseTest {
 
         _callAllFunctionsExpectSuccess(user2.addr, user2.addr);
 
-        // Note: safe cannot call requestDeposit for users - onlyOperator excludes safe
-        // Only deposit/mint/redeem/withdraw use onlyOperatorOrSafe which allows safe
+        address operator = safe.addr;
+        address controller = user2.addr;
+        vm.prank(operator);
+        vm.expectRevert(ERC7540InvalidOperator.selector);
+        vault.requestDeposit(100, controller, controller);
+
+        vm.prank(operator);
+        vm.expectRevert(ERC7540InvalidOperator.selector);
+        vault.requestDeposit(100, controller, controller, controller);
     }
 
     // since onlyOperator is called at the begining we can bulk test all functions that should revert
@@ -151,4 +158,3 @@ contract TestSafeAsOperator is BaseTest {
         vault.mint(1, controller, controller);
     }
 }
-

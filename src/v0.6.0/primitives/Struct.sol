@@ -8,6 +8,7 @@ pragma solidity 0.8.26;
 /// @param performanceRate Performance fee rate in basis points.
 /// @param entryRate Entry fee rate in basis points.
 /// @param exitRate Exit fee rate in basis points.
+/// @param haircutRate Haircut fee rate in basis points.
 struct Rates {
     uint16 managementRate;
     uint16 performanceRate;

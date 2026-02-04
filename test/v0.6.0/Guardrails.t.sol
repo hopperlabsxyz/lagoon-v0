@@ -43,7 +43,7 @@ contract TestGuardrails is BaseTest {
         vault.updateNewTotalAssets(1);
     }
 
-    function test_updateNewTotalAssets_PassesIfSubmittedBySecurityCouncil() public {
+    function test_securityCouncilUpdateTotalAssets_PassesWithoutGuardrailsCheck() public {
         dealAndApproveAndWhitelist(user1.addr);
         requestDeposit(10 ** vault.underlyingDecimals(), user1.addr);
         updateAndSettle(0);
@@ -56,7 +56,7 @@ contract TestGuardrails is BaseTest {
         vault.updateGuardrails(guardrails);
 
         vm.prank(vault.securityCouncil());
-        vault.updateNewTotalAssets(1);
+        vault.securityCouncilUpdateTotalAssets(1);
     }
 
     function test_updateGuardrails_RevertsIfLowerRateIsInt256Min() public {

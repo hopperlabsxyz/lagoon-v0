@@ -125,6 +125,7 @@ contract SetUp is Test {
             accessMode: enableWhitelist ? AccessMode.Whitelist : AccessMode.Blacklist,
             entryRate: _entryRate,
             exitRate: _exitRate,
+            haircutRate: 0,
             securityCouncil: admin.addr,
             externalSanctionsList: address(0)
         });

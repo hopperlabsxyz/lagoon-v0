@@ -40,7 +40,8 @@ abstract contract GuardrailsManager is Roles {
         });
     }
 
-    // @inheritdoc GuardrailsLib
+    /// @notice Updates the current guardrails policy with a new one.
+    /// @param guardrails_ The new guardrails to be set.
     function updateGuardrails(
         Guardrails calldata guardrails_
     ) external onlySecurityCouncil {
