@@ -7,7 +7,7 @@ import "forge-std/Test.sol";
 import {BaseTest} from "./Base.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ControllerCannotBeZeroAddress} from "@src/v0.5.1/primitives/Errors.sol";
+import {InvalidController} from "@src/v0.5.1/primitives/Errors.sol";
 
 contract TestRequestDeposit is BaseTest {
     function setUp() public {
@@ -196,7 +196,7 @@ contract TestRequestDeposit is BaseTest {
     function test_requestDeposit_revertIfControllerIsZeroAddress() public {
         uint256 userBalance = assetBalance(user1.addr);
         vm.startPrank(user1.addr);
-        vm.expectRevert(ControllerCannotBeZeroAddress.selector);
+        vm.expectRevert(abi.encodeWithSelector(InvalidController.selector, address(0)));
         vault.requestDeposit(userBalance, address(0), user1.addr);
         vm.stopPrank();
     }

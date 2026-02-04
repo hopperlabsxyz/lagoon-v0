@@ -7,12 +7,12 @@ import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IWETH9} from "./interfaces/IWETH9.sol";
 import {
     CantDepositNativeToken,
-    ControllerCannotBeZeroAddress,
     ERC7540InvalidOperator,
     ERC7540PreviewDepositDisabled,
     ERC7540PreviewMintDisabled,
     ERC7540PreviewRedeemDisabled,
     ERC7540PreviewWithdrawDisabled,
+    InvalidController,
     NewTotalAssetsMissing,
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
@@ -248,7 +248,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 claimable = claimableDepositRequest(0, controller);
         if (claimable > 0) _deposit(claimable, controller, controller);
         if (controller == address(0)) {
-            revert ControllerCannotBeZeroAddress();
+            revert InvalidController(controller);
         }
         ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -408,7 +408,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             _spendAllowance(owner, msg.sender, shares);
         }
         if (controller == address(0)) {
-            revert ControllerCannotBeZeroAddress();
+            revert InvalidController(controller);
         }
         ERC7540Storage storage $ = _getERC7540Storage();
         uint256 claimable = claimableRedeemRequest(0, controller);
