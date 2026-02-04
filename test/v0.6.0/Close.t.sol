@@ -44,6 +44,7 @@ contract TestInitiateClosing is BaseTest {
         // user2: 50k shares claimable
         // user3: 50k shares claimable
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
 
         // User2 claims 50k shares
         vm.startPrank(user2.addr);
@@ -437,7 +438,7 @@ contract TestInitiateClosing is BaseTest {
         assertEq(firstRedeem / 10 ** vault.underlyingDecimals(), (25_000 / 2), "did not received expected assets");
         // no profit here because settle associated with this request did not bring any profits
         uint256 secondRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
-        assertEq(secondRedeem, (25_000 * 10 ** vault.underlyingDecimals() / 2), "did not received expected assets 2"); // same
+        assertEq(secondRedeem, ((25_000 * 10 ** vault.underlyingDecimals()) / 2), "did not received expected assets 2"); // same
         // here
 
         uint256 thirdRedeem = redeem(25_000 * 10 ** vault.decimals(), user2.addr);

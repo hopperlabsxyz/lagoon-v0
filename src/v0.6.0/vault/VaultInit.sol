@@ -17,8 +17,11 @@ import {
     OnlySyncDepositAllowed,
     ValuationUpdateNotAllowed
 } from "../primitives/Errors.sol";
+import {InitStruct} from "./Vault-v0.6.0.sol";
 
+import {GuardrailsManager} from "../GuardRailsManager.sol";
 import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
+import {Guardrails} from "../primitives/Struct.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -28,41 +31,8 @@ import {FeeRegistry} from "@src/protocol-v2/FeeRegistry.sol";
 
 using SafeERC20 for IERC20;
 
-/// @custom:storage-definition erc7201:hopper.storage.vault
-/// @param underlying The address of the underlying asset.
-/// @param name The name of the vault and by extension the ERC20 token.
-/// @param symbol The symbol of the vault and by extension the ERC20 token.
-/// @param safe The address of the safe smart contract.
-/// @param whitelistManager The address of the whitelist manager.
-/// @param valuationManager The address of the valuation manager.
-/// @param admin The address of the owner of the vault.
-/// @param feeReceiver The address of the fee receiver.
-/// @param feeRegistry The address of the fee registry.
-/// @param wrappedNativeToken The address of the wrapped native token.
-/// @param managementRate The management fee rate.
-/// @param performanceRate The performance fee rate.
-/// @param accessMode The access mode (Whitelist or Blacklist).
-/// @param entryRate The entry fee rate.
-/// @param exitRate The exit fee rate.
-struct InitStruct {
-    IERC20 underlying;
-    string name;
-    string symbol;
-    address safe;
-    address whitelistManager;
-    address valuationManager;
-    address admin;
-    address feeReceiver;
-    uint16 managementRate;
-    uint16 performanceRate;
-    AccessMode accessMode;
-    // added in v0.6.0
-    uint16 entryRate;
-    uint16 exitRate;
-}
-
 /// @custom:oz-upgrades-from src/v0.4.0/Vault.sol:Vault
-contract VaultInit is ERC7540, Whitelistable, FeeManager {
+contract VaultInit is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
     constructor(
@@ -87,7 +57,7 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
                 safe: init.safe,
                 feeRegistry: FeeRegistry(feeRegistry),
                 valuationManager: init.valuationManager,
-                gaveUpSafeUpgradeability: false
+                securityCouncil: init.securityCouncil
             })
         );
         __ERC20_init(init.name, init.symbol);
@@ -101,8 +71,10 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager {
             _performanceRate: init.performanceRate,
             _decimals: IERC20Metadata(address(init.underlying)).decimals(),
             _entryRate: init.entryRate,
-            _exitRate: init.exitRate
+            _exitRate: init.exitRate,
+            _haircutRate: init.haircutRate
         });
+        __GuardrailsManager_init(Guardrails({upperRate: type(uint256).max, lowerRate: type(int256).min + 1}));
 
         // $.totalAssets = initialTotalAssets;
         // mint(initialTotalAssets, address(init.safe));

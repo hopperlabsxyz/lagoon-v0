@@ -8,6 +8,7 @@ pragma solidity 0.8.26;
 /// @param performanceRate Performance fee rate in basis points.
 /// @param entryRate Entry fee rate in basis points.
 /// @param exitRate Exit fee rate in basis points.
+/// @param haircutRate Haircut fee rate in basis points.
 struct Rates {
     uint16 managementRate;
     uint16 performanceRate;
@@ -16,6 +17,7 @@ struct Rates {
     // into the same 32-byte slot currently used for the management and performance rates
     uint16 entryRate;
     uint16 exitRate;
+    uint16 haircutRate;
 }
 
 /// @dev Holds data for a specific epoch.
@@ -43,4 +45,14 @@ struct SettleData {
     // new variables introduced with v0.6.0
     uint16 entryFeeRate;
     uint16 exitFeeRate;
+}
+
+// ********************* GUARDRAILS ********************* //
+
+/// @dev Holds guardrails data for the vault.
+/// @param upperRate Maximum rate evolution over 1 year in bps.
+/// @param lowerRate Minimum rate evolution over 1 year in bps.
+struct Guardrails {
+    uint256 upperRate;
+    int256 lowerRate;
 }

@@ -3,10 +3,7 @@ pragma solidity 0.8.26;
 
 import {BeaconProxyFactory, InitStruct} from "@src/protocol-v1/BeaconProxyFactory.sol";
 
-import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {Script, console} from "forge-std/Script.sol";
-
-import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 /*
   run `make vault` to deploy this script

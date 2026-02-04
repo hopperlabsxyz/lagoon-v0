@@ -18,6 +18,7 @@ contract TestWithdraw is BaseTest {
         assertEq(vault.maxWithdraw(user1.addr), 0);
         requestDeposit(userBalance, user1.addr);
         updateAndSettle(0);
+
         assertEq(vault.maxDeposit(user1.addr), userBalance, "wrong max deposit");
         uint256 sharesObtained = deposit(userBalance, user1.addr);
         assertEq(sharesObtained, vault.balanceOf(user1.addr), "wrong amount of shares obtained");

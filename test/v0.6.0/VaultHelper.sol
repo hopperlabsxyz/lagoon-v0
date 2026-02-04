@@ -174,10 +174,6 @@ contract VaultHelper is Vault {
         return RolesLib._getRolesStorage().feeRegistry.protocolFeeReceiver();
     }
 
-    function gaveUpSafeUpgradeability() public view returns (bool) {
-        return RolesLib._getRolesStorage().gaveUpSafeUpgradeability;
-    }
-
     function pendingSilo() public view returns (address) {
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
         return address($.pendingSilo);
@@ -261,5 +257,13 @@ contract VaultHelper is Vault {
         uint40 requestId
     ) public view returns (uint16) {
         return ERC7540Lib.getSettlementExitFeeRate(requestId);
+    }
+
+    function securityCouncil() public view returns (address) {
+        return RolesLib._getRolesStorage().securityCouncil;
+    }
+
+    function guardrails() public view returns (Guardrails memory) {
+        return GuardrailsLib._getGuardrailsManagerStorage().guardrails;
     }
 }

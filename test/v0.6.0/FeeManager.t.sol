@@ -208,7 +208,6 @@ contract TestFeeManager is BaseTest {
 
         vm.warp(block.timestamp + 364 days);
         updateAndSettle(newTotalAssets);
-
         console.log("======");
         console.log("totalSupply        :", vault.totalSupply());
         console.log("totalAssets        :", vault.totalAssets());
@@ -302,9 +301,10 @@ contract TestFeeManager is BaseTest {
         requestRedeem(daoShareBalance, dao);
 
         // ------------ Settle ------------ //
-        console.log("total assets", vault.totalAssets());
+        vm.warp(block.timestamp + 1);
         updateNewTotalAssets(vault.totalAssets());
         settle();
+        // vm.warp(block.timestamp + 1);
 
         uint256 feeReceiverAssetAfter = redeem(feeReceiverShareBalance, feeReceiver);
         uint256 daoAssetAfter = redeem(daoShareBalance, dao);
@@ -470,7 +470,8 @@ contract TestFeeManager is BaseTest {
     }
 
     function test_NoFeesAreTakenDuringFreeRide() public {
-        Rates memory rates = Rates(0, 2000, 0, 0);
+        Rates memory rates =
+            Rates({managementRate: 0, performanceRate: 2000, entryRate: 0, exitRate: 0, haircutRate: 0});
         vm.prank(vault.owner());
         vault.updateRates(rates);
         uint256 newTotalAssets = 0;
@@ -529,6 +530,7 @@ contract TestFeeManager is BaseTest {
 
         // ------------ Settle ------------ //
         newTotalAssets = 5 * 10 ** (vault.underlyingDecimals() - 1);
+        vm.warp(block.timestamp + 1);
         updateAndSettle(newTotalAssets);
         console.log("======");
         console.log("totalSupply        :", vault.totalSupply());
@@ -565,6 +567,7 @@ contract TestFeeManager is BaseTest {
         // newTotalAssets = 2_000_001 * 10 ** vault.underlyingDecimals(); // vault
         // valo made a x2 for user2; and x1 for
         // user1
+        vm.warp(block.timestamp + 1);
         updateAndSettle(newTotalAssets);
         console.log("======");
         console.log("totalSupply        :", vault.totalSupply());
@@ -621,6 +624,7 @@ contract TestFeeManager is BaseTest {
         console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
         console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
         console.log("======");
+        vm.warp(block.timestamp + 1);
         updateAndSettle(newTotalAssets);
 
         // uint256 user1AssetBefore = assetBalance(user1.addr);
@@ -662,7 +666,8 @@ contract TestFeeManager is BaseTest {
             managementRate: MAX_MANAGEMENT_RATE + 1,
             performanceRate: MAX_PERFORMANCE_RATE - 1,
             entryRate: 0,
-            exitRate: 0
+            exitRate: 0,
+            haircutRate: 0
         });
 
         Rates memory ratesBefore = vault.feeRates();
@@ -687,7 +692,8 @@ contract TestFeeManager is BaseTest {
             managementRate: MAX_MANAGEMENT_RATE - 1,
             performanceRate: MAX_PERFORMANCE_RATE + 1,
             entryRate: 0,
-            exitRate: 0
+            exitRate: 0,
+            haircutRate: 0
         });
 
         Rates memory ratesBefore = vault.feeRates();

@@ -2,12 +2,7 @@
 pragma solidity 0.8.26;
 
 import {RolesLib} from "./libraries/RolesLib.sol";
-import {
-    OnlySafe,
-    OnlyValuationManager,
-    OnlyWhitelistManager,
-    SafeUpgradeabilityNotAllowed
-} from "./primitives/Errors.sol";
+import {OnlySafe, OnlyWhitelistManager, SafeUpgradeabilityNotAllowed} from "./primitives/Errors.sol";
 import {
     FeeReceiverUpdated,
     SafeUpdated,
@@ -28,8 +23,9 @@ abstract contract Roles is Ownable2StepUpgradeable {
     /// @param safe Every lagoon vault is associated with a Safe smart contract. This address will receive the assets of
     /// the vault and can settle deposits and redeems.
     /// @param feeRegistry The address of the FeeRegistry contract.
-    /// @param valuationManager. This address is responsible of updating the newTotalAssets value of the vault.
-    /// @param owner The address of the owner of the contract. It considered as the admin. It is not visible in the
+    /// @param valuationManager This address is responsible of updating the newTotalAssets value of the vault.
+    /// @param securityCouncil The address of the security council that can update total assets without guardrails.
+    /// @dev owner The address of the owner of the contract. It considered as the admin. It is not visible in the
     /// struct. It can change the others roles and itself. Initiate the fund closing. Disable the whitelist.
     struct RolesStorage {
         address whitelistManager;
@@ -37,7 +33,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
         address safe;
         FeeRegistry feeRegistry;
         address valuationManager;
-        bool gaveUpSafeUpgradeability;
+        address securityCouncil;
     }
 
     /// @dev Initializes the roles of the vault.
@@ -51,8 +47,9 @@ abstract contract Roles is Ownable2StepUpgradeable {
         $.whitelistManager = roles.whitelistManager;
         $.feeReceiver = roles.feeReceiver;
         $.safe = roles.safe;
-        $.feeRegistry = FeeRegistry(roles.feeRegistry);
+        $.feeRegistry = roles.feeRegistry;
         $.valuationManager = roles.valuationManager;
+        $.securityCouncil = roles.securityCouncil;
     }
 
     /// @dev Returns the storage struct of the roles.
@@ -76,6 +73,12 @@ abstract contract Roles is Ownable2StepUpgradeable {
     /// @dev Modifier to check if the caller is the valuation manager.
     modifier onlyValuationManager() {
         RolesLib._onlyValuationManager();
+        _;
+    }
+
+    /// @dev Modifier to check if the caller is the security council.
+    modifier onlySecurityCouncil() {
+        RolesLib._onlySecurityCouncil();
         _;
     }
 
@@ -112,14 +115,15 @@ abstract contract Roles is Ownable2StepUpgradeable {
     function updateSafe(
         address _safe
     ) external onlyOwner {
-        if (RolesLib._getRolesStorage().gaveUpSafeUpgradeability) {
-            revert SafeUpgradeabilityNotAllowed();
-        }
         RolesLib.updateSafe(_safe);
     }
 
-    function giveUpSafeUpgradeability() external onlyOwner {
-        RolesLib._getRolesStorage().gaveUpSafeUpgradeability = true;
-        emit SafeUpgradeabilityGivenUp();
+    /// @notice Updates the address of the security council.
+    /// @param _securityCouncil The new address of the security council.
+    /// @dev Only the owner can call this function.
+    function updateSecurityCouncil(
+        address _securityCouncil
+    ) external onlyOwner {
+        RolesLib.updateSecurityCouncil(_securityCouncil);
     }
 }

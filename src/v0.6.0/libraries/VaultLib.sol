@@ -2,17 +2,30 @@
 pragma solidity 0.8.26;
 
 import {ERC7540} from "../ERC7540.sol";
+import {FeeManager} from "../FeeManager.sol";
 import {FeeLib} from "../libraries/FeeLib.sol";
-import {State} from "../primitives/Enums.sol";
-import {Closed, NotClosing, NotOpen, OnlyAsyncDepositAllowed, OnlySyncDepositAllowed} from "../primitives/Errors.sol";
+import {FeeType, State} from "../primitives/Enums.sol";
+import {
+    CantDepositNativeToken,
+    Closed,
+    ERC7540InvalidOperator,
+    NotClosing,
+    NotOpen,
+    NotWhitelisted,
+    OnlyAsyncDepositAllowed,
+    OnlySyncDepositAllowed,
+    ValuationUpdateNotAllowed
+} from "../primitives/Errors.sol";
 import {StateUpdated} from "../primitives/Events.sol";
 import {VaultStorage} from "../primitives/VaultStorage.sol";
 import {ERC7540Lib} from "./ERC7540Lib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 library VaultLib {
     using SafeERC20 for IERC20;
+    using Math for uint256;
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
     /// @custom:slot erc7201:hopper.storage.vault

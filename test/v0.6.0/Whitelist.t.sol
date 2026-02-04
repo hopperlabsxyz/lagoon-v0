@@ -212,6 +212,24 @@ contract TestWhitelist is BaseTest {
         vault.requestRedeem(shares, receiver, receiver);
     }
 
+    function test_whitelistedUserRemainsWhitelistedWhenSwitchingModes() public {
+        withWhitelistSetUp();
+
+        // whitelist user1 in whitelist mode
+        whitelist(user1.addr);
+        assertTrue(vault.isWhitelisted(user1.addr), "user1 should be whitelisted in whitelist mode");
+
+        // switch to blacklist mode, user1 should remain effectively whitelisted
+        vm.prank(vault.owner());
+        vault.switchAccessMode(AccessMode.Blacklist);
+        assertTrue(vault.isWhitelisted(user1.addr), "user1 should remain whitelisted in blacklist mode");
+
+        // switch back to whitelist mode, user1 should still be whitelisted
+        vm.prank(vault.owner());
+        vault.switchAccessMode(AccessMode.Whitelist);
+        assertTrue(vault.isWhitelisted(user1.addr), "user1 should remain whitelisted after switching back");
+    }
+
     function test_sanctionedAddress_ShouldReturnFalseInWhitelistMode() public {
         if (block.chainid != 1) return;
         withWhitelistSetUp();

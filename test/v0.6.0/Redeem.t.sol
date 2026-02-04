@@ -17,6 +17,7 @@ contract TestRedeem is BaseTest {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance, user1.addr);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
         assertEq(vault.maxDeposit(user1.addr), userBalance);
         uint256 shares = deposit(userBalance, user1.addr);
         assertEq(shares, vault.balanceOf(user1.addr));
@@ -37,6 +38,7 @@ contract TestRedeem is BaseTest {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance, user1.addr);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
         assertEq(vault.maxDeposit(user1.addr), userBalance);
         uint256 shares = deposit(userBalance, user1.addr);
         assertEq(shares, vault.balanceOf(user1.addr));
@@ -54,6 +56,7 @@ contract TestRedeem is BaseTest {
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance, user1.addr);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
         assertEq(vault.maxDeposit(user1.addr), userBalance);
         uint256 shares = deposit(userBalance, user1.addr);
         assertEq(shares, vault.balanceOf(user1.addr));

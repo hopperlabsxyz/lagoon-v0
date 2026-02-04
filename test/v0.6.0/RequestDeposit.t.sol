@@ -224,6 +224,7 @@ contract TestRequestDeposit is BaseTest {
 
         /// ------------------ settlement ------------------ ///
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
 
         // pendings
         assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), 0, "[1 - pending - requestId 1]: wrong amount");
@@ -254,6 +255,7 @@ contract TestRequestDeposit is BaseTest {
 
         /// ------------------ settlement ------------------ ///
         updateAndSettle(100);
+        vm.warp(block.timestamp + 1);
 
         // pendings
         assertEq(vault.pendingDepositRequest(requestId_1, user1.addr), 0, "[3 - pending - requestId 1]: wrong amount");
@@ -323,6 +325,7 @@ contract TestRequestDeposit is BaseTest {
 
         // Then the NAV commity commit a new NAV
         updateNewTotalAssets(0);
+        vm.warp(block.timestamp + 1);
 
         // Now user 1 is not able to cancel his request - The assets are still in the pending silo waiting for being
         // settle
@@ -338,6 +341,7 @@ contract TestRequestDeposit is BaseTest {
 
         // the asset manager settle the vault
         settle();
+        vm.warp(block.timestamp + 1);
 
         // We expect the pending Silo to only send the assets of the first deposit and not the one from user2
         assertEq(assetBalance(vault.pendingSilo()), amountToDeposit);

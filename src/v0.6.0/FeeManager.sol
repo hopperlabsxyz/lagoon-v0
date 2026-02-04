@@ -51,6 +51,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
     /// @param _decimals the number of decimals of the shares
     /// @param _entryRate the entry fee rate, expressed in BPS
     /// @param _exitRate the exit fee rate, expressed in BPS
+    /// @param _haircutRate the haircut fee rate, expressed in BPS
     // solhint-disable-next-line func-name-mixedcase
     function __FeeManager_init(
         address _registry,
@@ -58,7 +59,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
         uint16 _performanceRate,
         uint256 _decimals,
         uint16 _entryRate,
-        uint16 _exitRate
+        uint16 _exitRate,
+        uint16 _haircutRate
     ) internal onlyInitializing {
         FeeManagerStorage storage $ = FeeLib._getFeeManagerStorage();
         FeeLib.updateRates(
@@ -67,7 +69,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
                 managementRate: _managementRate,
                 performanceRate: _performanceRate,
                 entryRate: _entryRate,
-                exitRate: _exitRate
+                exitRate: _exitRate,
+                haircutRate: _haircutRate
             })
         );
 

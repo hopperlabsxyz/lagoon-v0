@@ -17,6 +17,7 @@ contract TestCancelRequest is BaseTest {
 
         updateAndSettle(0);
         deposit(user1Assets / 2, user1.addr);
+        vm.warp(block.timestamp + 1 days);
     }
 
     function test_cancelRequestDeposit() public {

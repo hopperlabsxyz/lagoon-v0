@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import {AccessMode, FeeType, State} from "./Enums.sol";
 import {Rates} from "./Struct.sol";
+import {Guardrails} from "./Struct.sol";
 
 // ********************* VAULT ********************* //
 
@@ -84,6 +85,11 @@ event SafeUpdated(address oldSafe, address newSafe);
 /// @notice Emitted when the safe upgradeability is given up.
 event SafeUpgradeabilityGivenUp();
 
+/// @notice Emitted when the security council role is updated.
+/// @param oldSecurityCouncil The address of the old security council.
+/// @param newSecurityCouncil The address of the new security council.
+event SecurityCouncilUpdated(address oldSecurityCouncil, address newSecurityCouncil);
+
 // ********************* FEE_MANAGER ********************* //
 
 /// @notice Emitted when the rates are updated.
@@ -112,6 +118,12 @@ event FeeTaken(
     uint256 managerShares,
     uint256 protocolShares
 );
+
+/// @notice Emitted when haircut shares are burned during synchronous redeem.
+/// @param owner The address whose shares were subject to haircut.
+/// @param shares The number of shares taken as haircut.
+/// @param rate The haircut rate applied.
+event HaircutTaken(address indexed owner, uint256 shares, uint16 rate);
 
 // ********************* ERC7540 ********************* //
 /// @notice Emitted when the totalAssets variable is updated.
@@ -150,3 +162,20 @@ event MaxCapUpdated(uint256 previousMaxCap, uint256 maxCap);
 
 /// @notice Emitted when the safe privileges are given up.
 event GaveUpSafePrivileges();
+
+/// @notice Same as a 4626 Withdraw event
+/// @param sender The address who called the withdraw
+/// @param receiver The receiver of the assets
+/// @param owner The owner of the shares
+/// @param assets Amount of assets withdrawn
+/// @param shares Amount of shares redeemed
+event WithdrawSync(
+    address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
+);
+
+// ********************* GUARDRAILS_MANAGER ********************* //
+
+/// @notice Emitted when the guardrails are updated.
+/// @param oldGuardrails The old guardrails.
+/// @param newGuardrails The new guardrails.
+event GuardrailsUpdated(Guardrails oldGuardrails, Guardrails newGuardrails);
