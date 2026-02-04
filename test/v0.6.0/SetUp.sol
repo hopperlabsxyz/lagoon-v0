@@ -127,7 +127,8 @@ contract SetUp is Test {
             exitRate: _exitRate,
             haircutRate: 0,
             securityCouncil: admin.addr,
-            externalSanctionsList: address(0)
+            externalSanctionsList: address(0),
+            initialTotalAssets: 0
         });
         // if proxy is true, we use the factory to create the vault proxy
         if (proxy) {
