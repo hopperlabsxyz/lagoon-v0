@@ -376,7 +376,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         for (uint256 i = 0; i < controllers.length; i++) {
             uint256 claimable = claimableDepositRequest(0, controllers[i]);
             if (claimable > 0) {
-                _deposit(claimable, controllers[i], controllers[i]);
+                ERC7540Lib._deposit(claimable, controllers[i], controllers[i]);
             }
         }
     }

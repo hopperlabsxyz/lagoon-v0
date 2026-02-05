@@ -301,7 +301,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 assets,
         address receiver
     ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        return _deposit(assets, receiver, msg.sender);
+        return ERC7540Lib._deposit(assets, receiver, msg.sender);
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
@@ -315,7 +315,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address receiver,
         address controller
     ) external virtual onlyOperatorOrSafe(controller) returns (uint256) {
-        return _deposit(assets, receiver, controller);
+        return ERC7540Lib._deposit(assets, receiver, controller);
     }
 
     /// @notice Claim the assets from the vault after a request has been settled.
@@ -328,20 +328,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address receiver,
         address controller
     ) internal virtual returns (uint256 shares) {
-        ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
-
-        uint40 requestId = $.lastDepositRequestId[controller];
-        if (requestId > $.lastDepositEpochIdSettled) {
-            revert RequestIdNotClaimable();
-        }
-
-        $.epochs[requestId].depositRequest[controller] -= assets;
-        uint256 entryFeeAssets = FeeLib.computeFee(assets, ERC7540Lib.getSettlementEntryFeeRate(requestId));
-        shares = convertToShares(assets - entryFeeAssets, requestId);
-
-        _transfer(address(this), receiver, shares);
-
-        emit Deposit(controller, receiver, assets, shares);
+        return ERC7540Lib._deposit(assets, receiver, controller);
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
@@ -372,26 +359,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address receiver,
         address controller
     ) internal virtual returns (uint256 assets) {
-        ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
-
-        uint40 requestId = $.lastDepositRequestId[controller];
-        if (requestId > $.lastDepositEpochIdSettled) {
-            revert RequestIdNotClaimable();
-        }
-
-        assets = ERC7540Lib.convertToAssets(shares, requestId, Math.Rounding.Ceil);
-        // introduced in v0.6.0
-        // we need to take into account the entry fee to compute the assets
-        assets += FeeLib.computeFeeReverse(assets, ERC7540Lib.getSettlementEntryFeeRate(requestId));
-        $.epochs[requestId].depositRequest[controller] -= assets;
-
-        _transfer(address(this), receiver, shares);
-
-        emit Deposit(controller, receiver, assets, shares);
+        return ERC7540Lib._mint(shares, receiver, controller);
     }
 
     /// @dev Unusable when paused. Protected by whenNotPaused.
-
     function cancelRequestDeposit() external whenNotPaused {
         ERC7540Lib.cancelRequestDeposit();
     }
@@ -443,48 +414,15 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address receiver,
         address controller
     ) internal returns (uint256 assets) {
-        ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
-
-        uint40 requestId = $.lastRedeemRequestId[controller];
-        if (requestId > $.lastRedeemEpochIdSettled) {
-            revert RequestIdNotClaimable();
-        }
-
-        $.epochs[requestId].redeemRequest[controller] -= shares;
-        // introduced in v0.6.0
-        uint256 exitFeeShares = FeeLib.computeFee(shares, ERC7540Lib.getSettlementExitFeeRate(requestId));
-        assets = ERC7540Lib.convertToAssets(shares - exitFeeShares, requestId, Math.Rounding.Floor);
-        IERC20(asset()).safeTransfer(receiver, assets);
-
-        emit Withdraw(msg.sender, receiver, controller, assets, shares);
+        return ERC7540Lib._redeem(shares, receiver, controller);
     }
 
-    /// @notice Withdraw assets from the vault.
-    /// @param assets The assets to withdraw.
-    /// @param receiver The receiver of the assets.
-    /// @param controller The controller, who owns the request.
-    /// @return shares The corresponding shares.
     function _withdraw(
         uint256 assets,
         address receiver,
         address controller
     ) internal returns (uint256 shares) {
-        ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
-
-        uint40 requestId = $.lastRedeemRequestId[controller];
-        if (requestId > $.lastRedeemEpochIdSettled) {
-            revert RequestIdNotClaimable();
-        }
-
-        shares = ERC7540Lib.convertToShares(assets, requestId, Math.Rounding.Ceil);
-        // introduced in v0.6.0
-        // we need to take into account the exit fee to compute the shares
-        shares += FeeLib.computeFeeReverse(shares, ERC7540Lib.getSettlementExitFeeRate(requestId));
-        $.epochs[requestId].redeemRequest[controller] -= shares;
-
-        IERC20(asset()).safeTransfer(receiver, assets);
-
-        emit Withdraw(msg.sender, receiver, controller, assets, shares);
+        return ERC7540Lib._withdraw(assets, receiver, controller);
     }
 
     function forge(
