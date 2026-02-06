@@ -191,7 +191,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         emit Referral(referral, owner, requestId, assets);
     }
 
-    /// @notice Deposit in a sychronous fashion into the vault.
+    /// @notice Deposit in a synchronous fashion into the vault.
     /// @param assets The assets to deposit.
     /// @param receiver The receiver of the shares.
     /// @return shares The resulting shares.
@@ -511,7 +511,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         return claimableDepositRequest(0, controller);
     }
 
-    /// @notice Returns the amount of sharres a controller will get if he calls Deposit.
+    /// @notice Returns the amount of shares a controller will get if he calls Deposit.
     /// @param controller The controller.
     /// @dev    If the contract is paused no deposit/claims are possible.
     /// @dev    We read the claimableDepositRequest of the controller then convert it to shares using the
