@@ -130,9 +130,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     /// @notice Reverts if the vault is not open.
     modifier onlyOpen() {
+        _onlyOpen();
+        _;
+    }
+
+    function _onlyOpen() internal view returns (bool) {
         State _state = _getVaultStorage().state;
         if (_state != State.Open) revert NotOpen(_state);
-        _;
     }
 
     /// @notice Reverts if the vault is not closing.
@@ -172,7 +176,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller,
         address owner
     ) public payable override onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
-        return _requestDeposit(assets, controller, owner);
+        (requestId,) = _requestDeposit(assets, controller, owner);
+        return requestId;
     }
 
     /// @notice Requests a deposit of assets, subject to whitelist validation.
@@ -186,7 +191,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address owner,
         address referral
     ) public payable onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
-        requestId = _requestDeposit(assets, controller, owner);
+        (requestId, assets) = _requestDeposit(assets, controller, owner);
 
         emit Referral(referral, owner, requestId, assets);
     }

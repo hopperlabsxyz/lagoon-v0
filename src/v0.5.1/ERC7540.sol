@@ -245,7 +245,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 assets,
         address controller,
         address owner
-    ) internal returns (uint256) {
+    ) internal returns (uint256 requestId, uint256 assetsDeposited) {
         _doubleWhitelistedCheck(owner, controller);
         uint256 claimable = claimableDepositRequest(0, controller);
         if (claimable > 0) _deposit(claimable, controller, controller);
@@ -276,7 +276,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         $.epochs[_depositId].depositRequest[controller] += assets;
 
         emit DepositRequest(controller, owner, _depositId, msg.sender, assets);
-        return _depositId;
+        return (_depositId, assets);
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
