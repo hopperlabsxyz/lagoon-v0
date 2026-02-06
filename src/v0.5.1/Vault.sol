@@ -130,9 +130,13 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     /// @notice Reverts if the vault is not open.
     modifier onlyOpen() {
+        _onlyOpen();
+        _;
+    }
+
+    function _onlyOpen() internal view returns (bool) {
         State _state = _getVaultStorage().state;
         if (_state != State.Open) revert NotOpen(_state);
-        _;
     }
 
     /// @notice Reverts if the vault is not closing.
@@ -172,8 +176,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller,
         address owner
     ) public payable override onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
-        if (!isWhitelisted(owner)) revert NotWhitelisted();
-        return _requestDeposit(assets, controller, owner);
+        (requestId,) = _requestDeposit(assets, controller, owner);
+        return requestId;
     }
 
     /// @notice Requests a deposit of assets, subject to whitelist validation.
@@ -187,13 +191,12 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address owner,
         address referral
     ) public payable onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
-        if (!isWhitelisted(owner)) revert NotWhitelisted();
-        requestId = _requestDeposit(assets, controller, owner);
+        (requestId, assets) = _requestDeposit(assets, controller, owner);
 
         emit Referral(referral, owner, requestId, assets);
     }
 
-    /// @notice Deposit in a sychronous fashion into the vault.
+    /// @notice Deposit in a synchronous fashion into the vault.
     /// @param assets The assets to deposit.
     /// @param receiver The receiver of the shares.
     /// @return shares The resulting shares.
@@ -204,7 +207,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     ) public payable onlySyncDeposit onlyOpen returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
+        _doubleWhitelistedCheck(msg.sender, receiver);
 
         if (msg.value != 0) {
             // if user sends eth and the underlying is wETH we will wrap it for him
@@ -221,6 +224,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         }
         shares = _convertToShares(assets, Math.Rounding.Floor);
         $.totalAssets += assets;
+        // ERC20.mint
         _mint(receiver, shares);
 
         emit DepositSync(msg.sender, receiver, assets, shares);
@@ -238,7 +242,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller,
         address owner
     ) public onlyOpen whenNotPaused returns (uint256 requestId) {
-        if (!isWhitelisted(owner)) revert NotWhitelisted();
         return _requestRedeem(shares, controller, owner);
     }
 
@@ -318,6 +321,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
+        _doubleWhitelistedCheck(receiver, owner);
         if (caller != owner && !isOperator(owner, caller)) {
             _spendAllowance(owner, caller, shares);
         }
@@ -512,7 +516,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         return claimableDepositRequest(0, controller);
     }
 
-    /// @notice Returns the amount of sharres a controller will get if he calls Deposit.
+    /// @notice Returns the amount of shares a controller will get if he calls Deposit.
     /// @param controller The controller.
     /// @dev    If the contract is paused no deposit/claims are possible.
     /// @dev    We read the claimableDepositRequest of the controller then convert it to shares using the
@@ -538,5 +542,11 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     function version() public pure returns (string memory) {
         return "v0.5.1";
+    }
+
+    function isWhitelisted(
+        address account
+    ) public view override(ERC7540, Whitelistable) returns (bool) {
+        return Whitelistable.isWhitelisted(account);
     }
 }

@@ -64,7 +64,7 @@ contract TestRedeem is BaseTest {
         vm.prank(user1.addr);
         vault.setOperator(user2.addr, true);
 
-        redeem(shares, user1.addr, user2.addr, user2.addr);
+        redeem(shares, user1.addr, user2.addr, user1.addr);
     }
 
     function test_redeem_revertIfRequestIdNotClaimable() public {

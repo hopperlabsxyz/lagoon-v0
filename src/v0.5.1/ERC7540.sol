@@ -14,6 +14,7 @@ import {
     ERC7540PreviewWithdrawDisabled,
     InvalidController,
     NewTotalAssetsMissing,
+    NotWhitelisted,
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
     RequestNotCancelable,
@@ -244,7 +245,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 assets,
         address controller,
         address owner
-    ) internal returns (uint256) {
+    ) internal returns (uint256 requestId, uint256 assetsDeposited) {
+        _doubleWhitelistedCheck(owner, controller);
         uint256 claimable = claimableDepositRequest(0, controller);
         if (claimable > 0) _deposit(claimable, controller, controller);
         if (controller == address(0)) {
@@ -274,7 +276,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         $.epochs[_depositId].depositRequest[controller] += assets;
 
         emit DepositRequest(controller, owner, _depositId, msg.sender, assets);
-        return _depositId;
+        return (_depositId, assets);
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
@@ -314,6 +316,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address controller
     ) internal virtual returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
+        _doubleWhitelistedCheck(receiver, controller);
 
         uint40 requestId = $.lastDepositRequestId[controller];
         if (requestId > $.lastDepositEpochIdSettled) {
@@ -357,6 +360,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address controller
     ) internal virtual returns (uint256 assets) {
         ERC7540Storage storage $ = _getERC7540Storage();
+        _doubleWhitelistedCheck(receiver, controller);
 
         uint40 requestId = $.lastDepositRequestId[controller];
         if (requestId > $.lastDepositEpochIdSettled) {
@@ -376,6 +380,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @dev It can only be called in the same epoch.
     function cancelRequestDeposit() external whenNotPaused {
         ERC7540Storage storage $ = _getERC7540Storage();
+        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
 
         uint40 requestId = $.lastDepositRequestId[msg.sender];
         if (requestId != $.depositEpochId) {
@@ -404,6 +409,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address controller,
         address owner
     ) internal returns (uint256) {
+        _doubleWhitelistedCheck(owner, controller);
         if (msg.sender != owner && !isOperator(owner, msg.sender)) {
             _spendAllowance(owner, msg.sender, shares);
         }
@@ -439,6 +445,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address receiver,
         address controller
     ) internal returns (uint256 assets) {
+        _doubleWhitelistedCheck(receiver, controller);
         ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastRedeemRequestId[controller];
@@ -464,6 +471,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address controller
     ) internal returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
+        _doubleWhitelistedCheck(receiver, controller);
 
         uint40 requestId = $.lastRedeemRequestId[controller];
         if (requestId > $.lastRedeemEpochIdSettled) {
@@ -765,6 +773,15 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         }
     }
 
+    function _doubleWhitelistedCheck(
+        address account,
+        address account2
+    ) internal {
+        if (!isWhitelisted(account) || !isWhitelisted(account2)) {
+            revert NotWhitelisted();
+        }
+    }
+
     ///////////////////
     // ## EIP7575 ## //
     ///////////////////
@@ -807,4 +824,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     ) public virtual;
 
     function safe() public view virtual returns (address);
+
+    function isWhitelisted(
+        address account
+    ) public view virtual returns (bool);
 }
