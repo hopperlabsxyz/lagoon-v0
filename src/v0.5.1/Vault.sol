@@ -172,7 +172,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller,
         address owner
     ) public payable override onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
-        if (!isWhitelisted(owner)) revert NotWhitelisted();
         return _requestDeposit(assets, controller, owner);
     }
 
@@ -187,7 +186,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address owner,
         address referral
     ) public payable onlyOperator(owner) whenNotPaused onlyAsyncDeposit returns (uint256 requestId) {
-        if (!isWhitelisted(owner)) revert NotWhitelisted();
         requestId = _requestDeposit(assets, controller, owner);
 
         emit Referral(referral, owner, requestId, assets);
@@ -204,7 +202,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
     ) public payable onlySyncDeposit onlyOpen returns (uint256 shares) {
         ERC7540Storage storage $ = _getERC7540Storage();
 
-        if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
+        _doubleWhitelistedCheck(msg.sender, receiver);
 
         if (msg.value != 0) {
             // if user sends eth and the underlying is wETH we will wrap it for him
@@ -221,6 +219,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         }
         shares = _convertToShares(assets, Math.Rounding.Floor);
         $.totalAssets += assets;
+        // ERC20.mint
         _mint(receiver, shares);
 
         emit DepositSync(msg.sender, receiver, assets, shares);
@@ -238,7 +237,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         address controller,
         address owner
     ) public onlyOpen whenNotPaused returns (uint256 requestId) {
-        if (!isWhitelisted(owner)) revert NotWhitelisted();
         return _requestRedeem(shares, controller, owner);
     }
 
@@ -318,6 +316,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
+        _doubleWhitelistedCheck(receiver, owner);
         if (caller != owner && !isOperator(owner, caller)) {
             _spendAllowance(owner, caller, shares);
         }
@@ -538,5 +537,11 @@ contract Vault is ERC7540, Whitelistable, FeeManager {
 
     function version() public pure returns (string memory) {
         return "v0.5.1";
+    }
+
+    function isWhitelisted(
+        address account
+    ) public view override(ERC7540, Whitelistable) returns (bool) {
+        return Whitelistable.isWhitelisted(account);
     }
 }
