@@ -64,7 +64,12 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         __ERC20_init(init.name, init.symbol);
         __ERC20Pausable_init();
         __ERC4626_init(init.underlying);
-        __ERC7540_init(init.underlying, wrappedNativeToken);
+        __ERC7540_init({
+            underlying: init.underlying,
+            wrappedNativeToken: wrappedNativeToken,
+            initialTotalAssets: init.initialTotalAssets,
+            _safe: init.safe
+        });
         __Whitelistable_init(init.accessMode, address(0));
         __FeeManager_init({
             _registry: feeRegistry,
@@ -77,30 +82,7 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         });
         __GuardrailsManager_init(Guardrails({upperRate: type(uint256).max, lowerRate: type(int256).min + 1}));
 
-        if (init.initialTotalAssets > 0) {
-            _preMint(init.initialTotalAssets, init.safe);
-        }
-
         emit StateUpdated(State.Open);
-    }
-
-    /// @notice Pre-mints shares to the receiver based on the provided assets amount.
-    /// @dev This function is used during vault initialization to set initial total assets and mint corresponding
-    /// shares. @dev The shares are calculated using _convertToShares with Floor rounding, and totalAssets is
-    /// incremented by the assets amount.
-    /// @param assets The amount of assets to convert to shares and add to totalAssets.
-    /// @param receiver The address that will receive the minted shares. Must not be address(0).
-    /// @custom:reverts ERC20InvalidReceiver If receiver is address(0).
-    function _preMint(
-        uint256 assets,
-        address receiver
-    ) internal {
-        ERC7540.ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
-        uint256 shares = _convertToShares(assets, Math.Rounding.Floor);
-        $.totalAssets += assets;
-        // ERC20 mint function
-        _mint(receiver, shares);
-        emit DepositSync(msg.sender, receiver, assets, shares);
     }
 
     /////////////////////////////////////////////

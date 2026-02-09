@@ -7,6 +7,8 @@ import "forge-std/Test.sol";
 import {BaseTest} from "./Base.sol";
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {AccessMode} from "@src/v0.6.0/primitives/Enums.sol";
+import {InitStruct} from "@src/v0.6.0/vault/Vault-v0.6.0.sol";
 
 contract TestFeeManager is BaseTest {
     using Math for uint256;
@@ -66,6 +68,72 @@ contract TestFeeManager is BaseTest {
     function test_feeReceiverAndDaoHaveNoVaultSharesAtVaultCreation() public view {
         assertEq(vault.balanceOf(vault.feeReceiver()), 0);
         assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0);
+    }
+
+    function test_firstSettleDeposit_afterPremint_takesNoFees() public {
+        // Deploy a new vault with an initial premint
+        uint256 initialAssets = 1000 * 10 ** underlying.decimals();
+
+        InitStruct memory initStruct = InitStruct({
+            underlying: underlying,
+            name: vaultName,
+            symbol: vaultSymbol,
+            safe: safe.addr,
+            whitelistManager: whitelistManager.addr,
+            valuationManager: valuationManager.addr,
+            admin: admin.addr,
+            feeReceiver: feeReceiver.addr,
+            managementRate: managementFee,
+            performanceRate: performanceFee,
+            accessMode: AccessMode.Blacklist,
+            entryRate: entryFee,
+            exitRate: exitFee,
+            haircutRate: 0,
+            securityCouncil: admin.addr,
+            externalSanctionsList: address(0),
+            initialTotalAssets: initialAssets
+        });
+
+        VaultHelper newVault = new VaultHelper(false);
+        newVault.initialize(abi.encode(initStruct), address(protocolRegistry), WRAPPED_NATIVE_TOKEN);
+
+        // Use the newly deployed vault for the rest of the test
+        vault = newVault;
+
+        // Sanity checks: premint set totalAssets/totalSupply and no fee shares
+        assertEq(vault.totalAssets(), initialAssets, "premint should set totalAssets");
+        uint256 expectedShares = vault.convertToSharesWithRounding(initialAssets, Math.Rounding.Floor);
+        assertEq(vault.totalSupply(), expectedShares, "premint should mint shares to safe");
+        assertEq(vault.balanceOf(vault.feeReceiver()), 0, "manager should have 0 shares after premint");
+        assertEq(vault.balanceOf(vault.protocolFeeReceiver()), 0, "protocol should have 0 shares after premint");
+
+        uint256 feeReceiverSharesBefore = vault.balanceOf(vault.feeReceiver());
+        uint256 protocolSharesBefore = vault.balanceOf(vault.protocolFeeReceiver());
+        uint256 lastFeeTimeBefore = vault.lastFeeTime();
+        uint256 highWaterMarkBefore = vault.highWaterMark();
+
+        // First valuation equal to current total assets, then first settleDeposit
+        uint256 newTotalAssets = vault.totalAssets();
+        vm.prank(valuationManager.addr);
+        vault.updateNewTotalAssets(newTotalAssets);
+
+        vm.prank(safe.addr);
+        vault.settleDeposit(newTotalAssets);
+
+        // No fees should be taken at the first settleDeposit even if a premint happened
+        assertEq(
+            vault.balanceOf(vault.feeReceiver()),
+            feeReceiverSharesBefore,
+            "feeReceiver should not receive fees on first settle after premint"
+        );
+        assertEq(
+            vault.balanceOf(vault.protocolFeeReceiver()),
+            protocolSharesBefore,
+            "protocol should not receive fees on first settle after premint"
+        );
+
+        // lastFeeTime must be initialized and highWaterMark should not change on flat price per share
+        assertEq(vault.highWaterMark(), highWaterMarkBefore, "highWaterMark should not change on flat pps");
     }
 
     function test_FeesAreTakenAfterFreeride_0() public {

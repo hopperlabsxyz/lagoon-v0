@@ -24,6 +24,7 @@ import {
 } from "./primitives/Errors.sol";
 import {
     DepositRequestCanceled,
+    DepositSync,
     GaveUpSafePrivileges,
     MaxCapUpdated,
     NewTotalAssetsUpdated,
@@ -102,7 +103,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     // solhint-disable-next-line func-name-mixedcase
     function __ERC7540_init(
         IERC20 underlying,
-        address wrappedNativeToken
+        address wrappedNativeToken,
+        uint256 initialTotalAssets,
+        address _safe
     ) internal onlyInitializing {
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
 
@@ -125,7 +128,30 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
                 $.decimalsOffset = 18 - underlyingDecimals;
             }
         }
+        if (initialTotalAssets > 0) {
+            _preMint(initialTotalAssets, _safe);
+        }
         _updateMaxCap(type(uint256).max);
+    }
+
+    /// @notice Pre-mints shares to the receiver based on the provided assets amount.
+    /// @dev This function is used during vault initialization to set initial total assets and mint corresponding
+    /// shares. @dev The shares are calculated using _convertToShares with Floor rounding, and totalAssets is
+    /// incremented by the assets amount.
+    /// @param assets The amount of assets to convert to shares and add to totalAssets.
+    /// @param receiver The address that will receive the minted shares. Must not be address(0).
+    /// @custom:reverts ERC20InvalidReceiver If receiver is address(0).
+    function _preMint(
+        uint256 assets,
+        address receiver
+    ) internal {
+        ERC7540.ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+        uint256 shares = _convertToShares(assets, Math.Rounding.Floor);
+        $.totalAssets += assets;
+
+        // ERC20 mint function
+        _mint(receiver, shares);
+        emit DepositSync(msg.sender, receiver, assets, shares);
     }
 
     ///////////////
