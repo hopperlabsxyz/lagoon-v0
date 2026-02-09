@@ -134,10 +134,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @notice Make sure the caller is an operator or the safe (if activated) or the controller.
     /// @param controller The controller.
-    modifier onlyOperatorOrSafe(
+    modifier onlyOperatorOrSuperOperator(
         address controller
     ) {
-        ERC7540Lib._onlyOperatorOrSafe(controller);
+        ERC7540Lib._onlyOperatorOrSuperOperator(controller);
         _;
     }
 
@@ -205,11 +205,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return ERC7540Lib._isOperator(controller, operator);
     }
 
-    function isOperatorOrSafe(
+    function isOperatorOrSuperOperator(
         address controller,
         address operator
     ) public view returns (bool) {
-        return ERC7540Lib._isOperatorOrSafe(controller, operator);
+        return ERC7540Lib._isOperatorOrSuperOperator(controller, operator);
     }
 
     /// @dev should not be usable when contract is paused
@@ -314,7 +314,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 assets,
         address receiver,
         address controller
-    ) external virtual onlyOperatorOrSafe(controller) returns (uint256) {
+    ) external virtual onlyOperatorOrSuperOperator(controller) returns (uint256) {
         return _deposit(assets, receiver, controller);
     }
 
@@ -358,7 +358,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 shares,
         address receiver,
         address controller
-    ) external virtual onlyOperatorOrSafe(controller) returns (uint256) {
+    ) external virtual onlyOperatorOrSuperOperator(controller) returns (uint256) {
         return _mint(shares, receiver, controller);
     }
 
@@ -423,7 +423,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address controller,
         address owner
     ) internal returns (uint256) {
-        if (msg.sender != owner && !isOperatorOrSafe(owner, msg.sender)) {
+        if (msg.sender != owner && !isOperatorOrSuperOperator(owner, msg.sender)) {
             _spendAllowance(owner, msg.sender, shares);
         }
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();

@@ -7,6 +7,7 @@ import {
     FeeReceiverUpdated,
     SafeUpdated,
     SecurityCouncilUpdated,
+    SuperOperatorUpdated,
     ValuationManagerUpdated,
     WhitelistManagerUpdated
 } from "../primitives/Events.sol";
@@ -94,5 +95,13 @@ library RolesLib {
         Roles.RolesStorage storage $ = _getRolesStorage();
         emit SecurityCouncilUpdated($.securityCouncil, _securityCouncil);
         $.securityCouncil = _securityCouncil;
+    }
+
+    function updateSuperOperator(
+        address _superOperator
+    ) public {
+        Roles.RolesStorage storage $ = _getRolesStorage();
+        emit SuperOperatorUpdated($.superOperator, _superOperator);
+        $.superOperator = _superOperator;
     }
 }

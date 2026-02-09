@@ -90,6 +90,11 @@ event SafeUpgradeabilityGivenUp();
 /// @param newSecurityCouncil The address of the new security council.
 event SecurityCouncilUpdated(address oldSecurityCouncil, address newSecurityCouncil);
 
+/// @notice Emitted when the master operator role is updated.
+/// @param oldSuperOperator The address of the old master operator.
+/// @param newSuperOperator The address of the new master operator.
+event SuperOperatorUpdated(address oldSuperOperator, address newSuperOperator);
+
 // ********************* FEE_MANAGER ********************* //
 
 /// @notice Emitted when the rates are updated.

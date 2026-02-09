@@ -8,6 +8,7 @@ import {BaseTest} from "./Base.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {AccessMode} from "@src/v0.6.0/primitives/Enums.sol";
 
 // Here are the various situations to test:
 // [x] requestDeposit() for pfr. Gave up. should revert
@@ -39,7 +40,7 @@ import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 // [x] redeem() for user. should succeed
 // [x] withdraw() for user. should succeed
 
-contract TestSafeAsOperator is BaseTest {
+contract TestSuperOperator is BaseTest {
     address protocolFeeReceiver;
 
     function setUp() public {
@@ -60,7 +61,7 @@ contract TestSafeAsOperator is BaseTest {
         vault.giveUpSafePrivileges();
     }
 
-    function test_safeAsOperator_afterGivingUpOperatorPrivileges_shouldRevert() public {
+    function test_superOperator_afterGivingUpOperatorPrivileges_shouldRevert() public {
         // owner decides to give up this right
         assertFalse(vault.gaveUpSafePrivileges(), "gaveUpSafePrivileges should be false");
         vm.prank(vault.owner());
@@ -70,7 +71,7 @@ contract TestSafeAsOperator is BaseTest {
         _callAllFunctionsExpectRevert(user2.addr, user2.addr);
     }
 
-    function test_safeAsOperator_forProtocolFeeReceiver_shouldRevert() public {
+    function test_superOperator_forProtocolFeeReceiver_shouldRevert() public {
         _callAllFunctionsExpectRevert(protocolFeeReceiver, protocolFeeReceiver);
 
         vm.prank(vault.owner());
@@ -78,7 +79,7 @@ contract TestSafeAsOperator is BaseTest {
         _callAllFunctionsExpectRevert(protocolFeeReceiver, protocolFeeReceiver);
     }
 
-    function test_safeAsOperator_forUser() public {
+    function test_superOperator_forUser() public {
         requestDeposit(100 * 10 ** vault.underlyingDecimals(), user2.addr);
         updateAndSettle(0);
         vm.warp(block.timestamp + 1);
@@ -90,7 +91,7 @@ contract TestSafeAsOperator is BaseTest {
 
         _callAllFunctionsExpectSuccess(user2.addr, user2.addr);
 
-        address operator = safe.addr;
+        address operator = superOperator.addr;
         address controller = user2.addr;
         vm.prank(operator);
         vm.expectRevert(ERC7540InvalidOperator.selector);

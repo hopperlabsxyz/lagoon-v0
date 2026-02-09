@@ -79,6 +79,7 @@ struct InitStruct {
     uint16 haircutRate;
     address securityCouncil;
     address externalSanctionsList;
+    address superOperator;
 }
 
 /// @custom:oz-upgrades-from src/v0.5.0/Vault.sol:Vault
@@ -302,7 +303,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
             _withdraw(msg.sender, receiver, controller, assets, totalShares); // sync
             return totalShares;
         } else {
-            if (controller != msg.sender && !isOperatorOrSafe(controller, msg.sender)) {
+            if (controller != msg.sender && !isOperatorOrSuperOperator(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
             }
             return _withdraw(assets, receiver, controller); // async
@@ -332,7 +333,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
             _withdraw(msg.sender, receiver, controller, assets, shares); // sync
             return assets;
         } else {
-            if (controller != msg.sender && !isOperatorOrSafe(controller, msg.sender)) {
+            if (controller != msg.sender && !isOperatorOrSuperOperator(controller, msg.sender)) {
                 revert ERC7540InvalidOperator();
             }
             return _redeem(shares, receiver, controller);
@@ -352,7 +353,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
-        if (caller != owner && !isOperatorOrSafe(owner, caller)) {
+        if (caller != owner && !isOperatorOrSuperOperator(owner, caller)) {
             _spendAllowance(owner, caller, shares);
         }
 
