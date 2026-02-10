@@ -57,11 +57,11 @@ library ERC7540Lib {
         }
     }
 
-    function _isOperatorOrSafe(
+    function _isOperatorOrSuperOperator(
         address controller,
         address operator
     ) internal view returns (bool) {
-        return _isOperator(controller, operator) || _isSafeAnOperator(controller, operator);
+        return _isOperator(controller, operator) || _isSuperOperator(controller, operator);
     }
 
     function _isOperator(
@@ -71,7 +71,7 @@ library ERC7540Lib {
         return _getERC7540Storage().isOperator[controller][operator];
     }
 
-    function _isSafeAnOperator(
+    function _isSuperOperator(
         address controller,
         address operator
     ) internal view returns (bool) {
@@ -81,11 +81,11 @@ library ERC7540Lib {
             && controller != RolesLib._protocolFeeReceiver();
     }
 
-    function _onlyOperatorOrSafe(
+    function _onlyOperatorOrSuperOperator(
         address controller
     ) internal view {
         // Include safe as operator
-        if (controller != msg.sender && !_isOperatorOrSafe(controller, msg.sender)) {
+        if (controller != msg.sender && !_isOperatorOrSuperOperator(controller, msg.sender)) {
             revert ERC7540InvalidOperator();
         }
     }

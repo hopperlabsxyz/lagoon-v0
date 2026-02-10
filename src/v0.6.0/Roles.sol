@@ -3,13 +3,6 @@ pragma solidity 0.8.26;
 
 import {RolesLib} from "./libraries/RolesLib.sol";
 import {OnlySafe, OnlyWhitelistManager, SafeUpgradeabilityNotAllowed} from "./primitives/Errors.sol";
-import {
-    FeeReceiverUpdated,
-    SafeUpdated,
-    SafeUpgradeabilityGivenUp,
-    ValuationManagerUpdated,
-    WhitelistManagerUpdated
-} from "./primitives/Events.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {FeeRegistry} from "@src/protocol-v2/FeeRegistry.sol";
 
@@ -34,6 +27,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
         FeeRegistry feeRegistry;
         address valuationManager;
         address securityCouncil;
+        address superOperator;
     }
 
     /// @dev Initializes the roles of the vault.
@@ -50,6 +44,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
         $.feeRegistry = roles.feeRegistry;
         $.valuationManager = roles.valuationManager;
         $.securityCouncil = roles.securityCouncil;
+        $.superOperator = roles.superOperator;
     }
 
     /// @dev Returns the storage struct of the roles.
@@ -125,5 +120,14 @@ abstract contract Roles is Ownable2StepUpgradeable {
         address _securityCouncil
     ) external onlyOwner {
         RolesLib.updateSecurityCouncil(_securityCouncil);
+    }
+
+    /// @notice Updates the address of the master operator.
+    /// @param _superOperator The new address of the master operator.
+    /// @dev Only the owner can call this function.
+    function updateSuperOperator(
+        address _superOperator
+    ) external onlyOwner {
+        RolesLib.updateSuperOperator(_superOperator);
     }
 }
