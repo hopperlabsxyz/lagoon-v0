@@ -52,6 +52,7 @@ contract SetUp is Test {
     VmSafe.Wallet safe = vm.createWallet("safe");
     VmSafe.Wallet valuationManager = vm.createWallet("valuationManager");
     VmSafe.Wallet admin = vm.createWallet("admin");
+    VmSafe.Wallet superOperator = vm.createWallet("superOperator");
     VmSafe.Wallet feeReceiver = vm.createWallet("feeReceiver");
     VmSafe.Wallet dao = vm.createWallet("dao");
     VmSafe.Wallet whitelistManager = vm.createWallet("whitelistManager");
@@ -127,7 +128,8 @@ contract SetUp is Test {
             exitRate: _exitRate,
             haircutRate: 0,
             securityCouncil: admin.addr,
-            externalSanctionsList: address(0)
+            externalSanctionsList: address(0),
+            superOperator: superOperator.addr
         });
         // if proxy is true, we use the factory to create the vault proxy
         if (proxy) {

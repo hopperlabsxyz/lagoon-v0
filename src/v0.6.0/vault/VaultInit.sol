@@ -57,7 +57,8 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
                 safe: init.safe,
                 feeRegistry: FeeRegistry(feeRegistry),
                 valuationManager: init.valuationManager,
-                securityCouncil: init.securityCouncil
+                securityCouncil: init.securityCouncil,
+                superOperator: init.superOperator
             })
         );
         __ERC20_init(init.name, init.symbol);
