@@ -91,7 +91,8 @@ contract TestFeeManager is BaseTest {
             haircutRate: 0,
             securityCouncil: admin.addr,
             externalSanctionsList: address(0),
-            initialTotalAssets: initialAssets
+            initialTotalAssets: initialAssets,
+            superOperator: superOperator.addr
         });
 
         VaultHelper newVault = new VaultHelper(false);
