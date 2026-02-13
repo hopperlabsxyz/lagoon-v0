@@ -104,4 +104,10 @@ library RolesLib {
         emit SuperOperatorUpdated($.superOperator, _superOperator);
         $.superOperator = _superOperator;
     }
+
+    function isSuperOperator(
+        address account
+    ) public view returns (bool) {
+        return _getRolesStorage().superOperator == account;
+    }
 }

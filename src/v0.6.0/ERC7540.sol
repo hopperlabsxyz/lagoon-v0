@@ -7,8 +7,11 @@ import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IWETH9} from "./interfaces/IWETH9.sol";
 import {ERC7540Lib} from "./libraries/ERC7540Lib.sol";
 import {FeeLib} from "./libraries/FeeLib.sol";
+import {RolesLib} from "./libraries/RolesLib.sol";
+import {WhitelistableLib} from "./libraries/WhitelistableLib.sol";
 import {State} from "./primitives/Enums.sol";
 import {
+    AddressNotAllowed,
     CantDepositNativeToken,
     ERC7540InvalidOperator,
     ERC7540PreviewDepositDisabled,
@@ -254,9 +257,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     function _requestDeposit(
         uint256 assets,
         address controller,
-        address owner
+        address owner,
+        address referral
     ) internal returns (uint256) {
-        return ERC7540Lib._requestDeposit(assets, controller, owner);
+        return ERC7540Lib._requestDeposit(assets, controller, owner, referral);
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
@@ -353,6 +357,15 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address controller,
         address owner
     ) internal returns (uint256) {
+        // when the super operator requests a redeem, we don't check the whitelist
+        if (!RolesLib.isSuperOperator(msg.sender)) {
+            if (!isWhitelisted(owner)) revert AddressNotAllowed(owner);
+            if (!isWhitelisted(controller)) revert AddressNotAllowed(controller);
+            // operator must also be whitelisted
+            if (!isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
+        }
+
+        // if the caller is not an operator we use its allowance
         if (msg.sender != owner && !isOperatorOrSuperOperator(owner, msg.sender)) {
             _spendAllowance(owner, msg.sender, shares);
         }
@@ -555,4 +568,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     ) public virtual;
 
     function safe() public view virtual returns (address);
+
+    function isWhitelisted(
+        address account
+    ) public view virtual returns (bool);
 }

@@ -12,7 +12,6 @@ import {
     ERC7540InvalidOperator,
     NotClosing,
     NotOpen,
-    NotWhitelisted,
     OnlyAsyncDepositAllowed,
     OnlySyncDepositAllowed,
     ValuationUpdateNotAllowed
@@ -117,5 +116,11 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
 
     function safe() public view override returns (address) {
         return address(0);
+    }
+
+    function isWhitelisted(
+        address account
+    ) public view override(ERC7540, Whitelistable) returns (bool) {
+        return false;
     }
 }

@@ -266,4 +266,16 @@ contract VaultHelper is Vault {
     function guardrails() public view returns (Guardrails memory) {
         return GuardrailsLib._getGuardrailsManagerStorage().guardrails;
     }
+
+    function accessMode() public view returns (AccessMode) {
+        return WhitelistableLib._getWhitelistableStorage().accessMode;
+    }
+
+    function isBlacklistMode() public view returns (bool) {
+        return accessMode() == AccessMode.Blacklist;
+    }
+
+    function isWhitelistMode() public view returns (bool) {
+        return accessMode() == AccessMode.Whitelist;
+    }
 }

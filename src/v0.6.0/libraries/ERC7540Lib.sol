@@ -10,6 +10,7 @@ import {IERC7540Deposit} from "../interfaces/IERC7540Deposit.sol";
 
 import {FeeType} from "../primitives/Enums.sol";
 import {
+    AddressNotAllowed,
     CantDepositNativeToken,
     ERC7540InvalidOperator,
     ERC7540PreviewDepositDisabled,
@@ -26,6 +27,7 @@ import {
 import {
     DepositRequestCanceled,
     NewTotalAssetsUpdated,
+    Referral,
     SettleDeposit,
     SettleRedeem,
     TotalAssetsLifespanUpdated,
@@ -34,6 +36,7 @@ import {
 import {EpochData, SettleData} from "../primitives/Struct.sol";
 import {Rates} from "../primitives/Struct.sol";
 import {PausableLib} from "./PausableLib.sol";
+import {WhitelistableLib} from "./WhitelistableLib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -80,6 +83,7 @@ library ERC7540Lib {
     ) internal view returns (bool) {
         // safe as operator is possible if the operator is safe address, if the privileges were not gave up, the
         // target controller is not the protocolFeeReceiver and in this particular context we allow it
+        // Vault(address(this)).safe() doesn't rely on msg.sender
         return operator == Vault(address(this)).safe() && !_getERC7540Storage().gaveUpSafePrivileges
             && controller != RolesLib._protocolFeeReceiver();
     }
@@ -293,8 +297,12 @@ library ERC7540Lib {
     function _requestDeposit(
         uint256 assets,
         address controller,
-        address owner
+        address owner,
+        address referral
     ) public returns (uint256) {
+        if (!WhitelistableLib.isWhitelisted(owner)) revert AddressNotAllowed(owner);
+        if (!WhitelistableLib.isWhitelisted(controller)) revert AddressNotAllowed(controller);
+
         _onlyUnderMaxCap(assets);
 
         uint256 claimable = claimableDepositRequest(0, controller);
@@ -323,6 +331,9 @@ library ERC7540Lib {
         $.epochs[_depositId].depositRequest[controller] += assets;
 
         emit IERC7540Deposit.DepositRequest(controller, owner, _depositId, msg.sender, assets);
+        if (referral != address(0)) {
+            emit Referral(referral, owner, _depositId, assets);
+        }
         return _depositId;
     }
 
@@ -336,6 +347,11 @@ library ERC7540Lib {
         address receiver,
         address controller
     ) public returns (uint256 shares) {
+        // when the super operator initiates the deposit call, we don't check the whitelist
+        if (!RolesLib.isSuperOperator(msg.sender)) {
+            if (!WhitelistableLib.isWhitelisted(controller)) revert AddressNotAllowed(controller);
+            if (!WhitelistableLib.isWhitelisted(receiver)) revert AddressNotAllowed(receiver);
+        }
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastDepositRequestId[controller];
@@ -362,6 +378,11 @@ library ERC7540Lib {
         address receiver,
         address controller
     ) public returns (uint256 assets) {
+        // when the super operator initiates the mint call, we don't check the whitelist
+        if (!RolesLib.isSuperOperator(msg.sender)) {
+            if (!WhitelistableLib.isWhitelisted(controller)) revert AddressNotAllowed(controller);
+            if (!WhitelistableLib.isWhitelisted(receiver)) revert AddressNotAllowed(receiver);
+        }
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastDepositRequestId[controller];
@@ -385,6 +406,8 @@ library ERC7540Lib {
     /// @dev It can only be called in the same epoch.
     function cancelRequestDeposit() public {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+
+        if (!WhitelistableLib.isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
 
         uint40 requestId = $.lastDepositRequestId[msg.sender];
         if (requestId != $.depositEpochId) {
@@ -412,6 +435,11 @@ library ERC7540Lib {
         address receiver,
         address controller
     ) public returns (uint256 assets) {
+        // when the super operator initiates the redeem call, we don't check the whitelist
+        if (!RolesLib.isSuperOperator(msg.sender)) {
+            if (!WhitelistableLib.isWhitelisted(controller)) revert AddressNotAllowed(controller);
+            if (!WhitelistableLib.isWhitelisted(receiver)) revert AddressNotAllowed(receiver);
+        }
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastRedeemRequestId[controller];
@@ -438,6 +466,11 @@ library ERC7540Lib {
         address receiver,
         address controller
     ) public returns (uint256 shares) {
+        // when the super operator initiates the redeem call, we don't check the whitelist
+        if (!RolesLib.isSuperOperator(msg.sender)) {
+            if (!WhitelistableLib.isWhitelisted(controller)) revert AddressNotAllowed(controller);
+            if (!WhitelistableLib.isWhitelisted(receiver)) revert AddressNotAllowed(receiver);
+        }
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
         uint40 requestId = $.lastRedeemRequestId[controller];

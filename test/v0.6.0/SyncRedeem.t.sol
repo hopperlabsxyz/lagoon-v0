@@ -113,7 +113,7 @@ contract TestSyncRedeem is BaseTest {
         vault.syncDeposit(depositAmount, user1.addr, address(0));
 
         // user2 is not whitelisted
-        vm.expectRevert(NotWhitelisted.selector);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user2.addr));
         vm.prank(user2.addr);
         vault.syncRedeem(1, user2.addr);
     }

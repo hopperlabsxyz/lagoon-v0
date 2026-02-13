@@ -40,6 +40,7 @@ contract TestDeposit is BaseTest {
     }
 
     function test_deposit_shouldRevertIfInvalidReceiver() public {
+        whitelist(address(0));
         uint256 userBalance = assetBalance(user1.addr);
         requestDeposit(userBalance, user1.addr);
         updateAndSettle(0);

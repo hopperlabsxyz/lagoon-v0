@@ -11,7 +11,6 @@ import {
     ERC7540InvalidOperator,
     NotClosing,
     NotOpen,
-    NotWhitelisted,
     OnlyAsyncDepositAllowed,
     OnlySyncDepositAllowed,
     ValuationUpdateNotAllowed

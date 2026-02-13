@@ -44,7 +44,7 @@ abstract contract Whitelistable is Roles {
     /// @return True if the account is whitelisted or not blacklisted, false otherwise
     function isWhitelisted(
         address account
-    ) public view returns (bool) {
+    ) public view virtual returns (bool) {
         return WhitelistableLib.isWhitelisted(account);
     }
 

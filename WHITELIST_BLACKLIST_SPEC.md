@@ -140,7 +140,7 @@ The following points capture the clarified design decisions based on the questio
 
 - All reverts caused by whitelist / blacklist logic:
   - **MUST** specify **which address** is not allowed (owner or controller),
-  - SHOULD distinguish the reason (e.g. “NotWhitelisted(address)” vs “Blacklisted(address)”),
+  - SHOULD distinguish the reason (e.g. “AddressNotAllowed(address)” vs “Blacklisted(address)”),
 
 ---
 

@@ -61,6 +61,7 @@ contract TestMint is BaseTest {
 
     function test_mint_shouldRevertIfInvalidReceiver() public {
         uint256 userBalance = assetBalance(user1.addr);
+        whitelist(address(0));
         requestDeposit(userBalance, user1.addr);
         updateAndSettle(0);
         assertEq(vault.maxDeposit(user1.addr), userBalance);

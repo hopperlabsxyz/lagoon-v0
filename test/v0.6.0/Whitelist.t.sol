@@ -39,12 +39,12 @@ contract TestWhitelist is BaseTest {
 
         // referral
         vm.startPrank(user1.addr);
-        vm.expectRevert(NotWhitelisted.selector);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user1.addr));
         vault.requestDeposit(userBalance, user1.addr, user1.addr, user2.addr);
 
         // no referral
         vm.startPrank(user1.addr);
-        vm.expectRevert(NotWhitelisted.selector);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user1.addr));
         vault.requestDeposit(userBalance, user1.addr, user1.addr);
     }
 
@@ -55,6 +55,7 @@ contract TestWhitelist is BaseTest {
         address controller = user2.addr;
         address operator = user1.addr;
         address owner = user1.addr;
+        whitelist(controller);
         vm.startPrank(operator);
         vault.requestDeposit(userBalance, controller, owner);
     }
@@ -66,6 +67,7 @@ contract TestWhitelist is BaseTest {
         address controller = user2.addr;
         address operator = user1.addr;
         address owner = user1.addr;
+        whitelist(controller);
         requestDeposit(userBalance, controller, operator, owner);
     }
 
@@ -207,8 +209,8 @@ contract TestWhitelist is BaseTest {
         address receiver = user1.addr;
         vm.prank(user5.addr);
         vault.transfer(receiver, shares);
-        vm.prank(receiver);
-        vm.expectRevert(NotWhitelisted.selector);
+        vm.startPrank(receiver);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, receiver));
         vault.requestRedeem(shares, receiver, receiver);
     }
 
@@ -271,4 +273,6 @@ contract TestWhitelist is BaseTest {
             "Sanctioned address should return false even when manually whitelisted in Blacklist mode"
         );
     }
+
+    // function test_blacklist
 }
