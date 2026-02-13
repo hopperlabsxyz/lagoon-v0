@@ -118,13 +118,13 @@ library WhitelistableLib {
     }
 
     /// @notice Returns true if the whitelist is active, false otherwise
-    function isWhitelistActive() public view returns (bool) {
+    function isWhitelistMode() public view returns (bool) {
         Whitelistable.WhitelistableStorage storage $ = _getWhitelistableStorage();
         return $.accessMode == AccessMode.Whitelist;
     }
 
     /// @notice Returns true if the blacklist is active, false otherwise
-    function isBlacklistActive() public view returns (bool) {
+    function isBlacklistMode() public view returns (bool) {
         Whitelistable.WhitelistableStorage storage $ = _getWhitelistableStorage();
         return $.accessMode == AccessMode.Blacklist;
     }

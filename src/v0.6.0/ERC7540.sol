@@ -193,6 +193,30 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return ERC20PausableUpgradeable._update(from, to, value);
     }
 
+    function transfer(
+        address to,
+        uint256 value
+    ) public virtual override(ERC20Upgradeable, IERC20) returns (bool) {
+        if (WhitelistableLib.isBlacklistMode()) {
+            if (!isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
+            if (!isWhitelisted(to)) revert AddressNotAllowed(to);
+        }
+        return ERC20Upgradeable.transfer(to, value);
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) public virtual override(ERC20Upgradeable, IERC20) returns (bool) {
+        if (WhitelistableLib.isBlacklistMode()) {
+            if (!isWhitelisted(from)) revert AddressNotAllowed(from);
+            if (!isWhitelisted(to)) revert AddressNotAllowed(to);
+            if (!isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
+        }
+        return ERC20Upgradeable.transferFrom(from, to, value);
+    }
+
     ///////////////////
     // ## EIP7540 ## //
     ///////////////////
