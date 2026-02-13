@@ -58,4 +58,164 @@ contract TestBlacklist is BaseTest {
             "Sanctioned address should return false even when manually whitelisted in Blacklist mode"
         );
     }
+
+    function test_transfer_RevertsWhen_SenderIsBlacklisted() public {
+        withWhitelistSetUp();
+        vm.prank(vault.owner());
+        vault.switchAccessMode(AccessMode.Blacklist);
+
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+        blacklist(user1.addr);
+
+        vm.prank(user1.addr);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user1.addr));
+        vault.transfer(user2.addr, shares);
+    }
+
+    function test_transfer_RevertsWhen_ReceiverIsBlacklisted() public {
+        withWhitelistSetUp();
+        vm.prank(vault.owner());
+        vault.switchAccessMode(AccessMode.Blacklist);
+
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+        blacklist(user2.addr);
+
+        vm.prank(user1.addr);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user2.addr));
+        vault.transfer(user2.addr, shares);
+    }
+
+    function test_transfer_SucceedsWhen_NeitherPartyIsBlacklisted() public {
+        withWhitelistSetUp();
+        vm.prank(vault.owner());
+        vault.switchAccessMode(AccessMode.Blacklist);
+
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+        address receiver = user2.addr;
+
+        vm.prank(user1.addr);
+        vault.transfer(receiver, shares);
+
+        assertEq(vault.balanceOf(receiver), shares);
+        assertEq(vault.balanceOf(user1.addr), 0);
+    }
+
+    function test_transferFrom_RevertsWhen_SenderIsBlacklisted() public {
+        withWhitelistSetUp();
+        vm.prank(vault.owner());
+        vault.switchAccessMode(AccessMode.Blacklist);
+
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        whitelist(user3.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+        blacklist(user1.addr);
+
+        vm.prank(user1.addr);
+        vault.approve(user2.addr, shares);
+
+        vm.prank(user2.addr);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user1.addr));
+        vault.transferFrom(user1.addr, user3.addr, shares);
+    }
+
+    function test_transferFrom_RevertsWhen_ReceiverIsBlacklisted() public {
+        withWhitelistSetUp();
+        vm.prank(vault.owner());
+        vault.switchAccessMode(AccessMode.Blacklist);
+
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        whitelist(user3.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+        blacklist(user3.addr);
+
+        vm.prank(user1.addr);
+        vault.approve(user2.addr, shares);
+
+        vm.prank(user2.addr);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user3.addr));
+        vault.transferFrom(user1.addr, user3.addr, shares);
+    }
+
+    function test_transferFrom_RevertsWhen_BothPartiesAreBlacklisted() public {
+        withWhitelistSetUp();
+        vm.prank(vault.owner());
+        vault.switchAccessMode(AccessMode.Blacklist);
+
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        whitelist(user3.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+        blacklist(user1.addr);
+        blacklist(user3.addr);
+
+        vm.prank(user1.addr);
+        vault.approve(user2.addr, shares);
+
+        vm.prank(user2.addr);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user1.addr));
+        vault.transferFrom(user1.addr, user3.addr, shares);
+    }
+
+    function test_transferFrom_SucceedsWhen_NeitherPartyIsBlacklisted() public {
+        withWhitelistSetUp();
+        vm.prank(vault.owner());
+        vault.switchAccessMode(AccessMode.Blacklist);
+
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        whitelist(user3.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+
+        vm.prank(user1.addr);
+        vault.approve(user2.addr, shares);
+
+        vm.prank(user2.addr);
+        vault.transferFrom(user1.addr, user3.addr, shares);
+
+        assertEq(vault.balanceOf(user3.addr), shares);
+        assertEq(vault.balanceOf(user1.addr), 0);
+    }
 }

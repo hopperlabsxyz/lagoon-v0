@@ -236,5 +236,174 @@ contract TestWhitelist is BaseTest {
             "Sanctioned address should return false even when manually whitelisted in Whitelist mode"
         );
     }
+
+    function test_transfer_SucceedsWhen_SenderIsNotWhitelisted() public {
+        withWhitelistSetUp();
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+        unwhitelist(user1.addr);
+        assertEq(vault.isWhitelisted(user1.addr), false);
+
+        vm.prank(user1.addr);
+        vault.transfer(user2.addr, shares);
+
+        assertEq(vault.balanceOf(user2.addr), shares);
+        assertEq(vault.balanceOf(user1.addr), 0);
+    }
+
+    function test_transfer_SucceedsWhen_ReceiverIsNotWhitelisted() public {
+        withWhitelistSetUp();
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+        unwhitelist(user2.addr);
+
+        vm.prank(user1.addr);
+        vault.transfer(user2.addr, shares);
+
+        assertEq(vault.balanceOf(user2.addr), shares);
+        assertEq(vault.balanceOf(user1.addr), 0);
+    }
+
+    function test_transfer_SucceedsWhen_NeitherPartyIsWhitelisted() public {
+        withWhitelistSetUp();
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+        unwhitelist(user1.addr);
+        unwhitelist(user2.addr);
+
+        vm.prank(user1.addr);
+        vault.transfer(user2.addr, shares);
+
+        assertEq(vault.balanceOf(user2.addr), shares);
+        assertEq(vault.balanceOf(user1.addr), 0);
+    }
+
+    function test_transfer_SucceedsWhen_BothPartiesAreWhitelisted() public {
+        withWhitelistSetUp();
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+
+        vm.prank(user1.addr);
+        vault.transfer(user2.addr, shares);
+
+        assertEq(vault.balanceOf(user2.addr), shares);
+        assertEq(vault.balanceOf(user1.addr), 0);
+    }
+
+    function test_transferFrom_SucceedsWhen_SenderIsNotWhitelisted() public {
+        withWhitelistSetUp();
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        whitelist(user3.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+        unwhitelist(user1.addr);
+
+        vm.prank(user1.addr);
+        vault.approve(user2.addr, shares);
+
+        vm.prank(user2.addr);
+        vault.transferFrom(user1.addr, user3.addr, shares);
+
+        assertEq(vault.balanceOf(user3.addr), shares);
+        assertEq(vault.balanceOf(user1.addr), 0);
+    }
+
+    function test_transferFrom_SucceedsWhen_ReceiverIsNotWhitelisted() public {
+        withWhitelistSetUp();
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        whitelist(user3.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+        unwhitelist(user3.addr);
+
+        vm.prank(user1.addr);
+        vault.approve(user2.addr, shares);
+
+        vm.prank(user2.addr);
+        vault.transferFrom(user1.addr, user3.addr, shares);
+
+        assertEq(vault.balanceOf(user3.addr), shares);
+        assertEq(vault.balanceOf(user1.addr), 0);
+    }
+
+    function test_transferFrom_SucceedsWhen_NeitherPartyIsWhitelisted() public {
+        withWhitelistSetUp();
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        whitelist(user3.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+        unwhitelist(user1.addr);
+        unwhitelist(user3.addr);
+
+        vm.prank(user1.addr);
+        vault.approve(user2.addr, shares);
+
+        vm.prank(user2.addr);
+        vault.transferFrom(user1.addr, user3.addr, shares);
+
+        assertEq(vault.balanceOf(user3.addr), shares);
+        assertEq(vault.balanceOf(user1.addr), 0);
+    }
+
+    function test_transferFrom_SucceedsWhen_BothPartiesAreWhitelisted() public {
+        withWhitelistSetUp();
+        uint256 userBalance = assetBalance(user1.addr);
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        whitelist(user3.addr);
+        requestDeposit(userBalance, user1.addr);
+        updateAndSettle(0);
+        deposit(userBalance, user1.addr);
+
+        uint256 shares = vault.balanceOf(user1.addr);
+
+        vm.prank(user1.addr);
+        vault.approve(user2.addr, shares);
+
+        vm.prank(user2.addr);
+        vault.transferFrom(user1.addr, user3.addr, shares);
+
+        assertEq(vault.balanceOf(user3.addr), shares);
+        assertEq(vault.balanceOf(user1.addr), 0);
+    }
 }
 
