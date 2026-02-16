@@ -55,30 +55,6 @@ contract TestSuperOperator is BaseTest {
         dealAndApproveAndWhitelist(protocolFeeReceiver);
     }
 
-    function test_giveUpSafePrivileges_onlyOwner() public {
-        vm.prank(user1.addr);
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, user1.addr));
-        vault.giveUpSafePrivileges();
-    }
-
-    function test_superOperator_afterGivingUpOperatorPrivileges_shouldRevert() public {
-        // owner decides to give up this right
-        assertFalse(vault.gaveUpSafePrivileges(), "gaveUpSafePrivileges should be false");
-        vm.prank(vault.owner());
-        vault.giveUpSafePrivileges();
-        assertTrue(vault.gaveUpSafePrivileges(), "gaveUpSafePrivileges should be true");
-
-        _callAllFunctionsExpectRevert(user2.addr, user2.addr);
-    }
-
-    function test_superOperator_forProtocolFeeReceiver_shouldRevert() public {
-        _callAllFunctionsExpectRevert(protocolFeeReceiver, protocolFeeReceiver);
-
-        vm.prank(vault.owner());
-        vault.giveUpSafePrivileges();
-        _callAllFunctionsExpectRevert(protocolFeeReceiver, protocolFeeReceiver);
-    }
-
     function test_superOperator_forUser() public {
         requestDeposit(100 * 10 ** vault.underlyingDecimals(), user2.addr);
         updateAndSettle(0);

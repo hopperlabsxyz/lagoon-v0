@@ -165,9 +165,6 @@ event AccessModeUpdated(AccessMode newMode);
 /// @param maxCap The new max cap.
 event MaxCapUpdated(uint256 previousMaxCap, uint256 maxCap);
 
-/// @notice Emitted when the safe privileges are given up.
-event GaveUpSafePrivileges();
-
 /// @notice Same as a 4626 Withdraw event
 /// @param sender The address who called the withdraw
 /// @param receiver The receiver of the assets

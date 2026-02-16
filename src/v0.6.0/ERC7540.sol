@@ -27,7 +27,6 @@ import {
 } from "./primitives/Errors.sol";
 import {
     DepositRequestCanceled,
-    GaveUpSafePrivileges,
     MaxCapUpdated,
     NewTotalAssetsUpdated,
     SettleDeposit,
@@ -96,7 +95,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint128 totalAssetsLifespan;
         // New variables introduce with v0.6.0
         uint256 maxCap;
-        bool gaveUpSafePrivileges;
     }
 
     /// @notice Initializes the ERC7540 contract.
@@ -460,12 +458,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
         emit MaxCapUpdated({previousMaxCap: $.maxCap, maxCap: _maxCap});
         $.maxCap = _maxCap;
-    }
-
-    function _giveUpSafePrivileges() internal {
-        ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
-        $.gaveUpSafePrivileges = true;
-        emit GaveUpSafePrivileges();
     }
 
     //////////////////////////

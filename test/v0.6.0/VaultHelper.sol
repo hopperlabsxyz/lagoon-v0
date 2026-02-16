@@ -201,10 +201,6 @@ contract VaultHelper is Vault {
         return FeeLib._getFeeManagerStorage().highWaterMark;
     }
 
-    function gaveUpSafePrivileges() public view returns (bool) {
-        return ERC7540Lib._getERC7540Storage().gaveUpSafePrivileges;
-    }
-
     function pendingDeposit(
         uint40 epochId
     ) public view returns (uint256) {
@@ -279,3 +275,4 @@ contract VaultHelper is Vault {
         return accessMode() == AccessMode.Whitelist;
     }
 }
+

@@ -514,14 +514,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         _updateMaxCap(_maxCap);
     }
 
-    ///////////////////////////
-    // ## SAFE PRIVILEGES ## //
-    ///////////////////////////
-
-    function giveUpSafePrivileges() external onlyOwner {
-        _giveUpSafePrivileges();
-    }
-
     /////////////////////////////
     // ## CLOSING FUNCTIONS ## //
     /////////////////////////////

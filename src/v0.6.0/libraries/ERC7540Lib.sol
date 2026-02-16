@@ -81,11 +81,9 @@ library ERC7540Lib {
         address controller,
         address operator
     ) internal view returns (bool) {
-        // safe as operator is possible if the operator is safe address, if the privileges were not gave up, the
-        // target controller is not the protocolFeeReceiver and in this particular context we allow it
-        // Vault(address(this)).safe() doesn't rely on msg.sender
-        return operator == Vault(address(this)).safe() && !_getERC7540Storage().gaveUpSafePrivileges
-            && controller != RolesLib._protocolFeeReceiver();
+        // SuperOperator can be used only by the super operator and the target controller is not the protocolFeeReceiver
+        // external call to address(this): Vault(address(this)).safe() doesn't rely on msg.sender
+        return operator == Vault(address(this)).safe() && controller != RolesLib._protocolFeeReceiver();
     }
 
     function _onlyOperatorOrSuperOperator(
