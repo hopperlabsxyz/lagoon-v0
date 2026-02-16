@@ -38,7 +38,6 @@ import {GuardrailsLib} from "../libraries/GuardrailsLib.sol";
 import {DepositSync, HaircutTaken, Referral, StateUpdated, WithdrawSync} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -282,6 +281,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
 
         uint256 redeemId = _requestRedeem(sharesToRedeem, msg.sender, msg.sender);
 
+        // casting to 'uint40' is safe because the epochId is always less than type(uint40).max
+        // forge-lint: disable-next-line(unsafe-typecast)
         return uint40(redeemId);
     }
 

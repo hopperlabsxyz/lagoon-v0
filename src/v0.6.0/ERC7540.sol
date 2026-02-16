@@ -181,11 +181,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     function _onlyUnderMaxCap(
         uint256 assets
     ) internal view {
-        ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
-        uint256 siloAssetsBalance = IERC20(asset()).balanceOf(address($.pendingSilo));
-        if (totalAssets() + assets + siloAssetsBalance > $.maxCap) {
-            revert MaxCapReached();
-        }
+        ERC7540Lib._onlyUnderMaxCap(assets);
     }
 
     /////////////////////
@@ -281,41 +277,12 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param assets The amount of assets to deposit.
     /// @param controller The controller is the address that will manage the request.
     /// @param owner The owner of the assets.
-
     function _requestDeposit(
         uint256 assets,
         address controller,
         address owner
     ) internal returns (uint256) {
-        _onlyUnderMaxCap(assets);
-
-        uint256 claimable = claimableDepositRequest(0, controller);
-        if (claimable > 0) _deposit(claimable, controller, controller);
-
-        ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
-        uint40 _depositId = $.depositEpochId;
-        if ($.lastDepositRequestId[controller] != _depositId) {
-            if (pendingDepositRequest(0, controller) > 0) {
-                revert OnlyOneRequestAllowed();
-            }
-            $.lastDepositRequestId[controller] = _depositId;
-        }
-
-        if (msg.value != 0) {
-            // if user sends eth and the underlying is wETH we will wrap it for him
-            if (asset() == address($.wrappedNativeToken)) {
-                $.pendingSilo.depositEth{value: msg.value}();
-                assets = msg.value;
-            } else {
-                revert CantDepositNativeToken();
-            }
-        } else {
-            IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
-        }
-        $.epochs[_depositId].depositRequest[controller] += assets;
-
-        emit DepositRequest(controller, owner, _depositId, msg.sender, assets);
-        return _depositId;
+        return ERC7540Lib._requestDeposit(assets, controller, owner);
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
@@ -402,6 +369,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     /// @param shares The amount of shares to redeem.
     /// @param controller The controller is the address that will manage the request.
     /// @param owner The owner of the shares.
+    /// @dev This function was not added to the libbrary because it used multiple internal functions from
+    /// the ERC20 underlying contract.
     /// @return The request ID. It is the current redeem epoch ID.
     function _requestRedeem(
         uint256 shares,

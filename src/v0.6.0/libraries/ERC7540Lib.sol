@@ -4,6 +4,8 @@ pragma solidity 0.8.26;
 import {ERC7540} from "../ERC7540.sol";
 import {FeeLib} from "../FeeManager.sol";
 import {RolesLib} from "../Roles.sol";
+import {IERC7540Deposit} from "../interfaces/IERC7540Deposit.sol";
+
 import {FeeType} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
@@ -12,6 +14,7 @@ import {
     ERC7540PreviewMintDisabled,
     ERC7540PreviewRedeemDisabled,
     ERC7540PreviewWithdrawDisabled,
+    MaxCapReached,
     NewTotalAssetsMissing,
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
@@ -133,7 +136,7 @@ library ERC7540Lib {
         $.epochs[$.redeemEpochId].settleId = $.redeemSettleId;
 
         address _pendingSilo = address($.pendingSilo);
-        uint256 pendingAssets = IERC20(IERC4626(address(this)).asset()).balanceOf(_pendingSilo);
+        uint256 pendingAssets = IERC20(asset()).balanceOf(_pendingSilo);
         uint256 pendingShares = IERC20(address(this)).balanceOf(_pendingSilo);
 
         if (pendingAssets != 0) {
@@ -203,6 +206,18 @@ library ERC7540Lib {
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
     }
 
+    function _onlyUnderMaxCap(
+        uint256 assets
+    ) public view {
+        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+
+        uint256 siloAssetsBalance = IERC20(asset()).balanceOf(address($.pendingSilo));
+
+        if (IERC4626(address(this)).totalAssets() + assets + siloAssetsBalance > $.maxCap) {
+            revert MaxCapReached();
+        }
+    }
+
     /// @notice Returns the pending redeem request for a controller.
     /// @param requestId The request ID.
     /// @param controller The controller.
@@ -267,6 +282,181 @@ library ERC7540Lib {
     }
 
     ////////////////////////////////
+    // ## EIP7540 Deposit Flow ## //
+    ////////////////////////////////
+
+    /// @dev Unusable when paused. Modifier not needed as it's overridden.
+    /// @notice Request deposit of assets into the vault.
+    /// @param assets The amount of assets to deposit.
+    /// @param controller The controller is the address that will manage the request.
+    /// @param owner The owner of the assets.
+    function _requestDeposit(
+        uint256 assets,
+        address controller,
+        address owner
+    ) public returns (uint256) {
+        _onlyUnderMaxCap(assets);
+
+        uint256 claimable = claimableDepositRequest(0, controller);
+        if (claimable > 0) _deposit(claimable, controller, controller);
+
+        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+        uint40 _depositId = $.depositEpochId;
+        if ($.lastDepositRequestId[controller] != _depositId) {
+            if (pendingDepositRequest(0, controller) > 0) {
+                revert OnlyOneRequestAllowed();
+            }
+            $.lastDepositRequestId[controller] = _depositId;
+        }
+
+        if (msg.value != 0) {
+            // if user sends eth and the underlying is wETH we will wrap it for him
+            if (asset() == address($.wrappedNativeToken)) {
+                $.pendingSilo.depositEth{value: msg.value}();
+                assets = msg.value;
+            } else {
+                revert CantDepositNativeToken();
+            }
+        } else {
+            IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
+        }
+        $.epochs[_depositId].depositRequest[controller] += assets;
+
+        emit IERC7540Deposit.DepositRequest(controller, owner, _depositId, msg.sender, assets);
+        return _depositId;
+    }
+
+    /// @notice Claim the assets from the vault after a request has been settled.
+    /// @param assets The assets to deposit.
+    /// @param receiver The receiver of the shares.
+    /// @param controller The controller, who owns the deposit request.
+    /// @return shares The corresponding shares.
+    function _deposit(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) public returns (uint256 shares) {
+        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+
+        uint40 requestId = $.lastDepositRequestId[controller];
+        if (requestId > $.lastDepositEpochIdSettled) {
+            revert RequestIdNotClaimable();
+        }
+
+        $.epochs[requestId].depositRequest[controller] -= assets;
+        uint256 entryFeeAssets = FeeLib.computeFee(assets, getSettlementEntryFeeRate(requestId));
+        shares = ERC7540(address(this)).convertToShares(assets - entryFeeAssets, requestId);
+
+        IERC20(address(this)).safeTransfer(receiver, shares);
+
+        emit IERC4626.Deposit(controller, receiver, assets, shares);
+    }
+
+    /// @notice Mint shares from the vault.
+    /// @param shares The shares to mint after fees.
+    /// @param receiver The receiver of the shares.
+    /// @param controller The controller, who owns the mint request.
+    /// @return assets The corresponding assets.
+    function _mint(
+        uint256 shares,
+        address receiver,
+        address controller
+    ) public returns (uint256 assets) {
+        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+
+        uint40 requestId = $.lastDepositRequestId[controller];
+        if (requestId > $.lastDepositEpochIdSettled) {
+            revert RequestIdNotClaimable();
+        }
+
+        assets = convertToAssets(shares, requestId, Math.Rounding.Ceil);
+        // introduced in v0.6.0
+        // we need to take into account the entry fee to compute the assets
+        assets += FeeLib.computeFeeReverse(assets, getSettlementEntryFeeRate(requestId));
+        $.epochs[requestId].depositRequest[controller] -= assets;
+
+        IERC20(address(this)).safeTransfer(receiver, shares);
+
+        emit IERC4626.Deposit(controller, receiver, assets, shares);
+    }
+
+    /// @dev Unusable when paused. Protected by whenNotPaused.
+    /// @notice Cancel a deposit request.
+    /// @dev It can only be called in the same epoch.
+    function cancelRequestDeposit() public {
+        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+
+        uint40 requestId = $.lastDepositRequestId[msg.sender];
+        if (requestId != $.depositEpochId) {
+            revert RequestNotCancelable(requestId);
+        }
+
+        uint256 requestedAmount = $.epochs[requestId].depositRequest[msg.sender];
+        $.epochs[requestId].depositRequest[msg.sender] = 0;
+        IERC20(asset()).safeTransferFrom(address($.pendingSilo), msg.sender, requestedAmount);
+
+        emit DepositRequestCanceled(requestId, msg.sender);
+    }
+
+    ///////////////////////////////
+    // ## EIP7540 Redeem Flow ## //
+    ///////////////////////////////
+
+    /// @notice Redeem shares from the vault.
+    /// @param shares The shares to redeem.
+    /// @param receiver The receiver of the assets.
+    /// @param controller The controller, who owns the redeem request.
+    /// @return assets The corresponding assets.
+    function _redeem(
+        uint256 shares,
+        address receiver,
+        address controller
+    ) public returns (uint256 assets) {
+        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+
+        uint40 requestId = $.lastRedeemRequestId[controller];
+        if (requestId > $.lastRedeemEpochIdSettled) {
+            revert RequestIdNotClaimable();
+        }
+
+        $.epochs[requestId].redeemRequest[controller] -= shares;
+        // introduced in v0.6.0
+        uint256 exitFeeShares = FeeLib.computeFee(shares, getSettlementExitFeeRate(requestId));
+        assets = convertToAssets(shares - exitFeeShares, requestId, Math.Rounding.Floor);
+        IERC20(asset()).safeTransfer(receiver, assets);
+
+        emit IERC4626.Withdraw(msg.sender, receiver, controller, assets, shares);
+    }
+
+    /// @notice Withdraw assets from the vault.
+    /// @param assets The assets to withdraw.
+    /// @param receiver The receiver of the assets.
+    /// @param controller The controller, who owns the request.
+    /// @return shares The corresponding shares.
+    function _withdraw(
+        uint256 assets,
+        address receiver,
+        address controller
+    ) public returns (uint256 shares) {
+        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+
+        uint40 requestId = $.lastRedeemRequestId[controller];
+        if (requestId > $.lastRedeemEpochIdSettled) {
+            revert RequestIdNotClaimable();
+        }
+
+        shares = convertToShares(assets, requestId, Math.Rounding.Ceil);
+        // introduced in v0.6.0
+        // we need to take into account the exit fee to compute the shares
+        shares += FeeLib.computeFeeReverse(shares, getSettlementExitFeeRate(requestId));
+        $.epochs[requestId].redeemRequest[controller] -= shares;
+
+        IERC20(asset()).safeTransfer(receiver, assets);
+
+        emit IERC4626.Withdraw(msg.sender, receiver, controller, assets, shares);
+    }
+
+    ////////////////////////////////
     // ## SETTLEMENT FUNCTIONS ## //
     ////////////////////////////////
 
@@ -307,8 +497,7 @@ library ERC7540Lib {
         $.depositSettleId = depositSettleId + 2;
         $.lastDepositEpochIdSettled = lastDepositEpochIdSettled;
 
-        IERC20(IERC4626(address(this)).asset())
-            .safeTransferFrom(address($.pendingSilo), assetsCustodian, _pendingAssets);
+        IERC20(asset()).safeTransferFrom(address($.pendingSilo), assetsCustodian, _pendingAssets);
 
         emit SettleDeposit(
             lastDepositEpochIdSettled, depositSettleId, _totalAssets, _totalSupply, _pendingAssets, shares
@@ -324,7 +513,7 @@ library ERC7540Lib {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         uint40 redeemSettleId = $.redeemSettleId;
 
-        address _asset = IERC4626(address(this)).asset();
+        address _asset = asset();
         uint16 _exitFeeRate = FeeLib.feeRates().exitRate;
 
         // amount of shares that are pending to be redeemed
@@ -396,131 +585,6 @@ library ERC7540Lib {
         return _getERC7540Storage().settles[settleId].entryFeeRate;
     }
 
-    /// @notice Cancel a deposit request.
-    /// @dev It can only be called in the same epoch.
-    function cancelRequestDeposit() external {
-        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
-
-        uint40 requestId = $.lastDepositRequestId[msg.sender];
-        if (requestId != $.depositEpochId) {
-            revert RequestNotCancelable(requestId);
-        }
-
-        uint256 requestedAmount = $.epochs[requestId].depositRequest[msg.sender];
-        $.epochs[requestId].depositRequest[msg.sender] = 0;
-        IERC20(IERC4626(address(this)).asset()).safeTransferFrom(address($.pendingSilo), msg.sender, requestedAmount);
-
-        emit DepositRequestCanceled(requestId, msg.sender);
-    }
-
-    /// @notice Claim the assets from the vault after a request has been settled.
-    /// @param assets The assets to deposit.
-    /// @param receiver The receiver of the shares.
-    /// @param controller The controller, who owns the deposit request.
-    /// @return shares The corresponding shares.
-    function _deposit(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) public returns (uint256 shares) {
-        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
-
-        uint40 requestId = $.lastDepositRequestId[controller];
-        if (requestId > $.lastDepositEpochIdSettled) {
-            revert RequestIdNotClaimable();
-        }
-
-        $.epochs[requestId].depositRequest[controller] -= assets;
-        uint256 entryFeeAssets = FeeLib.computeFee(assets, getSettlementEntryFeeRate(requestId));
-        shares = ERC7540(address(this)).convertToShares(assets - entryFeeAssets, requestId);
-
-        IERC20(address(this)).safeTransfer(receiver, shares);
-
-        emit IERC4626.Deposit(controller, receiver, assets, shares);
-    }
-
-    /// @notice Mint shares from the vault.
-    /// @param shares The shares to mint after fees.
-    /// @param receiver The receiver of the shares.
-    /// @param controller The controller, who owns the mint request.
-    /// @return assets The corresponding assets.
-    function _mint(
-        uint256 shares,
-        address receiver,
-        address controller
-    ) public returns (uint256 assets) {
-        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
-
-        uint40 requestId = $.lastDepositRequestId[controller];
-        if (requestId > $.lastDepositEpochIdSettled) {
-            revert RequestIdNotClaimable();
-        }
-
-        assets = convertToAssets(shares, requestId, Math.Rounding.Ceil);
-        // introduced in v0.6.0
-        // we need to take into account the entry fee to compute the assets
-        assets += FeeLib.computeFeeReverse(assets, getSettlementEntryFeeRate(requestId));
-        $.epochs[requestId].depositRequest[controller] -= assets;
-
-        IERC20(address(this)).safeTransfer(receiver, shares);
-
-        emit IERC4626.Deposit(controller, receiver, assets, shares);
-    }
-
-    /// @notice Withdraw assets from the vault.
-    /// @param assets The assets to withdraw.
-    /// @param receiver The receiver of the assets.
-    /// @param controller The controller, who owns the request.
-    /// @return shares The corresponding shares.
-    function _withdraw(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) public returns (uint256 shares) {
-        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
-
-        uint40 requestId = $.lastRedeemRequestId[controller];
-        if (requestId > $.lastRedeemEpochIdSettled) {
-            revert RequestIdNotClaimable();
-        }
-
-        shares = convertToShares(assets, requestId, Math.Rounding.Ceil);
-        // introduced in v0.6.0
-        // we need to take into account the exit fee to compute the shares
-        shares += FeeLib.computeFeeReverse(shares, getSettlementExitFeeRate(requestId));
-        $.epochs[requestId].redeemRequest[controller] -= shares;
-
-        IERC20(IERC4626(address(this)).asset()).safeTransfer(receiver, assets);
-
-        emit IERC4626.Withdraw(msg.sender, receiver, controller, assets, shares);
-    }
-
-    /// @notice Redeem shares from the vault.
-    /// @param shares The shares to redeem.
-    /// @param receiver The receiver of the assets.
-    /// @param controller The controller, who owns the redeem request.
-    /// @return assets The corresponding assets.
-    function _redeem(
-        uint256 shares,
-        address receiver,
-        address controller
-    ) public returns (uint256 assets) {
-        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
-
-        uint40 requestId = $.lastRedeemRequestId[controller];
-        if (requestId > $.lastRedeemEpochIdSettled) {
-            revert RequestIdNotClaimable();
-        }
-
-        $.epochs[requestId].redeemRequest[controller] -= shares;
-        // introduced in v0.6.0
-        uint256 exitFeeShares = FeeLib.computeFee(shares, getSettlementExitFeeRate(requestId));
-        assets = convertToAssets(shares - exitFeeShares, requestId, Math.Rounding.Floor);
-        IERC20(IERC4626(address(this)).asset()).safeTransfer(receiver, assets);
-
-        emit IERC4626.Withdraw(msg.sender, receiver, controller, assets, shares);
-    }
-
     function supportsInterface(
         bytes4 interfaceId
     ) public pure returns (bool) {
@@ -530,5 +594,9 @@ library ERC7540Lib {
             || interfaceId == 0x620ee8e4 // IERC7540Redeem
             || interfaceId == 0xe3bc4e65 // IERC7540
             || interfaceId == type(IERC165).interfaceId;
+    }
+
+    function asset() internal view returns (address) {
+        return IERC4626(address(this)).asset();
     }
 }
