@@ -218,4 +218,49 @@ contract TestBlacklist is BaseTest {
         assertEq(vault.balanceOf(user3.addr), shares);
         assertEq(vault.balanceOf(user1.addr), 0);
     }
+
+    function test_revokeFromBlacklist() public {
+        withWhitelistSetUp();
+        vm.prank(vault.owner());
+        vault.switchAccessMode(AccessMode.Blacklist);
+
+        // Blacklist an address
+        blacklist(user1.addr);
+        assertFalse(vault.isWhitelisted(user1.addr), "Address should be blacklisted");
+
+        // Revoke from blacklist and verify event
+        vm.expectEmit(true, false, false, false);
+        emit BlacklistUpdated(user1.addr, false);
+
+        vm.prank(vault.whitelistManager());
+        address[] memory accounts = new address[](1);
+        accounts[0] = user1.addr;
+        vault.revokeFromBlacklist(accounts);
+
+        // Verify address is no longer blacklisted
+        assertTrue(vault.isWhitelisted(user1.addr), "Address should no longer be blacklisted");
+    }
+
+    function test_revokeFromBlacklist_MultipleAddresses() public {
+        withWhitelistSetUp();
+        vm.prank(vault.owner());
+        vault.switchAccessMode(AccessMode.Blacklist);
+
+        // Blacklist multiple addresses
+        address[] memory toBlacklist = new address[](2);
+        toBlacklist[0] = user1.addr;
+        toBlacklist[1] = user2.addr;
+        blacklist(toBlacklist);
+
+        assertFalse(vault.isWhitelisted(user1.addr), "user1 should be blacklisted");
+        assertFalse(vault.isWhitelisted(user2.addr), "user2 should be blacklisted");
+
+        // Revoke from blacklist
+        vm.prank(vault.whitelistManager());
+        vault.revokeFromBlacklist(toBlacklist);
+
+        // Verify addresses are no longer blacklisted
+        assertTrue(vault.isWhitelisted(user1.addr), "user1 should no longer be blacklisted");
+        assertTrue(vault.isWhitelisted(user2.addr), "user2 should no longer be blacklisted");
+    }
 }

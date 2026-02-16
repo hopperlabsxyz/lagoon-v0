@@ -107,4 +107,21 @@ contract TestRoles is BaseTest {
         assertFalse(vault.isSuperOperator(superOperator.addr));
         assertTrue(vault.isSuperOperator(newSuperOperator));
     }
+
+    function test_updateSecurityCouncil() public {
+        // initial security council comes from SetUp.InitStruct.securityCouncil
+        assertEq(vault.securityCouncil(), admin.addr);
+
+        address oldSecurityCouncil = admin.addr;
+        address newSecurityCouncil = address(0x42);
+
+        vm.expectEmit(true, true, true, true);
+        emit SecurityCouncilUpdated(oldSecurityCouncil, newSecurityCouncil);
+
+        vm.prank(vault.owner());
+        vault.updateSecurityCouncil(newSecurityCouncil);
+
+        assertEq(vault.securityCouncil(), newSecurityCouncil);
+        assertNotEq(vault.securityCouncil(), oldSecurityCouncil);
+    }
 }
