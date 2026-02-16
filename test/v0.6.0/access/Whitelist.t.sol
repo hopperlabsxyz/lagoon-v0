@@ -19,6 +19,7 @@ contract TestWhitelist is BaseTest {
         for (uint256 i; i < whitelistInit.length; i++) {
             assertTrue(vault.isWhitelisted(whitelistInit[i]));
         }
+        assertTrue(vault.isWhitelistMode(), "Vault should be in whitelist mode initially");
         dealAndApprove(user1.addr);
     }
 

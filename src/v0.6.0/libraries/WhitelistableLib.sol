@@ -117,12 +117,6 @@ library WhitelistableLib {
         $.externalSanctionList = externalSanctionList;
     }
 
-    /// @notice Returns true if the whitelist is active, false otherwise
-    function isWhitelistMode() public view returns (bool) {
-        Whitelistable.WhitelistableStorage storage $ = _getWhitelistableStorage();
-        return $.accessMode == AccessMode.Whitelist;
-    }
-
     /// @notice Returns true if the blacklist is active, false otherwise
     function isBlacklistMode() public view returns (bool) {
         Whitelistable.WhitelistableStorage storage $ = _getWhitelistableStorage();
