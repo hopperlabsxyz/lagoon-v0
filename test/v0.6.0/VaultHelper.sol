@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import "@src/v0.6.0/ERC7540.sol";
 import "@src/v0.6.0/FeeManager.sol";
 import "@src/v0.6.0/libraries/FeeLib.sol";
+import "@src/v0.6.0/libraries/RolesLib.sol";
 import "@src/v0.6.0/libraries/WhitelistableLib.sol";
 import "@src/v0.6.0/primitives/Errors.sol";
 import "@src/v0.6.0/primitives/Events.sol";
@@ -273,6 +274,12 @@ contract VaultHelper is Vault {
 
     function isWhitelistMode() public view returns (bool) {
         return accessMode() == AccessMode.Whitelist;
+    }
+
+    function isSuperOperator(
+        address account
+    ) public view returns (bool) {
+        return RolesLib.isSuperOperator(account);
     }
 }
 

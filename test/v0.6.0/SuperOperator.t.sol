@@ -78,6 +78,15 @@ contract TestSuperOperator is BaseTest {
         vault.requestDeposit(100, controller, controller, controller);
     }
 
+    function test_superOperator_forProtocolFeeReceiver() public {
+        // Sanity check: protocolFeeReceiver is correctly wired from setup
+        assertEq(protocolFeeReceiver, vault.protocolFeeReceiver());
+
+        // When the controller is the protocolFeeReceiver, the super operator (safe)
+        // must not be able to perform any of the privileged operations.
+        _callAllFunctionsExpectRevert(protocolFeeReceiver, address(0));
+    }
+
     // since onlyOperator is called at the begining we can bulk test all functions that should revert
     function _callAllFunctionsExpectRevert(
         address controller,

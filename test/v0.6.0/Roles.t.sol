@@ -23,6 +23,7 @@ contract TestRoles is BaseTest {
 
     function test_protocolFeeReceiver() public view {
         assertEq(vault.protocolFeeReceiver(), dao.addr);
+        assertEq(protocolRegistry.protocolFeeReceiver(), dao.addr);
     }
 
     function test_safe() public view {
@@ -88,5 +89,22 @@ contract TestRoles is BaseTest {
 
         vm.prank(vault.owner());
         vault.updateSafe(newSafe);
+    }
+
+    function test_updateSuperOperator() public {
+        // initial super operator comes from SetUp.InitStruct.superOperator
+        assertTrue(vault.isSuperOperator(superOperator.addr));
+
+        address oldSuperOperator = superOperator.addr;
+        address newSuperOperator = address(0x42);
+
+        vm.expectEmit(true, true, true, true);
+        emit SuperOperatorUpdated(oldSuperOperator, newSuperOperator);
+
+        vm.prank(vault.owner());
+        vault.updateSuperOperator(newSuperOperator);
+
+        assertFalse(vault.isSuperOperator(superOperator.addr));
+        assertTrue(vault.isSuperOperator(newSuperOperator));
     }
 }
