@@ -27,7 +27,8 @@ import {
     NotWhitelisted,
     OnlyAsyncDepositAllowed,
     OnlySyncDepositAllowed,
-    ValuationUpdateNotAllowed
+    ValuationUpdateNotAllowed,
+    VaultInitializationFailed
 } from "../primitives/Errors.sol";
 
 import {FeeRegistry} from "../../protocol-v1/FeeRegistry.sol";
@@ -60,6 +61,7 @@ using Math for uint256;
 /// @param haircutRate The haircut fee rate for synchronous redeems.
 /// @param securityCouncil The address of the security council.
 /// @param externalSanctionsList The address of the external sanctions list.
+/// @param initialTotalAssets The initial total assets of the vault. It is used to ease vault migrations.
 struct InitStruct {
     IERC20 underlying;
     string name;
@@ -78,6 +80,7 @@ struct InitStruct {
     uint16 haircutRate;
     address securityCouncil;
     address externalSanctionsList;
+    uint256 initialTotalAssets;
     address superOperator;
 }
 
@@ -101,7 +104,6 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         address feeRegistry,
         address wrappedNativeToken
     ) public virtual {
-        // init.initialize(data, feeRegistry, wrappedNativeToken);
         bytes memory callData =
             abi.encodeWithSignature("initialize(bytes,address,address)", data, feeRegistry, wrappedNativeToken);
 
@@ -109,7 +111,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         (bool success,) = address(init).delegatecall(callData);
 
         // Revert if the delegate call failed
-        require(success, "Delegate call failed");
+        if (!success) revert VaultInitializationFailed();
     }
 
     /////////////////////
@@ -376,7 +378,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         for (uint256 i = 0; i < controllers.length; i++) {
             uint256 claimable = claimableDepositRequest(0, controllers[i]);
             if (claimable > 0) {
-                _deposit(claimable, controllers[i], controllers[i]);
+                ERC7540Lib._deposit(claimable, controllers[i], controllers[i]);
             }
         }
     }
@@ -578,8 +580,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         uint256 shares = claimableRedeemRequest(0, controller);
         if (shares == 0 && VaultLib._getVaultStorage().state == State.Closed) {
             uint256 controllerShares = balanceOf(controller);
-            uint256 exitFeeShares = FeeLib.computeFee(controllerShares, FeeLib.feeRates().exitRate);
-            return convertToAssets(controllerShares - exitFeeShares);
+            uint256 _exitFeeShares = FeeLib.computeFee(controllerShares, FeeLib.feeRates().exitRate);
+            return convertToAssets(controllerShares - _exitFeeShares);
         }
         uint40 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
         // introduced in v0.6.0

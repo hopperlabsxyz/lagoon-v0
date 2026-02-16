@@ -76,6 +76,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
 
         $.feeRegistry = FeeRegistry(_registry);
         $.highWaterMark = 10 ** _decimals;
+        $.lastFeeTime = block.timestamp;
     }
 
     /// @notice update the fee rates, applied immediately
