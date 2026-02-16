@@ -19,6 +19,9 @@ error Closed();
 /// @notice No new valuation proposition is allowed
 error ValuationUpdateNotAllowed();
 
+/// @notice Indicates that the vault initialization failed.
+error VaultInitializationFailed();
+
 // ********************* ERC7540 ********************* //
 
 /// @notice Indicates that preview deposit is disabled.

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import "forge-std/Test.sol";
-
 import {ERC7540} from "../ERC7540.sol";
 import {FeeLib} from "../FeeManager.sol";
 import {RolesLib} from "../Roles.sol";
@@ -37,8 +35,10 @@ import {EpochData, SettleData} from "../primitives/Struct.sol";
 import {Rates} from "../primitives/Struct.sol";
 import {PausableLib} from "./PausableLib.sol";
 import {WhitelistableLib} from "./WhitelistableLib.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 interface Vault {
@@ -614,6 +614,17 @@ library ERC7540Lib {
     ) public view returns (uint16) {
         uint40 settleId = _getERC7540Storage().epochs[epochId].settleId;
         return _getERC7540Storage().settles[settleId].entryFeeRate;
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public pure returns (bool) {
+        return interfaceId == 0x2f0a18c5 // IERC7575
+            || interfaceId == 0xf815c03d // IERC7575 shares
+            || interfaceId == 0xce3bbe50 // IERC7540Deposit
+            || interfaceId == 0x620ee8e4 // IERC7540Redeem
+            || interfaceId == 0xe3bc4e65 // IERC7540
+            || interfaceId == type(IERC165).interfaceId;
     }
 
     function asset() internal view returns (address) {

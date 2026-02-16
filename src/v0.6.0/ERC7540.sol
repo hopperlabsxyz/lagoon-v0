@@ -27,6 +27,7 @@ import {
 } from "./primitives/Errors.sol";
 import {
     DepositRequestCanceled,
+    DepositSync,
     MaxCapUpdated,
     NewTotalAssetsUpdated,
     SettleDeposit,
@@ -103,7 +104,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     // solhint-disable-next-line func-name-mixedcase
     function __ERC7540_init(
         IERC20 underlying,
-        address wrappedNativeToken
+        address wrappedNativeToken,
+        uint256 initialTotalAssets,
+        address _safe
     ) internal onlyInitializing {
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
 
@@ -126,7 +129,30 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
                 $.decimalsOffset = 18 - underlyingDecimals;
             }
         }
+        if (initialTotalAssets > 0) {
+            _preMint(initialTotalAssets, _safe);
+        }
         _updateMaxCap(type(uint256).max);
+    }
+
+    /// @notice Pre-mints shares to the receiver based on the provided assets amount.
+    /// @dev This function is used during vault initialization to set initial total assets and mint corresponding
+    /// shares. @dev The shares are calculated using _convertToShares with Floor rounding, and totalAssets is
+    /// incremented by the assets amount.
+    /// @param assets The amount of assets to convert to shares and add to totalAssets.
+    /// @param receiver The address that will receive the minted shares. Must not be address(0).
+    /// @custom:reverts ERC20InvalidReceiver If receiver is address(0).
+    function _preMint(
+        uint256 assets,
+        address receiver
+    ) internal {
+        ERC7540.ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+        uint256 shares = _convertToShares(assets, Math.Rounding.Floor);
+        $.totalAssets += assets;
+
+        // ERC20 mint function
+        _mint(receiver, shares);
+        emit DepositSync(msg.sender, receiver, assets, shares);
     }
 
     ///////////////
@@ -294,7 +320,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 assets,
         address receiver
     ) public virtual override(ERC4626Upgradeable, IERC4626) returns (uint256) {
-        return _deposit(assets, receiver, msg.sender);
+        return ERC7540Lib._deposit(assets, receiver, msg.sender);
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
@@ -308,7 +334,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address receiver,
         address controller
     ) external virtual onlyOperatorOrSuperOperator(controller) returns (uint256) {
-        return _deposit(assets, receiver, controller);
+        return ERC7540Lib._deposit(assets, receiver, controller);
     }
 
     /// @notice Claim the assets from the vault after a request has been settled.
@@ -356,10 +382,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     }
 
     /// @dev Unusable when paused. Protected by whenNotPaused.
-    /// @notice Cancel a deposit request.
-    /// @dev It can only be called in the same epoch.
     function cancelRequestDeposit() external whenNotPaused {
-        return ERC7540Lib.cancelRequestDeposit();
+        ERC7540Lib.cancelRequestDeposit();
     }
 
     ///////////////////////////////
@@ -423,11 +447,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return ERC7540Lib._redeem(shares, receiver, controller);
     }
 
-    /// @notice Withdraw assets from the vault.
-    /// @param assets The assets to withdraw.
-    /// @param receiver The receiver of the assets.
-    /// @param controller The controller, who owns the request.
-    /// @return shares The corresponding shares.
     function _withdraw(
         uint256 assets,
         address receiver,
@@ -545,12 +564,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     function supportsInterface(
         bytes4 interfaceId
     ) public view virtual returns (bool) {
-        return interfaceId == 0x2f0a18c5 // IERC7575
-            || interfaceId == 0xf815c03d // IERC7575 shares
-            || interfaceId == 0xce3bbe50 // IERC7540Deposit
-            || interfaceId == 0x620ee8e4 // IERC7540Redeem
-            || interfaceId == 0xe3bc4e65 // IERC7540
-            || interfaceId == type(IERC165).interfaceId;
+        return ERC7540Lib.supportsInterface(interfaceId);
     }
 
     function settlementEntryFeeRate(
