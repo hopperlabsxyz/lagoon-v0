@@ -90,9 +90,10 @@ library VaultLib {
     function close(
         uint256 _newTotalAssets
     ) public {
+        uint256 _previousTotalAssets = ERC7540Lib._getERC7540Storage().totalAssets;
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
         uint40 contextId = ERC7540Lib._getERC7540Storage().depositSettleId;
-        FeeLib.takeManagementAndPerformanceFees(contextId, _newTotalAssets);
+        FeeLib.takeManagementAndPerformanceFees(contextId, _previousTotalAssets);
         ERC7540Lib.settleDeposit(msg.sender);
         ERC7540Lib.settleRedeem(msg.sender);
         _getVaultStorage().state = State.Closed;

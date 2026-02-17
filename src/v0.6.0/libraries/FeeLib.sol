@@ -14,6 +14,7 @@ import {RolesLib} from "./RolesLib.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {console} from "forge-std/console.sol";
 
 library FeeLib {
     using Math for uint256;
@@ -159,20 +160,20 @@ library FeeLib {
     /// protocol fees
     /// @dev protocol shares are the fees that go to the protocol
     /// @param contextId the settleId for settlement fees (0 if not relevant)
-    /// @param _newTotalAssets the new total assets of the vault
+    /// @param _previousTotalAssets the previous total assets of the vault
     function takeManagementAndPerformanceFees(
         uint40 contextId,
-        uint256 _newTotalAssets
+        uint256 _previousTotalAssets
     ) public {
         FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
         uint16 managementRate = feeRates().managementRate;
         uint16 performanceRate = feeRates().performanceRate;
         uint256 _decimals = ERC7540(address(this)).decimals();
         uint256 _totalAssets = ERC7540(address(this)).totalAssets();
-
+        console.log("time elapsed", block.timestamp - $.lastFeeTime);
         /// Management fee computation ///
         uint256 managementFees = calculateManagementFee(
-            (_totalAssets + _newTotalAssets) / 2, managementRate, block.timestamp - $.lastFeeTime
+            (_totalAssets + _previousTotalAssets) / 2, managementRate, block.timestamp - $.lastFeeTime
         );
 
         // by taking management fees the price per share decreases

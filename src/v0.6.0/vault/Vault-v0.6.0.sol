@@ -466,9 +466,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     function settleDeposit(
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
+        uint256 _previousTotalAssets = ERC7540Lib._getERC7540Storage().totalAssets;
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
         uint40 contextId = ERC7540Lib._getERC7540Storage().depositSettleId;
-        FeeLib.takeManagementAndPerformanceFees(contextId, _newTotalAssets);
+        FeeLib.takeManagementAndPerformanceFees(contextId, _previousTotalAssets);
         ERC7540Lib.settleDeposit(msg.sender);
         ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
@@ -480,9 +481,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     function settleRedeem(
         uint256 _newTotalAssets
     ) public override onlySafe onlyOpen {
+        uint256 _previousTotalAssets = ERC7540Lib._getERC7540Storage().totalAssets;
         ERC7540Lib.updateTotalAssets(_newTotalAssets);
         uint40 contextId = ERC7540Lib._getERC7540Storage().redeemSettleId;
-        FeeLib.takeManagementAndPerformanceFees(contextId, _newTotalAssets);
+        FeeLib.takeManagementAndPerformanceFees(contextId, _previousTotalAssets);
         ERC7540Lib.settleRedeem(msg.sender); // if it is possible to settleRedeem, we should do so
     }
 
