@@ -10,7 +10,7 @@ interface IERC7540Redeem is IERC7540 {
 
     function requestRedeem(
         uint256 shares,
-        address operator,
+        address controller,
         address owner
     ) external returns (uint256 requestId);
 
