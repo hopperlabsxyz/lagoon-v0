@@ -17,7 +17,7 @@ contract TestWhitelist is BaseTest {
         whitelistInit.push(user5.addr);
         setUpVault(0, 0, 0);
         for (uint256 i; i < whitelistInit.length; i++) {
-            assertTrue(vault.isWhitelisted(whitelistInit[i]));
+            assertTrue(vault.isAllowed(whitelistInit[i]));
         }
         assertTrue(vault.isWhitelistMode(), "Vault should be in whitelist mode initially");
         dealAndApprove(user1.addr);
@@ -29,7 +29,7 @@ contract TestWhitelist is BaseTest {
         setUpVault(0, 0, 0);
         for (uint256 i; i < whitelistInit.length; i++) {
             // By default, if whitelist is disabled all user are whitelisted
-            assertTrue(vault.isWhitelisted(whitelistInit[i]));
+            assertTrue(vault.isAllowed(whitelistInit[i]));
         }
         dealAndApprove(user1.addr);
     }
@@ -93,7 +93,7 @@ contract TestWhitelist is BaseTest {
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user1.addr, true);
         whitelist(user1.addr);
-        assertEq(vault.isWhitelisted(user1.addr), true);
+        assertEq(vault.isAllowed(user1.addr), true);
     }
 
     function test_whitelistList() public {
@@ -106,7 +106,7 @@ contract TestWhitelist is BaseTest {
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user2.addr, true);
         whitelist(users);
-        assertEq(vault.isWhitelisted(user1.addr), true);
+        assertEq(vault.isAllowed(user1.addr), true);
     }
 
     function test_unwhitelist() public {
@@ -119,15 +119,15 @@ contract TestWhitelist is BaseTest {
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user2.addr, true);
         whitelist(users);
-        assertEq(vault.isWhitelisted(user1.addr), true, "user1 is not whitelisted");
+        assertEq(vault.isAllowed(user1.addr), true, "user1 is not whitelisted");
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user1.addr, false);
         unwhitelist(users[0]);
-        assertEq(vault.isWhitelisted(user1.addr), false, "user1 is still whitelisted");
+        assertEq(vault.isAllowed(user1.addr), false, "user1 is still whitelisted");
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user2.addr, false);
         unwhitelist(users[1]);
-        assertEq(vault.isWhitelisted(user2.addr), false, "user2 is still whitelisted");
+        assertEq(vault.isAllowed(user2.addr), false, "user2 is still whitelisted");
     }
 
     function test_unwhitelistList() public {
@@ -145,9 +145,9 @@ contract TestWhitelist is BaseTest {
 
         whitelist(users);
 
-        assertEq(vault.isWhitelisted(user1.addr), true, "user1 is not whitelisted");
+        assertEq(vault.isAllowed(user1.addr), true, "user1 is not whitelisted");
 
-        assertEq(vault.isWhitelisted(user2.addr), true, "user2 is not whitelisted");
+        assertEq(vault.isAllowed(user2.addr), true, "user2 is not whitelisted");
 
         vm.expectEmit(true, true, true, true);
         emit WhitelistUpdated(user1.addr, false);
@@ -157,8 +157,8 @@ contract TestWhitelist is BaseTest {
 
         unwhitelist(users);
 
-        assertEq(vault.isWhitelisted(user1.addr), false, "user1 is still whitelisted");
-        assertEq(vault.isWhitelisted(user2.addr), false, "user2 is still whitelisted");
+        assertEq(vault.isAllowed(user1.addr), false, "user1 is still whitelisted");
+        assertEq(vault.isAllowed(user2.addr), false, "user2 is still whitelisted");
     }
 
     function test_noWhitelist() public {
@@ -201,17 +201,17 @@ contract TestWhitelist is BaseTest {
 
         // whitelist user1 in whitelist mode
         whitelist(user1.addr);
-        assertTrue(vault.isWhitelisted(user1.addr), "user1 should be whitelisted in whitelist mode");
+        assertTrue(vault.isAllowed(user1.addr), "user1 should be whitelisted in whitelist mode");
 
         // switch to blacklist mode, user1 should remain effectively whitelisted
         vm.prank(vault.owner());
         vault.switchAccessMode(AccessMode.Blacklist);
-        assertTrue(vault.isWhitelisted(user1.addr), "user1 should remain whitelisted in blacklist mode");
+        assertTrue(vault.isAllowed(user1.addr), "user1 should remain whitelisted in blacklist mode");
 
         // switch back to whitelist mode, user1 should still be whitelisted
         vm.prank(vault.owner());
         vault.switchAccessMode(AccessMode.Whitelist);
-        assertTrue(vault.isWhitelisted(user1.addr), "user1 should remain whitelisted after switching back");
+        assertTrue(vault.isAllowed(user1.addr), "user1 should remain whitelisted after switching back");
     }
 
     function test_sanctionedAddress_ShouldReturnFalseInWhitelistMode() public {
@@ -233,7 +233,7 @@ contract TestWhitelist is BaseTest {
 
         // Even though manually whitelisted, the sanctioned address should return false
         assertFalse(
-            vault.isWhitelisted(SANCTIONED_ADDRESS),
+            vault.isAllowed(SANCTIONED_ADDRESS),
             "Sanctioned address should return false even when manually whitelisted in Whitelist mode"
         );
     }
@@ -249,7 +249,7 @@ contract TestWhitelist is BaseTest {
 
         uint256 shares = vault.balanceOf(user1.addr);
         unwhitelist(user1.addr);
-        assertEq(vault.isWhitelisted(user1.addr), false);
+        assertEq(vault.isAllowed(user1.addr), false);
 
         vm.prank(user1.addr);
         vault.transfer(user2.addr, shares);
@@ -277,7 +277,7 @@ contract TestWhitelist is BaseTest {
         assertEq(vault.balanceOf(user1.addr), 0);
     }
 
-    function test_transfer_SucceedsWhen_NeitherPartyIsWhitelisted() public {
+    function test_transfer_SucceedsWhen_NeitherPartyisAllowed() public {
         withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
         whitelist(user1.addr);
@@ -361,7 +361,7 @@ contract TestWhitelist is BaseTest {
         assertEq(vault.balanceOf(user1.addr), 0);
     }
 
-    function test_transferFrom_SucceedsWhen_NeitherPartyIsWhitelisted() public {
+    function test_transferFrom_SucceedsWhen_NeitherPartyisAllowed() public {
         withWhitelistSetUp();
         uint256 userBalance = assetBalance(user1.addr);
         whitelist(user1.addr);

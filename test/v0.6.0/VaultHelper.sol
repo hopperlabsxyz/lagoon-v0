@@ -5,9 +5,9 @@ import "forge-std/Test.sol";
 
 import "@src/v0.6.0/ERC7540.sol";
 import "@src/v0.6.0/FeeManager.sol";
+import "@src/v0.6.0/libraries/AccessableLib.sol";
 import "@src/v0.6.0/libraries/FeeLib.sol";
 import "@src/v0.6.0/libraries/RolesLib.sol";
-import "@src/v0.6.0/libraries/WhitelistableLib.sol";
 import "@src/v0.6.0/primitives/Errors.sol";
 import "@src/v0.6.0/primitives/Events.sol";
 import "@src/v0.6.0/primitives/Struct.sol";
@@ -39,11 +39,11 @@ contract VaultHelper is Vault {
     /// @notice Returns if the whitelist is activated
     /// @return True if the whitelist is activated, false otherwise
     function isWhitelistActivated() public view returns (bool) {
-        return WhitelistableLib._getWhitelistableStorage().accessMode == AccessMode.Whitelist;
+        return AccessableLib._getAccessableStorage().accessMode == AccessMode.Whitelist;
     }
 
     function isBlacklistActivated() public view returns (bool) {
-        return WhitelistableLib._getWhitelistableStorage().accessMode == AccessMode.Blacklist;
+        return AccessableLib._getAccessableStorage().accessMode == AccessMode.Blacklist;
     }
 
     function totalAssets(
@@ -168,7 +168,7 @@ contract VaultHelper is Vault {
     }
 
     function activateWhitelist() public {
-        WhitelistableLib._getWhitelistableStorage().accessMode = AccessMode.Whitelist;
+        AccessableLib._getAccessableStorage().accessMode = AccessMode.Whitelist;
     }
 
     function protocolFeeReceiver() public view returns (address) {
@@ -265,7 +265,7 @@ contract VaultHelper is Vault {
     }
 
     function accessMode() public view returns (AccessMode) {
-        return WhitelistableLib._getWhitelistableStorage().accessMode;
+        return AccessableLib._getAccessableStorage().accessMode;
     }
 
     function isBlacklistMode() public view returns (bool) {

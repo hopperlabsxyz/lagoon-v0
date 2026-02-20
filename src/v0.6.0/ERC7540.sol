@@ -5,10 +5,10 @@ import {Silo} from "./Silo.sol";
 import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
 import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IWETH9} from "./interfaces/IWETH9.sol";
+import {AccessableLib} from "./libraries/AccessableLib.sol";
 import {ERC7540Lib} from "./libraries/ERC7540Lib.sol";
 import {FeeLib} from "./libraries/FeeLib.sol";
 import {RolesLib} from "./libraries/RolesLib.sol";
-import {WhitelistableLib} from "./libraries/WhitelistableLib.sol";
 import {State} from "./primitives/Enums.sol";
 import {
     AddressNotAllowed,
@@ -221,9 +221,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address to,
         uint256 value
     ) public virtual override(ERC20Upgradeable, IERC20) returns (bool) {
-        if (WhitelistableLib.isBlacklistMode()) {
-            if (!isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
-            if (!isWhitelisted(to)) revert AddressNotAllowed(to);
+        if (AccessableLib.isBlacklistMode()) {
+            if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
+            if (!isAllowed(to)) revert AddressNotAllowed(to);
         }
         return ERC20Upgradeable.transfer(to, value);
     }
@@ -233,10 +233,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address to,
         uint256 value
     ) public virtual override(ERC20Upgradeable, IERC20) returns (bool) {
-        if (WhitelistableLib.isBlacklistMode()) {
-            if (!isWhitelisted(from)) revert AddressNotAllowed(from);
-            if (!isWhitelisted(to)) revert AddressNotAllowed(to);
-            if (!isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
+        if (AccessableLib.isBlacklistMode()) {
+            if (!isAllowed(from)) revert AddressNotAllowed(from);
+            if (!isAllowed(to)) revert AddressNotAllowed(to);
+            if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         }
         return ERC20Upgradeable.transferFrom(from, to, value);
     }
@@ -405,10 +405,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     ) internal returns (uint256) {
         // when the super operator requests a redeem, we don't check the whitelist
         if (!RolesLib.isSuperOperator(msg.sender)) {
-            if (!isWhitelisted(owner)) revert AddressNotAllowed(owner);
-            if (!isWhitelisted(controller)) revert AddressNotAllowed(controller);
+            if (!isAllowed(owner)) revert AddressNotAllowed(owner);
+            if (!isAllowed(controller)) revert AddressNotAllowed(controller);
             // operator must also be whitelisted
-            if (!isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
+            if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         }
 
         // if the caller is not an operator we use its allowance
@@ -599,7 +599,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     function safe() public view virtual returns (address);
 
-    function isWhitelisted(
+    function isAllowed(
         address account
     ) public view virtual returns (bool);
 }

@@ -112,7 +112,7 @@ contract TestWhitelistableStorageCollision is BaseTest {
         // In Blacklist mode, all addresses are whitelisted unless they are blacklisted
         address testUser = address(0x1234);
         assertEq(
-            proxyV0_6_0.isWhitelisted(testUser), true, "v0.6.0: user should be whitelisted in Blacklist mode by default"
+            proxyV0_6_0.isAllowed(testUser), true, "v0.6.0: user should be whitelisted in Blacklist mode by default"
         );
     }
 
@@ -160,7 +160,7 @@ contract TestWhitelistableStorageCollision is BaseTest {
         // In Whitelist mode, only whitelisted addresses are allowed
         address testUser = address(0x1234);
         assertEq(
-            proxyV0_6_0.isWhitelisted(testUser),
+            proxyV0_6_0.isAllowed(testUser),
             false,
             "v0.6.0: user should not be whitelisted in Whitelist mode by default"
         );
@@ -170,7 +170,7 @@ contract TestWhitelistableStorageCollision is BaseTest {
         users[0] = testUser;
         vm.prank(whitelistManager.addr);
         proxyV0_6_0.addToWhitelist(users);
-        assertEq(proxyV0_6_0.isWhitelisted(testUser), true, "v0.6.0: user should be whitelisted after being added");
+        assertEq(proxyV0_6_0.isAllowed(testUser), true, "v0.6.0: user should be whitelisted after being added");
     }
 
     /// @notice Test rollback scenario: upgrade to v0.6.0 Blacklist mode, then rollback to v0.5.0
@@ -212,7 +212,7 @@ contract TestWhitelistableStorageCollision is BaseTest {
         // In Blacklist mode, all addresses are whitelisted unless they are blacklisted
         address testUser = address(0x1234);
         assertEq(
-            proxyV0_6_0.isWhitelisted(testUser), true, "v0.6.0: user should be whitelisted in Blacklist mode by default"
+            proxyV0_6_0.isAllowed(testUser), true, "v0.6.0: user should be whitelisted in Blacklist mode by default"
         );
 
         // Rollback to v0.5.0
@@ -292,7 +292,7 @@ contract TestWhitelistableStorageCollision is BaseTest {
         // In Whitelist mode, only whitelisted addresses are allowed
         address testUser = address(0x1234);
         assertEq(
-            proxyV0_6_0.isWhitelisted(testUser),
+            proxyV0_6_0.isAllowed(testUser),
             false,
             "v0.6.0: user should not be whitelisted in Whitelist mode by default"
         );

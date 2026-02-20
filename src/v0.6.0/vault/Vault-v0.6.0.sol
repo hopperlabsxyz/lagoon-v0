@@ -11,9 +11,9 @@ import {VaultStorage} from "../primitives/VaultStorage.sol";
 
 import {VaultInit} from "./VaultInit.sol";
 
+import {Accessable} from "../Accessable.sol";
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
-import {Whitelistable} from "../Whitelistable.sol";
 import {FeeLib} from "../libraries/FeeLib.sol";
 import {GuardrailsLib} from "../libraries/GuardrailsLib.sol";
 import {AccessMode, State} from "../primitives/Enums.sol";
@@ -85,7 +85,7 @@ struct InitStruct {
 }
 
 /// @custom:oz-upgrades-from src/v0.5.0/Vault.sol:Vault
-contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
+contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     VaultInit immutable init;
 
@@ -181,8 +181,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         address receiver,
         address referral
     ) public payable onlySyncDeposit onlyOpen returns (uint256 shares) {
-        if (!isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
-        if (!isWhitelisted(receiver)) revert AddressNotAllowed(receiver);
+        if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
+        if (!isAllowed(receiver)) revert AddressNotAllowed(receiver);
 
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
 
@@ -224,8 +224,8 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         uint256 shares,
         address receiver
     ) public onlySyncDeposit onlyOpen returns (uint256 assets) {
-        if (!isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
-        if (!isWhitelisted(receiver)) revert AddressNotAllowed(receiver);
+        if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
+        if (!isAllowed(receiver)) revert AddressNotAllowed(receiver);
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
 
         uint16 exitRate = FeeLib.feeRates().exitRate;
@@ -271,7 +271,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     function claimSharesAndRequestRedeem(
         uint256 sharesToRedeem
     ) public onlyOpen whenNotPaused returns (uint40 requestId) {
-        if (!isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
+        if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
 
         uint256 claimable = claimableDepositRequest(0, msg.sender);
         if (claimable > 0) _deposit(claimable, msg.sender, msg.sender);
@@ -309,7 +309,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
                     revert ERC7540InvalidOperator();
                 }
                 // operator must be whitelisted
-                if (!isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
+                if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
             }
             return _withdraw(assets, receiver, controller); // async
         }
@@ -344,7 +344,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
                     revert ERC7540InvalidOperator();
                 }
                 // operator must be whitelisted
-                if (!isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
+                if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
             }
             return _redeem(shares, receiver, controller);
         }
@@ -365,9 +365,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     ) internal virtual override {
         // when the super operator initiates the withdraw call, we don't check the whitelist
         if (!RolesLib.isSuperOperator(msg.sender)) {
-            if (!isWhitelisted(owner)) revert AddressNotAllowed(owner);
-            if (!isWhitelisted(receiver)) revert AddressNotAllowed(receiver);
-            if (!isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
+            if (!isAllowed(owner)) revert AddressNotAllowed(owner);
+            if (!isAllowed(receiver)) revert AddressNotAllowed(receiver);
+            if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         }
         if (caller != owner && !isOperatorOrSuperOperator(owner, caller)) {
             _spendAllowance(owner, caller, shares);
@@ -393,7 +393,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
             address controller = controllers[i];
             uint256 claimable = claimableDepositRequest(0, controller);
             // we don't claim for non-whitelisted controllers
-            if (claimable > 0 && isWhitelisted(controller)) {
+            if (claimable > 0 && isAllowed(controller)) {
                 _deposit(claimable, controller, controller);
             }
         }
@@ -410,7 +410,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
             address controller = controllers[i];
             uint256 claimable = claimableRedeemRequest(0, controller);
             // we don't claim for non-whitelisted controllers
-            if (claimable > 0 && isWhitelisted(controller)) {
+            if (claimable > 0 && isAllowed(controller)) {
                 _redeem(claimable, controller, controller);
             }
         }
@@ -658,10 +658,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         return VaultLib.isTotalAssetsValid();
     }
 
-    function isWhitelisted(
+    function isAllowed(
         address account
-    ) public view override(ERC7540, Whitelistable) returns (bool) {
-        return Whitelistable.isWhitelisted(account);
+    ) public view override(ERC7540, Accessable) returns (bool) {
+        return Accessable.isAllowed(account);
     }
 
     function safe() public view override returns (address) {

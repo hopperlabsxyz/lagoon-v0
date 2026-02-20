@@ -560,7 +560,7 @@ contract BaseTest is Test, SetUp {
         users[0] = user;
         vm.prank(vault.whitelistManager());
         vault.addToBlacklist(users);
-        assertFalse(vault.isWhitelisted(user));
+        assertFalse(vault.isAllowed(user));
     }
 
     function blacklist(
@@ -569,7 +569,7 @@ contract BaseTest is Test, SetUp {
         vm.prank(vault.whitelistManager());
         vault.addToBlacklist(users);
         for (uint256 i = 0; i < users.length; i++) {
-            assertFalse(vault.isWhitelisted(users[i]));
+            assertFalse(vault.isAllowed(users[i]));
         }
     }
 
@@ -580,7 +580,7 @@ contract BaseTest is Test, SetUp {
         users[0] = user;
         vm.prank(vault.whitelistManager());
         vault.revokeFromBlacklist(users);
-        assertTrue(vault.isWhitelisted(user));
+        assertTrue(vault.isAllowed(user));
     }
 
     function unblacklist(
@@ -589,7 +589,7 @@ contract BaseTest is Test, SetUp {
         vm.prank(vault.whitelistManager());
         vault.revokeFromBlacklist(users);
         for (uint256 i = 0; i < users.length; i++) {
-            assertTrue(vault.isWhitelisted(users[i]));
+            assertTrue(vault.isAllowed(users[i]));
         }
     }
 

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
+import {Accessable} from "../Accessable.sol";
 import {ERC7540} from "../ERC7540.sol";
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
-import {Whitelistable} from "../Whitelistable.sol";
 import {AccessMode, State} from "../primitives/Enums.sol";
 import {
     CantDepositNativeToken,
@@ -32,7 +32,7 @@ import {FeeRegistry} from "@src/protocol-v2/FeeRegistry.sol";
 using SafeERC20 for IERC20;
 
 /// @custom:oz-upgrades-from src/v0.5.0/Vault.sol:Vault
-contract VaultInit is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
+contract VaultInit is ERC7540, Accessable, FeeManager, GuardrailsManager {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // solhint-disable-next-line ignoreConstructors
     constructor(
@@ -70,7 +70,7 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
             initialTotalAssets: init.initialTotalAssets,
             _safe: init.safe
         });
-        __Whitelistable_init(init.accessMode, address(0));
+        __Accessable_init(init.accessMode, address(0));
         __FeeManager_init({
             _registry: feeRegistry,
             _managementRate: init.managementRate,
@@ -121,9 +121,9 @@ contract VaultInit is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         return address(0);
     }
 
-    function isWhitelisted(
-        address account
-    ) public view override(ERC7540, Whitelistable) returns (bool) {
+    function isAllowed(
+        address
+    ) public view override(ERC7540, Accessable) returns (bool) {
         return false;
     }
 }

@@ -33,8 +33,8 @@ import {
 } from "../primitives/Events.sol";
 import {EpochData, SettleData} from "../primitives/Struct.sol";
 import {Rates} from "../primitives/Struct.sol";
+import {AccessableLib} from "./AccessableLib.sol";
 import {PausableLib} from "./PausableLib.sol";
-import {WhitelistableLib} from "./WhitelistableLib.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -298,8 +298,8 @@ library ERC7540Lib {
         address owner,
         address referral
     ) public returns (uint256) {
-        if (!WhitelistableLib.isWhitelisted(owner)) revert AddressNotAllowed(owner);
-        if (!WhitelistableLib.isWhitelisted(controller)) revert AddressNotAllowed(controller);
+        if (!AccessableLib.isAllowed(owner)) revert AddressNotAllowed(owner);
+        if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
 
         _onlyUnderMaxCap(assets);
 
@@ -347,8 +347,8 @@ library ERC7540Lib {
     ) public returns (uint256 shares) {
         // when the super operator initiates the deposit call, we don't check the whitelist
         if (!RolesLib.isSuperOperator(msg.sender)) {
-            if (!WhitelistableLib.isWhitelisted(controller)) revert AddressNotAllowed(controller);
-            if (!WhitelistableLib.isWhitelisted(receiver)) revert AddressNotAllowed(receiver);
+            if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
+            if (!AccessableLib.isAllowed(receiver)) revert AddressNotAllowed(receiver);
         }
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -378,8 +378,8 @@ library ERC7540Lib {
     ) public returns (uint256 assets) {
         // when the super operator initiates the mint call, we don't check the whitelist
         if (!RolesLib.isSuperOperator(msg.sender)) {
-            if (!WhitelistableLib.isWhitelisted(controller)) revert AddressNotAllowed(controller);
-            if (!WhitelistableLib.isWhitelisted(receiver)) revert AddressNotAllowed(receiver);
+            if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
+            if (!AccessableLib.isAllowed(receiver)) revert AddressNotAllowed(receiver);
         }
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -405,7 +405,7 @@ library ERC7540Lib {
     function cancelRequestDeposit() public {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
-        if (!WhitelistableLib.isWhitelisted(msg.sender)) revert AddressNotAllowed(msg.sender);
+        if (!AccessableLib.isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
 
         uint40 requestId = $.lastDepositRequestId[msg.sender];
         if (requestId != $.depositEpochId) {
@@ -435,8 +435,8 @@ library ERC7540Lib {
     ) public returns (uint256 assets) {
         // when the super operator initiates the redeem call, we don't check the whitelist
         if (!RolesLib.isSuperOperator(msg.sender)) {
-            if (!WhitelistableLib.isWhitelisted(controller)) revert AddressNotAllowed(controller);
-            if (!WhitelistableLib.isWhitelisted(receiver)) revert AddressNotAllowed(receiver);
+            if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
+            if (!AccessableLib.isAllowed(receiver)) revert AddressNotAllowed(receiver);
         }
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -466,8 +466,8 @@ library ERC7540Lib {
     ) public returns (uint256 shares) {
         // when the super operator initiates the redeem call, we don't check the whitelist
         if (!RolesLib.isSuperOperator(msg.sender)) {
-            if (!WhitelistableLib.isWhitelisted(controller)) revert AddressNotAllowed(controller);
-            if (!WhitelistableLib.isWhitelisted(receiver)) revert AddressNotAllowed(receiver);
+            if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
+            if (!AccessableLib.isAllowed(receiver)) revert AddressNotAllowed(receiver);
         }
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
