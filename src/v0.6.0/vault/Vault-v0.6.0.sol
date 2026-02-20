@@ -384,7 +384,6 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
 
     /// @notice Claims all available shares for a list of controller addresses.
     /// @dev Iterates over each controller address, checks for claimable deposits, and claims them on their behalf.
-    /// @dev Skips controllers that are not whitelisted.
     /// @param controllers The list of controller addresses for which to claim shares.
     function claimSharesOnBehalf(
         address[] memory controllers
@@ -392,8 +391,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         for (uint256 i = 0; i < controllers.length; i++) {
             address controller = controllers[i];
             uint256 claimable = claimableDepositRequest(0, controller);
-            // we don't claim for non-whitelisted controllers
-            if (claimable > 0 && isAllowed(controller)) {
+            if (claimable > 0) {
                 _deposit(claimable, controller, controller);
             }
         }
@@ -401,7 +399,6 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
 
     /// @notice Claims all available assets for a list of controller addresses.
     /// @dev Iterates over each controller address, checks for claimable redeems, and redeems them on their behalf.
-    /// @dev Skips controllers that are not whitelisted.
     /// @param controllers The list of controller addresses for which to claim assets.
     function claimAssetsOnBehalf(
         address[] memory controllers
@@ -409,8 +406,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         for (uint256 i = 0; i < controllers.length; i++) {
             address controller = controllers[i];
             uint256 claimable = claimableRedeemRequest(0, controller);
-            // we don't claim for non-whitelisted controllers
-            if (claimable > 0 && isAllowed(controller)) {
+            if (claimable > 0) {
                 _redeem(claimable, controller, controller);
             }
         }

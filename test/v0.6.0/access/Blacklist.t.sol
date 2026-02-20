@@ -297,17 +297,10 @@ contract TestBlacklist is BaseTest {
         controllers[1] = user2.addr;
         controllers[2] = user3.addr; // blacklisted
 
-        // Should not revert, but skip user3
+        // Should revert, user3 is blacklisted
         vm.prank(safe.addr);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user3.addr));
         vault.claimSharesOnBehalf(controllers);
-
-        // user1 and user2 should have received shares
-        assertGt(vault.balanceOf(user1.addr), 0, "user1 should have received shares");
-        assertGt(vault.balanceOf(user2.addr), 0, "user2 should have received shares");
-        // user3 should not have received shares (skipped)
-        assertEq(vault.balanceOf(user3.addr), 0, "user3 should not have received shares");
-        // user3 should still have claimable deposit
-        assertGt(vault.maxDeposit(user3.addr), 0, "user3 should still have claimable deposit");
     }
 
     function test_claimAssetsOnBehalf_DoesNotRevertWhenUserBlacklisted() public {
@@ -371,16 +364,9 @@ contract TestBlacklist is BaseTest {
         controllers[1] = user2.addr;
         controllers[2] = user3.addr; // blacklisted
 
-        // Should not revert, but skip user3
+        // Should revert, user3 is blacklisted
         vm.prank(safe.addr);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user3.addr));
         vault.claimAssetsOnBehalf(controllers);
-
-        // user1 and user2 should have received assets
-        assertGt(underlying.balanceOf(user1.addr), user1AssetBefore, "user1 should have received assets");
-        assertGt(underlying.balanceOf(user2.addr), user2AssetBefore, "user2 should have received assets");
-        // user3 should not have received assets (skipped)
-        assertEq(underlying.balanceOf(user3.addr), user3AssetBefore, "user3 should not have received assets");
-        // user3 should still have claimable redeem
-        assertGt(vault.maxRedeem(user3.addr), 0, "user3 should still have claimable redeem");
     }
 }

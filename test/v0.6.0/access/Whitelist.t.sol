@@ -440,17 +440,11 @@ contract TestWhitelist is BaseTest {
         controllers[1] = user2.addr;
         controllers[2] = user3.addr; // not whitelisted
 
-        // Should not revert, but skip user3
+        // Should revert, user3 is not whitelisted
         vm.prank(safe.addr);
-        vault.claimSharesOnBehalf(controllers);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user3.addr));
 
-        // user1 and user2 should have received shares
-        assertGt(vault.balanceOf(user1.addr), 0, "user1 should have received shares");
-        assertGt(vault.balanceOf(user2.addr), 0, "user2 should have received shares");
-        // user3 should not have received shares (skipped)
-        assertEq(vault.balanceOf(user3.addr), 0, "user3 should not have received shares");
-        // user3 should still have claimable deposit
-        assertGt(vault.maxDeposit(user3.addr), 0, "user3 should still have claimable deposit");
+        vault.claimSharesOnBehalf(controllers);
     }
 
     function test_claimAssetsOnBehalf_RevertsWhenUserNotWhitelisted() public {
@@ -510,12 +504,10 @@ contract TestWhitelist is BaseTest {
 
         unwhitelist(user3.addr);
 
-        // Should not revert, but skip user3
+        // Should revert, user3 is not whitelisted
         vm.prank(safe.addr);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user3.addr));
         vault.claimAssetsOnBehalf(controllers);
-
-        // user1 and user2 should have received assets
-        assertGt(vault.maxRedeem(user3.addr), 0, "user3 should have claimable redeem");
     }
 }
 
