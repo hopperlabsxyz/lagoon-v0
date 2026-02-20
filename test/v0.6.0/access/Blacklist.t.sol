@@ -263,4 +263,124 @@ contract TestBlacklist is BaseTest {
         assertTrue(vault.isWhitelisted(user1.addr), "user1 should no longer be blacklisted");
         assertTrue(vault.isWhitelisted(user2.addr), "user2 should no longer be blacklisted");
     }
+
+    function test_claimSharesOnBehalf_DoesNotRevertWhenUserBlacklisted() public {
+        withWhitelistSetUp();
+        vm.prank(vault.owner());
+        vault.switchAccessMode(AccessMode.Blacklist);
+
+        dealAndApprove(user1.addr);
+        dealAndApprove(user2.addr);
+        dealAndApprove(user3.addr);
+
+        uint256 user1Balance = assetBalance(user1.addr);
+        uint256 user2Balance = assetBalance(user2.addr);
+        uint256 user3Balance = assetBalance(user3.addr);
+
+        requestDeposit(user1Balance, user1.addr);
+        requestDeposit(user2Balance, user2.addr);
+        requestDeposit(user3Balance, user3.addr);
+        // In blacklist mode, users are whitelisted by default
+        // We blacklist user3
+        blacklist(user3.addr);
+
+        updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
+
+        // All three users have claimable deposits
+        assertGt(vault.maxDeposit(user1.addr), 0, "user1 should have claimable deposit");
+        assertGt(vault.maxDeposit(user2.addr), 0, "user2 should have claimable deposit");
+        assertGt(vault.maxDeposit(user3.addr), 0, "user3 should have claimable deposit");
+
+        address[] memory controllers = new address[](3);
+        controllers[0] = user1.addr;
+        controllers[1] = user2.addr;
+        controllers[2] = user3.addr; // blacklisted
+
+        // Should not revert, but skip user3
+        vm.prank(safe.addr);
+        vault.claimSharesOnBehalf(controllers);
+
+        // user1 and user2 should have received shares
+        assertGt(vault.balanceOf(user1.addr), 0, "user1 should have received shares");
+        assertGt(vault.balanceOf(user2.addr), 0, "user2 should have received shares");
+        // user3 should not have received shares (skipped)
+        assertEq(vault.balanceOf(user3.addr), 0, "user3 should not have received shares");
+        // user3 should still have claimable deposit
+        assertGt(vault.maxDeposit(user3.addr), 0, "user3 should still have claimable deposit");
+    }
+
+    function test_claimAssetsOnBehalf_DoesNotRevertWhenUserBlacklisted() public {
+        withWhitelistSetUp();
+        vm.prank(vault.owner());
+        vault.switchAccessMode(AccessMode.Blacklist);
+
+        dealAndApprove(user1.addr);
+        dealAndApprove(user2.addr);
+        dealAndApprove(user3.addr);
+
+        uint256 user1Balance = assetBalance(user1.addr);
+        uint256 user2Balance = assetBalance(user2.addr);
+        uint256 user3Balance = assetBalance(user3.addr);
+
+        requestDeposit(user1Balance, user1.addr);
+        requestDeposit(user2Balance, user2.addr);
+        requestDeposit(user3Balance, user3.addr);
+
+        // First, deposit and get shares
+        updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
+
+        // Deposit shares
+        vm.prank(user1.addr);
+        vault.deposit(user1Balance, user1.addr);
+        vm.prank(user2.addr);
+        vault.deposit(user2Balance, user2.addr);
+        vm.prank(user3.addr);
+        vault.deposit(user3Balance, user3.addr);
+
+        uint256 user1Shares = vault.balanceOf(user1.addr);
+        uint256 user2Shares = vault.balanceOf(user2.addr);
+        uint256 user3Shares = vault.balanceOf(user3.addr);
+
+        // Request redeems
+        vm.prank(user1.addr);
+        vault.requestRedeem(user1Shares, user1.addr, user1.addr);
+        vm.prank(user2.addr);
+        vault.requestRedeem(user2Shares, user2.addr, user2.addr);
+        vm.prank(user3.addr);
+        vault.requestRedeem(user3Shares, user3.addr, user3.addr);
+
+        updateAndSettle(user1Balance + user2Balance + user3Balance);
+        vm.warp(block.timestamp + 1);
+
+        // We blacklist user3
+        blacklist(user3.addr);
+
+        // All three users have claimable redeems
+        assertGt(vault.maxRedeem(user1.addr), 0, "user1 should have claimable redeem");
+        assertGt(vault.maxRedeem(user2.addr), 0, "user2 should have claimable redeem");
+        assertGt(vault.maxRedeem(user3.addr), 0, "user3 should have claimable redeem");
+
+        uint256 user1AssetBefore = underlying.balanceOf(user1.addr);
+        uint256 user2AssetBefore = underlying.balanceOf(user2.addr);
+        uint256 user3AssetBefore = underlying.balanceOf(user3.addr);
+
+        address[] memory controllers = new address[](3);
+        controllers[0] = user1.addr;
+        controllers[1] = user2.addr;
+        controllers[2] = user3.addr; // blacklisted
+
+        // Should not revert, but skip user3
+        vm.prank(safe.addr);
+        vault.claimAssetsOnBehalf(controllers);
+
+        // user1 and user2 should have received assets
+        assertGt(underlying.balanceOf(user1.addr), user1AssetBefore, "user1 should have received assets");
+        assertGt(underlying.balanceOf(user2.addr), user2AssetBefore, "user2 should have received assets");
+        // user3 should not have received assets (skipped)
+        assertEq(underlying.balanceOf(user3.addr), user3AssetBefore, "user3 should not have received assets");
+        // user3 should still have claimable redeem
+        assertGt(vault.maxRedeem(user3.addr), 0, "user3 should still have claimable redeem");
+    }
 }

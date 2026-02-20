@@ -406,5 +406,116 @@ contract TestWhitelist is BaseTest {
         assertEq(vault.balanceOf(user3.addr), shares);
         assertEq(vault.balanceOf(user1.addr), 0);
     }
+
+    function test_claimSharesOnBehalf_DoesNotRevertWhenUserNotWhitelisted() public {
+        withWhitelistSetUp();
+        dealAndApprove(user1.addr);
+        dealAndApprove(user2.addr);
+        dealAndApprove(user3.addr);
+
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        whitelist(user3.addr);
+
+        uint256 user1Balance = assetBalance(user1.addr);
+        uint256 user2Balance = assetBalance(user2.addr);
+        uint256 user3Balance = assetBalance(user3.addr);
+
+        requestDeposit(user1Balance, user1.addr);
+        requestDeposit(user2Balance, user2.addr);
+        requestDeposit(user3Balance, user3.addr);
+
+        updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
+
+        // All three users have claimable deposits
+        assertGt(vault.maxDeposit(user1.addr), 0, "user1 should have claimable deposit");
+        assertGt(vault.maxDeposit(user2.addr), 0, "user2 should have claimable deposit");
+        assertGt(vault.maxDeposit(user3.addr), 0, "user3 should have claimable deposit");
+
+        unwhitelist(user3.addr);
+
+        address[] memory controllers = new address[](3);
+        controllers[0] = user1.addr;
+        controllers[1] = user2.addr;
+        controllers[2] = user3.addr; // not whitelisted
+
+        // Should not revert, but skip user3
+        vm.prank(safe.addr);
+        vault.claimSharesOnBehalf(controllers);
+
+        // user1 and user2 should have received shares
+        assertGt(vault.balanceOf(user1.addr), 0, "user1 should have received shares");
+        assertGt(vault.balanceOf(user2.addr), 0, "user2 should have received shares");
+        // user3 should not have received shares (skipped)
+        assertEq(vault.balanceOf(user3.addr), 0, "user3 should not have received shares");
+        // user3 should still have claimable deposit
+        assertGt(vault.maxDeposit(user3.addr), 0, "user3 should still have claimable deposit");
+    }
+
+    function test_claimAssetsOnBehalf_RevertsWhenUserNotWhitelisted() public {
+        withWhitelistSetUp();
+        dealAndApprove(user1.addr);
+        dealAndApprove(user2.addr);
+        dealAndApprove(user3.addr);
+
+        whitelist(user1.addr);
+        whitelist(user2.addr);
+        whitelist(user3.addr);
+        // user3 is not whitelisted
+
+        uint256 user1Balance = assetBalance(user1.addr);
+        uint256 user2Balance = assetBalance(user2.addr);
+        uint256 user3Balance = assetBalance(user3.addr);
+
+        // First, deposit and get shares
+        requestDeposit(user1Balance, user1.addr);
+        requestDeposit(user2Balance, user2.addr);
+        requestDeposit(user3Balance, user3.addr);
+        updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
+
+        // Deposit shares
+        vm.prank(user1.addr);
+        vault.deposit(user1Balance, user1.addr);
+        vm.prank(user2.addr);
+        vault.deposit(user2Balance, user2.addr);
+        vm.prank(user3.addr);
+        vault.deposit(user3Balance, user3.addr);
+
+        uint256 user1Shares = vault.balanceOf(user1.addr);
+        uint256 user2Shares = vault.balanceOf(user2.addr);
+        uint256 user3Shares = vault.balanceOf(user3.addr);
+
+        // Request redeems
+        vm.prank(user1.addr);
+        vault.requestRedeem(user1Shares, user1.addr, user1.addr);
+        vm.prank(user2.addr);
+        vault.requestRedeem(user2Shares, user2.addr, user2.addr);
+        vm.prank(user3.addr);
+        vault.requestRedeem(user3Shares, user3.addr, user3.addr);
+
+        updateAndSettle(user1Balance + user2Balance + user3Balance);
+        vm.warp(block.timestamp + 1);
+
+        // All three users have claimable redeems
+        assertGt(vault.maxRedeem(user1.addr), 0, "user1 should have claimable redeem");
+        assertGt(vault.maxRedeem(user2.addr), 0, "user2 should have claimable redeem");
+        assertGt(vault.maxRedeem(user3.addr), 0, "user3 should have claimable redeem");
+
+        address[] memory controllers = new address[](3);
+        controllers[0] = user1.addr;
+        controllers[1] = user2.addr;
+        controllers[2] = user3.addr; // not whitelisted
+
+        unwhitelist(user3.addr);
+
+        // Should not revert, but skip user3
+        vm.prank(safe.addr);
+        vault.claimAssetsOnBehalf(controllers);
+
+        // user1 and user2 should have received assets
+        assertGt(vault.maxRedeem(user3.addr), 0, "user3 should have claimable redeem");
+    }
 }
 
