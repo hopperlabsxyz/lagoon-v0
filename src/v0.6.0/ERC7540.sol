@@ -383,7 +383,16 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @dev Unusable when paused. Protected by whenNotPaused.
     function cancelRequestDeposit() external whenNotPaused {
-        ERC7540Lib.cancelRequestDeposit();
+        ERC7540Lib.cancelRequestDeposit(msg.sender);
+    }
+
+    /// @dev Unusable when paused. Protected by whenNotPaused.
+    /// @notice Cancel a deposit request on behalf of a controller.
+    /// @param controller The controller, who owns the deposit request.
+    function cancelRequestDeposit(
+        address controller
+    ) external whenNotPaused onlyOperatorOrSuperOperator(controller) {
+        ERC7540Lib.cancelRequestDeposit(controller);
     }
 
     ///////////////////////////////
@@ -404,7 +413,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address owner
     ) internal returns (uint256) {
         // when the super operator requests a redeem, we don't check the whitelist
-        if (!RolesLib.isSuperOperator(msg.sender)) {
+        if (!RolesLib.isSuperOperator(controller, msg.sender)) {
             if (!isAllowed(owner)) revert AddressNotAllowed(owner);
             if (!isAllowed(controller)) revert AddressNotAllowed(controller);
             // operator must also be whitelisted

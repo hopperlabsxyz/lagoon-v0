@@ -84,15 +84,15 @@ contract TestSuperOperator is BaseTest {
 
         // When the controller is the protocolFeeReceiver, the super operator (safe)
         // must not be able to perform any of the privileged operations.
-        _callAllFunctionsExpectRevert(protocolFeeReceiver, address(0));
+        _callAllFunctionsExpectRevert(protocolFeeReceiver, address(0), superOperator.addr);
     }
 
     // since onlyOperator is called at the begining we can bulk test all functions that should revert
     function _callAllFunctionsExpectRevert(
         address controller,
-        address referral
+        address referral,
+        address operator
     ) public {
-        address operator = safe.addr;
         vm.prank(operator);
         vm.expectRevert(ERC7540InvalidOperator.selector);
         vault.requestDeposit(100, controller, controller);

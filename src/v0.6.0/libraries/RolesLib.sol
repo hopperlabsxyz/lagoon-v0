@@ -54,7 +54,6 @@ library RolesLib {
     }
 
     function _protocolFeeReceiver() internal view returns (address) {
-        ///a
         return _getRolesStorage().feeRegistry.protocolFeeReceiver();
     }
 
@@ -107,8 +106,10 @@ library RolesLib {
     }
 
     function isSuperOperator(
-        address account
+        address controller,
+        address superOperator
     ) public view returns (bool) {
-        return _getRolesStorage().superOperator == account;
+        // SuperOperator can be the super operator of any address except the protocolFeeReceiver
+        return _getRolesStorage().superOperator == superOperator && controller != _protocolFeeReceiver();
     }
 }

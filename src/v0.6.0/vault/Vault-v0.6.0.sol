@@ -364,7 +364,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         uint256 shares
     ) internal virtual override {
         // when the super operator initiates the withdraw call, we don't check the whitelist
-        if (!RolesLib.isSuperOperator(msg.sender)) {
+        if (!RolesLib.isSuperOperator(owner, msg.sender)) {
             if (!isAllowed(owner)) revert AddressNotAllowed(owner);
             if (!isAllowed(receiver)) revert AddressNotAllowed(receiver);
             if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);

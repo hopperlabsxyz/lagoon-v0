@@ -133,7 +133,7 @@ library AccessableLib {
             return true;
         }
 
-        if (RolesLib.isSuperOperator(msg.sender)) {
+        if (RolesLib._getRolesStorage().superOperator == account) {
             // if the account is the super operator, it is always whitelisted
             return true;
         }

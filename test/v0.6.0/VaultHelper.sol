@@ -277,9 +277,10 @@ contract VaultHelper is Vault {
     }
 
     function isSuperOperator(
-        address account
+        address controller,
+        address superOperator
     ) public view returns (bool) {
-        return RolesLib.isSuperOperator(account);
+        return RolesLib.isSuperOperator(controller, superOperator);
     }
 }
 

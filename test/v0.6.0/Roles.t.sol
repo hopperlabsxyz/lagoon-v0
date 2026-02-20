@@ -93,7 +93,7 @@ contract TestRoles is BaseTest {
 
     function test_updateSuperOperator() public {
         // initial super operator comes from SetUp.InitStruct.superOperator
-        assertTrue(vault.isSuperOperator(superOperator.addr));
+        assertTrue(vault.isSuperOperator(superOperator.addr, superOperator.addr));
 
         address oldSuperOperator = superOperator.addr;
         address newSuperOperator = address(0x42);
@@ -104,8 +104,8 @@ contract TestRoles is BaseTest {
         vm.prank(vault.owner());
         vault.updateSuperOperator(newSuperOperator);
 
-        assertFalse(vault.isSuperOperator(superOperator.addr));
-        assertTrue(vault.isSuperOperator(newSuperOperator));
+        assertFalse(vault.isSuperOperator(superOperator.addr, superOperator.addr));
+        assertTrue(vault.isSuperOperator(superOperator.addr, newSuperOperator));
     }
 
     function test_updateSecurityCouncil() public {

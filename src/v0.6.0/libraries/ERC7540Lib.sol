@@ -79,11 +79,9 @@ library ERC7540Lib {
 
     function _isSuperOperator(
         address controller,
-        address operator
+        address superOperator
     ) internal view returns (bool) {
-        // SuperOperator can be used only by the super operator and the target controller is not the protocolFeeReceiver
-        // external call to address(this): Vault(address(this)).safe() doesn't rely on msg.sender
-        return operator == Vault(address(this)).safe() && controller != RolesLib._protocolFeeReceiver();
+        return RolesLib.isSuperOperator(controller, superOperator);
     }
 
     function _onlyOperatorOrSuperOperator(
@@ -346,7 +344,7 @@ library ERC7540Lib {
         address controller
     ) public returns (uint256 shares) {
         // when the super operator initiates the deposit call, we don't check the whitelist
-        if (!RolesLib.isSuperOperator(msg.sender)) {
+        if (!RolesLib.isSuperOperator(controller, msg.sender)) {
             if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
             if (!AccessableLib.isAllowed(receiver)) revert AddressNotAllowed(receiver);
         }
@@ -377,7 +375,7 @@ library ERC7540Lib {
         address controller
     ) public returns (uint256 assets) {
         // when the super operator initiates the mint call, we don't check the whitelist
-        if (!RolesLib.isSuperOperator(msg.sender)) {
+        if (!RolesLib.isSuperOperator(controller, msg.sender)) {
             if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
             if (!AccessableLib.isAllowed(receiver)) revert AddressNotAllowed(receiver);
         }
@@ -402,21 +400,25 @@ library ERC7540Lib {
     /// @dev Unusable when paused. Protected by whenNotPaused.
     /// @notice Cancel a deposit request.
     /// @dev It can only be called in the same epoch.
-    function cancelRequestDeposit() public {
+    function cancelRequestDeposit(
+        address controller
+    ) public {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
-        if (!AccessableLib.isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
+        if (!RolesLib.isSuperOperator(controller, msg.sender) && !AccessableLib.isAllowed(controller)) {
+            revert AddressNotAllowed(controller);
+        }
 
-        uint40 requestId = $.lastDepositRequestId[msg.sender];
+        uint40 requestId = $.lastDepositRequestId[controller];
         if (requestId != $.depositEpochId) {
             revert RequestNotCancelable(requestId);
         }
 
-        uint256 requestedAmount = $.epochs[requestId].depositRequest[msg.sender];
-        $.epochs[requestId].depositRequest[msg.sender] = 0;
-        IERC20(asset()).safeTransferFrom(address($.pendingSilo), msg.sender, requestedAmount);
+        uint256 requestedAmount = $.epochs[requestId].depositRequest[controller];
+        $.epochs[requestId].depositRequest[controller] = 0;
+        IERC20(asset()).safeTransferFrom(address($.pendingSilo), controller, requestedAmount);
 
-        emit DepositRequestCanceled(requestId, msg.sender);
+        emit DepositRequestCanceled(requestId, controller);
     }
 
     ///////////////////////////////
@@ -434,7 +436,7 @@ library ERC7540Lib {
         address controller
     ) public returns (uint256 assets) {
         // when the super operator initiates the redeem call, we don't check the whitelist
-        if (!RolesLib.isSuperOperator(msg.sender)) {
+        if (!RolesLib.isSuperOperator(controller, msg.sender)) {
             if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
             if (!AccessableLib.isAllowed(receiver)) revert AddressNotAllowed(receiver);
         }
@@ -465,7 +467,7 @@ library ERC7540Lib {
         address controller
     ) public returns (uint256 shares) {
         // when the super operator initiates the redeem call, we don't check the whitelist
-        if (!RolesLib.isSuperOperator(msg.sender)) {
+        if (!RolesLib.isSuperOperator(controller, msg.sender)) {
             if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
             if (!AccessableLib.isAllowed(receiver)) revert AddressNotAllowed(receiver);
         }
