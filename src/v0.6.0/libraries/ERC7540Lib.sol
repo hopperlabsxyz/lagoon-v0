@@ -87,7 +87,7 @@ library ERC7540Lib {
     function _onlyOperatorOrSuperOperator(
         address controller
     ) internal view {
-        // Include safe as operator
+        // Include super operator
         if (controller != msg.sender && !_isOperatorOrSuperOperator(controller, msg.sender)) {
             revert ERC7540InvalidOperator();
         }
@@ -96,7 +96,7 @@ library ERC7540Lib {
     function _onlyOperator(
         address controller
     ) internal view {
-        // Exclude safe as operator
+        // Exclude super operator
         if (controller != msg.sender && !_isOperator(controller, msg.sender)) {
             revert ERC7540InvalidOperator();
         }
@@ -405,7 +405,7 @@ library ERC7540Lib {
     ) public {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
-        if (!RolesLib.isSuperOperator(controller, msg.sender) && !AccessableLib.isAllowed(controller)) {
+        if (!AccessableLib.isAllowed(controller)) {
             revert AddressNotAllowed(controller);
         }
 
