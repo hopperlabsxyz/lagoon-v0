@@ -240,4 +240,37 @@ contract TestMisc is BaseTest {
 
         assertEq(vault.newTotalAssets(), 1);
     }
+
+    function test_updateNameAndSymbol_onlyOwner() public {
+        // Record initial metadata
+        string memory initialName = vault.name();
+        string memory initialSymbol = vault.symbol();
+
+        // Non-owner cannot update name
+        vm.prank(user1.addr);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, user1.addr));
+        vault.updateName("New Name");
+
+        // Non-owner cannot update symbol
+        vm.prank(user1.addr);
+        vm.expectRevert(
+            abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, user1.addr, owner)
+        );
+        vault.updateSymbol("NEW");
+
+        // Owner can update name and symbol
+        address owner = vault.owner();
+        vm.startPrank(owner);
+        vault.updateName("New Name");
+        vault.updateSymbol("NEW");
+        vm.stopPrank();
+
+        // Metadata effectively updated
+        assertEq(vault.name(), "New Name");
+        assertEq(vault.symbol(), "NEW");
+
+        // Ensure we actually changed from the initial values (sanity check)
+        assertFalse(keccak256(abi.encode(initialName)) == keccak256(abi.encode(vault.name())));
+        assertFalse(keccak256(abi.encode(initialSymbol)) == keccak256(abi.encode(vault.symbol())));
+    }
 }
