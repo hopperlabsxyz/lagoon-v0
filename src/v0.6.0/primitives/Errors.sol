@@ -5,11 +5,11 @@ import {State} from "./Enums.sol";
 
 // ********************* VAULT ********************* //
 
-/// @notice Indicates that the vault is not Open. It's either Closing or Close.
+/// @notice Indicates that the vault is not Open. It's either Closing or Closed.
 /// @param currentState The current state of the vault.
 error NotOpen(State currentState);
 
-/// @notice Indicates that the vault is not in the process of closing. It's either Open or Close.
+/// @notice Indicates that the vault is not in the process of closing. It's either Open or Closed.
 /// @param currentState The current state of the vault.
 error NotClosing(State currentState);
 

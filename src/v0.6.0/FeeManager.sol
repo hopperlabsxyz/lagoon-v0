@@ -48,7 +48,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
     /// @param _registry the address of the fee registry contract
     /// @param _managementRate the management rate, expressed in BPS
     /// @param _performanceRate the performance rate, expressed in BPS
-    /// @param _decimals the number of decimals of the shares
+    /// @param _decimals the number of assets decimals
     /// @param _entryRate the entry fee rate, expressed in BPS
     /// @param _exitRate the exit fee rate, expressed in BPS
     /// @param _haircutRate the haircut fee rate, expressed in BPS

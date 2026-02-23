@@ -14,6 +14,7 @@ import {VaultInit} from "./VaultInit.sol";
 import {Accessable} from "../Accessable.sol";
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
+import {ERC20Lib} from "../libraries/ERC20Lib.sol";
 import {FeeLib} from "../libraries/FeeLib.sol";
 import {GuardrailsLib} from "../libraries/GuardrailsLib.sol";
 import {AccessMode, State} from "../primitives/Enums.sol";
@@ -36,6 +37,7 @@ import {GuardrailsManager} from "../GuardRailsManager.sol";
 
 import {GuardrailsLib} from "../libraries/GuardrailsLib.sol";
 import {DepositSync, HaircutTaken, Referral, StateUpdated, WithdrawSync} from "../primitives/Events.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -666,7 +668,33 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         return RolesLib._getRolesStorage().safe;
     }
 
+    /////////////////////////////
+    // ## METADATA FUNCTIONS ## //
+    /////////////////////////////
+
     function version() public pure returns (string memory) {
         return "v0.6.0";
+    }
+
+    /////////////////////////////
+    // ## ERC20 FUNCTIONS ## //
+    /////////////////////////////
+
+    /// @notice Updates the ERC20 name of the vault.
+    /// @param newName The new name to use for the vault token.
+    /// @dev Only the owner can call this function.
+    function updateName(
+        string memory newName
+    ) external onlyOwner {
+        ERC20Lib.updateName(newName);
+    }
+
+    /// @notice Updates the ERC20 symbol of the vault.
+    /// @param newSymbol The new symbol to use for the vault token.
+    /// @dev Only the owner can call this function.
+    function updateSymbol(
+        string memory newSymbol
+    ) external onlyOwner {
+        ERC20Lib.updateSymbol(newSymbol);
     }
 }

@@ -38,10 +38,6 @@ event SettleRedeem(
 
 // ********************* WHITELISTABLE ********************* //
 
-/// @notice Emitted when the Merkle tree root is updated.
-/// @param root The new Merkle tree root.
-event RootUpdated(bytes32 indexed root);
-
 /// @notice Emitted when a whitelist entry is updated.
 /// @param account The address of the account being updated.
 /// @param authorized Indicates whether the account is authorized (true) or not (false).
@@ -181,3 +177,15 @@ event WithdrawSync(
 /// @param oldGuardrails The old guardrails.
 /// @param newGuardrails The new guardrails.
 event GuardrailsUpdated(Guardrails oldGuardrails, Guardrails newGuardrails);
+
+// ********************* ERC20 ********************* //
+
+/// @notice Emitted when the name of the ERC20 token is updated.
+/// @param previousName The previous name of the ERC20 token.
+/// @param newName The new name of the ERC20 token.
+event NameUpdated(string previousName, string newName);
+
+/// @notice Emitted when the symbol of the ERC20 token is updated.
+/// @param previousSymbol The previous symbol of the ERC20 token.
+/// @param newSymbol The new symbol of the ERC20 token.
+event SymbolUpdated(string previousSymbol, string newSymbol);
