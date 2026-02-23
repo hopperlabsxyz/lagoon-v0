@@ -240,7 +240,15 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             if (!isAllowed(to)) revert AddressNotAllowed(to);
             if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         }
-        return ERC20Upgradeable.transferFrom(from, to, value);
+
+        // If the caller is not the super operator, we spend the allowance
+        if (!ERC7540Lib._isSuperOperator(from, msg.sender)) {
+            address spender = msg.sender;
+            _spendAllowance(from, spender, value);
+        }
+        _transfer(from, to, value);
+
+        return true;
     }
 
     ///////////////////
