@@ -407,6 +407,8 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
             address controller = controllers[i];
             uint256 claimable = claimableRedeemRequest(0, controller);
             if (claimable > 0) {
+                // we do not allow the claim of assets of a not allowed controller, even by the Safe.
+                if (!isAllowed(controller)) revert AddressNotAllowed(controller);
                 _redeem(claimable, controller, controller);
             }
         }

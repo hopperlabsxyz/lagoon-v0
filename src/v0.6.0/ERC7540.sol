@@ -222,8 +222,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 value
     ) public virtual override(ERC20Upgradeable, IERC20) returns (bool) {
         if (AccessableLib.isBlacklistMode()) {
-            if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
             if (!isAllowed(to)) revert AddressNotAllowed(to);
+            if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         }
         return ERC20Upgradeable.transfer(to, value);
     }
@@ -233,7 +233,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address to,
         uint256 value
     ) public virtual override(ERC20Upgradeable, IERC20) returns (bool) {
-        if (AccessableLib.isBlacklistMode()) {
+        // if the caller is not the super operator and the blacklist mode is active, we check if the from and to
+        // addresses are allowed
+        if (!ERC7540Lib._isSuperOperator(from, msg.sender) && AccessableLib.isBlacklistMode()) {
             if (!isAllowed(from)) revert AddressNotAllowed(from);
             if (!isAllowed(to)) revert AddressNotAllowed(to);
             if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);

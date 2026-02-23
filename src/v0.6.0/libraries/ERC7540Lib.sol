@@ -298,6 +298,7 @@ library ERC7540Lib {
     ) public returns (uint256) {
         if (!AccessableLib.isAllowed(owner)) revert AddressNotAllowed(owner);
         if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
+        if (!AccessableLib.isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
 
         _onlyUnderMaxCap(assets);
 
