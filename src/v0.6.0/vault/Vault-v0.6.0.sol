@@ -437,11 +437,11 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         uint256 lastFeeTime = FeeLib._getFeeManagerStorage().lastFeeTime;
         uint256 timePastSinceLastValuationUpdate = block.timestamp - lastFeeTime;
         // check that the new total assets respect the guardrails
-        if (lastFeeTime != 0 && timePastSinceLastValuationUpdate != 0) {
-            if (!GuardrailsManager.isCompliant(currentPps, nextPps, timePastSinceLastValuationUpdate)) {
-                revert GuardrailsViolation();
-            }
+        // for the first newTotalAssets update (lastFeeTime == 0), we do not check guardrails compliance.
+        if (lastFeeTime != 0 && !isCompliant(currentPps, nextPps, timePastSinceLastValuationUpdate)) {
+            revert GuardrailsViolation();
         }
+
         ERC7540Lib.updateNewTotalAssets(_newTotalAssets);
     }
 
