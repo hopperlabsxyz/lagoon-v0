@@ -26,6 +26,7 @@ import {
     NewTotalAssetsUpdated,
     SettleDeposit,
     SettleRedeem,
+    SyncRedeemAllowedSwitched,
     TotalAssetsLifespanUpdated,
     TotalAssetsUpdated
 } from "../primitives/Events.sol";
@@ -160,6 +161,12 @@ library ERC7540Lib {
         uint128 oldLifespan = $.totalAssetsLifespan;
         $.totalAssetsLifespan = lifespan;
         emit TotalAssetsLifespanUpdated(oldLifespan, lifespan);
+    }
+
+    function switchSyncRedeemAllowed() public {
+        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+        $.isSyncRedeemAllowed = !$.isSyncRedeemAllowed;
+        emit SyncRedeemAllowedSwitched($.isSyncRedeemAllowed);
     }
 
     function decimalsOffset() internal view returns (uint8) {
@@ -583,6 +590,10 @@ library ERC7540Lib {
     ) public view returns (uint16) {
         uint40 settleId = _getERC7540Storage().epochs[epochId].settleId;
         return _getERC7540Storage().settles[settleId].entryFeeRate;
+    }
+
+    function isSyncRedeemAllowed() public view returns (bool) {
+        return _getERC7540Storage().isSyncRedeemAllowed;
     }
 
     function supportsInterface(

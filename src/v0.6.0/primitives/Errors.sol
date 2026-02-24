@@ -67,6 +67,9 @@ error OnlySyncDepositAllowed();
 /// @notice Indicates that the max cap is reached.
 error MaxCapReached();
 
+/// @notice Indicates that sync redeem is not allowed.
+error SyncRedeemNotAllowed();
+
 // ********************* FEE MANAGER ********************* //
 
 /// @notice Indicates that the provided rate exceeds the maximum allowed rate.

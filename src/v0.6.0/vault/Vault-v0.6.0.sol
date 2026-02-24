@@ -97,6 +97,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         bool disable
     ) {
         init = new VaultInit(disable);
+        if (disable) _disableInitializers();
     }
 
     /// @notice Initializes the vault.
@@ -228,7 +229,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     function syncRedeem(
         uint256 shares,
         address receiver
-    ) public onlySyncDeposit onlyOpen returns (uint256 assets) {
+    ) public onlySyncDeposit onlyOpen onlySyncRedeemAllowed returns (uint256 assets) {
         if (!isWhitelisted(msg.sender)) revert NotWhitelisted();
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
 
@@ -512,6 +513,14 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         _giveUpSafePrivileges();
     }
 
+    ////////////////////////////////
+    // ## SYNC REDEEM ALLOWED ## //
+    ////////////////////////////////
+
+    function switchSyncRedeemAllowed() external onlySafe {
+        ERC7540Lib.switchSyncRedeemAllowed();
+    }
+
     /////////////////////////////
     // ## CLOSING FUNCTIONS ## //
     /////////////////////////////
@@ -552,7 +561,9 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
         ERC7540Lib._getERC7540Storage().totalAssetsExpiration = 0;
     }
 
-    // MAX FUNCTIONS OVERRIDE //
+    ////////////////////////////////
+    //   MAX FUNCTIONS OVERRIDE   //
+    ////////////////////////////////
 
     /// @notice Returns the maximum redeemable shares for a controller.
     /// @param controller The controller.
