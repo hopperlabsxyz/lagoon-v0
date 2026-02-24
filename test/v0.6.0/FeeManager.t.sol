@@ -187,7 +187,7 @@ contract TestFeeManager is BaseTest {
 
         assertApproxEqAbs(
             pricePerShare(),
-            45 * 10 ** (vault.underlyingDecimals() - 2),
+            425 * 10 ** (vault.underlyingDecimals() - 3),
             1,
             "price per share didn't decreased as expected"
         );
@@ -195,31 +195,32 @@ contract TestFeeManager is BaseTest {
         // Fee Calculations at Settlement:
         //
         // Entry Fees:
-        //   user1: 1     * 0.1 = 0.1     entry fee → worth 0.05     at settlement
-        //   user2: 1M    * 0.1 = 100K    entry fee → worth 100K     at settlement
+        //   user1: 1     * 0.1 = 0.1     entry fee → worth 0.0425    at settlement (PPS = 0.425)
+        //   user2: 1M    * 0.1 = 100K    entry fee → worth 100K      at settlement
         //
-        // Management Fees:
-        //   user1: 0.9   * 0.1 = 0.09    mgmt fee  → worth 0.045    at settlement
+        // Management Fees (using average of previous and current totalAssets):
+        //   avg(1, 0.5) * 0.1 = 0.075    mgmt fee  → worth 0.0675    at settlement (user1 share: 0.9/1.0)
         //
         // Fee Distribution:
-        //   Total fees    = 0.05 + 100K + 0.045 = 100,000.095
-        //   Manager fee   = 100,000.095 * 0.9   =  90,000.0855
-        //   Protocol fee  = 100,000.095 * 0.1   =  10,000.0095
+        //   Total fees    = 0.0425 + 100K + 0.0675 = 100,000.11
+        //   Manager fee   = 100,000.11 * 0.9      =  90,000.099
+        //   Protocol fee  = 100,000.11 * 0.1      =  10,000.011
         assertApproxEqAbs(
             vault.convertToAssets(vault.balanceOf(vault.feeReceiver())),
-            900_000_855 * 10 ** (vault.underlyingDecimals() - 4),
-            1,
+            900_000_990 * 10 ** (vault.underlyingDecimals() - 4),
+            10 ** (vault.underlyingDecimals() - 1),
             "feeReceiver received unexpected fee shares"
         );
-        assertEq(
+        assertApproxEqAbs(
             vault.convertToAssets(vault.balanceOf(vault.protocolFeeReceiver())),
-            100_000_095 * 10 ** (vault.underlyingDecimals() - 4),
+            100_000_110 * 10 ** (vault.underlyingDecimals() - 4),
+            10 ** (vault.underlyingDecimals() - 1),
             "protocol received unexpected fee shares"
         );
 
         // ------------ Settle ------------ //
         vm.warp(block.timestamp + 364 days);
-        // vault price per share will increase from 0.45 -> 1.8 (x4)
+        // vault price per share will increase from 0.425 -> ~1.7 (x4)
         newTotalAssets = 4_000_002 * 10 ** vault.underlyingDecimals();
         console.log("totalSupply before", vault.totalSupply());
         console.log("totalAssets before", vault.totalAssets());
@@ -231,16 +232,16 @@ contract TestFeeManager is BaseTest {
 
         // We expect the price per share to do be equal to:
         //
-        //      mFees = totalAssets * 0.1                                                    (~400_000.2$)
-        //      newPps = (totalAssets - mFees) / totalSupply                                 (~1.62000198$/share)
-        //      pFees = (newPps - hwm) * totalSupply * 0.2                                   (~275556.24$)
-        //      newShares = (mFees + pFees) * (totalSupply / (totalAssets - (mFees + pFees)))  (~451574.68 shares)
+        //      mFees = avg(previousTA, totalAssets) * 0.1                                   (~250_000.125$)
+        //      newPps = (totalAssets - mFees) / totalSupply                                 (~1.59375$/share)
+        //      pFees = (newPps - hwm) * totalSupply * 0.2                                   (~279_412$)
+        //      newShares = (mFees + pFees) * (totalSupply / (totalAssets - (mFees + pFees)))  (~358_923 shares)
         //
-        //      pps = totalAssets / (totalSupply + newShares) (~1.496)
+        //      pps = (totalAssets - totalFees) / totalSupply (~1.475)
         //
         assertApproxEqAbs(
             pricePerShare(),
-            1496 * 10 ** (vault.underlyingDecimals() - 3),
+            1475 * 10 ** (vault.underlyingDecimals() - 3),
             5, // rounding approximation
             "Price per share didn't increased as expected"
         );
@@ -316,16 +317,16 @@ contract TestFeeManager is BaseTest {
         // Initial deposit                    1.000000
         // Entry fees (10%)                  -0.100000  →  0.900000
         // -- 1 year gap --
-        // Management fees (10%)             -0.045000  →  0.405000  (0.450000 * 0.1 = 0.045000)
+        // Management fees (10%)             -0.067500  →  0.382500  (avg(1, 0.5)*0.1*0.9 = 0.067500)
         // -- 1 year gap --
-        // Management fees (10%)             -0.162000  →  1.458000  (1.620000 * 0.1 = 0.162000)
-        // Performance fees (20%)            -0.111600  →  1.346400  ((1.62 - 0.162 - 0.9) * 0.2)
+        // Management fees (10%)             -0.095625  →  1.434375  (avg(1M+0.5, 4M+2)*0.1*user1_share)
+        // Performance fees (20%)            -0.106875  →  1.327500  ((1.59375-1.0)*totalSupply*0.2*user1_share)
         // -- 1 year gap --
-        // Management fees (10%)             -0.134640  →  1.211760  (1.346400 * 0.1 = 0.134640)
-        // Exit fees (10%)                   -0.121176  →  1.090584  (1.211760 * 0.1 = 0.121176)
+        // Management fees (10%)             -0.132750  →  1.194750  (avg=same since prevTA=curTA=4M+2)
+        // Exit fees (10%)                   -0.119475  →  1.075275  (1.194750 * 0.1 = 0.119475)
         // ════════════════════════════════════════════════════════════════════════════════════════
-        // Final Position: 1.090584
-        uint256 expectedUser1Profit = 90_584 * 10 ** (vault.underlyingDecimals() - 6);
+        // Final Position: 1.075275
+        uint256 expectedUser1Profit = 75_275 * 10 ** (vault.underlyingDecimals() - 6);
 
         assertApproxEqAbs(user1Profit, expectedUser1Profit, 5, "user1 expected profit is wrong");
 
@@ -334,24 +335,24 @@ contract TestFeeManager is BaseTest {
         // Initial deposit                    1,000,000
         // Entry fees (10%)                    -100,000  →    900,000
         // -- 1 year gap --
-        // Management fees (10%)               -360,000  →  2,992,000  (3,600,000 * 0.1 = 360,000)
-        // Performance fees (20%)              -248,000  →  2,992,000  ((3,600,000 - 360,000 - 2,000,000) * 0.2)
+        // Management fees (10%)               -225,000  →  3,375,000  (avg(1M+0.5,4M+2)*0.1*user2_share)
+        // Performance fees (20%)              -251,471  →  3,123,529  ((1.59375-1.0)*totalSupply*0.2*user2_share)
         // -- 1 year gap --
-        // Management fees (10%)               -299,200  →  2,692,800  (2,992,000 * 0.1 = 299,200)
-        // Exit fees (10%)                     -269,280  →  2,423,520  (2,692,800 * 0.1 = 269,280)
+        // Management fees (10%)               -312,353  →  2,811,176  (avg=same since prevTA=curTA=4M+2)
+        // Exit fees (10%)                     -281,118  →  2,530,059  (2,811,176 * 0.1 = 281,118)
         // ════════════════════════════════════════════════════════════════════════════════════════
-        // Final Position: 2,423,520
-        uint256 expectedUser2Profit = 1_423_520 * 10 ** vault.underlyingDecimals();
+        // Final Position: 2,530,059
+        uint256 expectedUser2Profit = 1_530_059 * 10 ** vault.underlyingDecimals();
 
         assertApproxEqAbs(
             user2Profit, expectedUser2Profit, 10 ** (vault.underlyingDecimals() + 1), "user2 expected profit is wrong"
         );
 
         // expectedTotalFees = (totalAssets - (deposit1 + profit1 + deposit2 + profit2)) * (1 - exitFees)
-        //                   = (4_000_002 - (1 + 0.09584 + 1_000_000 + 1_423_520)) * 0.9
-        //                   = ~1_576_480.9$ * 0.9
-        //                   = ~1_418_832.81$
-        uint256 expectedTotalFees = 1_418_833_000 * 10 ** (vault.underlyingDecimals() - 3);
+        //                   = (4_000_002 - (1 + 0.075275 + 1_000_000 + 1_530_059)) * 0.9
+        //                   = ~1_469_942$ * 0.9
+        //                   = ~1_322_948$
+        uint256 expectedTotalFees = 1_322_948_000 * 10 ** (vault.underlyingDecimals() - 3);
 
         address feeReceiver = vault.feeReceiver();
         address dao = vault.protocolFeeReceiver();
@@ -361,7 +362,7 @@ contract TestFeeManager is BaseTest {
 
         assertApproxEqAbs(
             pricePerShare(),
-            13_464 * 10 ** (vault.underlyingDecimals() - 4),
+            13_275 * 10 ** (vault.underlyingDecimals() - 4),
             5, // rounding approximation
             "Price per share didn't decreased as expected"
         );
@@ -428,31 +429,31 @@ contract TestFeeManager is BaseTest {
         // User Position Evolution:
         // ════════════════════════════════════════════════════════════════════
         // Initial Investment      100.0
-        // Entry Fees (10%)       -10.0  →   90.0
-        // Valorisation (2x)       90.0  →  180.0
-        // Management Fees (10%)  -18.0  →  162.0
-        // Performance Fees (20%) -14.4  →  147.6
-        // Exit Fees (10%)        -14.76  →   132.84
+        // Entry Fees (10%)       -10.0   →   90.0
+        // Valorisation (2x)       90.0   →  180.0
+        // Management Fees (10%)  -13.5   →  166.5   (avg(200_000, 400_000) * 0.1 = 30_000, user share = 13_500)
+        // Performance Fees (20%) -15.3   →  151.2   ((1.85 - 1.0) * 200_000 * 0.2 = 34_000, user share = 15_300)
+        // Exit Fees (10%)        -15.12  →  136.08
         // ════════════════════════════════════════════════════════════════════
-        // Final Position: 132.84
-        uint256 user1Profit = 32_840 * 10 ** vault.underlyingDecimals();
-        uint256 user2Profit = 32_840 * 10 ** vault.underlyingDecimals();
+        // Final Position: 136.08
+        uint256 user1Profit = 36_080 * 10 ** vault.underlyingDecimals();
+        uint256 user2Profit = 36_080 * 10 ** vault.underlyingDecimals();
 
         // AM Position Evolution:
         // ════════════════════════════════════════════════════════════════════
         // Initial Investment      0
-        // User's Fees            +134.32 →  134.32
-        // Protocol Fees (10%)    -13.432  →  120.888
+        // User's Fees            +127.84  →  127.84
+        // Protocol Fees (10%)    -12.784  →  115.056
         // ════════════════════════════════════════════════════════════════════
-        // Final Position: 120.888
-        uint256 amProfit = vault.convertToShares(120_888 * 10 ** vault.underlyingDecimals());
+        // Final Position: 115.056
+        uint256 amProfit = vault.convertToShares(115_056 * 10 ** vault.underlyingDecimals());
         // Protocol Position Evolution:
         // ════════════════════════════════════════════════════════════════════
         // Initial Investment      0
-        // Protocol Fees (10%)    +13.432  →  13.432
+        // Protocol Fees (10%)    +12.784  →  12.784
         // ════════════════════════════════════════════════════════════════════
-        // Final Position: 13.432
-        uint256 daoProfit = vault.convertToShares(13_432 * 10 ** vault.underlyingDecimals());
+        // Final Position: 12.784
+        uint256 daoProfit = vault.convertToShares(12_784 * 10 ** vault.underlyingDecimals());
 
         assertApproxEqAbs(balance1After - balance1Before, user1Profit, 100_000, "unexpected balance 1");
         assertApproxEqAbs(balance2After - balance2Before, user2Profit, 100_000, "unexpected balance 2");
@@ -499,35 +500,35 @@ contract TestFeeManager is BaseTest {
         // User Position Evolution:
         // ════════════════════════════════════════════════════════════════════
         // Initial Investment      100.0
-        // Entry Fees (10%)       -10.0  →   90.0
-        // Valorisation (2x)       90.0  →  180.0
-        // Management Fees (10%)  -18.0  →  162.0
-        // Performance Fees (20%) -14.4  →  147.6
-        // Exit Fees (10%)        -14.76  →   132.84
+        // Entry Fees (10%)       -10.0   →   90.0
+        // Valorisation (2x)       90.0   →  180.0
+        // Management Fees (10%)  -13.5   →  166.5   (avg(200_000, 400_000) * 0.1 = 30_000, user share = 13_500)
+        // Performance Fees (20%) -15.3   →  151.2   ((1.85 - 1.0) * 200_000 * 0.2 = 34_000, user share = 15_300)
+        // Exit Fees (10%)        -15.12  →  136.08
         // ════════════════════════════════════════════════════════════════════
-        // Final Position: 132.84
-        uint256 user1Profit = 32_840 * 10 ** vault.underlyingDecimals();
-        uint256 user2Profit = 32_840 * 10 ** vault.underlyingDecimals();
+        // Final Position: 136.08
+        uint256 user1Profit = 36_080 * 10 ** vault.underlyingDecimals();
+        uint256 user2Profit = 36_080 * 10 ** vault.underlyingDecimals();
 
         // AM Position Evolution:
         // ════════════════════════════════════════════════════════════════════
         // Initial Investment      0
-        // User's Fees            +134.32 →  134.32
-        // Protocol Fees (10%)    -13.432  →  120.888
+        // User's Fees            +127.84  →  127.84
+        // Protocol Fees (10%)    -12.784  →  115.056
         // ════════════════════════════════════════════════════════════════════
-        // Final Position: 120.888
-        uint256 amProfit = vault.convertToShares(120_888 * 10 ** vault.underlyingDecimals());
+        // Final Position: 115.056
+        uint256 amProfit = vault.convertToShares(115_056 * 10 ** vault.underlyingDecimals());
         // Protocol Position Evolution:
         // ════════════════════════════════════════════════════════════════════
         // Initial Investment      0
-        // Protocol Fees (10%)    +13.432  →  13.432
+        // Protocol Fees (10%)    +12.784  →  12.784
         // ════════════════════════════════════════════════════════════════════
-        // Final Position: 13.432
-        uint256 daoProfit = vault.convertToShares(13_432 * 10 ** vault.underlyingDecimals());
+        // Final Position: 12.784
+        uint256 daoProfit = vault.convertToShares(12_784 * 10 ** vault.underlyingDecimals());
 
         assertApproxEqAbs(
             assetBalance(address(vault)),
-            134_320 * 10 ** vault.underlyingDecimals(),
+            127_840 * 10 ** vault.underlyingDecimals(),
             100_000,
             "wrong vault asset balance"
         );

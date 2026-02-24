@@ -159,18 +159,20 @@ library FeeLib {
     /// protocol fees
     /// @dev protocol shares are the fees that go to the protocol
     /// @param contextId the settleId for settlement fees (0 if not relevant)
+    /// @param _previousTotalAssets the previous total assets of the vault
     function takeManagementAndPerformanceFees(
-        uint40 contextId
+        uint40 contextId,
+        uint256 _previousTotalAssets
     ) public {
         FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
         uint16 managementRate = feeRates().managementRate;
         uint16 performanceRate = feeRates().performanceRate;
         uint256 _decimals = ERC7540(address(this)).decimals();
-
-        /// Management fee computation ///
-
         uint256 _totalAssets = ERC7540(address(this)).totalAssets();
-        uint256 managementFees = calculateManagementFee(_totalAssets, managementRate, block.timestamp - $.lastFeeTime);
+        /// Management fee computation ///
+        uint256 managementFees = calculateManagementFee(
+            (_totalAssets + _previousTotalAssets) / 2, managementRate, block.timestamp - $.lastFeeTime
+        );
 
         // by taking management fees the price per share decreases
         uint256 pricePerShare = (10 ** _decimals)
@@ -182,7 +184,6 @@ library FeeLib {
 
         /// Performance fee computation ///
 
-        uint256 _totalSupply = ERC7540(address(this)).totalSupply();
         uint256 performanceFees = calculatePerformanceFee(
             performanceRate, ERC7540(address(this)).totalSupply(), pricePerShare, $.highWaterMark, _decimals
         );
@@ -190,20 +191,20 @@ library FeeLib {
         // since we are minting shares without actually increasing the totalAssets, we need to compensate the future
         // dilution of price per share by virtually decreasing totalAssets in our computation
         uint256 managementShares = managementFees.mulDiv(
-            _totalSupply + 10 ** ERC7540Lib.decimalsOffset(),
+            ERC7540(address(this)).totalSupply() + 10 ** ERC7540Lib.decimalsOffset(),
             (_totalAssets - (managementFees + performanceFees)) + 1,
             Math.Rounding.Ceil
         );
 
         uint256 performanceShares = performanceFees.mulDiv(
-            _totalSupply + 10 ** ERC7540Lib.decimalsOffset(),
+            ERC7540(address(this)).totalSupply() + 10 ** ERC7540Lib.decimalsOffset(),
             (_totalAssets - (managementFees + performanceFees)) + 1,
             Math.Rounding.Ceil
         );
 
         takeFees(managementShares, FeeType.Management, managementRate, contextId);
         takeFees(performanceShares, FeeType.Performance, performanceRate, contextId);
-        pricePerShare = ERC7540(address(this)).convertToAssets(10 ** ERC7540(address(this)).decimals());
+        pricePerShare = ERC7540(address(this)).convertToAssets(10 ** _decimals);
         setHighWaterMark(pricePerShare);
 
         $.lastFeeTime = block.timestamp;
