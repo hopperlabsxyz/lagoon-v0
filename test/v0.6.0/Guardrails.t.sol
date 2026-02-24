@@ -32,6 +32,9 @@ contract TestGuardrails is BaseTest {
         updateAndSettle(0);
         vm.warp(block.timestamp + 12);
 
+        vm.prank(vault.securityCouncil());
+        vault.updateActivated(true);
+
         Guardrails memory guardrails =
             Guardrails({upperRate: ratePerYearToBips(1), lowerRate: negRatePerYearToBips(-2)});
 
@@ -65,5 +68,27 @@ contract TestGuardrails is BaseTest {
         vm.prank(vault.securityCouncil());
         vm.expectRevert(abi.encodeWithSelector(LowerRateCannotBeInt256Min.selector));
         vault.updateGuardrails(guardrails);
+    }
+
+    function test_isUpdateNewTotalAssetsFails_whenSettlementHappenedInSameBlock() public {
+        dealAndApproveAndWhitelist(user1.addr);
+        uint256 amount = assetBalance(user1.addr);
+        requestDeposit(amount, user1.addr);
+        updateAndSettle(0);
+
+        Guardrails memory guardrails =
+            Guardrails({upperRate: ratePerYearToBips(100), lowerRate: negRatePerYearToBips(-100)});
+
+        vm.prank(vault.securityCouncil());
+        vault.updateGuardrails(guardrails);
+
+        vm.prank(vault.securityCouncil());
+        vault.updateActivated(true);
+        vm.warp(block.timestamp + 1 days);
+        updateAndSettle(amount);
+
+        vm.prank(vault.valuationManager());
+        vm.expectRevert();
+        vault.updateNewTotalAssets(amount);
     }
 }

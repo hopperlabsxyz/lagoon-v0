@@ -181,6 +181,10 @@ event WithdrawSync(
 /// @param newGuardrails The new guardrails.
 event GuardrailsUpdated(Guardrails oldGuardrails, Guardrails newGuardrails);
 
+/// @notice Emitted when the activated status of the guardrails is updated.
+/// @param activated The new activated status.
+event GuardrailsStatusUpdated(bool activated);
+
 // ********************* ERC20 ********************* //
 
 /// @notice Emitted when the name of the ERC20 token is updated.

@@ -3,8 +3,9 @@ pragma solidity 0.8.26;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+import {GuardrailsManager} from "../GuardRailsManager.sol";
 import {LowerRateCannotBeInt256Min} from "../primitives/Errors.sol";
-import {GuardrailsUpdated} from "../primitives/Events.sol";
+import {GuardrailsStatusUpdated, GuardrailsUpdated} from "../primitives/Events.sol";
 import {Guardrails} from "../primitives/Struct.sol";
 using Math for uint256;
 
@@ -13,12 +14,6 @@ library GuardrailsLib {
     uint256 public constant ONE_YEAR = 31_556_952 seconds;
     // scale to avoid loss of precision
     uint256 public constant SCALE = 1e18;
-
-    /// @custom:storage-definition erc7201:hopper.storage.GuardrailsManager
-    /// @param guardrails The current guardrails.
-    struct GuardrailsManagerStorage {
-        Guardrails guardrails;
-    }
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.GuardrailsManager")) - 1)) & ~bytes32(uint256(0xff));
     /// @custom:storage-location erc7201:hopper.storage.GuardrailsManager
@@ -31,7 +26,7 @@ library GuardrailsLib {
     function _getGuardrailsManagerStorage()
         internal
         pure
-        returns (GuardrailsManagerStorage storage _guardrailsManagerStorage)
+        returns (GuardrailsManager.GuardrailsManagerStorage storage _guardrailsManagerStorage)
     {
         // solhint-disable-next-line no-inline-assembly
         assembly {
@@ -64,8 +59,8 @@ library GuardrailsLib {
                 return upperRate >= variation;
             }
 
-            // if the lower rate is positive, we need to check if the variation is greater than the lower rate
-            // and less than the upper rate
+            // we know that the lower rate is positive, we need to check if the variation is greater than the lower rate
+            // and less than the upper rate.
             return upperRate >= variation && variation >= uint256(lowerRate);
         } else {
             // we know that the variation is negative
@@ -76,11 +71,14 @@ library GuardrailsLib {
                 return false;
             }
 
-            // even if pps is decreasing, we compute the variation as a positive integer to avoid types conversions
-            // errors. a - b / b <=> -(b - a) / b
+            // Since the variation is negative and in order to limit type conversions
+            // we make the variation positive by doing the opposite substraction.
+            // -1 * (a - b) / b  <=> (-a + b) / b <=> (b - a) / b
             uint256 variation = (currentPps - nextPps) * scaleToOneYear * SCALE / currentPps;
             // since variation is > 0, we have to inverse the check.
             // -10 >= -15 <=> 10 <= 15
+            // we ultimately do only one type conversion for lowerRate.
+            // This conversion is the reason why lowerRate can't be int256Min.
             return variation <= uint256(-lowerRate);
         }
     }
@@ -90,11 +88,21 @@ library GuardrailsLib {
     function updateGuardrails(
         Guardrails memory guardrails_
     ) external {
-        GuardrailsManagerStorage storage $ = _getGuardrailsManagerStorage();
+        GuardrailsManager.GuardrailsManagerStorage storage $ = _getGuardrailsManagerStorage();
         if (guardrails_.lowerRate == type(int256).min) {
             revert LowerRateCannotBeInt256Min();
         }
         emit GuardrailsUpdated($.guardrails, guardrails_);
         $.guardrails = guardrails_;
+    }
+
+    /// @notice Updates the active status of the guardrails.
+    /// @param activated_ The new active status.
+    function updateActivated(
+        bool activated_
+    ) external {
+        GuardrailsManager.GuardrailsManagerStorage storage $ = _getGuardrailsManagerStorage();
+        $.activated = activated_;
+        emit GuardrailsStatusUpdated($.activated);
     }
 }
