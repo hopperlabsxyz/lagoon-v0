@@ -653,7 +653,7 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     function previewSyncRedeem(
         uint256 shares
     ) public view returns (uint256 assets) {
-        if (paused() || !isTotalAssetsValid()) return 0;
+        if (paused() || !isTotalAssetsValid() || !ERC7540Lib.isSyncRedeemAllowed()) return 0;
         uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
         uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, FeeLib.feeRates().haircutRate);
         assets = _convertToAssets(shares - exitFeeShares - haircutShares, Math.Rounding.Floor);
