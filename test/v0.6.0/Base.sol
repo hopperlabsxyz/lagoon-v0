@@ -553,6 +553,46 @@ contract BaseTest is Test, SetUp {
         vault.revokeFromWhitelist(users);
     }
 
+    function blacklist(
+        address user
+    ) public {
+        address[] memory users = new address[](1);
+        users[0] = user;
+        vm.prank(vault.whitelistManager());
+        vault.addToBlacklist(users);
+        assertFalse(vault.isAllowed(user));
+    }
+
+    function blacklist(
+        address[] memory users
+    ) public {
+        vm.prank(vault.whitelistManager());
+        vault.addToBlacklist(users);
+        for (uint256 i = 0; i < users.length; i++) {
+            assertFalse(vault.isAllowed(users[i]));
+        }
+    }
+
+    function unblacklist(
+        address user
+    ) public {
+        address[] memory users = new address[](1);
+        users[0] = user;
+        vm.prank(vault.whitelistManager());
+        vault.revokeFromBlacklist(users);
+        assertTrue(vault.isAllowed(user));
+    }
+
+    function unblacklist(
+        address[] memory users
+    ) public {
+        vm.prank(vault.whitelistManager());
+        vault.revokeFromBlacklist(users);
+        for (uint256 i = 0; i < users.length; i++) {
+            assertTrue(vault.isAllowed(users[i]));
+        }
+    }
+
     function updateRates(
         Rates memory newRates
     ) public {

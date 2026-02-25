@@ -9,6 +9,9 @@ contract testRateUpdates is BaseTest {
     uint16 public constant MAX_MANAGEMENT_RATE = 1000; // 10 %
     uint16 public constant MAX_PERFORMANCE_RATE = 5000; // 50 %
     uint16 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
+    uint16 public constant MAX_ENTRY_RATE = 1000; // 10 %
+    uint16 public constant MAX_EXIT_RATE = 1000; // 10 %
+    uint16 public constant MAX_HAIRCUT_RATE = 1000; // 10 %
 
     function test_ratesShouldMatchValuesAtInit() public {
         uint16 protocolRate = 100;
@@ -123,6 +126,37 @@ contract testRateUpdates is BaseTest {
             Rates({managementRate: 300, performanceRate: 300, entryRate: 0, exitRate: 0, haircutRate: 0});
         vm.prank(vault.owner());
         vm.expectRevert(Closed.selector);
+        vault.updateRates(newRates);
+    }
+
+    function test_updateRatesOverMaxEntryRateShouldRevert() public {
+        setUpVault(100, 200, 2000);
+
+        Rates memory newRates =
+            Rates({managementRate: 0, performanceRate: 0, entryRate: MAX_ENTRY_RATE + 1, exitRate: 0, haircutRate: 0});
+        vm.startPrank(vault.owner());
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_ENTRY_RATE));
+        vault.updateRates(newRates);
+    }
+
+    function test_updateRatesOverMaxExitRateShouldRevert() public {
+        setUpVault(100, 200, 2000);
+
+        Rates memory newRates =
+            Rates({managementRate: 0, performanceRate: 0, entryRate: 0, exitRate: MAX_EXIT_RATE + 1, haircutRate: 0});
+        vm.startPrank(vault.owner());
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_EXIT_RATE));
+        vault.updateRates(newRates);
+    }
+
+    function test_updateRatesOverMaxHaircutRateShouldRevert() public {
+        setUpVault(100, 200, 2000);
+
+        Rates memory newRates = Rates({
+            managementRate: 0, performanceRate: 0, entryRate: 0, exitRate: 0, haircutRate: MAX_HAIRCUT_RATE + 1
+        });
+        vm.startPrank(vault.owner());
+        vm.expectRevert(abi.encodeWithSelector(AboveMaxRate.selector, MAX_HAIRCUT_RATE));
         vault.updateRates(newRates);
     }
 }

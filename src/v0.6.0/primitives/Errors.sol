@@ -99,8 +99,9 @@ error OnlySecurityCouncil(address securityCouncil);
 
 // ********************* WHITELISTABLE ********************* //
 
-/// @notice Indicates that the caller is not whitelisted.
-error NotWhitelisted();
+/// @notice Indicates that the address is not allowed to do the operation.
+/// @param _address The address that is not allowed to do the operation.
+error AddressNotAllowed(address _address);
 
 // ********************* GUARDRAILS ********************* //
 

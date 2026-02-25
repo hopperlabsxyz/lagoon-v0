@@ -64,6 +64,7 @@ This document specifies how whitelist / blacklist modes affect user permissions 
     - the **controller** is **not whitelisted**
     - and the **operator** is not the `superOperator` or the **operator** is not whitelisted.
   - **Effect**: Non‑whitelisted users are **fully frozen** for these operations (cannot deposit, redeem, withdraw, etc.), except via `superOperator`.
+  - Note: the `superOperator` can't be used for *requestDeposit*, *syncDeposit*, *syncRedeem*, *claimSharesAndRequestRedeem* operations.
 
 
 ---
@@ -94,6 +95,58 @@ In both blacklist and whitelist modes, the `superOperator` has extended capabili
 
 - **superOperator** can be used for **cancelRequestDeposit** operations except if the user is blacklisted or not whitelisted.
 
+<<<<<<< HEAD:Accessable-and-superOperator-specs.md
+=======
+### 1. Blacklisted vs not whitelisted
+
+- In **whitelist mode**, there is **no blacklist**; addresses are only “whitelisted” or “not whitelisted”.
+- In **blacklist mode**, only the blacklist matters; a blacklisted user:
+  - cannot send or receive transfers as a regular user,
+  - but **can** still be operated on by the `superOperator` (including transfers and operations).
+
+### 2. Transfer behaviour per mode
+
+- **Whitelist mode**:
+  - Transfers are allowed **from and to any address**, regardless of whitelist status.
+  - Non‑whitelisted users can freely **send and receive transfers**, but cannot perform the restricted operations.
+- **Blacklist mode**:
+  - Regular users cannot transfer from or to a blacklisted address.
+  - The `superOperator` can transfer **from and to any address**, including blacklisted.
+
+### 3. Roles checked (owner / controller / operator / msg.sender)
+
+- Compliance checks are based on **owner** and **controller** and **operator**:
+  - Functions **MUST REVERT** if **owner** or **controller** is not allowed (blacklisted in blacklist mode, not whitelisted in whitelist mode).
+  - Functions **MUST REVERT** if **operator** is not allowed (blacklisted in blacklist mode, not whitelisted in whitelist mode) and the **operator** is not the `superOperator`.
+
+
+### 4. Directionality / freezing
+
+- In both modes, for non‑superOperator calls:
+  - Disallowed users (blacklisted in blacklist mode, not whitelisted in whitelist mode) are **fully frozen**:
+    - cannot deposit, mint, redeem, withdraw, transfer, cancel, claim, or sync.
+  - The only exception path is via `superOperator`, which may operate on their positions under the rules above.
+
+### 5. Sync / claim when status changes
+
+- If an owner or controller becomes **not allowed** after a position is created:
+  - `syncDeposit`, `syncRedeem`, `claimAndRequest...` and similar functions **MUST REVERT** for regular callers.
+  - The `superOperator` may still act on these positions (including unwind / sync) as part of its privileged role.
+
+### 6. Delegated / controller behaviour
+
+- If a delegate / controller is **blacklisted** (in blacklist mode) or **not whitelisted** (in whitelist mode):
+  - Operations **MUST REVERT** unless `msg.sender` is the `superOperator`.
+  - This holds even if the owner is allowed; the controller itself must be allowed, or the call must go through `superOperator`.
+
+### 7. Events and revert reasons
+
+- All reverts caused by whitelist / blacklist logic:
+  - **MUST** specify **which address** is not allowed (owner or controller),
+  - SHOULD distinguish the reason (e.g. “AddressNotAllowed(address)” vs “Blacklisted(address)”),
+
+---
+>>>>>>> feat/v0.6.0:WHITELIST_BLACKLIST_SPEC.md
 
 ## Summary of Behaviour
 

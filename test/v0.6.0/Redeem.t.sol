@@ -64,6 +64,7 @@ contract TestRedeem is BaseTest {
         requestRedeem(shares, user1.addr);
         updateAndSettle(userBalance);
 
+        whitelist(user2.addr);
         vm.prank(user1.addr);
         vault.setOperator(user2.addr, true);
 

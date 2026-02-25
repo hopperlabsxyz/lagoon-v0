@@ -5,10 +5,13 @@ import {Silo} from "./Silo.sol";
 import {IERC7540Deposit} from "./interfaces/IERC7540Deposit.sol";
 import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IWETH9} from "./interfaces/IWETH9.sol";
+import {AccessableLib} from "./libraries/AccessableLib.sol";
 import {ERC7540Lib} from "./libraries/ERC7540Lib.sol";
 import {FeeLib} from "./libraries/FeeLib.sol";
+import {RolesLib} from "./libraries/RolesLib.sol";
 import {State} from "./primitives/Enums.sol";
 import {
+    AddressNotAllowed,
     CantDepositNativeToken,
     ERC7540InvalidOperator,
     ERC7540PreviewDepositDisabled,
@@ -26,7 +29,6 @@ import {
 import {
     DepositRequestCanceled,
     DepositSync,
-    GaveUpSafePrivileges,
     MaxCapUpdated,
     NewTotalAssetsUpdated,
     PreMint,
@@ -96,7 +98,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint128 totalAssetsLifespan;
         // New variables introduce with v0.6.0
         uint256 maxCap;
-        bool gaveUpSafePrivileges;
         bool isSyncRedeemAllowed;
     }
 
@@ -226,6 +227,40 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return ERC20PausableUpgradeable._update(from, to, value);
     }
 
+    function transfer(
+        address to,
+        uint256 value
+    ) public virtual override(ERC20Upgradeable, IERC20) returns (bool) {
+        if (AccessableLib.isBlacklistMode()) {
+            if (!isAllowed(to)) revert AddressNotAllowed(to);
+            if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
+        }
+        return ERC20Upgradeable.transfer(to, value);
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) public virtual override(ERC20Upgradeable, IERC20) returns (bool) {
+        // if the caller is not the super operator and the blacklist mode is active, we check if the from and to
+        // addresses are allowed
+        if (!ERC7540Lib._isSuperOperator(from, msg.sender) && AccessableLib.isBlacklistMode()) {
+            if (!isAllowed(from)) revert AddressNotAllowed(from);
+            if (!isAllowed(to)) revert AddressNotAllowed(to);
+            if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
+        }
+
+        // If the caller is not the super operator, we spend the allowance
+        if (!ERC7540Lib._isSuperOperator(from, msg.sender)) {
+            address spender = msg.sender;
+            _spendAllowance(from, spender, value);
+        }
+        _transfer(from, to, value);
+
+        return true;
+    }
+
     ///////////////////
     // ## EIP7540 ## //
     ///////////////////
@@ -290,9 +325,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     function _requestDeposit(
         uint256 assets,
         address controller,
-        address owner
+        address owner,
+        address referral
     ) internal returns (uint256) {
-        return ERC7540Lib._requestDeposit(assets, controller, owner);
+        return ERC7540Lib._requestDeposit(assets, controller, owner, referral);
     }
 
     /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _transfer function.
@@ -367,7 +403,16 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @dev Unusable when paused. Protected by whenNotPaused.
     function cancelRequestDeposit() external whenNotPaused {
-        ERC7540Lib.cancelRequestDeposit();
+        ERC7540Lib.cancelRequestDeposit(msg.sender);
+    }
+
+    /// @dev Unusable when paused. Protected by whenNotPaused.
+    /// @notice Cancel a deposit request on behalf of a controller.
+    /// @param controller The controller, who owns the deposit request.
+    function cancelRequestDeposit(
+        address controller
+    ) external whenNotPaused onlyOperatorOrSuperOperator(controller) {
+        ERC7540Lib.cancelRequestDeposit(controller);
     }
 
     ///////////////////////////////
@@ -387,6 +432,15 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address controller,
         address owner
     ) internal returns (uint256) {
+        // when the super operator requests a redeem, we don't check the whitelist
+        if (!RolesLib.isSuperOperator(controller, msg.sender)) {
+            if (!isAllowed(owner)) revert AddressNotAllowed(owner);
+            if (!isAllowed(controller)) revert AddressNotAllowed(controller);
+            // operator must also be whitelisted
+            if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
+        }
+
+        // if the caller is not an operator we use its allowance
         if (msg.sender != owner && !isOperatorOrSuperOperator(owner, msg.sender)) {
             _spendAllowance(owner, msg.sender, shares);
         }
@@ -469,12 +523,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
         emit MaxCapUpdated({previousMaxCap: $.maxCap, maxCap: _maxCap});
         $.maxCap = _maxCap;
-    }
-
-    function _giveUpSafePrivileges() internal {
-        ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
-        $.gaveUpSafePrivileges = true;
-        emit GaveUpSafePrivileges();
     }
 
     //////////////////////////
@@ -596,4 +644,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     ) public virtual;
 
     function safe() public view virtual returns (address);
+
+    function isAllowed(
+        address account
+    ) public view virtual returns (bool);
 }
