@@ -3,15 +3,17 @@ pragma solidity 0.8.26;
 
 import {Roles} from "./Roles.sol";
 import {SanctionsList} from "./interfaces/SanctionsList.sol";
+import {AccessableLib} from "./libraries/AccessableLib.sol";
 import {RolesLib} from "./libraries/RolesLib.sol";
-import {WhitelistableLib} from "./libraries/WhitelistableLib.sol";
 import {AccessMode} from "./primitives/Enums.sol";
 
-abstract contract Whitelistable is Roles {
+abstract contract Accessable is Roles {
     /// @custom:storage-definition erc7201:hopper.storage.Whitelistable
     /// @param isWhitelisted The mapping of whitelisted addresses.
     /// @param accessMode The current access mode (whitelist or blacklist).
-    struct WhitelistableStorage {
+    /// @param isBlacklisted The mapping of blacklisted addresses.
+    /// @param externalSanctionList The external sanctions list.
+    struct AccessableStorage {
         mapping(address => bool) isWhitelisted;
         // in v0.6.0, we replace the bool isActivated with a enum AccessMode
         // bool isActivated; --> AccessMode accessMode;
@@ -24,35 +26,35 @@ abstract contract Whitelistable is Roles {
     /// @dev Initializes the whitelist.
     /// @param accessMode the access mode of the whitelist.
     // solhint-disable-next-line func-name-mixedcase
-    function __Whitelistable_init(
+    function __Accessable_init(
         AccessMode accessMode,
         address externalSanctionsList
     ) internal onlyInitializing {
-        WhitelistableLib.switchAccessMode(accessMode);
-        WhitelistableLib.setExternalSanctionsList(SanctionsList(externalSanctionsList));
+        AccessableLib.switchAccessMode(accessMode);
+        AccessableLib.setExternalSanctionsList(SanctionsList(externalSanctionsList));
     }
 
     function switchAccessMode(
         AccessMode newMode
     ) public onlyOwner {
-        WhitelistableLib.switchAccessMode(newMode);
+        AccessableLib.switchAccessMode(newMode);
     }
 
     /// @notice Checks if an account is whitelisted or blacklisted
     /// @dev In v0.6.0, this function is extended to also enforce blacklist checks.
     /// @param account The address of the account to check
     /// @return True if the account is whitelisted or not blacklisted, false otherwise
-    function isWhitelisted(
+    function isAllowed(
         address account
-    ) public view returns (bool) {
-        return WhitelistableLib.isWhitelisted(account);
+    ) public view virtual returns (bool) {
+        return AccessableLib.isAllowed(account);
     }
 
     /// @notice Adds multiple accounts to the whitelist
     function addToWhitelist(
         address[] memory accounts
     ) external onlyWhitelistManager {
-        WhitelistableLib.addToWhitelist(accounts);
+        AccessableLib.addToWhitelist(accounts);
     }
 
     /// @notice Removes multiple accounts from the whitelist
@@ -60,28 +62,28 @@ abstract contract Whitelistable is Roles {
     function revokeFromWhitelist(
         address[] memory accounts
     ) external onlyWhitelistManager {
-        WhitelistableLib.revokeFromWhitelist(accounts);
+        AccessableLib.revokeFromWhitelist(accounts);
     }
 
     /// @notice Adds multiple accounts to the blacklist
     function addToBlacklist(
         address[] memory accounts
     ) external onlyWhitelistManager {
-        WhitelistableLib.addToBlacklist(accounts);
+        AccessableLib.addToBlacklist(accounts);
     }
 
     /// @notice Removes multiple accounts from the blacklist
     function revokeFromBlacklist(
         address[] memory accounts
     ) external onlyWhitelistManager {
-        WhitelistableLib.revokeFromBlacklist(accounts);
+        AccessableLib.revokeFromBlacklist(accounts);
     }
 
     /// @notice Sets the external sanctions list
     function setExternalSanctionsList(
         SanctionsList sanctionsList
     ) external onlyWhitelistManager {
-        WhitelistableLib.setExternalSanctionsList(sanctionsList);
+        AccessableLib.setExternalSanctionsList(sanctionsList);
     }
 }
 
@@ -132,12 +134,10 @@ abstract contract Whitelistable is Roles {
 // Note: The actual mapping data is stored at keccak256(key . slot)
 
 // Upgrades scenario:
-// we upgrade the whitelistable contract from v0.5.0 to v0.6.0
+// we upgrade the whitelistable contract from <v0.6.0 to v0.6.0
 // 1) isActivated is 0 (deactivated)
 //   1.1) accessMode is 0 (blacklist)
 // --> vault remains as accessible as before the upgrade
-//     if the admin wants to disable the blacklist, he can call the disableWhitelist function
 // 2) isActivated is 1 (activated)
 //   2.1) accessMode is 1 (whitelist)
 // --> vault remains in whitelist mode
-//     if the admin wants to disable the whitelist, he can call the disableWhitelist function

@@ -142,7 +142,7 @@ contract TestSyncDeposit is BaseTest {
     function test_syncDeposit_whitelist() public {
         dealAndApproveAndWhitelist(user1.addr);
 
-        vm.expectRevert(NotWhitelisted.selector);
+        vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user2.addr));
         vm.prank(user2.addr);
         vault.syncDeposit(1, user2.addr, address(0));
     }

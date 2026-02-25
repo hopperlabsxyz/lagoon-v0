@@ -63,6 +63,7 @@ This document specifies how whitelist / blacklist modes affect user permissions 
     - the **controller** is **not whitelisted**
     - and the **operator** is not the `superOperator` or the **operator** is not whitelisted.
   - **Effect**: Non‑whitelisted users are **fully frozen** for these operations (cannot deposit, redeem, withdraw, etc.), except via `superOperator`.
+  - Note: the `superOperator` can't be used for *requestDeposit*, *syncDeposit*, *syncRedeem*, *claimSharesAndRequestRedeem* operations.
 
 ---
 
@@ -115,7 +116,7 @@ The following points capture the clarified design decisions based on the questio
 - Compliance checks are based on **owner** and **controller** and **operator**:
   - Functions **MUST REVERT** if **owner** or **controller** is not allowed (blacklisted in blacklist mode, not whitelisted in whitelist mode).
   - Functions **MUST REVERT** if **operator** is not allowed (blacklisted in blacklist mode, not whitelisted in whitelist mode) and the **operator** is not the `superOperator`.
-- The `msg.sender` role is handled via access control (e.g. `msg.sender` must equal owner or controller or be `superOperator`), but **does not introduce extra allowlist/blacklist checks** beyond owner/controller.
+
 
 ### 4. Directionality / freezing
 
@@ -140,7 +141,7 @@ The following points capture the clarified design decisions based on the questio
 
 - All reverts caused by whitelist / blacklist logic:
   - **MUST** specify **which address** is not allowed (owner or controller),
-  - SHOULD distinguish the reason (e.g. “NotWhitelisted(address)” vs “Blacklisted(address)”),
+  - SHOULD distinguish the reason (e.g. “AddressNotAllowed(address)” vs “Blacklisted(address)”),
 
 ---
 

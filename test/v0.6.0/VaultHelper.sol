@@ -5,8 +5,9 @@ import "forge-std/Test.sol";
 
 import "@src/v0.6.0/ERC7540.sol";
 import "@src/v0.6.0/FeeManager.sol";
+import "@src/v0.6.0/libraries/AccessableLib.sol";
 import "@src/v0.6.0/libraries/FeeLib.sol";
-import "@src/v0.6.0/libraries/WhitelistableLib.sol";
+import "@src/v0.6.0/libraries/RolesLib.sol";
 import "@src/v0.6.0/primitives/Errors.sol";
 import "@src/v0.6.0/primitives/Events.sol";
 import "@src/v0.6.0/primitives/Struct.sol";
@@ -38,11 +39,11 @@ contract VaultHelper is Vault {
     /// @notice Returns if the whitelist is activated
     /// @return True if the whitelist is activated, false otherwise
     function isWhitelistActivated() public view returns (bool) {
-        return WhitelistableLib._getWhitelistableStorage().accessMode == AccessMode.Whitelist;
+        return AccessableLib._getAccessableStorage().accessMode == AccessMode.Whitelist;
     }
 
     function isBlacklistActivated() public view returns (bool) {
-        return WhitelistableLib._getWhitelistableStorage().accessMode == AccessMode.Blacklist;
+        return AccessableLib._getAccessableStorage().accessMode == AccessMode.Blacklist;
     }
 
     function totalAssets(
@@ -167,7 +168,7 @@ contract VaultHelper is Vault {
     }
 
     function activateWhitelist() public {
-        WhitelistableLib._getWhitelistableStorage().accessMode = AccessMode.Whitelist;
+        AccessableLib._getAccessableStorage().accessMode = AccessMode.Whitelist;
     }
 
     function protocolFeeReceiver() public view returns (address) {
@@ -199,10 +200,6 @@ contract VaultHelper is Vault {
     /// @notice value of the high water mark, the highest price per share ever reached
     function highWaterMark() public view returns (uint256) {
         return FeeLib._getFeeManagerStorage().highWaterMark;
-    }
-
-    function gaveUpSafePrivileges() public view returns (bool) {
-        return ERC7540Lib._getERC7540Storage().gaveUpSafePrivileges;
     }
 
     function pendingDeposit(
@@ -266,4 +263,24 @@ contract VaultHelper is Vault {
     function guardrails() public view returns (Guardrails memory) {
         return GuardrailsLib._getGuardrailsManagerStorage().guardrails;
     }
+
+    function accessMode() public view returns (AccessMode) {
+        return AccessableLib._getAccessableStorage().accessMode;
+    }
+
+    function isBlacklistMode() public view returns (bool) {
+        return accessMode() == AccessMode.Blacklist;
+    }
+
+    function isWhitelistMode() public view returns (bool) {
+        return accessMode() == AccessMode.Whitelist;
+    }
+
+    function isSuperOperator(
+        address controller,
+        address superOperator
+    ) public view returns (bool) {
+        return RolesLib.isSuperOperator(controller, superOperator);
+    }
 }
+

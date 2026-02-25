@@ -23,6 +23,7 @@ contract TestRoles is BaseTest {
 
     function test_protocolFeeReceiver() public view {
         assertEq(vault.protocolFeeReceiver(), dao.addr);
+        assertEq(protocolRegistry.protocolFeeReceiver(), dao.addr);
     }
 
     function test_safe() public view {
@@ -90,19 +91,37 @@ contract TestRoles is BaseTest {
         vault.updateSafe(newSafe);
     }
 
-    // function test_giveUpSafeUpgradeability_onlyOwner() public {
-    //     vm.prank(vault.owner());
-    //     vault.giveUpSafeUpgradeability();
+    function test_updateSuperOperator() public {
+        // initial super operator comes from SetUp.InitStruct.superOperator
+        assertTrue(vault.isSuperOperator(superOperator.addr, superOperator.addr));
 
-    //     assertTrue(vault.gaveUpSafeUpgradeability());
+        address oldSuperOperator = superOperator.addr;
+        address newSuperOperator = address(0x42);
 
-    //     vm.prank(vault.owner());
-    //     vm.expectRevert(abi.encodeWithSelector(SafeUpgradeabilityNotAllowed.selector));
-    //     vault.updateSafe(address(0x43));
-    // }
+        vm.expectEmit(true, true, true, true);
+        emit SuperOperatorUpdated(oldSuperOperator, newSuperOperator);
 
-    // function test_giveUpSafeUpgradeability_notOwner() public {
-    //     vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector,
-    // address(this))); vault.giveUpSafeUpgradeability();
-    // }
+        vm.prank(vault.owner());
+        vault.updateSuperOperator(newSuperOperator);
+
+        assertFalse(vault.isSuperOperator(superOperator.addr, superOperator.addr));
+        assertTrue(vault.isSuperOperator(superOperator.addr, newSuperOperator));
+    }
+
+    function test_updateSecurityCouncil() public {
+        // initial security council comes from SetUp.InitStruct.securityCouncil
+        assertEq(vault.securityCouncil(), admin.addr);
+
+        address oldSecurityCouncil = admin.addr;
+        address newSecurityCouncil = address(0x42);
+
+        vm.expectEmit(true, true, true, true);
+        emit SecurityCouncilUpdated(oldSecurityCouncil, newSecurityCouncil);
+
+        vm.prank(vault.owner());
+        vault.updateSecurityCouncil(newSecurityCouncil);
+
+        assertEq(vault.securityCouncil(), newSecurityCouncil);
+        assertNotEq(vault.securityCouncil(), oldSecurityCouncil);
+    }
 }

@@ -104,4 +104,12 @@ library RolesLib {
         emit SuperOperatorUpdated($.superOperator, _superOperator);
         $.superOperator = _superOperator;
     }
+
+    function isSuperOperator(
+        address controller,
+        address superOperator
+    ) public view returns (bool) {
+        // SuperOperator can be the super operator of any address except the protocolFeeReceiver
+        return _getRolesStorage().superOperator == superOperator && controller != _protocolFeeReceiver();
+    }
 }
