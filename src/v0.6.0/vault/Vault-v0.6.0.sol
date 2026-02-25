@@ -97,6 +97,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         bool disable
     ) {
         init = new VaultInit(disable);
+        if (disable) _disableInitializers();
     }
 
     /// @notice Initializes the vault.
@@ -225,7 +226,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     function syncRedeem(
         uint256 shares,
         address receiver
-    ) public onlySyncDeposit onlyOpen returns (uint256 assets) {
+    ) public onlySyncDeposit onlyOpen onlySyncRedeemAllowed returns (uint256 assets) {
         if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         if (!isAllowed(receiver)) revert AddressNotAllowed(receiver);
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
@@ -521,6 +522,16 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         _updateMaxCap(_maxCap);
     }
 
+    ////////////////////////////////
+    // ## SYNC REDEEM ALLOWED ## //
+    ////////////////////////////////
+
+    function setIsSyncRedeemAllowed(
+        bool _isAllowed
+    ) external onlySafe {
+        ERC7540Lib.setIsSyncRedeemAllowed(_isAllowed);
+    }
+
     /////////////////////////////
     // ## CLOSING FUNCTIONS ## //
     /////////////////////////////
@@ -561,7 +572,9 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         ERC7540Lib._getERC7540Storage().totalAssetsExpiration = 0;
     }
 
-    // MAX FUNCTIONS OVERRIDE //
+    ////////////////////////////////
+    //   MAX FUNCTIONS OVERRIDE   //
+    ////////////////////////////////
 
     /// @notice Returns the maximum redeemable shares for a controller.
     /// @param controller The controller.
@@ -649,7 +662,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     function previewSyncRedeem(
         uint256 shares
     ) public view returns (uint256 assets) {
-        if (paused() || !isTotalAssetsValid()) return 0;
+        if (paused() || !isTotalAssetsValid() || !ERC7540Lib.isSyncRedeemAllowed()) return 0;
         uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
         uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, FeeLib.feeRates().haircutRate);
         assets = _convertToAssets(shares - exitFeeShares - haircutShares, Math.Rounding.Floor);

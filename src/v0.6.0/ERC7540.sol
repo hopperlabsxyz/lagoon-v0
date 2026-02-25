@@ -23,6 +23,7 @@ import {
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
     RequestNotCancelable,
+    SyncRedeemNotAllowed,
     WrongNewTotalAssets
 } from "./primitives/Errors.sol";
 import {
@@ -30,6 +31,7 @@ import {
     DepositSync,
     MaxCapUpdated,
     NewTotalAssetsUpdated,
+    PreMint,
     SettleDeposit,
     SettleRedeem,
     TotalAssetsLifespanUpdated,
@@ -96,6 +98,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint128 totalAssetsLifespan;
         // New variables introduce with v0.6.0
         uint256 maxCap;
+        bool isSyncRedeemAllowed;
     }
 
     /// @notice Initializes the ERC7540 contract.
@@ -152,6 +155,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
         // ERC20 mint function
         _mint(receiver, shares);
+        emit PreMint(msg.sender, receiver, assets, shares);
         emit DepositSync(msg.sender, receiver, assets, shares);
     }
 
@@ -174,6 +178,12 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address controller
     ) {
         ERC7540Lib._onlyOperator(controller);
+        _;
+    }
+
+    /// @notice Make sure sync redeem is allowed.
+    modifier onlySyncRedeemAllowed() {
+        if (!ERC7540Lib.isSyncRedeemAllowed()) revert SyncRedeemNotAllowed();
         _;
     }
 
@@ -466,6 +476,11 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return ERC7540Lib._redeem(shares, receiver, controller);
     }
 
+    /// @notice Withdraw assets from the vault.
+    /// @param assets The amount of assets to withdraw.
+    /// @param receiver The receiver of the assets.
+    /// @param controller The controller, who owns the withdraw request.
+    /// @return shares The corresponding shares.
     function _withdraw(
         uint256 assets,
         address receiver,
@@ -474,18 +489,30 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return ERC7540Lib._withdraw(assets, receiver, controller);
     }
 
+    ////////////////////////////////////
+    // ## FORGE AND VOID FUNCTIONS ## //
+    ////////////////////////////////////
+
+    /// @notice Forges shares to the receiver. This function is used to allow a mint shares from a library function.
+    /// @param to The receiver of the shares.
+    /// @param shares The amount of shares to forge.
     function forge(
         address to,
         uint256 shares
     ) external {
+        // only the vault can mint shares
         require(msg.sender == address(this));
         _mint(to, shares);
     }
 
+    /// @notice Burns shares from the from address. This function is used to allow a burn shares from a library
+    /// function. @param from The address from which the shares will be burned.
+    /// @param shares The amount of shares to burn.
     function void(
         address from,
         uint256 shares
     ) external {
+        // only the vault can burn shares
         require(msg.sender == address(this));
         _burn(from, shares);
     }

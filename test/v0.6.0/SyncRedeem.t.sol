@@ -28,6 +28,8 @@ contract TestSyncRedeem is BaseTest {
         vault.updateTotalAssetsLifespan(1000);
         updateAndSettle(0);
         vm.warp(block.timestamp + 1);
+        vm.prank(vault.safe());
+        vault.setIsSyncRedeemAllowed(true);
     }
 
     function test_syncRedeem_simple() public {
@@ -177,6 +179,8 @@ contract TestSyncRedeem is BaseTest {
         vm.prank(vault.safe());
         vault.updateTotalAssetsLifespan(1000);
         updateAndSettle(0);
+        vm.prank(vault.safe());
+        vault.setIsSyncRedeemAllowed(true);
 
         // Deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
@@ -217,6 +221,8 @@ contract TestSyncRedeem is BaseTest {
     function test_syncRedeem_haircutShares_burned() public {
         // Set up vault with haircut rate but no exit fee
         setUpVault(0, 0, 0, 0, 0);
+        vm.prank(vault.safe());
+        vault.setIsSyncRedeemAllowed(true);
 
         // Update rates to set haircut rate
         Rates memory newRates =
@@ -266,6 +272,8 @@ contract TestSyncRedeem is BaseTest {
         vm.prank(vault.safe());
         vault.updateTotalAssetsLifespan(1000);
         updateAndSettle(0);
+        vm.prank(vault.safe());
+        vault.setIsSyncRedeemAllowed(true);
 
         // Deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
@@ -299,6 +307,8 @@ contract TestSyncRedeem is BaseTest {
     function test_syncRedeem_pps_increases_when_haircut_non_zero() public {
         // Set up vault with haircut rate but no exit fee
         setUpVault(0, 0, 0, 0, 0);
+        vm.prank(vault.safe());
+        vault.setIsSyncRedeemAllowed(true);
 
         // Update rates to set haircut rate
         Rates memory newRates =
@@ -410,5 +420,14 @@ contract TestSyncRedeem is BaseTest {
         );
         vm.prank(user1.addr);
         vault.syncRedeem(sharesToRedeem, user1.addr);
+    }
+
+    function test_syncRedeem_notAllowed() public {
+        vm.prank(vault.safe());
+        vault.setIsSyncRedeemAllowed(false);
+
+        vm.expectRevert(SyncRedeemNotAllowed.selector);
+        vm.prank(user1.addr);
+        vault.syncRedeem(1, user1.addr);
     }
 }

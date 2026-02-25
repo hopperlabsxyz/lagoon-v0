@@ -145,6 +145,13 @@ event DepositRequestCanceled(uint256 indexed requestId, address indexed controll
 /// @param newLifespan The new lifespan.
 event TotalAssetsLifespanUpdated(uint128 oldLifespan, uint128 newLifespan);
 
+/// @notice Emitted when shares are pre-minted during vault initialization.
+/// @param sender The address that sent the assets to the vault.
+/// @param receiver The address that receives the pre-minted shares.
+/// @param assets The amount of assets corresponding to the pre-mint.
+/// @param shares The amount of shares pre-minted to the receiver.
+event PreMint(address indexed sender, address indexed receiver, uint256 assets, uint256 shares);
+
 /// @notice Same as a 4626 Deposit event
 /// @param sender The address who gave its assets
 /// @param owner The receiver of the shares
@@ -193,3 +200,7 @@ event NameUpdated(string previousName, string newName);
 /// @param previousSymbol The previous symbol of the ERC20 token.
 /// @param newSymbol The new symbol of the ERC20 token.
 event SymbolUpdated(string previousSymbol, string newSymbol);
+
+/// @notice Emitted when the sync redeem allowed is switched.
+/// @param isSyncRedeemAllowed The new sync redeem allowed status.
+event SyncRedeemAllowedSwitched(bool isSyncRedeemAllowed);
