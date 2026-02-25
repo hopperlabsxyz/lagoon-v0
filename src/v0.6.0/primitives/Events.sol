@@ -146,10 +146,11 @@ event DepositRequestCanceled(uint256 indexed requestId, address indexed controll
 event TotalAssetsLifespanUpdated(uint128 oldLifespan, uint128 newLifespan);
 
 /// @notice Emitted when shares are pre-minted during vault initialization.
+/// @param sender The address that sent the assets to the vault.
 /// @param receiver The address that receives the pre-minted shares.
 /// @param assets The amount of assets corresponding to the pre-mint.
 /// @param shares The amount of shares pre-minted to the receiver.
-event PreMint(address indexed receiver, uint256 assets, uint256 shares);
+event PreMint(address indexed sender, address indexed receiver, uint256 assets, uint256 shares);
 
 /// @notice Same as a 4626 Deposit event
 /// @param sender The address who gave its assets

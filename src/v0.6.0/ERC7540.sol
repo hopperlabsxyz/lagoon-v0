@@ -154,7 +154,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
         // ERC20 mint function
         _mint(receiver, shares);
-        emit PreMint(receiver, assets, shares);
+        emit PreMint(msg.sender, receiver, assets, shares);
         emit DepositSync(msg.sender, receiver, assets, shares);
     }
 
