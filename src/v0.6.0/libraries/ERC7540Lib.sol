@@ -163,10 +163,12 @@ library ERC7540Lib {
         emit TotalAssetsLifespanUpdated(oldLifespan, lifespan);
     }
 
-    function switchSyncRedeemAllowed() public {
+    function setIsSyncRedeemAllowed(
+        bool isAllowed
+    ) public {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
-        $.isSyncRedeemAllowed = !$.isSyncRedeemAllowed;
-        emit SyncRedeemAllowedSwitched($.isSyncRedeemAllowed);
+        $.isSyncRedeemAllowed = isAllowed;
+        emit SyncRedeemAllowedSwitched(isAllowed);
     }
 
     function decimalsOffset() internal view returns (uint8) {

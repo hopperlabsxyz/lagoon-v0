@@ -517,8 +517,10 @@ contract Vault is ERC7540, Whitelistable, FeeManager, GuardrailsManager {
     // ## SYNC REDEEM ALLOWED ## //
     ////////////////////////////////
 
-    function switchSyncRedeemAllowed() external onlySafe {
-        ERC7540Lib.switchSyncRedeemAllowed();
+    function setIsSyncRedeemAllowed(
+        bool isAllowed
+    ) external onlySafe {
+        ERC7540Lib.setIsSyncRedeemAllowed(isAllowed);
     }
 
     /////////////////////////////

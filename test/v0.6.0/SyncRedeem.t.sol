@@ -29,7 +29,7 @@ contract TestSyncRedeem is BaseTest {
         updateAndSettle(0);
         vm.warp(block.timestamp + 1);
         vm.prank(vault.safe());
-        vault.switchSyncRedeemAllowed();
+        vault.setIsSyncRedeemAllowed(true);
     }
 
     function test_syncRedeem_simple() public {
@@ -180,7 +180,7 @@ contract TestSyncRedeem is BaseTest {
         vault.updateTotalAssetsLifespan(1000);
         updateAndSettle(0);
         vm.prank(vault.safe());
-        vault.switchSyncRedeemAllowed();
+        vault.setIsSyncRedeemAllowed(true);
 
         // Deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
@@ -222,7 +222,7 @@ contract TestSyncRedeem is BaseTest {
         // Set up vault with haircut rate but no exit fee
         setUpVault(0, 0, 0, 0, 0);
         vm.prank(vault.safe());
-        vault.switchSyncRedeemAllowed();
+        vault.setIsSyncRedeemAllowed(true);
 
         // Update rates to set haircut rate
         Rates memory newRates =
@@ -273,7 +273,7 @@ contract TestSyncRedeem is BaseTest {
         vault.updateTotalAssetsLifespan(1000);
         updateAndSettle(0);
         vm.prank(vault.safe());
-        vault.switchSyncRedeemAllowed();
+        vault.setIsSyncRedeemAllowed(true);
 
         // Deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
@@ -308,7 +308,7 @@ contract TestSyncRedeem is BaseTest {
         // Set up vault with haircut rate but no exit fee
         setUpVault(0, 0, 0, 0, 0);
         vm.prank(vault.safe());
-        vault.switchSyncRedeemAllowed();
+        vault.setIsSyncRedeemAllowed(true);
 
         // Update rates to set haircut rate
         Rates memory newRates =
@@ -424,7 +424,7 @@ contract TestSyncRedeem is BaseTest {
 
     function test_syncRedeem_notAllowed() public {
         vm.prank(vault.safe());
-        vault.switchSyncRedeemAllowed();
+        vault.setIsSyncRedeemAllowed(false);
 
         vm.expectRevert(SyncRedeemNotAllowed.selector);
         vm.prank(user1.addr);
