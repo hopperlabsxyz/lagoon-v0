@@ -30,6 +30,8 @@ contract TestMint is BaseTest {
     }
 
     function test_mintAsOperator() public {
+        whitelist(user2.addr);
+
         uint256 userBalance = assetBalance(user1.addr);
 
         requestDeposit(userBalance, user1.addr);

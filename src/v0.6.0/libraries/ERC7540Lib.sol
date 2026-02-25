@@ -348,6 +348,7 @@ library ERC7540Lib {
         if (!RolesLib.isSuperOperator(controller, msg.sender)) {
             if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
             if (!AccessableLib.isAllowed(receiver)) revert AddressNotAllowed(receiver);
+            if (!AccessableLib.isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         }
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -379,6 +380,7 @@ library ERC7540Lib {
         if (!RolesLib.isSuperOperator(controller, msg.sender)) {
             if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
             if (!AccessableLib.isAllowed(receiver)) revert AddressNotAllowed(receiver);
+            if (!AccessableLib.isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         }
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -440,6 +442,7 @@ library ERC7540Lib {
         if (!RolesLib.isSuperOperator(controller, msg.sender)) {
             if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
             if (!AccessableLib.isAllowed(receiver)) revert AddressNotAllowed(receiver);
+            if (!AccessableLib.isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         }
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
@@ -471,6 +474,7 @@ library ERC7540Lib {
         if (!RolesLib.isSuperOperator(controller, msg.sender)) {
             if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
             if (!AccessableLib.isAllowed(receiver)) revert AddressNotAllowed(receiver);
+            if (!AccessableLib.isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         }
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 

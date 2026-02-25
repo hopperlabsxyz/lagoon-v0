@@ -311,7 +311,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
                     revert ERC7540InvalidOperator();
                 }
                 // operator must be whitelisted
-                if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
+                // if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
             }
             return _withdraw(assets, receiver, controller); // async
         }
@@ -346,7 +346,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
                     revert ERC7540InvalidOperator();
                 }
                 // operator must be whitelisted
-                if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
+                // if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
             }
             return _redeem(shares, receiver, controller);
         }
