@@ -23,7 +23,7 @@ src
 ├── protocol
 │   ├── Events.sol
 │   └── FeeRegistry.sol
-└── v0.5.0
+└── v0.5.1
     ├── ERC7540.sol
     ├── FeeManager.sol
     ├── Roles.sol
@@ -64,7 +64,7 @@ forge build
 ## How to test
 
 ```bash
-forge test --match-path "./test/v0.5.0/**/*.sol"
+forge test --match-path "./test/v0.5.1/**/*.sol"
 ```
 
 ## How to deploy
@@ -122,7 +122,7 @@ You can create one using the [safe-cli](https://github.com/safe-global/safe-cli)
 Pull the image from Github packages.
 
 ```
-docker pull --platform linux/x86_64 ghcr.io/hopperlabsxyz/lagoon-v0:v0.5.0
+docker pull --platform linux/x86_64 ghcr.io/hopperlabsxyz/lagoon-v0:v0.5.1
 ```
 
 Make sure to be logged in with your docker cli

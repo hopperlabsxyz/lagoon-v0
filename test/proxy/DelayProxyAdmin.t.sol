@@ -177,7 +177,7 @@ contract DelayProxyAdminTest is Test {
         TestImplementation2 upgraded = TestImplementation2(address(proxy));
         upgraded.setValue(50);
         assertEq(upgraded.value(), 50); // Initial value preserved
-            // assertEq(proxyAdmin.implementation(), address(impl2));
+        // assertEq(proxyAdmin.implementation(), address(impl2));
     }
 
     function test_UpgradeAndCall_ResetsImplementation() public {
@@ -213,6 +213,22 @@ contract DelayProxyAdminTest is Test {
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(DelayProxyAdmin.DelayIsNotOver.selector));
         proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(0x456)), newImplementation, "");
+    }
+
+    function test_UpgradeAndCall_RevertsIfImplementationInconsistent() public {
+        address submittedImplementation = address(0x123);
+        address wrongImplementation = address(0x456);
+
+        vm.prank(owner);
+        proxyAdmin.submitImplementation(submittedImplementation);
+
+        vm.warp(block.timestamp + initialDelay + 1);
+
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(DelayProxyAdmin.ImplementationInconsistent.selector, submittedImplementation)
+        );
+        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(0x789)), wrongImplementation, "");
     }
 
     function test_UpgradeAndCall_RevertsIfCallTwiceInRaw() public {

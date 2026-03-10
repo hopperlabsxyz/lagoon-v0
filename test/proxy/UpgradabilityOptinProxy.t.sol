@@ -22,7 +22,7 @@ import {ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {InitStruct} from "@src/protocol-v2/OptinProxyFactory.sol";
 import {Vault as Vault4} from "@src/v0.4.0/Vault.sol";
-import {Vault as Vault5} from "@src/v0.5.0/Vault.sol";
+import {Vault as Vault5} from "@src/v0.5.1/Vault.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {console} from "forge-std/console.sol";
 
@@ -129,7 +129,7 @@ contract Upgradable is Test {
         vm.warp(block.timestamp + 2 days);
         vm.prank(adminContract.owner());
         adminContract.upgradeAndCall(ITransparentUpgradeableProxy(vault), v5, "");
-        assertEq(Vault5(vault).version(), "v0.5.0");
+        assertEq(Vault5(vault).version(), "v0.5.1");
 
         // we try to update contract to a not approve contract, it reverts
         address notApproved = address(new Vault5(false));

@@ -11,7 +11,7 @@ import {OptinProxyFactory} from "@src/protocol-v2/OptinProxyFactory.sol";
 import {LogicRegistry, ProtocolRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 import {Script, console} from "forge-std/Script.sol";
 
-// import {Vault} from "../src/v0.5.0/Vault.sol";
+// import {Vault} from "../src/v0.5.1/Vault.sol";
 
 import {BatchScript} from "../tools/BatchScript.sol";
 import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";

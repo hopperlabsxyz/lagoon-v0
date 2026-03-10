@@ -17,7 +17,7 @@ contract DelayProxyAdmin is ProxyAdmin {
     error DelayTooHigh(uint256 maxDelay);
 
     ///@notice The implemenation to update to must the one submitted previously.
-    error ImplenentationInconsistent(address expected);
+    error ImplementationInconsistent(address expected);
 
     /// @notice The `newImplementation` address will be enforcable at `implementationUpdateTime`
     event ImplementationUpdateSubmited(address indexed newImplementation, uint256 implementationUpdateTime);
@@ -130,11 +130,14 @@ contract DelayProxyAdmin is ProxyAdmin {
     /// - If `data` is empty, `msg.value` must be zero.
     function upgradeAndCall(
         ITransparentUpgradeableProxy proxy,
-        address,
+        address _newImplementation,
         bytes memory data
     ) public payable override onlyOwner {
         if (block.timestamp < implementationUpdateTime) {
             revert DelayIsNotOver();
+        }
+        if (_newImplementation != newImplementation) {
+            revert ImplementationInconsistent(newImplementation);
         }
         proxy.upgradeToAndCall{value: msg.value}(newImplementation, data);
         newImplementation = address(0);
