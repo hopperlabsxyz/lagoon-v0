@@ -115,5 +115,40 @@ contract TestMaxCap is BaseTest {
         vm.prank(user2.addr);
         vault.syncDeposit(syncAmount, user2.addr, address(0));
     }
+
+    /// @notice requestDeposit with native ETH should respect maxCap
+    function test_requestDeposit_withEth_revertWhenOverMaxCap() public {
+        if (!underlyingIsNativeToken) return;
+
+        // set maxCap to 0 so any positive native deposit should revert
+        vm.prank(vault.safe());
+        vault.updateMaxCap(0);
+
+        vm.deal(user1.addr, 1 ether);
+        vm.prank(user1.addr);
+        vm.expectRevert(MaxCapReached.selector);
+        // pass assets=0 while sending native ETH; the effective deposit amount is msg.value
+        vault.requestDeposit{value: 1 ether}(0, user1.addr, user1.addr);
+    }
+
+    /// @notice syncDeposit with native ETH should respect maxCap
+    function test_syncDeposit_withEth_revertWhenOverMaxCap() public {
+        if (!underlyingIsNativeToken) return;
+
+        // enable syncDeposit
+        vm.prank(vault.safe());
+        vault.updateTotalAssetsLifespan(1000);
+        updateAndSettle(0);
+
+        // set maxCap to 0 so any positive native deposit should revert
+        vm.prank(vault.safe());
+        vault.updateMaxCap(0);
+
+        vm.deal(user1.addr, 1 ether);
+        vm.prank(user1.addr);
+        vm.expectRevert(MaxCapReached.selector);
+        // pass assets=0 while sending native ETH; the effective deposit amount is msg.value
+        vault.syncDeposit{value: 1 ether}(0, user1.addr, address(0));
+    }
 }
 

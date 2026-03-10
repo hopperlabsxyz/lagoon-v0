@@ -309,8 +309,6 @@ library ERC7540Lib {
         if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
         if (!AccessableLib.isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
 
-        _onlyUnderMaxCap(assets);
-
         uint256 claimable = claimableDepositRequest(0, controller);
         if (claimable > 0) _deposit(claimable, controller, controller);
 
@@ -326,12 +324,15 @@ library ERC7540Lib {
         if (msg.value != 0) {
             // if user sends eth and the underlying is wETH we will wrap it for him
             if (asset() == address($.wrappedNativeToken)) {
+                // enforce maxCap against the actual amount of native assets being deposited
+                _onlyUnderMaxCap(msg.value);
                 $.pendingSilo.depositEth{value: msg.value}();
                 assets = msg.value;
             } else {
                 revert CantDepositNativeToken();
             }
         } else {
+            _onlyUnderMaxCap(assets);
             IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
         }
         $.epochs[_depositId].depositRequest[controller] += assets;
