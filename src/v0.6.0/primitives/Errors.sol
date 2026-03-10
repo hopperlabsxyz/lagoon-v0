@@ -76,6 +76,9 @@ error SyncRedeemNotAllowed();
 /// @param maxRate The maximum allowable rate.
 error AboveMaxRate(uint256 maxRate);
 
+/// @notice Indicates that high water mark reset is not allowed for this vault.
+error HighWaterMarkResetNotAllowed();
+
 // ********************* ROLES ********************* //
 
 /// @notice Indicates that the caller is not a safe address.

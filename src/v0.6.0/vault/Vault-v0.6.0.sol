@@ -64,6 +64,7 @@ using Math for uint256;
 /// @param securityCouncil The address of the security council.
 /// @param externalSanctionsList The address of the external sanctions list.
 /// @param initialTotalAssets The initial total assets of the vault. It is used to ease vault migrations.
+/// @param allowHighWaterMarkReset Whether the safe can reset the high water mark to current price per share.
 struct InitStruct {
     IERC20 underlying;
     string name;
@@ -84,6 +85,7 @@ struct InitStruct {
     address externalSanctionsList;
     uint256 initialTotalAssets;
     address superOperator;
+    bool allowHighWaterMarkReset;
 }
 
 /// @custom:oz-upgrades-from src/v0.5.0/Vault.sol:Vault
@@ -570,6 +572,12 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
 
     function expireTotalAssets() public onlySafe {
         ERC7540Lib._getERC7540Storage().totalAssetsExpiration = 0;
+    }
+
+    /// @notice Resets the high water mark to the current price per share.
+    /// @dev Can only be called by the safe and only if allowHighWaterMarkReset was set to true at initialization.
+    function resetHighWaterMark() external onlySafe {
+        FeeLib.resetHighWaterMark();
     }
 
     ////////////////////////////////

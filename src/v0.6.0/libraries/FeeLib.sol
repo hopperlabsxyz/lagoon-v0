@@ -6,7 +6,7 @@ import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
 import {ERC7540Lib} from "../libraries/ERC7540Lib.sol";
 import {FeeType} from "../primitives/Enums.sol";
-import {AboveMaxRate} from "../primitives/Errors.sol";
+import {AboveMaxRate, HighWaterMarkResetNotAllowed, OnlySafe} from "../primitives/Errors.sol";
 import {FeeTaken, HighWaterMarkUpdated, RatesUpdated} from "../primitives/Events.sol";
 import {RatesUpdated} from "../primitives/Events.sol";
 import {Rates} from "../primitives/Struct.sol";
@@ -120,6 +120,26 @@ library FeeLib {
             emit HighWaterMarkUpdated(_highWaterMark, _newHighWaterMark);
             $.highWaterMark = _newHighWaterMark;
         }
+    }
+
+    /// @dev Reset the high water mark to the current price per share
+    /// @dev Can only be called by the safe and only if allowHighWaterMarkReset was set to true at initialization
+    function resetHighWaterMark() public {
+        FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
+
+        // Check if reset is allowed
+        if (!$.allowHighWaterMarkReset) {
+            revert HighWaterMarkResetNotAllowed();
+        }
+
+        // Get current price per share
+        uint256 _decimals = ERC7540(address(this)).decimals();
+        uint256 currentPricePerShare = ERC7540(address(this)).convertToAssets(10 ** _decimals);
+
+        // Reset high water mark to current price per share
+        uint256 _highWaterMark = $.highWaterMark;
+        emit HighWaterMarkUpdated(_highWaterMark, currentPricePerShare);
+        $.highWaterMark = currentPricePerShare;
     }
 
     /// @notice Take the fees by minting the manager and protocol shares
