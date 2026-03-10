@@ -46,7 +46,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 using SafeERC20 for IERC20;
 using Math for uint256;
 
-/// @custom:storage-definition erc7201:hopper.storage.vault
+/// @notice Initialization parameters for the vault.
 /// @param underlying The address of the underlying asset.
 /// @param name The name of the vault and by extension the ERC20 token.
 /// @param symbol The symbol of the vault and by extension the ERC20 token.
