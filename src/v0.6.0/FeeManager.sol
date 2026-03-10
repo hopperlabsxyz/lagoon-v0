@@ -63,16 +63,17 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
         uint16 _haircutRate
     ) internal onlyInitializing {
         FeeManagerStorage storage $ = FeeLib._getFeeManagerStorage();
-        FeeLib.updateRates(
-            $,
-            Rates({
+        FeeLib.updateRates({
+            $: $,
+            newRates: Rates({
                 managementRate: _managementRate,
                 performanceRate: _performanceRate,
                 entryRate: _entryRate,
                 exitRate: _exitRate,
                 haircutRate: _haircutRate
-            })
-        );
+            }),
+            isFirstInitialization: true
+        });
 
         $.feeRegistry = FeeRegistry(_registry);
         $.highWaterMark = 10 ** _decimals;
@@ -85,7 +86,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
         Rates memory newRates
     ) external onlyOwner {
         VaultLib._onlyNotClosed();
-        FeeLib.updateRates(FeeLib._getFeeManagerStorage(), newRates);
+        FeeLib.updateRates({$: FeeLib._getFeeManagerStorage(), newRates: newRates, isFirstInitialization: false});
     }
 
     /// @notice the current fee rates

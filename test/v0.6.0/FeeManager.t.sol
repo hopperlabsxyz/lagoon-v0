@@ -26,16 +26,16 @@ contract TestFeeManager is BaseTest {
     uint16 protocolFee = 1000;
     uint16 managementFee = 1000;
     uint16 performanceFee = 2000;
-    uint16 entryFee = 1000;
-    uint16 exitFee = 1000;
+    uint16 entryFee = 100;
+    uint16 exitFee = 100;
 
     function setUp() public {
         enableWhitelist = false;
         // 10% protocol fee
         // 10% management fee
         // 20% performance fee
-        // 10% entry fee (new)
-        // 0% exit fee (new)
+        // 1% entry fee (new)
+        // 1% exit fee (new)
         setUpVault({
             _protocolRate: protocolFee,
             _managementRate: managementFee,

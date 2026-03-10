@@ -6,12 +6,11 @@ import "./VaultHelper.sol";
 import {BaseTest} from "./Base.sol";
 
 contract testRateUpdates is BaseTest {
-    uint16 public constant MAX_MANAGEMENT_RATE = 1000; // 10 %
-    uint16 public constant MAX_PERFORMANCE_RATE = 5000; // 50 %
-    uint16 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
-    uint16 public constant MAX_ENTRY_RATE = 1000; // 10 %
-    uint16 public constant MAX_EXIT_RATE = 1000; // 10 %
-    uint16 public constant MAX_HAIRCUT_RATE = 1000; // 10 %
+    uint16 public constant MAX_MANAGEMENT_RATE = FeeLib.MAX_MANAGEMENT_RATE;
+    uint16 public constant MAX_PERFORMANCE_RATE = FeeLib.MAX_PERFORMANCE_RATE;
+    uint16 public constant MAX_ENTRY_RATE = FeeLib.MAX_ENTRY_RATE;
+    uint16 public constant MAX_EXIT_RATE = FeeLib.MAX_EXIT_RATE;
+    uint16 public constant MAX_HAIRCUT_RATE = FeeLib.MAX_HAIRCUT_RATE;
 
     function test_ratesShouldMatchValuesAtInit() public {
         uint16 protocolRate = 100;

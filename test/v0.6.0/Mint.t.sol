@@ -81,7 +81,7 @@ contract TestMint is BaseTest {
 
     function test_mint_shouldTakeEntryFeesIntoConsideration() public {
         // we setup a vault with entry fees
-        setUpVault({_protocolRate: 0, _managementRate: 0, _performanceRate: 0, _entryRate: 1000, _exitRate: 0});
+        setUpVault({_protocolRate: 0, _managementRate: 0, _performanceRate: 0, _entryRate: 200, _exitRate: 0});
 
         dealAndApproveAndWhitelist(user3.addr);
 
@@ -141,7 +141,7 @@ contract TestMint is BaseTest {
 
     function test_mint_shouldNotBeAffectedByEntryFeeUpdate() public {
         // we setup a vault with entry fees
-        setUpVault({_protocolRate: 0, _managementRate: 0, _performanceRate: 0, _entryRate: 1000, _exitRate: 0});
+        setUpVault({_protocolRate: 0, _managementRate: 0, _performanceRate: 0, _entryRate: 200, _exitRate: 0});
 
         dealAndApproveAndWhitelist(user3.addr);
 
@@ -160,7 +160,7 @@ contract TestMint is BaseTest {
 
         vm.prank(vault.owner());
 
-        vault.updateRates(Rates({managementRate: 0, performanceRate: 0, entryRate: 500, exitRate: 0, haircutRate: 0}));
+        vault.updateRates(Rates({managementRate: 0, performanceRate: 0, entryRate: 100, exitRate: 0, haircutRate: 0}));
         vm.warp(block.timestamp + rateUpdateCooldown + 1);
 
         uint256 user1MaxDeposit = vault.maxDeposit(user1.addr);
