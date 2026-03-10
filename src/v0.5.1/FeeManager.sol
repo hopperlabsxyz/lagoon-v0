@@ -56,7 +56,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     /// @param _registry the address of the fee registry contract
     /// @param _managementRate the management rate, expressed in BPS
     /// @param _performanceRate the performance rate, expressed in BPS
-    /// @param _decimals the number of decimals of the shares
+    /// @param _decimals the number of assets decimals
     /// @param _cooldown the time to wait before applying new rates
     // solhint-disable-next-line func-name-mixedcase
     function __FeeManager_init(

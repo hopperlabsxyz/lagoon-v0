@@ -10,8 +10,8 @@ ADDRESS=
 CONSTRUCTOR_ARGS=
 ETHERSCAN_API_KEY=
 
-CONTRACT_PATH=./src/v0.5.0/Vault.sol:Vault
-CONTRACT_PATH=./src/v0.5.0/Silo.sol:Silo
+CONTRACT_PATH=./src/v0.5.1/Vault.sol:Vault
+CONTRACT_PATH=./src/v0.5.1/Silo.sol:Silo
 CONTRACT_PATH=./src/BeaconProxyFactory.sol:BeaconProxyFactory
 CONTRACT_PATH=./lib/openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol:BeaconProxy
 CONTRACT_PATH=./lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy

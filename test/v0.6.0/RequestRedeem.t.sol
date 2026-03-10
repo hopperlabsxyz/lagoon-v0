@@ -100,6 +100,14 @@ contract TestRequestRedeem is BaseTest {
         vault.requestRedeem(userBalance / 2, user1.addr, user1.addr);
     }
 
+    function test_requestRedeem_revertIfControllerIsZeroAddress() public {
+        uint256 userBalance = balance(user1.addr);
+        vm.startPrank(user1.addr);
+        vm.expectRevert(abi.encodeWithSelector(InvalidController.selector, address(0)));
+        vault.requestRedeem(userBalance, address(0), user1.addr);
+        vm.stopPrank();
+    }
+
     function test_requestRedeem_updateClaimableDepositRequestAndPendingDepositRequest() public {
         // REQUEST REDEEM 1
         uint256 requestId_1 = requestRedeem(100 * 10 ** vault.decimals(), user1.addr);
