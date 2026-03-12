@@ -18,6 +18,7 @@ import {
     ERC7540PreviewMintDisabled,
     ERC7540PreviewRedeemDisabled,
     ERC7540PreviewWithdrawDisabled,
+    InvalidController,
     MaxCapReached,
     NewTotalAssetsMissing,
     OnlyOneRequestAllowed,
@@ -438,6 +439,10 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             if (!isAllowed(controller)) revert AddressNotAllowed(controller);
             // operator must also be whitelisted
             if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
+        }
+
+        if (controller == address(0)) {
+            revert InvalidController(controller);
         }
 
         // if the caller is not an operator we use its allowance

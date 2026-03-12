@@ -13,7 +13,7 @@ interface IERC7540 is IERC7575, IERC165 {
     function isOperator(
         address controller,
         address operator
-    ) external returns (bool);
+    ) external view returns (bool);
 
     function setOperator(
         address operator,

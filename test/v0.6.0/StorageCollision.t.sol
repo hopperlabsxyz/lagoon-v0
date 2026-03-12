@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
-import {VaultHelper as VaultHelper_v0_5_0} from "../v0.5.0-opt-inProxy/VaultHelper.sol";
+import {VaultHelper as VaultHelper_v0_5_1} from "../v0.5.1-opt-inProxy/VaultHelper.sol";
 import {VaultHelper as VaultHelper_v0_6_0} from "../v0.6.0/VaultHelper.sol";
 import {BaseTest} from "./Base.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -23,13 +23,13 @@ contract TestStorageCollision is BaseTest {
     uint16 public constant _entryRate = 3;
     uint16 public constant _exitRate = 5;
     DelayProxyAdmin public delayProxyAdmin;
-    VaultHelper_v0_5_0 public _vault;
+    VaultHelper_v0_5_1 public _vault;
     // address of vault pointing to the v0.6.0
     VaultHelper_v0_6_0 public proxyV0_6_0;
 
     function setUp() public {
         vm.startPrank(dao.addr);
-        protocolRegistry.updateDefaultLogic(address(vault_v0_5_0));
+        protocolRegistry.updateDefaultLogic(address(vault_v0_5_1));
         vm.stopPrank();
 
         // setup the factory
@@ -52,7 +52,7 @@ contract TestStorageCollision is BaseTest {
             rateUpdateCooldown: 1 days
         });
 
-        _vault = VaultHelper_v0_5_0(
+        _vault = VaultHelper_v0_5_1(
             OptinProxyFactory_v0_5_0(address(factory))
                 .createVaultProxy({
                     _logic: address(0),
@@ -63,13 +63,13 @@ contract TestStorageCollision is BaseTest {
                 })
         );
         proxyV0_6_0 = VaultHelper_v0_6_0(address(_vault));
-        assertEq(_vault.version(), "v0.5.0");
+        assertEq(_vault.version(), "v0.5.1");
         delayProxyAdmin = DelayProxyAdmin(vm.computeCreateAddress(address(_vault), 2));
 
         assertEq(delayProxyAdmin.owner(), initStruct.admin);
     }
 
-    // we update the vault from v0.5.0 to v0.6.0 and assess fees storage health
+    // we update the vault from v0.5.1 to v0.6.0 and assess fees storage health
     function test_storageCollision() public {
         address owner = delayProxyAdmin.owner();
 

@@ -50,9 +50,9 @@ abstract contract Whitelistable is Roles {
     /// @return True if the account is whitelisted, false otherwise
     function isWhitelisted(
         address account
-    ) public view returns (bool) {
+    ) public view virtual returns (bool) {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-        if (_getRolesStorage().feeRegistry.protocolFeeReceiver() == account) {
+        if (_getRolesStorage().feeRegistry.protocolFeeReceiver() == account || account == address(0)) {
             return true;
         }
         return $.isActivated ? $.isWhitelisted[account] : true;
@@ -63,10 +63,14 @@ abstract contract Whitelistable is Roles {
         address[] memory accounts
     ) external onlyWhitelistManager {
         WhitelistableStorage storage $ = _getWhitelistableStorage();
-
-        for (uint256 i = 0; i < accounts.length; i++) {
+        uint256 i = 0;
+        for (; i < accounts.length;) {
             $.isWhitelisted[accounts[i]] = true;
             emit WhitelistUpdated(accounts[i], true);
+            // solhint-disable-next-line no-inline-assembly
+            unchecked {
+                ++i;
+            }
         }
     }
 

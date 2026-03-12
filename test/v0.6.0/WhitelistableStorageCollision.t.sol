@@ -4,12 +4,12 @@ pragma solidity 0.8.26;
 import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
-import {VaultHelper as VaultHelper_v0_5_0} from "../v0.5.0-opt-inProxy/VaultHelper.sol";
+import {VaultHelper as VaultHelper_v0_5_1} from "../v0.5.1-opt-inProxy/VaultHelper.sol";
 import {VaultHelper as VaultHelper_v0_6_0} from "../v0.6.0/VaultHelper.sol";
 import {BaseTest} from "./Base.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {
-    InitStruct as InitStruct_v0_5_0,
+    InitStruct as InitStruct_v0_5_1,
     OptinProxyFactory as OptinProxyFactory_v0_5_0
 } from "@src/protocol-v2/OptinProxyFactory.sol";
 
@@ -21,15 +21,15 @@ contract TestWhitelistableStorageCollision is BaseTest {
     // Storage slot for WhitelistableStorage
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.Whitelistable")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 constant WHITELISTABLE_STORAGE_SLOT = 0x083cc98ab296d1a1f01854b5f7a2f47df4425a56ba7b35f7faa3a336067e4800;
-    // Slot 1: isActivated (v0.5.0) / whitelistState (v0.6.0)
+    // Slot 1: isActivated (v0.5.1) / whitelistState (v0.6.0)
     bytes32 constant WHITELIST_STATE_SLOT = bytes32(uint256(WHITELISTABLE_STORAGE_SLOT) + 1);
 
     function _createVault(
         bool enableWhitelist,
         bytes32 salt
-    ) internal returns (VaultHelper_v0_5_0, DelayProxyAdmin) {
+    ) internal returns (VaultHelper_v0_5_1, DelayProxyAdmin) {
         vm.startPrank(dao.addr);
-        protocolRegistry.updateDefaultLogic(address(vault_v0_5_0));
+        protocolRegistry.updateDefaultLogic(address(vault_v0_5_1));
         vm.stopPrank();
 
         // setup the factory
@@ -37,7 +37,7 @@ contract TestWhitelistableStorageCollision is BaseTest {
 
         factory.initialize(address(protocolRegistry), WRAPPED_NATIVE_TOKEN, dao.addr);
 
-        InitStruct_v0_5_0 memory initStruct = InitStruct_v0_5_0({
+        InitStruct_v0_5_1 memory initStruct = InitStruct_v0_5_1({
             underlying: underlying,
             name: vaultName,
             symbol: vaultSymbol,
@@ -52,7 +52,7 @@ contract TestWhitelistableStorageCollision is BaseTest {
             rateUpdateCooldown: 1 days
         });
 
-        VaultHelper_v0_5_0 vault = VaultHelper_v0_5_0(
+        VaultHelper_v0_5_1 vault = VaultHelper_v0_5_1(
             OptinProxyFactory_v0_5_0(address(factory))
                 .createVaultProxy({
                     _logic: address(0),
@@ -64,26 +64,26 @@ contract TestWhitelistableStorageCollision is BaseTest {
         );
         DelayProxyAdmin proxyAdmin = DelayProxyAdmin(vm.computeCreateAddress(address(vault), 2));
 
-        assertEq(vault.version(), "v0.5.0");
+        assertEq(vault.version(), "v0.5.1");
         assertEq(proxyAdmin.owner(), initStruct.admin);
 
         return (vault, proxyAdmin);
     }
 
-    /// @notice Test migration from v0.5.0 isActivated = false (0) to v0.6.0 whitelistState = Blacklist (0)
+    /// @notice Test migration from v0.5.1 isActivated = false (0) to v0.6.0 whitelistState = Blacklist (0)
     function test_storageCollision_boolFalse_to_enumBlacklist() public {
         // Create a vault with whitelist disabled (enableWhitelist = false)
-        (VaultHelper_v0_5_0 _vault, DelayProxyAdmin delayProxyAdmin) = _createVault(false, keccak256("whitelist_false"));
+        (VaultHelper_v0_5_1 _vault, DelayProxyAdmin delayProxyAdmin) = _createVault(false, keccak256("whitelist_false"));
         VaultHelper_v0_6_0 proxyV0_6_0 = VaultHelper_v0_6_0(address(_vault));
         address owner = delayProxyAdmin.owner();
 
-        // Verify v0.5.0 state: isActivated should be false
-        assertEq(_vault.isWhitelistActivated(), false, "v0.5.0: whitelist should be deactivated");
+        // Verify v0.5.1 state: isActivated should be false
+        assertEq(_vault.isWhitelistActivated(), false, "v0.5.1: whitelist should be deactivated");
 
         // Read storage slot directly to verify bool = 0
         bytes32 storageValue = vm.load(address(_vault), WHITELIST_STATE_SLOT);
         uint8 boolValue = uint8(uint256(storageValue));
-        assertEq(boolValue, 0, "v0.5.0: storage slot should contain 0 (false)");
+        assertEq(boolValue, 0, "v0.5.1: storage slot should contain 0 (false)");
 
         // Upgrade to v0.6.0
         vm.prank(owner);
@@ -116,22 +116,22 @@ contract TestWhitelistableStorageCollision is BaseTest {
         );
     }
 
-    /// @notice Test migration from v0.5.0 isActivated = true (1) to v0.6.0 whitelistState = Whitelist (1)
+    /// @notice Test migration from v0.5.1 isActivated = true (1) to v0.6.0 whitelistState = Whitelist (1)
     function test_storageCollision_boolTrue_to_enumWhitelist() public {
         // Create a vault with whitelist enabled (enableWhitelist = true)
-        (VaultHelper_v0_5_0 _vault, DelayProxyAdmin delayProxyAdmin) = _createVault(true, keccak256("whitelist_true"));
+        (VaultHelper_v0_5_1 _vault, DelayProxyAdmin delayProxyAdmin) = _createVault(true, keccak256("whitelist_true"));
         VaultHelper_v0_6_0 proxyV0_6_0 = VaultHelper_v0_6_0(address(_vault));
         address owner = delayProxyAdmin.owner();
 
-        // In v0.5.0, ensure whitelist is activated (isActivated = true)
+        // In v0.5.1, ensure whitelist is activated (isActivated = true)
         // By default, if enableWhitelist is true in init, it should be activated
         // Verify it's activated
-        assertEq(_vault.isWhitelistActivated(), true, "v0.5.0: whitelist should be activated");
+        assertEq(_vault.isWhitelistActivated(), true, "v0.5.1: whitelist should be activated");
 
         // Read storage slot directly to verify bool = 1
         bytes32 storageValue = vm.load(address(_vault), WHITELIST_STATE_SLOT);
         uint8 boolValue = uint8(uint256(storageValue));
-        assertEq(boolValue, 1, "v0.5.0: storage slot should contain 1 (true)");
+        assertEq(boolValue, 1, "v0.5.1: storage slot should contain 1 (true)");
 
         // Upgrade to v0.6.0
         vm.prank(owner);
@@ -173,23 +173,23 @@ contract TestWhitelistableStorageCollision is BaseTest {
         assertEq(proxyV0_6_0.isAllowed(testUser), true, "v0.6.0: user should be whitelisted after being added");
     }
 
-    /// @notice Test rollback scenario: upgrade to v0.6.0 Blacklist mode, then rollback to v0.5.0
-    /// @dev Verifies that when whitelistState = Blacklist (0) in v0.6.0, rolling back to v0.5.0
+    /// @notice Test rollback scenario: upgrade to v0.6.0 Blacklist mode, then rollback to v0.5.1
+    /// @dev Verifies that when whitelistState = Blacklist (0) in v0.6.0, rolling back to v0.5.1
     ///      should result in isActivated = false (deactivated state)
     function test_rollback_from_blacklist_to_v0_5_0() public {
         // Create a vault with whitelist disabled (enableWhitelist = false)
-        (VaultHelper_v0_5_0 _vault, DelayProxyAdmin delayProxyAdmin) =
+        (VaultHelper_v0_5_1 _vault, DelayProxyAdmin delayProxyAdmin) =
             _createVault(false, keccak256("rollback_blacklist"));
         VaultHelper_v0_6_0 proxyV0_6_0 = VaultHelper_v0_6_0(address(_vault));
         address owner = delayProxyAdmin.owner();
 
-        // Verify v0.5.0 initial state: isActivated should be false
-        assertEq(_vault.isWhitelistActivated(), false, "v0.5.0: whitelist should be deactivated initially");
+        // Verify v0.5.1 initial state: isActivated should be false
+        assertEq(_vault.isWhitelistActivated(), false, "v0.5.1: whitelist should be deactivated initially");
 
         // Read storage slot directly to verify bool = 0
         bytes32 storageValue = vm.load(address(_vault), WHITELIST_STATE_SLOT);
         uint8 boolValue = uint8(uint256(storageValue));
-        assertEq(boolValue, 0, "v0.5.0: storage slot should contain 0 (false)");
+        assertEq(boolValue, 0, "v0.5.1: storage slot should contain 0 (false)");
 
         // Upgrade to v0.6.0
         vm.prank(owner);
@@ -215,33 +215,33 @@ contract TestWhitelistableStorageCollision is BaseTest {
             proxyV0_6_0.isAllowed(testUser), true, "v0.6.0: user should be whitelisted in Blacklist mode by default"
         );
 
-        // Rollback to v0.5.0
+        // Rollback to v0.5.1
         vm.prank(owner);
-        delayProxyAdmin.submitImplementation(address(vault_v0_5_0));
+        delayProxyAdmin.submitImplementation(address(vault_v0_5_1));
 
         vm.warp(block.timestamp + 10 days);
         vm.prank(owner);
-        delayProxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(_vault)), address(vault_v0_5_0), "");
-        assertEq(_vault.version(), "v0.5.0", "vault should be rolled back to v0.5.0");
+        delayProxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(_vault)), address(vault_v0_5_1), "");
+        assertEq(_vault.version(), "v0.5.1", "vault should be rolled back to v0.5.1");
 
         // Verify storage slot still contains 0 (Blacklist) after rollback
         storageValue = vm.load(address(_vault), WHITELIST_STATE_SLOT);
         uint8 storageAfterRollback = uint8(uint256(storageValue));
-        assertEq(storageAfterRollback, 0, "v0.5.0: storage slot should still contain 0 after rollback");
+        assertEq(storageAfterRollback, 0, "v0.5.1: storage slot should still contain 0 after rollback");
 
-        // Verify v0.5.0 state after rollback: isActivated should be false (deactivated)
-        // In v0.5.0, when reading a bool from storage, 0 means false (deactivated)
+        // Verify v0.5.1 state after rollback: isActivated should be false (deactivated)
+        // In v0.5.1, when reading a bool from storage, 0 means false (deactivated)
         bool isActivatedAfterRollback = _vault.isWhitelistActivated();
         assertEq(
             isActivatedAfterRollback,
             false,
-            "v0.5.0: isActivated should be false (deactivated) after rollback from Blacklist state"
+            "v0.5.1: isActivated should be false (deactivated) after rollback from Blacklist state"
         );
 
         // Verify that isWhitelisted works correctly (should return true for everyone when deactivated)
-        // In v0.5.0, when isActivated is false, isWhitelisted returns true for all addresses
+        // In v0.5.1, when isActivated is false, isWhitelisted returns true for all addresses
         assertEq(
-            _vault.isWhitelisted(testUser), true, "v0.5.0: user should be whitelisted when whitelist is deactivated"
+            _vault.isWhitelisted(testUser), true, "v0.5.1: user should be whitelisted when whitelist is deactivated"
         );
 
         // Verify that a non-whitelisted user can still access (because whitelist is deactivated)
@@ -249,27 +249,27 @@ contract TestWhitelistableStorageCollision is BaseTest {
         assertEq(
             _vault.isWhitelisted(anotherUser),
             true,
-            "v0.5.0: any user should be whitelisted when whitelist is deactivated"
+            "v0.5.1: any user should be whitelisted when whitelist is deactivated"
         );
     }
 
-    /// @notice Test rollback scenario: upgrade to v0.6.0 Whitelist mode, then rollback to v0.5.0
-    /// @dev Verifies that when whitelistState = Whitelist (1) in v0.6.0, rolling back to v0.5.0
+    /// @notice Test rollback scenario: upgrade to v0.6.0 Whitelist mode, then rollback to v0.5.1
+    /// @dev Verifies that when whitelistState = Whitelist (1) in v0.6.0, rolling back to v0.5.1
     ///      should result in isActivated = true (activated state)
-    function test_rollback_from_whitelist_to_v0_5_0() public {
+    function test_rollback_from_whitelist_to_v0_5_1() public {
         // Create a vault with whitelist enabled (enableWhitelist = true)
-        (VaultHelper_v0_5_0 _vault, DelayProxyAdmin delayProxyAdmin) =
+        (VaultHelper_v0_5_1 _vault, DelayProxyAdmin delayProxyAdmin) =
             _createVault(true, keccak256("rollback_whitelist"));
         VaultHelper_v0_6_0 proxyV0_6_0 = VaultHelper_v0_6_0(address(_vault));
         address owner = delayProxyAdmin.owner();
 
-        // Verify v0.5.0 initial state: isActivated should be true
-        assertEq(_vault.isWhitelistActivated(), true, "v0.5.0: whitelist should be activated initially");
+        // Verify v0.5.1 initial state: isActivated should be true
+        assertEq(_vault.isWhitelistActivated(), true, "v0.5.1: whitelist should be activated initially");
 
         // Read storage slot directly to verify bool = 1
         bytes32 storageValue = vm.load(address(_vault), WHITELIST_STATE_SLOT);
         uint8 boolValue = uint8(uint256(storageValue));
-        assertEq(boolValue, 1, "v0.5.0: storage slot should contain 1 (true)");
+        assertEq(boolValue, 1, "v0.5.1: storage slot should contain 1 (true)");
 
         // Upgrade to v0.6.0
         vm.prank(owner);
@@ -297,35 +297,35 @@ contract TestWhitelistableStorageCollision is BaseTest {
             "v0.6.0: user should not be whitelisted in Whitelist mode by default"
         );
 
-        // Rollback to v0.5.0
+        // Rollback to v0.5.1
         vm.prank(owner);
-        delayProxyAdmin.submitImplementation(address(vault_v0_5_0));
+        delayProxyAdmin.submitImplementation(address(vault_v0_5_1));
 
         vm.warp(block.timestamp + 10 days);
         vm.prank(owner);
-        delayProxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(_vault)), address(vault_v0_5_0), "");
-        assertEq(_vault.version(), "v0.5.0", "vault should be rolled back to v0.5.0");
+        delayProxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(_vault)), address(vault_v0_5_1), "");
+        assertEq(_vault.version(), "v0.5.1", "vault should be rolled back to v0.5.1");
 
         // Verify storage slot still contains 1 (Whitelist) after rollback
         storageValue = vm.load(address(_vault), WHITELIST_STATE_SLOT);
         uint8 storageAfterRollback = uint8(uint256(storageValue));
-        assertEq(storageAfterRollback, 1, "v0.5.0: storage slot should still contain 1 after rollback");
+        assertEq(storageAfterRollback, 1, "v0.5.1: storage slot should still contain 1 after rollback");
 
-        // Verify v0.5.0 state after rollback: isActivated should be true (activated)
-        // In v0.5.0, when reading a bool from storage, 1 means true (activated)
+        // Verify v0.5.1 state after rollback: isActivated should be true (activated)
+        // In v0.5.1, when reading a bool from storage, 1 means true (activated)
         bool isActivatedAfterRollback = _vault.isWhitelistActivated();
         assertEq(
             isActivatedAfterRollback,
             true,
-            "v0.5.0: isActivated should be true (activated) after rollback from Whitelist state"
+            "v0.5.1: isActivated should be true (activated) after rollback from Whitelist state"
         );
 
         // Verify that isWhitelisted works correctly (should return false for non-whitelisted users when activated)
-        // In v0.5.0, when isActivated is true, isWhitelisted returns false for non-whitelisted addresses
+        // In v0.5.1, when isActivated is true, isWhitelisted returns false for non-whitelisted addresses
         assertEq(
             _vault.isWhitelisted(testUser),
             false,
-            "v0.5.0: non-whitelisted user should not be whitelisted when whitelist is activated"
+            "v0.5.1: non-whitelisted user should not be whitelisted when whitelist is activated"
         );
     }
 }

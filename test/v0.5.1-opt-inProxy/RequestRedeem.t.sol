@@ -7,6 +7,7 @@ import "forge-std/Test.sol";
 import {BaseTest} from "./Base.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {InvalidController} from "@src/v0.5.1/primitives/Errors.sol";
 
 contract TestRequestRedeem is BaseTest {
     function setUp() public {
@@ -18,6 +19,7 @@ contract TestRequestRedeem is BaseTest {
         requestDeposit(balance, user1.addr);
         requestDeposit(balance, user2.addr);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
         deposit(balance, user1.addr);
         deposit(balance, user2.addr);
     }
@@ -99,6 +101,14 @@ contract TestRequestRedeem is BaseTest {
         vault.requestRedeem(userBalance / 2, user1.addr, user1.addr);
     }
 
+    function test_requestRedeem_revertIfControllerIsZeroAddress() public {
+        uint256 userBalance = balance(user1.addr);
+        vm.startPrank(user1.addr);
+        vm.expectRevert(abi.encodeWithSelector(InvalidController.selector, address(0)));
+        vault.requestRedeem(userBalance, address(0), user1.addr);
+        vm.stopPrank();
+    }
+
     function test_requestRedeem_updateClaimableDepositRequestAndPendingDepositRequest() public {
         // REQUEST REDEEM 1
         uint256 requestId_1 = requestRedeem(100 * 10 ** vault.decimals(), user1.addr);
@@ -124,6 +134,7 @@ contract TestRequestRedeem is BaseTest {
         /// ------------------ settlement ------------------ ///
 
         updateAndSettle(assetBalance(vault.safe()));
+        vm.warp(block.timestamp + 1);
 
         // pendings
         assertEq(vault.pendingRedeemRequest(requestId_1, user1.addr), 0, "[1 - pending - requestId 1]: wrong amount");
@@ -168,7 +179,7 @@ contract TestRequestRedeem is BaseTest {
 
         /// ------------------ settlement ------------------ ///
         updateAndSettle(assetBalance(vault.safe()));
-
+        vm.warp(block.timestamp + 1);
         // pendings
         assertEq(vault.pendingRedeemRequest(requestId_1, user1.addr), 0, "[3 - pending - requestId 1]: wrong amount");
         assertEq(vault.pendingRedeemRequest(requestId_2, user1.addr), 0, "[3 - pending - requestId 2]: wrong amount");
@@ -268,6 +279,7 @@ contract TestRequestRedeem is BaseTest {
 
         // the asset manager settle the vault
         settleRedeem();
+        vm.warp(block.timestamp + 1);
 
         // We expect the pending Silo to only send the assets of the first deposit and not the one from user2
         assertEq(vault.balanceOf(vault.pendingSilo()), amountToRedeem);

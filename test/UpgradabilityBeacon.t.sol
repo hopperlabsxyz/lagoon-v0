@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import {IVersion} from "./IVersion.sol";
 
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
-import {InitStruct, Vault} from "@src/v0.5.0/Vault.sol";
+import {InitStruct, Vault} from "@src/v0.5.1/Vault.sol";
 
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -78,7 +78,7 @@ contract Upgradable is Test {
 
         Options memory opts;
         opts.constructorData = abi.encode(true);
-        beacon = _beaconDeploy("v0.5.0/Vault.sol:Vault", owner.addr, opts);
+        beacon = _beaconDeploy("v0.5.1/Vault.sol:Vault", owner.addr, opts);
         address vault = _proxyDeploy(beacon, v);
 
         opts.constructorData = abi.encode(false);
