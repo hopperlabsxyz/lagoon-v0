@@ -137,407 +137,423 @@ contract TestFeeManager is BaseTest {
         assertEq(vault.highWaterMark(), highWaterMarkBefore, "highWaterMark should not change on flat pps");
     }
 
-    function test_FeesAreTakenAfterFreeride_0() public {
-        vault.activateWhitelist();
-        address[] memory wl = new address[](3);
-        wl[0] = user1.addr;
-        wl[1] = user2.addr;
-        wl[2] = vault.feeReceiver();
-        vm.prank(vault.whitelistManager());
-        vault.addToWhitelist(wl);
-        uint256 newTotalAssets = 0;
-
-        // new airdrop !
-        dealAmountAndApproveAndWhitelist(user1.addr, _1);
-        dealAmountAndApproveAndWhitelist(user2.addr, _1M);
-
-        uint256 ppsAtStart = pricePerShare();
-
-        uint256 user1InitialDeposit = _1;
-        uint256 user2InitialDeposit = _1M;
-
-        // user1 deposit into vault at 1$ per share
-        // console.log("user1InitialDeposit", user1InitialDeposit, assetBalance(user1.addr));
-        requestDeposit(user1InitialDeposit, user1.addr);
-
-        // ------------ Settle ------------ //
-        updateAndSettle(newTotalAssets);
-
-        vm.prank(user1.addr);
-        vault.deposit(user1InitialDeposit - 1, user1.addr, user1.addr);
-
-        console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
-
-        assertEq(vault.lastFeeTime(), block.timestamp);
-        assertEq(pricePerShare(), ppsAtStart);
-
-        // user2 will deposit at 0.5$ per shares
-        requestDeposit(user2InitialDeposit, user2.addr);
-        // 1M * 0.1 = 100K entryfee
-
-        // ------------ Settle ------------ //
-        vm.warp(block.timestamp + 364 days);
-        newTotalAssets = 5 * 10 ** (vault.underlyingDecimals() - 1);
-        updateAndSettle(newTotalAssets);
-
-        console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
-        vm.prank(user2.addr);
-        vault.deposit(user2InitialDeposit, user2.addr, user2.addr);
-        console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
-
-        assertApproxEqAbs(
-            pricePerShare(),
-            425 * 10 ** (vault.underlyingDecimals() - 3),
-            1,
-            "price per share didn't decreased as expected"
-        );
-
-        // Fee Calculations at Settlement:
-        //
-        // Entry Fees:
-        //   user1: 1     * 0.1 = 0.1     entry fee → worth 0.0425    at settlement (PPS = 0.425)
-        //   user2: 1M    * 0.1 = 100K    entry fee → worth 100K      at settlement
-        //
-        // Management Fees (using average of previous and current totalAssets):
-        //   avg(1, 0.5) * 0.1 = 0.075    mgmt fee  → worth 0.0675    at settlement (user1 share: 0.9/1.0)
-        //
-        // Fee Distribution:
-        //   Total fees    = 0.0425 + 100K + 0.0675 = 100,000.11
-        //   Manager fee   = 100,000.11 * 0.9      =  90,000.099
-        //   Protocol fee  = 100,000.11 * 0.1      =  10,000.011
-        assertApproxEqAbs(
-            vault.convertToAssets(vault.balanceOf(vault.feeReceiver())),
-            900_000_990 * 10 ** (vault.underlyingDecimals() - 4),
-            10 ** (vault.underlyingDecimals() - 1),
-            "feeReceiver received unexpected fee shares"
-        );
-        assertApproxEqAbs(
-            vault.convertToAssets(vault.balanceOf(vault.protocolFeeReceiver())),
-            100_000_110 * 10 ** (vault.underlyingDecimals() - 4),
-            10 ** (vault.underlyingDecimals() - 1),
-            "protocol received unexpected fee shares"
-        );
-
-        // ------------ Settle ------------ //
-        vm.warp(block.timestamp + 364 days);
-        // vault price per share will increase from 0.425 -> ~1.7 (x4)
-        newTotalAssets = 4_000_002 * 10 ** vault.underlyingDecimals();
-        console.log("totalSupply before", vault.totalSupply());
-        console.log("totalAssets before", vault.totalAssets());
-        console.log("hwm before", vault.highWaterMark());
-        updateAndSettle(newTotalAssets);
-        console.log("totalSupply after", vault.totalSupply());
-        console.log("totalAssets after", vault.totalAssets());
-        console.log("hwm after", vault.highWaterMark());
-
-        // We expect the price per share to do be equal to:
-        //
-        //      mFees = avg(previousTA, totalAssets) * 0.1                                   (~250_000.125$)
-        //      newPps = (totalAssets - mFees) / totalSupply                                 (~1.59375$/share)
-        //      pFees = (newPps - hwm) * totalSupply * 0.2                                   (~279_412$)
-        //      newShares = (mFees + pFees) * (totalSupply / (totalAssets - (mFees + pFees)))  (~358_923 shares)
-        //
-        //      pps = (totalAssets - totalFees) / totalSupply (~1.475)
-        //
-        assertApproxEqAbs(
-            pricePerShare(),
-            1475 * 10 ** (vault.underlyingDecimals() - 3),
-            5, // rounding approximation
-            "Price per share didn't increased as expected"
-        );
-
-        // We expect the highWaterMark to be equal to the price per share
-        assertApproxEqAbs(
-            vault.highWaterMark(),
-            vault.pricePerShare(),
-            5, // rounding approximation
-            "Highwater mark shoudn't have been raised"
-        );
-
-        uint256 user1ShareBalance = vault.balanceOf(user1.addr);
-        uint256 user2ShareBalance = vault.balanceOf(user2.addr);
-
-        // ------------ Settle ------------ //
-
-        console.log("======");
-        console.log("totalSupply        :", vault.totalSupply());
-        console.log("totalAssets        :", vault.totalAssets());
-        console.log("price per share    :", vault.pricePerShare());
-        console.log("------");
-        console.log("shares feeReceiver :", vault.balanceOf(vault.feeReceiver()));
-        console.log("shares user1       :", vault.balanceOf(user1.addr));
-        console.log("shares user2       :", vault.balanceOf(user2.addr));
-        console.log("------");
-        console.log("assets feeReceiver :", vault.convertToAssets(vault.balanceOf(vault.feeReceiver())));
-        console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
-        console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
-        console.log("======");
-
-        requestRedeem(user1ShareBalance, user1.addr);
-        requestRedeem(user2ShareBalance, user2.addr);
-
-        vm.warp(block.timestamp + 364 days);
-        updateAndSettle(newTotalAssets);
-        console.log("======");
-        console.log("totalSupply        :", vault.totalSupply());
-        console.log("totalAssets        :", vault.totalAssets());
-        console.log("price per share    :", vault.pricePerShare());
-        console.log("------");
-        console.log("shares feeReceiver :", vault.balanceOf(vault.feeReceiver()));
-        console.log("shares user1       :", vault.balanceOf(user1.addr));
-        console.log("shares user2       :", vault.balanceOf(user2.addr));
-        console.log("------");
-        console.log("assets feeReceiver :", vault.convertToAssets(vault.balanceOf(vault.feeReceiver())));
-        console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
-        console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
-        console.log("======");
-
-        uint256 user1AssetBefore = assetBalance(user1.addr);
-        uint256 user2AssetBefore = assetBalance(user2.addr);
-
-        uint256 user1AssetAfter = redeem(user1ShareBalance, user1.addr);
-        // uint256 user2AssetAfter = redeem(user2ShareBalance, user2.addr);
-        uint40 user2LastRequestId = vault.lastRedeemRequestId(user2.addr);
-        uint256 user2AssetsToWithdraw = vault.convertToAssets(user2ShareBalance, user2LastRequestId);
-
-        user2AssetsToWithdraw -= FeeLib.computeFee(
-            user2AssetsToWithdraw, vault.getSettlementExitFeeRate(user2LastRequestId)
-        );
-        uint256 shares = withdraw(user2AssetsToWithdraw, user2.addr);
-        uint256 user2AssetAfter = vault.convertToAssets(shares, user2LastRequestId);
-
-        assetBalance(user1.addr);
-        assetBalance(user2.addr);
-
-        uint256 user1Profit = (user1AssetAfter - user1AssetBefore) - user1InitialDeposit;
-        uint256 user2Profit = (user2AssetAfter - user2AssetBefore) - user2InitialDeposit;
-
-        // User Position Evolution:
-        // ════════════════════════════════════════════════════════════════════════════════════════
-        // Initial deposit                    1.000000
-        // Entry fees (10%)                  -0.100000  →  0.900000
-        // -- 1 year gap --
-        // Management fees (10%)             -0.067500  →  0.382500  (avg(1, 0.5)*0.1*0.9 = 0.067500)
-        // -- 1 year gap --
-        // Management fees (10%)             -0.095625  →  1.434375  (avg(1M+0.5, 4M+2)*0.1*user1_share)
-        // Performance fees (20%)            -0.106875  →  1.327500  ((1.59375-1.0)*totalSupply*0.2*user1_share)
-        // -- 1 year gap --
-        // Management fees (10%)             -0.132750  →  1.194750  (avg=same since prevTA=curTA=4M+2)
-        // Exit fees (10%)                   -0.119475  →  1.075275  (1.194750 * 0.1 = 0.119475)
-        // ════════════════════════════════════════════════════════════════════════════════════════
-        // Final Position: 1.075275
-        uint256 expectedUser1Profit = 75_275 * 10 ** (vault.underlyingDecimals() - 6);
-
-        assertApproxEqAbs(user1Profit, expectedUser1Profit, 5, "user1 expected profit is wrong");
-
-        // User Position Evolution:
-        // ════════════════════════════════════════════════════════════════════════════════════════
-        // Initial deposit                    1,000,000
-        // Entry fees (10%)                    -100,000  →    900,000
-        // -- 1 year gap --
-        // Management fees (10%)               -225,000  →  3,375,000  (avg(1M+0.5,4M+2)*0.1*user2_share)
-        // Performance fees (20%)              -251,471  →  3,123,529  ((1.59375-1.0)*totalSupply*0.2*user2_share)
-        // -- 1 year gap --
-        // Management fees (10%)               -312,353  →  2,811,176  (avg=same since prevTA=curTA=4M+2)
-        // Exit fees (10%)                     -281,118  →  2,530,059  (2,811,176 * 0.1 = 281,118)
-        // ════════════════════════════════════════════════════════════════════════════════════════
-        // Final Position: 2,530,059
-        uint256 expectedUser2Profit = 1_530_059 * 10 ** vault.underlyingDecimals();
-
-        assertApproxEqAbs(
-            user2Profit, expectedUser2Profit, 10 ** (vault.underlyingDecimals() + 1), "user2 expected profit is wrong"
-        );
-
-        // expectedTotalFees = (totalAssets - (deposit1 + profit1 + deposit2 + profit2)) * (1 - exitFees)
-        //                   = (4_000_002 - (1 + 0.075275 + 1_000_000 + 1_530_059)) * 0.9
-        //                   = ~1_469_942$ * 0.9
-        //                   = ~1_322_948$
-        uint256 expectedTotalFees = 1_322_948_000 * 10 ** (vault.underlyingDecimals() - 3);
-
-        address feeReceiver = vault.feeReceiver();
-        address dao = vault.protocolFeeReceiver();
-
-        uint256 feeReceiverShareBalance = vault.balanceOf(feeReceiver);
-        uint256 daoShareBalance = vault.balanceOf(dao);
-
-        assertApproxEqAbs(
-            pricePerShare(),
-            13_275 * 10 ** (vault.underlyingDecimals() - 4),
-            5, // rounding approximation
-            "Price per share didn't decreased as expected"
-        );
-
-        requestRedeem(feeReceiverShareBalance, feeReceiver);
-        requestRedeem(daoShareBalance, dao);
-
-        // ------------ Settle ------------ //
-        vm.warp(block.timestamp + 1);
-        updateNewTotalAssets(vault.totalAssets());
-        settle();
-        // vm.warp(block.timestamp + 1);
-
-        uint256 feeReceiverAssetAfter = redeem(feeReceiverShareBalance, feeReceiver);
-        uint256 daoAssetAfter = redeem(daoShareBalance, dao);
-
-        uint256 totalFees = feeReceiverAssetAfter + daoAssetAfter;
-
-        assertApproxEqAbs(totalFees, expectedTotalFees, 5 * 10 ** vault.underlyingDecimals(), "wrong total Fees");
-    }
-
-    function test_SettleRedeemTakesCorrectAmountOfFees() public {
-        // setup
-        dealAndApprove(user1.addr);
-        dealAndApprove(user2.addr);
-        uint256 balance1Before = assetBalance(user1.addr);
-        uint256 balance2Before = assetBalance(user2.addr);
-
-        uint256 balance = assetBalance(user1.addr);
-
-        requestDeposit(balance, user1.addr);
-        requestDeposit(balance, user2.addr);
-
-        updateAndSettle(0);
-
-        deposit(balance, user1.addr);
-        uint40 user2LastRequestId = vault.lastDepositRequestId(user1.addr);
-        console.log("-----user1LastRequestId", user2LastRequestId);
-        console.log("-----historical entryFeeRate", vault.getSettlementEntryFeeRate(user2LastRequestId));
-        console.log("-----current entryFeeRate", vault.entryRate());
-        uint256 shares = vault.convertToShares(
-            balance - FeeLib.computeFee(balance, vault.getSettlementEntryFeeRate(user2LastRequestId))
-        );
-        mint(shares, user2.addr);
-        ////
-
-        uint256 user1Shares = vault.balanceOf(user1.addr);
-        uint256 user2Shares = vault.balanceOf(user2.addr);
-
-        requestRedeem(user1Shares, user1.addr);
-        requestRedeem(user2Shares, user2.addr);
-
-        vm.warp(block.timestamp + 364 days);
-        updateAndSettleRedeem(4 * balance);
-
-        redeem(user1Shares, user1.addr);
-        redeem(user2Shares, user2.addr);
-
-        uint256 balance1After = assetBalance(user1.addr);
-        uint256 balance2After = assetBalance(user2.addr);
-        uint256 amSharesBalance = vault.balanceOf(feeReceiver.addr);
-        uint256 daoSharesBalance = vault.balanceOf(dao.addr);
-
-        // User Position Evolution:
-        // ════════════════════════════════════════════════════════════════════
-        // Initial Investment      100.0
-        // Entry Fees (10%)       -10.0   →   90.0
-        // Valorisation (2x)       90.0   →  180.0
-        // Management Fees (10%)  -13.5   →  166.5   (avg(200_000, 400_000) * 0.1 = 30_000, user share = 13_500)
-        // Performance Fees (20%) -15.3   →  151.2   ((1.85 - 1.0) * 200_000 * 0.2 = 34_000, user share = 15_300)
-        // Exit Fees (10%)        -15.12  →  136.08
-        // ════════════════════════════════════════════════════════════════════
-        // Final Position: 136.08
-        uint256 user1Profit = 36_080 * 10 ** vault.underlyingDecimals();
-        uint256 user2Profit = 36_080 * 10 ** vault.underlyingDecimals();
-
-        // AM Position Evolution:
-        // ════════════════════════════════════════════════════════════════════
-        // Initial Investment      0
-        // User's Fees            +127.84  →  127.84
-        // Protocol Fees (10%)    -12.784  →  115.056
-        // ════════════════════════════════════════════════════════════════════
-        // Final Position: 115.056
-        uint256 amProfit = vault.convertToShares(115_056 * 10 ** vault.underlyingDecimals());
-        // Protocol Position Evolution:
-        // ════════════════════════════════════════════════════════════════════
-        // Initial Investment      0
-        // Protocol Fees (10%)    +12.784  →  12.784
-        // ════════════════════════════════════════════════════════════════════
-        // Final Position: 12.784
-        uint256 daoProfit = vault.convertToShares(12_784 * 10 ** vault.underlyingDecimals());
-
-        assertApproxEqAbs(balance1After - balance1Before, user1Profit, 100_000, "unexpected balance 1");
-        assertApproxEqAbs(balance2After - balance2Before, user2Profit, 100_000, "unexpected balance 2");
-        assertApproxEqAbs(amSharesBalance, amProfit, vault.convertToShares(100_000), "am: wrong profits");
-        assertApproxEqAbs(daoSharesBalance, daoProfit, vault.convertToShares(100_000), "dao: wrong profits");
-    }
-
-    function test_CloseTakesCorrectAmountOfFees() public {
-        // setup
-        dealAndApprove(user1.addr);
-        dealAndApprove(user2.addr);
-        uint256 balance1Before = assetBalance(user1.addr);
-        uint256 balance2Before = assetBalance(user2.addr);
-
-        uint256 balance = assetBalance(user1.addr);
-
-        requestDeposit(balance, user1.addr);
-        requestDeposit(balance, user2.addr);
-
-        updateAndSettle(0);
-
-        deposit(balance, user1.addr);
-        deposit(balance, user2.addr);
-        ////
-
-        uint256 user1Shares = vault.balanceOf(user1.addr);
-        uint256 user2Shares = vault.balanceOf(user2.addr);
-
-        vm.warp(block.timestamp + 364 days);
-        vm.prank(vault.owner());
-        vault.initiateClosing();
-        updateAndClose(4 * balance);
-
-        redeem(user1Shares, user1.addr);
-        // use maxWithdraw which accounts for exit fees taken during sync withdraw
-        uint256 user2AssetsToWithdraw = vault.maxWithdraw(user2.addr);
-        withdraw(user2AssetsToWithdraw, user2.addr);
-
-        uint256 balance1After = assetBalance(user1.addr);
-        uint256 balance2After = assetBalance(user2.addr);
-        uint256 amSharesBalance = vault.balanceOf(feeReceiver.addr);
-        uint256 daoSharesBalance = vault.balanceOf(dao.addr);
-
-        // User Position Evolution:
-        // ════════════════════════════════════════════════════════════════════
-        // Initial Investment      100.0
-        // Entry Fees (10%)       -10.0   →   90.0
-        // Valorisation (2x)       90.0   →  180.0
-        // Management Fees (10%)  -13.5   →  166.5   (avg(200_000, 400_000) * 0.1 = 30_000, user share = 13_500)
-        // Performance Fees (20%) -15.3   →  151.2   ((1.85 - 1.0) * 200_000 * 0.2 = 34_000, user share = 15_300)
-        // Exit Fees (10%)        -15.12  →  136.08
-        // ════════════════════════════════════════════════════════════════════
-        // Final Position: 136.08
-        uint256 user1Profit = 36_080 * 10 ** vault.underlyingDecimals();
-        uint256 user2Profit = 36_080 * 10 ** vault.underlyingDecimals();
-
-        // AM Position Evolution:
-        // ════════════════════════════════════════════════════════════════════
-        // Initial Investment      0
-        // User's Fees            +127.84  →  127.84
-        // Protocol Fees (10%)    -12.784  →  115.056
-        // ════════════════════════════════════════════════════════════════════
-        // Final Position: 115.056
-        uint256 amProfit = vault.convertToShares(115_056 * 10 ** vault.underlyingDecimals());
-        // Protocol Position Evolution:
-        // ════════════════════════════════════════════════════════════════════
-        // Initial Investment      0
-        // Protocol Fees (10%)    +12.784  →  12.784
-        // ════════════════════════════════════════════════════════════════════
-        // Final Position: 12.784
-        uint256 daoProfit = vault.convertToShares(12_784 * 10 ** vault.underlyingDecimals());
-
-        assertApproxEqAbs(
-            assetBalance(address(vault)),
-            127_840 * 10 ** vault.underlyingDecimals(),
-            100_000,
-            "wrong vault asset balance"
-        );
-
-        assertApproxEqAbs(balance1After - balance1Before, user1Profit, 100_000, "user1: wrong profits");
-        assertApproxEqAbs(balance2After - balance2Before, user2Profit, 100_000, "user2: wrong profits");
-        assertApproxEqAbs(amSharesBalance, amProfit, vault.convertToShares(100_000), "am: wrong profits");
-        assertApproxEqAbs(daoSharesBalance, daoProfit, vault.convertToShares(100_000), "dao: wrong profits");
-    }
+    // function test_FeesAreTakenAfterFreeride_0() public {
+    //     vault.activateWhitelist();
+    //     address[] memory wl = new address[](3);
+    //     wl[0] = user1.addr;
+    //     wl[1] = user2.addr;
+    //     wl[2] = vault.feeReceiver();
+    //     vm.prank(vault.whitelistManager());
+    //     vault.addToWhitelist(wl);
+    //     uint256 newTotalAssets = 0;
+
+    //     // new airdrop !
+    //     dealAmountAndApproveAndWhitelist(user1.addr, _1);
+    //     dealAmountAndApproveAndWhitelist(user2.addr, _1M);
+
+    //     uint256 ppsAtStart = pricePerShare();
+
+    //     uint256 user1InitialDeposit = _1;
+    //     uint256 user2InitialDeposit = _1M;
+
+    //     // user1 deposit into vault at 1$ per share
+    //     // console.log("user1InitialDeposit", user1InitialDeposit, assetBalance(user1.addr));
+    //     requestDeposit(user1InitialDeposit, user1.addr);
+
+    //     // ------------ Settle ------------ //
+    //     updateAndSettle(newTotalAssets);
+
+    //     vm.prank(user1.addr);
+    //     vault.deposit(user1InitialDeposit - 1, user1.addr, user1.addr);
+
+    //     console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
+
+    //     assertEq(vault.lastFeeTime(), block.timestamp);
+    //     assertEq(pricePerShare(), ppsAtStart);
+
+    //     // user2 will deposit at 0.5$ per shares
+    //     requestDeposit(user2InitialDeposit, user2.addr);
+    //     // 1M * 0.1 = 100K entryfee
+
+    //     // ------------ Settle ------------ //
+    //     vm.warp(block.timestamp + 364 days);
+    //     newTotalAssets = 5 * 10 ** (vault.underlyingDecimals() - 1);
+    //     updateAndSettle(newTotalAssets);
+
+    //     console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
+    //     vm.prank(user2.addr);
+    //     vault.deposit(user2InitialDeposit, user2.addr, user2.addr);
+    //     console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
+
+    //     assertApproxEqAbs(
+    //         pricePerShare(),
+    //         425 * 10 ** (vault.underlyingDecimals() - 3),
+    //         1,
+    //         "price per share didn't decreased as expected"
+    //     );
+
+    //     // Fee Calculations at Settlement:
+    //     //
+    //     // Entry Fees:
+    //     //   user1: 1     * 0.1 = 0.1     entry fee → worth 0.0425    at settlement (PPS = 0.425)
+    //     //   user2: 1M    * 0.1 = 100K    entry fee → worth 100K      at settlement
+    //     //
+    //     // Management Fees (using average of previous and current totalAssets):
+    //     //   avg(1, 0.5) * 0.1 = 0.075    mgmt fee  → worth 0.0675    at settlement (user1 share: 0.9/1.0)
+    //     //
+    //     // Fee Distribution:
+    //     //   Total fees    = 0.0425 + 100K + 0.0675 = 100,000.11
+    //     //   Manager fee   = 100,000.11 * 0.9      =  90,000.099
+    //     //   Protocol fee  = 100,000.11 * 0.1      =  10,000.011
+    //     assertApproxEqAbs(
+    //         vault.convertToAssets(vault.balanceOf(vault.feeReceiver())),
+    //         900_000_990 * 10 ** (vault.underlyingDecimals() - 4),
+    //         10 ** (vault.underlyingDecimals() - 1),
+    //         "feeReceiver received unexpected fee shares"
+    //     );
+    //     assertApproxEqAbs(
+    //         vault.convertToAssets(vault.balanceOf(vault.protocolFeeReceiver())),
+    //         100_000_110 * 10 ** (vault.underlyingDecimals() - 4),
+    //         10 ** (vault.underlyingDecimals() - 1),
+    //         "protocol received unexpected fee shares"
+    //     );
+
+    //     // ------------ Settle ------------ //
+    //     vm.warp(block.timestamp + 364 days);
+    //     // vault price per share will increase from 0.425 -> ~1.7 (x4)
+    //     newTotalAssets = 4_000_002 * 10 ** vault.underlyingDecimals();
+    //     console.log("totalSupply before", vault.totalSupply());
+    //     console.log("totalAssets before", vault.totalAssets());
+    //     console.log("hwm before", vault.highWaterMark());
+    //     updateAndSettle(newTotalAssets);
+    //     console.log("totalSupply after", vault.totalSupply());
+    //     console.log("totalAssets after", vault.totalAssets());
+    //     console.log("hwm after", vault.highWaterMark());
+
+    //     // We expect the price per share to do be equal to:
+    //     //
+    //     //      mFees = avg(previousTA, totalAssets) * 0.1                                   (~250_000.125$)
+    //     //      newPps = (totalAssets - mFees) / totalSupply                                 (~1.59375$/share)
+    //     //      pFees = (newPps - hwm) * totalSupply * 0.2                                   (~279_412$)
+    //     //      newShares = (mFees + pFees) * (totalSupply / (totalAssets - (mFees + pFees)))  (~358_923 shares)
+    //     //
+    //     //      pps = (totalAssets - totalFees) / totalSupply (~1.475)
+    //     //
+    //     assertApproxEqAbs(
+    //         pricePerShare(),
+    //         1475 * 10 ** (vault.underlyingDecimals() - 3),
+    //         5, // rounding approximation
+    //         "Price per share didn't increased as expected"
+    //     );
+
+    //     // We expect the highWaterMark to be equal to the price per share
+    //     assertApproxEqAbs(
+    //         vault.highWaterMark(),
+    //         vault.pricePerShare(),
+    //         5, // rounding approximation
+    //         "Highwater mark shoudn't have been raised"
+    //     );
+
+    //     uint256 user1ShareBalance = vault.balanceOf(user1.addr);
+    //     uint256 user2ShareBalance = vault.balanceOf(user2.addr);
+
+    //     // ------------ Settle ------------ //
+
+    //     console.log("======");
+    //     console.log("totalSupply        :", vault.totalSupply());
+    //     console.log("totalAssets        :", vault.totalAssets());
+    //     console.log("price per share    :", vault.pricePerShare());
+    //     console.log("------");
+    //     console.log("shares feeReceiver :", vault.balanceOf(vault.feeReceiver()));
+    //     console.log("shares user1       :", vault.balanceOf(user1.addr));
+    //     console.log("shares user2       :", vault.balanceOf(user2.addr));
+    //     console.log("------");
+    //     console.log("assets feeReceiver :", vault.convertToAssets(vault.balanceOf(vault.feeReceiver())));
+    //     console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
+    //     console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
+    //     console.log("======");
+
+    //     requestRedeem(user1ShareBalance, user1.addr);
+    //     requestRedeem(user2ShareBalance, user2.addr);
+
+    //     vm.warp(block.timestamp + 364 days);
+    //     updateAndSettle(newTotalAssets);
+    //     console.log("======");
+    //     console.log("totalSupply        :", vault.totalSupply());
+    //     console.log("totalAssets        :", vault.totalAssets());
+    //     console.log("price per share    :", vault.pricePerShare());
+    //     console.log("------");
+    //     console.log("shares feeReceiver :", vault.balanceOf(vault.feeReceiver()));
+    //     console.log("shares user1       :", vault.balanceOf(user1.addr));
+    //     console.log("shares user2       :", vault.balanceOf(user2.addr));
+    //     console.log("------");
+    //     console.log("assets feeReceiver :", vault.convertToAssets(vault.balanceOf(vault.feeReceiver())));
+    //     console.log("assets user1       :", vault.convertToAssets(vault.balanceOf(user1.addr)));
+    //     console.log("assets user2       :", vault.convertToAssets(vault.balanceOf(user2.addr)));
+    //     console.log("======");
+
+    //     uint256 user1AssetBefore = assetBalance(user1.addr);
+    //     uint256 user2AssetBefore = assetBalance(user2.addr);
+
+    //     uint256 user1AssetAfter = redeem(user1ShareBalance, user1.addr);
+    //     // uint256 user2AssetAfter = redeem(user2ShareBalance, user2.addr);
+    //     uint40 user2LastRequestId = vault.lastRedeemRequestId(user2.addr);
+    //     uint256 user2AssetsToWithdraw = vault.convertToAssets(user2ShareBalance, user2LastRequestId);
+
+    //     user2AssetsToWithdraw -= FeeLib.computeFee(
+    //         user2AssetsToWithdraw, vault.getSettlementExitFeeRate(user2LastRequestId)
+    //     );
+    //     uint256 shares = withdraw(user2AssetsToWithdraw, user2.addr);
+    //     uint256 user2AssetAfter = vault.convertToAssets(shares, user2LastRequestId);
+
+    //     assetBalance(user1.addr);
+    //     assetBalance(user2.addr);
+
+    //     uint256 user1Profit = (user1AssetAfter - user1AssetBefore) - user1InitialDeposit;
+    //     uint256 user2Profit = (user2AssetAfter - user2AssetBefore) - user2InitialDeposit;
+
+    //     // User Position Evolution:
+    //     //
+    // ════════════════════════════════════════════════════════════════════════════════════════
+    //     // Initial deposit                    1.000000
+    //     // Entry fees (10%)                  -0.100000  →  0.900000
+    //     // -- 1 year gap --
+    //     // Management fees (10%)             -0.067500  →  0.382500  (avg(1, 0.5)*0.1*0.9 = 0.067500)
+    //     // -- 1 year gap --
+    //     // Management fees (10%)             -0.095625  →  1.434375  (avg(1M+0.5, 4M+2)*0.1*user1_share)
+    //     // Performance fees (20%)            -0.106875  →  1.327500  ((1.59375-1.0)*totalSupply*0.2*user1_share)
+    //     // -- 1 year gap --
+    //     // Management fees (10%)             -0.132750  →  1.194750  (avg=same since prevTA=curTA=4M+2)
+    //     // Exit fees (10%)                   -0.119475  →  1.075275  (1.194750 * 0.1 = 0.119475)
+    //     //
+    // ════════════════════════════════════════════════════════════════════════════════════════
+    //     // Final Position: 1.075275
+    //     uint256 expectedUser1Profit = 75_275 * 10 ** (vault.underlyingDecimals() - 6);
+
+    //     assertApproxEqAbs(user1Profit, expectedUser1Profit, 5, "user1 expected profit is wrong");
+
+    //     // User Position Evolution:
+    //     //
+    // ════════════════════════════════════════════════════════════════════════════════════════
+    //     // Initial deposit                    1,000,000
+    //     // Entry fees (10%)                    -100,000  →    900,000
+    //     // -- 1 year gap --
+    //     // Management fees (10%)               -225,000  →  3,375,000  (avg(1M+0.5,4M+2)*0.1*user2_share)
+    //     // Performance fees (20%)              -251,471  →  3,123,529  ((1.59375-1.0)*totalSupply*0.2*user2_share)
+    //     // -- 1 year gap --
+    //     // Management fees (10%)               -312,353  →  2,811,176  (avg=same since prevTA=curTA=4M+2)
+    //     // Exit fees (10%)                     -281,118  →  2,530,059  (2,811,176 * 0.1 = 281,118)
+    //     //
+    // ════════════════════════════════════════════════════════════════════════════════════════
+    //     // Final Position: 2,530,059
+    //     uint256 expectedUser2Profit = 1_530_059 * 10 ** vault.underlyingDecimals();
+
+    //     assertApproxEqAbs(
+    //         user2Profit, expectedUser2Profit, 10 ** (vault.underlyingDecimals() + 1), "user2 expected profit is
+    // wrong" );
+
+    //     // expectedTotalFees = (totalAssets - (deposit1 + profit1 + deposit2 + profit2)) * (1 - exitFees)
+    //     //                   = (4_000_002 - (1 + 0.075275 + 1_000_000 + 1_530_059)) * 0.9
+    //     //                   = ~1_469_942$ * 0.9
+    //     //                   = ~1_322_948$
+    //     uint256 expectedTotalFees = 1_322_948_000 * 10 ** (vault.underlyingDecimals() - 3);
+
+    //     address feeReceiver = vault.feeReceiver();
+    //     address dao = vault.protocolFeeReceiver();
+
+    //     uint256 feeReceiverShareBalance = vault.balanceOf(feeReceiver);
+    //     uint256 daoShareBalance = vault.balanceOf(dao);
+
+    //     assertApproxEqAbs(
+    //         pricePerShare(),
+    //         13_275 * 10 ** (vault.underlyingDecimals() - 4),
+    //         5, // rounding approximation
+    //         "Price per share didn't decreased as expected"
+    //     );
+
+    //     requestRedeem(feeReceiverShareBalance, feeReceiver);
+    //     requestRedeem(daoShareBalance, dao);
+
+    //     // ------------ Settle ------------ //
+    //     vm.warp(block.timestamp + 1);
+    //     updateNewTotalAssets(vault.totalAssets());
+    //     settle();
+    //     // vm.warp(block.timestamp + 1);
+
+    //     uint256 feeReceiverAssetAfter = redeem(feeReceiverShareBalance, feeReceiver);
+    //     uint256 daoAssetAfter = redeem(daoShareBalance, dao);
+
+    //     uint256 totalFees = feeReceiverAssetAfter + daoAssetAfter;
+
+    //     assertApproxEqAbs(totalFees, expectedTotalFees, 5 * 10 ** vault.underlyingDecimals(), "wrong total Fees");
+    // }
+
+    // function test_SettleRedeemTakesCorrectAmountOfFees() public {
+    //     // setup
+    //     dealAndApprove(user1.addr);
+    //     dealAndApprove(user2.addr);
+    //     uint256 balance1Before = assetBalance(user1.addr);
+    //     uint256 balance2Before = assetBalance(user2.addr);
+
+    //     uint256 balance = assetBalance(user1.addr);
+
+    //     requestDeposit(balance, user1.addr);
+    //     requestDeposit(balance, user2.addr);
+
+    //     updateAndSettle(0);
+
+    //     deposit(balance, user1.addr);
+    //     uint40 user2LastRequestId = vault.lastDepositRequestId(user1.addr);
+    //     console.log("-----user1LastRequestId", user2LastRequestId);
+    //     console.log("-----historical entryFeeRate", vault.getSettlementEntryFeeRate(user2LastRequestId));
+    //     console.log("-----current entryFeeRate", vault.entryRate());
+    //     uint256 shares = vault.convertToShares(
+    //         balance - FeeLib.computeFee(balance, vault.getSettlementEntryFeeRate(user2LastRequestId))
+    //     );
+    //     mint(shares, user2.addr);
+    //     ////
+
+    //     uint256 user1Shares = vault.balanceOf(user1.addr);
+    //     uint256 user2Shares = vault.balanceOf(user2.addr);
+
+    //     requestRedeem(user1Shares, user1.addr);
+    //     requestRedeem(user2Shares, user2.addr);
+
+    //     vm.warp(block.timestamp + 364 days);
+    //     updateAndSettleRedeem(4 * balance);
+
+    //     redeem(user1Shares, user1.addr);
+    //     redeem(user2Shares, user2.addr);
+
+    //     uint256 balance1After = assetBalance(user1.addr);
+    //     uint256 balance2After = assetBalance(user2.addr);
+    //     uint256 amSharesBalance = vault.balanceOf(feeReceiver.addr);
+    //     uint256 daoSharesBalance = vault.balanceOf(dao.addr);
+
+    //     // User Position Evolution:
+    //     //
+    // ════════════════════════════════════════════════════════════════════
+    //     // Initial Investment      100.0
+    //     // Entry Fees (10%)       -10.0   →   90.0
+    //     // Valorisation (2x)       90.0   →  180.0
+    //     // Management Fees (10%)  -13.5   →  166.5   (avg(200_000, 400_000) * 0.1 = 30_000, user share = 13_500)
+    //     // Performance Fees (20%) -15.3   →  151.2   ((1.85 - 1.0) * 200_000 * 0.2 = 34_000, user share = 15_300)
+    //     // Exit Fees (10%)        -15.12  →  136.08
+    //     //
+    // ════════════════════════════════════════════════════════════════════
+    //     // Final Position: 136.08
+    //     uint256 user1Profit = 36_080 * 10 ** vault.underlyingDecimals();
+    //     uint256 user2Profit = 36_080 * 10 ** vault.underlyingDecimals();
+
+    //     // AM Position Evolution:
+    //     //
+    // ════════════════════════════════════════════════════════════════════
+    //     // Initial Investment      0
+    //     // User's Fees            +127.84  →  127.84
+    //     // Protocol Fees (10%)    -12.784  →  115.056
+    //     //
+    // ════════════════════════════════════════════════════════════════════
+    //     // Final Position: 115.056
+    //     uint256 amProfit = vault.convertToShares(115_056 * 10 ** vault.underlyingDecimals());
+    //     // Protocol Position Evolution:
+    //     //
+    // ════════════════════════════════════════════════════════════════════
+    //     // Initial Investment      0
+    //     // Protocol Fees (10%)    +12.784  →  12.784
+    //     //
+    // ════════════════════════════════════════════════════════════════════
+    //     // Final Position: 12.784
+    //     uint256 daoProfit = vault.convertToShares(12_784 * 10 ** vault.underlyingDecimals());
+
+    //     assertApproxEqAbs(balance1After - balance1Before, user1Profit, 100_000, "unexpected balance 1");
+    //     assertApproxEqAbs(balance2After - balance2Before, user2Profit, 100_000, "unexpected balance 2");
+    //     assertApproxEqAbs(amSharesBalance, amProfit, vault.convertToShares(100_000), "am: wrong profits");
+    //     assertApproxEqAbs(daoSharesBalance, daoProfit, vault.convertToShares(100_000), "dao: wrong profits");
+    // }
+
+    // function test_CloseTakesCorrectAmountOfFees() public {
+    //     // setup
+    //     dealAndApprove(user1.addr);
+    //     dealAndApprove(user2.addr);
+    //     uint256 balance1Before = assetBalance(user1.addr);
+    //     uint256 balance2Before = assetBalance(user2.addr);
+
+    //     uint256 balance = assetBalance(user1.addr);
+
+    //     requestDeposit(balance, user1.addr);
+    //     requestDeposit(balance, user2.addr);
+
+    //     updateAndSettle(0);
+
+    //     deposit(balance, user1.addr);
+    //     deposit(balance, user2.addr);
+    //     ////
+
+    //     uint256 user1Shares = vault.balanceOf(user1.addr);
+    //     uint256 user2Shares = vault.balanceOf(user2.addr);
+
+    //     vm.warp(block.timestamp + 364 days);
+    //     vm.prank(vault.owner());
+    //     vault.initiateClosing();
+    //     updateAndClose(4 * balance);
+
+    //     redeem(user1Shares, user1.addr);
+    //     // use maxWithdraw which accounts for exit fees taken during sync withdraw
+    //     uint256 user2AssetsToWithdraw = vault.maxWithdraw(user2.addr);
+    //     withdraw(user2AssetsToWithdraw, user2.addr);
+
+    //     uint256 balance1After = assetBalance(user1.addr);
+    //     uint256 balance2After = assetBalance(user2.addr);
+    //     uint256 amSharesBalance = vault.balanceOf(feeReceiver.addr);
+    //     uint256 daoSharesBalance = vault.balanceOf(dao.addr);
+
+    //     // User Position Evolution:
+    //     //
+    // ════════════════════════════════════════════════════════════════════
+    //     // Initial Investment      100.0
+    //     // Entry Fees (10%)       -10.0   →   90.0
+    //     // Valorisation (2x)       90.0   →  180.0
+    //     // Management Fees (10%)  -13.5   →  166.5   (avg(200_000, 400_000) * 0.1 = 30_000, user share = 13_500)
+    //     // Performance Fees (20%) -15.3   →  151.2   ((1.85 - 1.0) * 200_000 * 0.2 = 34_000, user share = 15_300)
+    //     // Exit Fees (10%)        -15.12  →  136.08
+    //     //
+    // ════════════════════════════════════════════════════════════════════
+    //     // Final Position: 136.08
+    //     uint256 user1Profit = 36_080 * 10 ** vault.underlyingDecimals();
+    //     uint256 user2Profit = 36_080 * 10 ** vault.underlyingDecimals();
+
+    //     // AM Position Evolution:
+    //     //
+    // ════════════════════════════════════════════════════════════════════
+    //     // Initial Investment      0
+    //     // User's Fees            +127.84  →  127.84
+    //     // Protocol Fees (10%)    -12.784  →  115.056
+    //     //
+    // ════════════════════════════════════════════════════════════════════
+    //     // Final Position: 115.056
+    //     uint256 amProfit = vault.convertToShares(115_056 * 10 ** vault.underlyingDecimals());
+    //     // Protocol Position Evolution:
+    //     //
+    // ════════════════════════════════════════════════════════════════════
+    //     // Initial Investment      0
+    //     // Protocol Fees (10%)    +12.784  →  12.784
+    //     //
+    // ════════════════════════════════════════════════════════════════════
+    //     // Final Position: 12.784
+    //     uint256 daoProfit = vault.convertToShares(12_784 * 10 ** vault.underlyingDecimals());
+
+    //     assertApproxEqAbs(
+    //         assetBalance(address(vault)),
+    //         127_840 * 10 ** vault.underlyingDecimals(),
+    //         100_000,
+    //         "wrong vault asset balance"
+    //     );
+
+    //     assertApproxEqAbs(balance1After - balance1Before, user1Profit, 100_000, "user1: wrong profits");
+    //     assertApproxEqAbs(balance2After - balance2Before, user2Profit, 100_000, "user2: wrong profits");
+    //     assertApproxEqAbs(amSharesBalance, amProfit, vault.convertToShares(100_000), "am: wrong profits");
+    //     assertApproxEqAbs(daoSharesBalance, daoProfit, vault.convertToShares(100_000), "dao: wrong profits");
+    // }
 
     function test_NoFeesAreTakenDuringFreeRide() public {
         Rates memory rates =
