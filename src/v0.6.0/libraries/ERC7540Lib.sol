@@ -53,7 +53,7 @@ library ERC7540Lib {
     using SafeERC20 for IERC20;
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.ERC7540")) - 1)) & ~bytes32(uint256(0xff));
-    /// @custom:slot erc7201:hopper.storage.ERC7540
+    /// @custom:storage-location erc7201:hopper.storage.ERC7540
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant erc7540Storage = 0x5c74d456014b1c0eb4368d944667a568313858a3029a650ff0cb7b56f8b57a00;
 
@@ -333,8 +333,6 @@ library ERC7540Lib {
         if (!AccessableLib.isAllowed(controller)) revert AddressNotAllowed(controller);
         if (!AccessableLib.isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
 
-        _onlyUnderMaxCap(assets);
-
         uint256 claimable = claimableDepositRequest(0, controller);
         if (claimable > 0) _deposit(claimable, controller, controller);
 
@@ -350,12 +348,15 @@ library ERC7540Lib {
         if (msg.value != 0) {
             // if user sends eth and the underlying is wETH we will wrap it for him
             if (asset() == address($.wrappedNativeToken)) {
+                // enforce maxCap against the actual amount of native assets being deposited
+                _onlyUnderMaxCap(msg.value);
                 $.pendingSilo.depositEth{value: msg.value}();
                 assets = msg.value;
             } else {
                 revert CantDepositNativeToken();
             }
         } else {
+            _onlyUnderMaxCap(assets);
             IERC20(asset()).safeTransferFrom(owner, address($.pendingSilo), assets);
         }
         $.epochs[_depositId].depositRequest[controller] += assets;

@@ -47,7 +47,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 using SafeERC20 for IERC20;
 using Math for uint256;
 
-/// @custom:storage-definition erc7201:hopper.storage.vault
+/// @notice Initialization parameters for the vault.
 /// @param underlying The address of the underlying asset.
 /// @param name The name of the vault and by extension the ERC20 token.
 /// @param symbol The symbol of the vault and by extension the ERC20 token.
@@ -192,11 +192,11 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
 
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
 
-        _onlyUnderMaxCap(assets);
-
         if (msg.value != 0) {
             // if user sends eth and the underlying is wETH we will wrap it for him
             if (asset() == address($.wrappedNativeToken)) {
+                // enforce maxCap against the actual amount of native assets being deposited
+                _onlyUnderMaxCap(msg.value);
                 assets = msg.value;
                 // we do not send directly eth in case the safe is not payable
                 $.pendingSilo.depositEth{value: assets}();
@@ -205,6 +205,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
                 revert CantDepositNativeToken();
             }
         } else {
+            _onlyUnderMaxCap(assets);
             IERC20(asset()).safeTransferFrom(msg.sender, safe(), assets);
         }
         shares = _convertToShares(assets, Math.Rounding.Floor);
