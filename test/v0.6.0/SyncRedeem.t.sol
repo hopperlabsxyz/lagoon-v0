@@ -15,8 +15,8 @@ import {Rates} from "@src/v0.6.0/primitives/Struct.sol";
 contract TestSyncRedeem is BaseTest {
     using Math for uint256;
 
-    uint16 entryFeeRate = 1000; // 10 %
-    uint16 exitFeeRate = 500; // 5 %
+    uint16 entryFeeRate = 200; // 2 %
+    uint16 exitFeeRate = 200; // 2 %
     uint16 haircutRate = 200; // 2 %
 
     function setUp() public {

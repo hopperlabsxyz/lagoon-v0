@@ -91,15 +91,15 @@ contract TestStorageCollision is BaseTest {
         // we update the fees rates
         vm.prank(owner);
         proxyV0_6_0.updateRates(
-            Rates({managementRate: 10, performanceRate: 11, entryRate: 12, exitRate: 13, haircutRate: 0})
+            Rates({managementRate: 10, performanceRate: 11, entryRate: 0, exitRate: 0, haircutRate: 0})
         );
 
         vm.warp(block.timestamp + 1 days + 1);
 
         assertEq(proxyV0_6_0.feeRates().managementRate, 10);
         assertEq(proxyV0_6_0.feeRates().performanceRate, 11);
-        assertEq(proxyV0_6_0.feeRates().entryRate, 12);
-        assertEq(proxyV0_6_0.feeRates().exitRate, 13);
+        assertEq(proxyV0_6_0.feeRates().entryRate, 0);
+        assertEq(proxyV0_6_0.feeRates().exitRate, 0);
         assertEq(proxyV0_6_0.feeRates().haircutRate, 0);
     }
 }

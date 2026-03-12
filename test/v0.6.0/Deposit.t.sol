@@ -55,7 +55,7 @@ contract TestDeposit is BaseTest {
 
     function test_deposit_shouldTakeEntryFeesIntoConsideration() public {
         // we setup a vault with entry fees
-        setUpVault({_protocolRate: 0, _managementRate: 0, _performanceRate: 0, _entryRate: 1000, _exitRate: 0});
+        setUpVault({_protocolRate: 0, _managementRate: 0, _performanceRate: 0, _entryRate: 200, _exitRate: 0});
 
         dealAndApproveAndWhitelist(user3.addr);
 

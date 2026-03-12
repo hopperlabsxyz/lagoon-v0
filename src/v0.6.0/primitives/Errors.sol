@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {State} from "./Enums.sol";
+import {FeeType, State} from "./Enums.sol";
 
 // ********************* VAULT ********************* //
 
@@ -88,8 +88,15 @@ error InvalidReceiver(address receiver);
 /// @param maxRate The maximum allowable rate.
 error AboveMaxRate(uint256 maxRate);
 
+/// @notice Indicates that the fee rate cannot be increased and must only decrease.
+/// @param currentRate The current entry or exit fee rate in basis points.
+/// @param newRate The new entry or exit fee rate in basis points.
+/// @param feeType The type of fee rate that cannot be increased.
+error RateCanOnlyDecrease(uint256 currentRate, uint256 newRate, FeeType feeType);
+
 /// @notice Indicates that high water mark reset is not allowed for this vault.
 error HighWaterMarkResetNotAllowed();
+
 
 // ********************* ROLES ********************* //
 

@@ -12,7 +12,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 contract TestSyncDeposit is BaseTest {
     using Math for uint256;
 
-    uint16 entryFeeRate = 1000; // 10 %
+    uint16 entryFeeRate = 200; // 2 %
 
     function setUp() public {
         setUpVault(0, 0, 0, entryFeeRate, 0);

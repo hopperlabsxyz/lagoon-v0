@@ -6,7 +6,7 @@ import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
 import {ERC7540Lib} from "../libraries/ERC7540Lib.sol";
 import {FeeType} from "../primitives/Enums.sol";
-import {AboveMaxRate, HighWaterMarkResetNotAllowed, OnlySafe} from "../primitives/Errors.sol";
+import {AboveMaxRate, HighWaterMarkResetNotAllowed, RateCanOnlyDecrease} from "../primitives/Errors.sol";
 import {FeeTaken, HighWaterMarkUpdated, RatesUpdated} from "../primitives/Events.sol";
 import {RatesUpdated} from "../primitives/Events.sol";
 import {Rates} from "../primitives/Struct.sol";
@@ -23,10 +23,10 @@ library FeeLib {
 
     uint16 constant MAX_MANAGEMENT_RATE = 1000; // 10 %
     uint16 constant MAX_PERFORMANCE_RATE = 5000; // 50 %
-    uint16 constant MAX_ENTRY_RATE = 1000; // 10 %
-    uint16 constant MAX_EXIT_RATE = 1000; // 10 %
+    uint16 constant MAX_ENTRY_RATE = 200; // 2 %
+    uint16 constant MAX_EXIT_RATE = 200; // 2 %
     uint16 constant MAX_PROTOCOL_RATE = 3000; // 30 %
-    uint16 constant MAX_HAIRCUT_RATE = 1000; // 10 %
+    uint16 constant MAX_HAIRCUT_RATE = 500; // 5 %
 
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.FeeManager")) - 1)) & ~bytes32(uint256(0xff));
     /// @custom:storage-location erc7201:hopper.storage.FeeManager
@@ -234,8 +234,11 @@ library FeeLib {
     /// @param newRates the new fee rates
     function updateRates(
         FeeManager.FeeManagerStorage storage $,
-        Rates memory newRates
+        Rates memory newRates,
+        bool isFirstInitialization
     ) public {
+        Rates memory currentRates = $.rates;
+
         if (newRates.managementRate > MAX_MANAGEMENT_RATE) {
             revert AboveMaxRate(MAX_MANAGEMENT_RATE);
         }
@@ -252,7 +255,16 @@ library FeeLib {
             revert AboveMaxRate(MAX_HAIRCUT_RATE);
         }
 
-        Rates memory currentRates = $.rates;
+        // After initialization, entry and exit fee rates can only go down.
+        if (!isFirstInitialization) {
+            if (newRates.entryRate > currentRates.entryRate) {
+                revert RateCanOnlyDecrease(currentRates.entryRate, newRates.entryRate, FeeType.Entry);
+            }
+            if (newRates.exitRate > currentRates.exitRate) {
+                revert RateCanOnlyDecrease(currentRates.exitRate, newRates.exitRate, FeeType.Exit);
+            }
+        }
+
         $.rates = newRates;
         emit RatesUpdated(currentRates, newRates, block.timestamp);
     }
