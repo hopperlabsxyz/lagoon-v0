@@ -28,6 +28,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
     /// @param rates the current fee rates
     /// @param oldRates the previous fee rates, they are used during the cooldown period when new rates are set
     /// @param feeRegistry the fee registry contract, it is used to read the protocol rate
+    /// @param allowHighWaterMarkReset whether the safe can reset the high water mark to current price per share
     struct FeeManagerStorage {
         FeeRegistry feeRegistry;
         uint256 newRatesTimestamp;
@@ -35,13 +36,14 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
         uint256 highWaterMark;
         // Deprecated in v0.6.0
         uint256 cooldown;
-        // v0.6.0 upgrade edit the Rates struct it is fine because both rates and oldRates
+        // v0.6.0 upgrade edit the Rates struct. It is fine because both rates and oldRates
         // are not stored in the same slot as stated in the documentation
         // https://docs.soliditylang.org/en/v0.8.33/internals/layout_in_storage.html#layout-of-state-variables-in-storage-and-transient-storage
         // "Structs and array data always start a new slot and their items are packed tightly according to these rules."
         Rates rates;
         // Deprecated in v0.6.0
         Rates oldRates;
+        bool allowHighWaterMarkReset;
     }
 
     /// @notice Initialize the FeeManager contract
@@ -52,6 +54,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
     /// @param _entryRate the entry fee rate, expressed in BPS
     /// @param _exitRate the exit fee rate, expressed in BPS
     /// @param _haircutRate the haircut fee rate, expressed in BPS
+    /// @param _allowHighWaterMarkReset whether the safe can reset the high water mark to current price per share
     // solhint-disable-next-line func-name-mixedcase
     function __FeeManager_init(
         address _registry,
@@ -60,7 +63,8 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
         uint256 _decimals,
         uint16 _entryRate,
         uint16 _exitRate,
-        uint16 _haircutRate
+        uint16 _haircutRate,
+        bool _allowHighWaterMarkReset
     ) internal onlyInitializing {
         FeeManagerStorage storage $ = FeeLib._getFeeManagerStorage();
         FeeLib.updateRates(
@@ -77,6 +81,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable {
         $.feeRegistry = FeeRegistry(_registry);
         $.highWaterMark = 10 ** _decimals;
         $.lastFeeTime = block.timestamp;
+        $.allowHighWaterMarkReset = _allowHighWaterMarkReset;
     }
 
     /// @notice update the fee rates, applied immediately

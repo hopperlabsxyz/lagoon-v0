@@ -131,7 +131,8 @@ contract SetUp is Test {
             securityCouncil: admin.addr,
             externalSanctionsList: address(0),
             initialTotalAssets: 0,
-            superOperator: superOperator.addr
+            superOperator: superOperator.addr,
+            allowHighWaterMarkReset: false
         });
         // if proxy is true, we use the factory to create the vault proxy
         if (proxy) {
