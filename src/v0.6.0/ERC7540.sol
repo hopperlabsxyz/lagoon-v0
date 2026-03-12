@@ -100,6 +100,9 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         // New variables introduce with v0.6.0
         uint256 maxCap;
         bool isSyncRedeemAllowed;
+        // New variables introduce with v0.6.0 (async-only mode)
+        // When true, the vault permanently forbids synchronous deposits by keeping totalAssets invalid.
+        bool isAsyncOnly;
     }
 
     /// @notice Initializes the ERC7540 contract.
@@ -628,6 +631,12 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint40 settleId
     ) public view returns (uint16) {
         return ERC7540Lib._getERC7540Storage().settles[settleId].exitFeeRate;
+    }
+
+    /// @notice Returns true if the vault has permanently given up the ability to be synchronous.
+    /// @dev When true, totalAssets will always be considered invalid and only async flows are allowed.
+    function isAsyncOnly() public view returns (bool) {
+        return ERC7540Lib._getERC7540Storage().isAsyncOnly;
     }
 
     //////////////////////////////////

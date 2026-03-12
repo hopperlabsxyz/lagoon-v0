@@ -178,6 +178,9 @@ event WithdrawSync(
     address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
 );
 
+/// @notice Emitted when the vault is set to async-only.
+event AsyncOnlyActivated();
+
 // ********************* GUARDRAILS_MANAGER ********************* //
 
 /// @notice Emitted when the guardrails are updated.
