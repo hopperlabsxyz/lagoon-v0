@@ -13,7 +13,6 @@ import {
     NotClosing,
     NotOpen,
     OnlyAsyncDepositAllowed,
-    OnlySyncDepositAllowed,
     ValuationUpdateNotAllowed
 } from "../primitives/Errors.sol";
 import {InitStruct} from "./Vault-v0.6.0.sol";

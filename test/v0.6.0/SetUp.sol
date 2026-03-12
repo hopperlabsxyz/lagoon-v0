@@ -36,6 +36,7 @@ contract SetUp is Test {
     string vaultSymbol = "vault_symbol";
     uint256 rateUpdateCooldown = 0;
     uint8 decimals;
+    uint8 underlyingDecimals;
 
     // Users
     VmSafe.Wallet user1 = vm.createWallet("user1");
@@ -148,6 +149,7 @@ contract SetUp is Test {
             vault.initialize(abi.encode(initStruct), address(protocolRegistry), WRAPPED_NATIVE_TOKEN);
         }
         decimals = vault.decimals();
+        underlyingDecimals = underlying.decimals();
 
         // if whitelist is enabled, we whitelist a set of addresses to ease the testing
         if (enableWhitelist) {

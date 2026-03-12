@@ -70,6 +70,9 @@ error MaxCapReached();
 /// @notice Indicates that sync redeem is not allowed.
 error SyncRedeemNotAllowed();
 
+/// @notice Only asynchronous operations are allowed.
+error AsyncOnly();
+
 // ********************* FEE MANAGER ********************* //
 
 /// @notice Indicates that the provided rate exceeds the maximum allowed rate.

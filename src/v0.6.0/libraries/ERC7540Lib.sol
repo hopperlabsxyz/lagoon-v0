@@ -9,6 +9,7 @@ import {IERC7540Deposit} from "../interfaces/IERC7540Deposit.sol";
 import {FeeType} from "../primitives/Enums.sol";
 import {
     AddressNotAllowed,
+    AsyncOnly,
     CantDepositNativeToken,
     ERC7540InvalidOperator,
     ERC7540PreviewDepositDisabled,
@@ -23,6 +24,7 @@ import {
     WrongNewTotalAssets
 } from "../primitives/Errors.sol";
 import {
+    AsyncOnlyActivated,
     DepositRequestCanceled,
     NewTotalAssetsUpdated,
     Referral,
@@ -121,7 +123,10 @@ library ERC7540Lib {
         $.totalAssets = newTotalAssets;
         $.newTotalAssets = type(uint256).max; // by setting it to max, we ensure that it is not called again
 
-        $.totalAssetsExpiration = uint128(block.timestamp) + $.totalAssetsLifespan;
+        // If the vault has been set to async-only, we never make totalAssets valid again.
+        if (!$.isAsyncOnly) {
+            $.totalAssetsExpiration = uint128(block.timestamp) + $.totalAssetsLifespan;
+        }
         emit TotalAssetsUpdated(newTotalAssets);
     }
 
@@ -158,9 +163,28 @@ library ERC7540Lib {
         uint128 lifespan
     ) public {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+
+        // When the vault is configured as async-only, totalAssets are never valid again,
+        // so updating the lifespan has no effect and is therefore blocked.
+        if ($.isAsyncOnly) {
+            revert AsyncOnly();
+        }
+
         uint128 oldLifespan = $.totalAssetsLifespan;
         $.totalAssetsLifespan = lifespan;
         emit TotalAssetsLifespanUpdated(oldLifespan, lifespan);
+    }
+
+    /// @notice Permanently disables synchronous behavior for the vault.
+    /// @dev This sets the vault in async-only mode by making totalAssets permanently invalid.
+    ///      It resets both totalAssetsExpiration and totalAssetsLifespan to zero and marks
+    ///      the mode as irreversible.
+    function setAsyncOnly() public {
+        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+        $.isAsyncOnly = true;
+        $.totalAssetsExpiration = 0;
+        $.totalAssetsLifespan = 0;
+        emit AsyncOnlyActivated();
     }
 
     function setIsSyncRedeemAllowed(

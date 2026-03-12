@@ -20,6 +20,7 @@ import {GuardrailsLib} from "../libraries/GuardrailsLib.sol";
 import {AccessMode, State} from "../primitives/Enums.sol";
 import {
     AddressNotAllowed,
+    AsyncOnly,
     CantDepositNativeToken,
     Closed,
     ERC7540InvalidOperator,
@@ -27,7 +28,6 @@ import {
     NotClosing,
     NotOpen,
     OnlyAsyncDepositAllowed,
-    OnlySyncDepositAllowed,
     ValuationUpdateNotAllowed,
     VaultInitializationFailed
 } from "../primitives/Errors.sol";
@@ -230,7 +230,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         if (!isAllowed(receiver)) revert AddressNotAllowed(receiver);
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
-
+        if ($.isAsyncOnly) revert AsyncOnly();
         uint16 exitRate = FeeLib.feeRates().exitRate;
         // first we need to compute the exit fee
         uint256 exitFeeShares = FeeLib.computeFee(shares, exitRate);
@@ -570,6 +570,17 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
 
     function expireTotalAssets() public onlySafe {
         ERC7540Lib._getERC7540Storage().totalAssetsExpiration = 0;
+    }
+
+    ////////////////////////////////
+    // ## ASYNC-ONLY FUNCTIONS ## //
+    ////////////////////////////////
+
+    /// @notice Permanently gives up the capacity to make the vault synchronous.
+    /// @dev Can only be called by the owner. Once called, totalAssets will always be
+    ///      considered invalid, effectively making the vault async-only forever.
+    function activateAsyncOnly() external onlyOwner {
+        ERC7540Lib.setAsyncOnly();
     }
 
     ////////////////////////////////
