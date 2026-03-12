@@ -56,6 +56,7 @@ contract TestMisc is BaseTest {
 
         requestDeposit(10, user1.addr);
         updateAndSettle(1);
+        vm.warp(block.timestamp + 1);
         redeemId = vault.redeemEpochId();
 
         // redeemId didn't change because there is no redeem request
@@ -91,20 +92,20 @@ contract TestMisc is BaseTest {
         assertTrue(vault.supportsInterface(type(IERC165).interfaceId), "interface IERC165 not supported");
     }
 
-    // function test_contractSize() public {
-    //     uint256 size;
-    //     address vaultAddr = address(new Vault(true));
-    //     assembly {
-    //         size := extcodesize(vaultAddr)
-    //     }
-    //     console.log("Vault size: %d", size);
-    //     if (size > 24_576) {
-    //         console.log("WARNING: Size diff: %d", size - 24_576);
-    //     } else {
-    //         console.log("Size diff: %d", 24_576 - size);
-    //     }
-    //     // assertLt(size, 24_576, "Contract size is too large");
-    // }
+    function test_contractSize() public {
+        uint256 size;
+        address vaultAddr = address(new Vault(true));
+        assembly {
+            size := extcodesize(vaultAddr)
+        }
+        console.log("Vault size: %d", size);
+        if (size > 24_576) {
+            console.log("WARNING: Size diff: %d", size - 24_576);
+        } else {
+            console.log("Size diff: %d", 24_576 - size);
+        }
+        // assertLt(size, 24_576, "Contract size is too large");
+    }
 
     function test_epochSettleId() public {
         assertEq(vault.epochSettleId(0), 0);
@@ -112,6 +113,7 @@ contract TestMisc is BaseTest {
         assertEq(vault.epochSettleId(2), 0);
 
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
 
         assertEq(vault.epochSettleId(0), 0);
         assertEq(vault.epochSettleId(1), 1);
@@ -179,6 +181,7 @@ contract TestMisc is BaseTest {
         assertEq(vault.lastDepositRequestId(user1.addr), requestId2);
 
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
 
         dealAndApproveAndWhitelist(user1.addr);
         uint256 requestId3 = requestDeposit(user1Balance, user1.addr);
@@ -186,6 +189,7 @@ contract TestMisc is BaseTest {
         assertEq(vault.lastDepositRequestId(user1.addr), requestId3);
 
         updateAndSettle(2 * user1Balance);
+        vm.warp(block.timestamp + 1);
 
         vm.prank(user1.addr);
         vault.deposit(user1Balance, user1.addr, user1.addr);
@@ -216,8 +220,7 @@ contract TestMisc is BaseTest {
     }
 
     function test_version() public view {
-        console.log(vault.version());
-        assertEq(keccak256(abi.encode(vault.version())), keccak256(abi.encode("v0.5.0")));
+        assertEq(keccak256(abi.encode(vault.version())), keccak256(abi.encode("v0.5.1")));
     }
 
     function test_factory() public view {

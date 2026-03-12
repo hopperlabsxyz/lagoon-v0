@@ -24,6 +24,8 @@ struct EpochData {
 /// @dev Holds settlement data for the vault.
 /// @param totalSupply Total number of shares for this settlement.
 /// @param totalAssets Total value of assets managed by the vault for this settlement.
+/// @param pendingAssets Total value of assets that were settled in this settlement.
+/// @param pendingShares Total number of shares that were settled in this settlement.
 struct SettleData {
     uint256 totalSupply;
     uint256 totalAssets;

@@ -215,6 +215,22 @@ contract DelayProxyAdminTest is Test {
         proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(0x456)), newImplementation, "");
     }
 
+    function test_UpgradeAndCall_RevertsIfImplementationInconsistent() public {
+        address submittedImplementation = address(0x123);
+        address wrongImplementation = address(0x456);
+
+        vm.prank(owner);
+        proxyAdmin.submitImplementation(submittedImplementation);
+
+        vm.warp(block.timestamp + initialDelay + 1);
+
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(DelayProxyAdmin.ImplementationInconsistent.selector, submittedImplementation)
+        );
+        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(0x789)), wrongImplementation, "");
+    }
+
     function test_UpgradeAndCall_RevertsIfCallTwiceInRaw() public {
         // Mock proxy
         MockProxy mockProxy = new MockProxy(address(proxyAdmin));

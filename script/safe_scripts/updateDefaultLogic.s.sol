@@ -8,7 +8,7 @@ import {
 
 import {LogicRegistry} from "@src/protocol-v2/ProtocolRegistry.sol";
 
-// import {Vault} from "../src/v0.5.0/Vault.sol";
+// import {Vault} from "../src/v0.5.1/Vault.sol";
 
 import {BatchScript} from "../tools/BatchScript.sol";
 

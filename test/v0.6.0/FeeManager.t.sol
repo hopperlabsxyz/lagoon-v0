@@ -8,6 +8,8 @@ import {BaseTest} from "./Base.sol";
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AccessMode} from "@src/v0.6.0/primitives/Enums.sol";
+import {HighWaterMarkResetNotAllowed, OnlySafe} from "@src/v0.6.0/primitives/Errors.sol";
+import {HighWaterMarkUpdated} from "@src/v0.6.0/primitives/Events.sol";
 import {InitStruct} from "@src/v0.6.0/vault/Vault-v0.6.0.sol";
 
 contract TestFeeManager is BaseTest {
@@ -92,7 +94,8 @@ contract TestFeeManager is BaseTest {
             securityCouncil: admin.addr,
             externalSanctionsList: address(0),
             initialTotalAssets: initialAssets,
-            superOperator: superOperator.addr
+            superOperator: superOperator.addr,
+            allowHighWaterMarkReset: false
         });
 
         VaultHelper newVault = new VaultHelper(false);
@@ -800,5 +803,199 @@ contract TestFeeManager is BaseTest {
         vm.prank(vault.safe());
         vm.expectRevert(abi.encodeWithSelector(NewTotalAssetsMissing.selector));
         vault.close(1);
+    }
+
+    // ********************* HIGH WATER MARK RESET TESTS ********************* //
+
+    function test_resetHighWaterMark_whenFlagEnabled_resetsToCurrentPricePerShare() public {
+        // Deploy a new vault with allowHighWaterMarkReset enabled
+        InitStruct memory initStruct = InitStruct({
+            underlying: underlying,
+            name: vaultName,
+            symbol: vaultSymbol,
+            safe: safe.addr,
+            whitelistManager: whitelistManager.addr,
+            valuationManager: valuationManager.addr,
+            admin: admin.addr,
+            feeReceiver: feeReceiver.addr,
+            managementRate: managementFee,
+            performanceRate: performanceFee,
+            accessMode: AccessMode.Blacklist,
+            entryRate: entryFee,
+            exitRate: exitFee,
+            haircutRate: 0,
+            securityCouncil: admin.addr,
+            externalSanctionsList: address(0),
+            initialTotalAssets: 0,
+            superOperator: superOperator.addr,
+            allowHighWaterMarkReset: true
+        });
+
+        VaultHelper newVault = new VaultHelper(false);
+        newVault.initialize(abi.encode(initStruct), address(protocolRegistry), WRAPPED_NATIVE_TOKEN);
+        vault = newVault;
+
+        // Make some deposits and settlements to increase the high water mark
+        // First, deal assets and approve
+        uint256 depositAmount = _10K;
+        dealAmountAndApprove(user1.addr, depositAmount);
+
+        // Request deposit
+        vm.prank(user1.addr);
+        newVault.requestDeposit(depositAmount, user1.addr, user1.addr);
+
+        // Update total assets and settle (use a higher value to create performance)
+        uint256 newTotalAssets = _20M;
+        vm.prank(newVault.valuationManager());
+        newVault.updateNewTotalAssets(newTotalAssets);
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(newVault.safe());
+        newVault.settleDeposit(newTotalAssets);
+
+        uint256 hwmBefore = newVault.highWaterMark();
+        uint256 currentPps = newVault.convertToAssets(10 ** newVault.decimals());
+
+        vm.prank(newVault.valuationManager());
+        newVault.updateNewTotalAssets(newTotalAssets / 2);
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(newVault.safe());
+        newVault.settleDeposit(newTotalAssets / 2);
+
+        assertNotEq(newVault.highWaterMark(), newVault.pricePerShare(), "hwm should not be equal to pps");
+
+        // Reset the high water mark
+        vm.prank(newVault.safe());
+        newVault.resetHighWaterMark();
+
+        // High water mark should now equal current price per share
+        assertEq(newVault.highWaterMark(), newVault.pricePerShare(), "HWM should equal current PPS after reset");
+    }
+
+    function test_resetHighWaterMark_whenFlagDisabled_reverts() public {
+        // Default vault has allowHighWaterMarkReset: false
+        uint256 hwmBefore = vault.highWaterMark();
+
+        // Attempt to reset should revert
+        vm.prank(vault.safe());
+        vm.expectRevert(HighWaterMarkResetNotAllowed.selector);
+        vault.resetHighWaterMark();
+
+        // High water mark should remain unchanged
+        assertEq(vault.highWaterMark(), hwmBefore, "HWM should remain unchanged");
+    }
+
+    function test_resetHighWaterMark_whenNotCalledBySafe_reverts() public {
+        // Attempt to reset from non-safe address should revert
+        vm.prank(admin.addr);
+        vm.expectRevert(abi.encodeWithSelector(OnlySafe.selector, safe.addr));
+        vault.resetHighWaterMark();
+
+        vm.prank(user1.addr);
+        vm.expectRevert(abi.encodeWithSelector(OnlySafe.selector, safe.addr));
+        vault.resetHighWaterMark();
+
+        vm.prank(valuationManager.addr);
+        vm.expectRevert(abi.encodeWithSelector(OnlySafe.selector, safe.addr));
+        vault.resetHighWaterMark();
+    }
+
+    function test_resetHighWaterMark_emitsHighWaterMarkUpdatedEvent() public {
+        // Deploy a new vault with allowHighWaterMarkReset enabled
+        InitStruct memory initStruct = InitStruct({
+            underlying: underlying,
+            name: vaultName,
+            symbol: vaultSymbol,
+            safe: safe.addr,
+            whitelistManager: whitelistManager.addr,
+            valuationManager: valuationManager.addr,
+            admin: admin.addr,
+            feeReceiver: feeReceiver.addr,
+            managementRate: managementFee,
+            performanceRate: performanceFee,
+            accessMode: AccessMode.Blacklist,
+            entryRate: entryFee,
+            exitRate: exitFee,
+            haircutRate: 0,
+            securityCouncil: admin.addr,
+            externalSanctionsList: address(0),
+            initialTotalAssets: 0,
+            superOperator: superOperator.addr,
+            allowHighWaterMarkReset: true
+        });
+
+        VaultHelper newVault = new VaultHelper(false);
+        newVault.initialize(abi.encode(initStruct), address(protocolRegistry), WRAPPED_NATIVE_TOKEN);
+        vault = newVault;
+
+        // Make some deposits and settlements to increase the high water mark
+        // First, deal assets and approve
+        uint256 depositAmount = _10K;
+        dealAmountAndApprove(user1.addr, depositAmount);
+
+        // Request deposit
+        vm.prank(user1.addr);
+        newVault.requestDeposit(depositAmount, user1.addr, user1.addr);
+
+        // Update total assets and settle (use a higher value to create performance)
+        uint256 newTotalAssets = _20M;
+        vm.prank(newVault.valuationManager());
+        newVault.updateNewTotalAssets(newTotalAssets);
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(newVault.safe());
+        newVault.settleDeposit(newTotalAssets);
+
+        uint256 hwmBefore = newVault.highWaterMark();
+        uint256 currentPps = newVault.convertToAssets(10 ** newVault.decimals());
+
+        // Expect the HighWaterMarkUpdated event
+        vm.expectEmit(true, true, true, true);
+        emit HighWaterMarkUpdated(hwmBefore, currentPps);
+
+        // Reset the high water mark
+        vm.prank(newVault.safe());
+        newVault.resetHighWaterMark();
+    }
+
+    function test_resetHighWaterMark_whenPricePerShareEqualsHighWaterMark_stillResets() public {
+        // Deploy a new vault with allowHighWaterMarkReset enabled
+        InitStruct memory initStruct = InitStruct({
+            underlying: underlying,
+            name: vaultName,
+            symbol: vaultSymbol,
+            safe: safe.addr,
+            whitelistManager: whitelistManager.addr,
+            valuationManager: valuationManager.addr,
+            admin: admin.addr,
+            feeReceiver: feeReceiver.addr,
+            managementRate: 0, // No fees to keep it simple
+            performanceRate: 0,
+            accessMode: AccessMode.Blacklist,
+            entryRate: 0,
+            exitRate: 0,
+            haircutRate: 0,
+            securityCouncil: admin.addr,
+            externalSanctionsList: address(0),
+            initialTotalAssets: 0,
+            superOperator: superOperator.addr,
+            allowHighWaterMarkReset: true
+        });
+
+        VaultHelper newVault = new VaultHelper(false);
+        newVault.initialize(abi.encode(initStruct), address(protocolRegistry), WRAPPED_NATIVE_TOKEN);
+
+        uint256 hwmBefore = newVault.highWaterMark();
+        uint256 currentPps = newVault.convertToAssets(10 ** newVault.decimals());
+
+        // Initially, HWM should equal current PPS
+        assertEq(hwmBefore, currentPps, "HWM should equal current PPS initially");
+
+        // Reset should still work even when they're equal
+        vm.prank(newVault.safe());
+        newVault.resetHighWaterMark();
+
+        // HWM should still equal current PPS
+        uint256 hwmAfter = newVault.highWaterMark();
+        assertEq(hwmAfter, currentPps, "HWM should still equal current PPS after reset");
+        assertEq(hwmAfter, hwmBefore, "HWM should remain the same when already equal to PPS");
     }
 }

@@ -190,6 +190,14 @@ contract TestRequestDeposit is BaseTest {
         vault.requestDeposit(42, user1.addr, user1.addr);
     }
 
+    function test_requestDeposit_revertIfControllerIsZeroAddress() public {
+        uint256 userBalance = assetBalance(user1.addr);
+        vm.startPrank(user1.addr);
+        vm.expectRevert(abi.encodeWithSelector(InvalidController.selector, address(0)));
+        vault.requestDeposit(userBalance, address(0), user1.addr);
+        vm.stopPrank();
+    }
+
     function test_requestDeposit_ShouldBeAbleToDepositAgainWhenIndeterminationIsRaidedAtSettlement() public {
         vm.prank(user1.addr);
         vault.requestDeposit(42, user1.addr, user1.addr);

@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import {IVersion} from "./IVersion.sol";
 
 import {Options, Upgrades} from "@openzeppelin-foundry-upgrades/Upgrades.sol";
-import {Vault} from "@src/v0.5.0/Vault.sol";
+import {Vault} from "@src/v0.5.1/Vault.sol";
 
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -115,7 +115,7 @@ contract Upgradable is Test {
         vault = factory.createVaultProxy({
             _logic: v5, _initialOwner: admin.addr, _init: v, salt: "0x1123", _initialDelay: 86_400
         });
-        assertEq(Vault(vault).version(), "v0.5.0");
+        assertEq(Vault(vault).version(), "v0.5.1");
 
         bytes32 ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
         DelayProxyAdmin adminContract = DelayProxyAdmin(address(uint160(uint256(vm.load(vault, bytes32(ADMIN_SLOT))))));

@@ -25,8 +25,8 @@ INTERACTIVE=true
 
 # Available contracts
 declare -a CONTRACTS=(
-  "./src/v0.5.0/Vault.sol:Vault"
-  "./src/v0.5.0/Silo.sol:Silo"
+  "./src/v0.5.1/Vault.sol:Vault"
+  "./src/v0.5.1/Silo.sol:Silo"
   "./src/proxy/OptinProxy.sol:OptinProxy"
   "./src/BeaconProxyFactory.sol:BeaconProxyFactory"
   "./dependencies/@openzeppelin-contracts-5.0.0/proxy/beacon/BeaconProxy.sol:BeaconProxy"

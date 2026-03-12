@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {VaultHelper as VaultHelper_v0_5_0} from "../v0.5.0-opt-inProxy/VaultHelper.sol";
+import {VaultHelper as VaultHelper_v0_5_1} from "../v0.5.1-opt-inProxy/VaultHelper.sol";
 import {VaultHelper as VaultHelper_v0_6_0} from "../v0.6.0/VaultHelper.sol";
 import {VaultHelper} from "./VaultHelper.sol";
 
@@ -59,8 +59,9 @@ contract SetUp is Test {
     VmSafe.Wallet whitelistManager = vm.createWallet("whitelistManager");
 
     // Implementations
-    VaultHelper_v0_5_0 vault_v0_5_0 = new VaultHelper_v0_5_0(false);
+    VaultHelper_v0_5_1 vault_v0_5_1 = new VaultHelper_v0_5_1(false);
     VaultHelper_v0_6_0 vault_v0_6_0 = new VaultHelper_v0_6_0(false);
+    address implementation = address(vault_v0_6_0);
 
     VmSafe.Wallet[] users;
 
@@ -131,7 +132,8 @@ contract SetUp is Test {
             securityCouncil: admin.addr,
             externalSanctionsList: address(0),
             initialTotalAssets: 0,
-            superOperator: superOperator.addr
+            superOperator: superOperator.addr,
+            allowHighWaterMarkReset: false
         });
         // if proxy is true, we use the factory to create the vault proxy
         if (proxy) {

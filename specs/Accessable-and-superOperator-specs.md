@@ -95,8 +95,6 @@ In both blacklist and whitelist modes, the `superOperator` has extended capabili
 
 - **superOperator** can be used for **cancelRequestDeposit** operations except if the user is blacklisted or not whitelisted.
 
-<<<<<<< HEAD:Accessable-and-superOperator-specs.md
-=======
 ### 1. Blacklisted vs not whitelisted
 
 - In **whitelist mode**, there is **no blacklist**; addresses are only “whitelisted” or “not whitelisted”.
@@ -146,7 +144,6 @@ In both blacklist and whitelist modes, the `superOperator` has extended capabili
   - SHOULD distinguish the reason (e.g. “AddressNotAllowed(address)” vs “Blacklisted(address)”),
 
 ---
->>>>>>> feat/v0.6.0:WHITELIST_BLACKLIST_SPEC.md
 
 ## Summary of Behaviour
 
