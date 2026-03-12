@@ -32,7 +32,8 @@ contract TestPreMint is BaseTest {
             securityCouncil: admin.addr,
             externalSanctionsList: address(0),
             initialTotalAssets: 0,
-            superOperator: superOperator.addr
+            superOperator: superOperator.addr,
+            allowHighWaterMarkReset: false
         });
 
         VaultHelper newVault = new VaultHelper(false);
@@ -67,7 +68,8 @@ contract TestPreMint is BaseTest {
             securityCouncil: admin.addr,
             externalSanctionsList: address(0),
             initialTotalAssets: initialAssets,
-            superOperator: superOperator.addr
+            superOperator: superOperator.addr,
+            allowHighWaterMarkReset: false
         });
 
         VaultHelper newVault = new VaultHelper(false);
@@ -108,7 +110,8 @@ contract TestPreMint is BaseTest {
             securityCouncil: admin.addr,
             externalSanctionsList: address(0),
             initialTotalAssets: initialAssets,
-            superOperator: superOperator.addr
+            superOperator: superOperator.addr,
+            allowHighWaterMarkReset: false
         });
 
         VaultHelper newVault = new VaultHelper(false);

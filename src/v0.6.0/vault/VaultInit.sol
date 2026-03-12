@@ -13,7 +13,6 @@ import {
     NotClosing,
     NotOpen,
     OnlyAsyncDepositAllowed,
-    OnlySyncDepositAllowed,
     ValuationUpdateNotAllowed
 } from "../primitives/Errors.sol";
 import {InitStruct} from "./Vault-v0.6.0.sol";
@@ -78,7 +77,8 @@ contract VaultInit is ERC7540, Accessable, FeeManager, GuardrailsManager {
             _decimals: IERC20Metadata(address(init.underlying)).decimals(),
             _entryRate: init.entryRate,
             _exitRate: init.exitRate,
-            _haircutRate: init.haircutRate
+            _haircutRate: init.haircutRate,
+            _allowHighWaterMarkReset: init.allowHighWaterMarkReset
         });
 
         emit StateUpdated(State.Open);

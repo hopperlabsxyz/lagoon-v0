@@ -70,6 +70,18 @@ error MaxCapReached();
 /// @notice Indicates that sync redeem is not allowed.
 error SyncRedeemNotAllowed();
 
+/// @notice Only asynchronous operations are allowed.
+error AsyncOnly();
+
+/// @notice Indicates that the controller is invalid.
+/// @param controller The address of the controller.
+error InvalidController(address controller);
+
+/// @notice Indicates that the receiver is invalid.
+/// @param receiver The address of the receiver.
+error InvalidReceiver(address receiver);
+
+
 // ********************* FEE MANAGER ********************* //
 
 /// @notice Indicates that the provided rate exceeds the maximum allowed rate.
@@ -81,6 +93,10 @@ error AboveMaxRate(uint256 maxRate);
 /// @param newRate The new entry or exit fee rate in basis points.
 /// @param feeType The type of fee rate that cannot be increased.
 error RateCanOnlyDecrease(uint256 currentRate, uint256 newRate, FeeType feeType);
+
+/// @notice Indicates that high water mark reset is not allowed for this vault.
+error HighWaterMarkResetNotAllowed();
+
 
 // ********************* ROLES ********************* //
 
