@@ -81,7 +81,6 @@ error InvalidController(address controller);
 /// @param receiver The address of the receiver.
 error InvalidReceiver(address receiver);
 
-
 // ********************* FEE MANAGER ********************* //
 
 /// @notice Indicates that the provided rate exceeds the maximum allowed rate.
@@ -96,7 +95,6 @@ error RateCanOnlyDecrease(uint256 currentRate, uint256 newRate, FeeType feeType)
 
 /// @notice Indicates that high water mark reset is not allowed for this vault.
 error HighWaterMarkResetNotAllowed();
-
 
 // ********************* ROLES ********************* //
 
