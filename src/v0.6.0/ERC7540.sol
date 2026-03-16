@@ -279,7 +279,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
     function isOperatorOrSuperOperator(
         address controller,
         address operator
-    ) public view returns (bool) {
+    ) internal view returns (bool) {
         return ERC7540Lib._isOperatorOrSuperOperator(controller, operator);
     }
 

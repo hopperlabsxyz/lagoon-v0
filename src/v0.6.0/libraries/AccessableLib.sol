@@ -114,7 +114,7 @@ library AccessableLib {
     }
 
     /// @notice Returns true if the blacklist is active, false otherwise
-    function isBlacklistMode() public view returns (bool) {
+    function isBlacklistMode() internal view returns (bool) {
         Accessable.AccessableStorage storage $ = _getAccessableStorage();
         return $.accessMode == AccessMode.Blacklist;
     }
