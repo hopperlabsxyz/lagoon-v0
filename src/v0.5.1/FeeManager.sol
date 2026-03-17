@@ -19,7 +19,7 @@ abstract contract FeeManager is Ownable2StepUpgradeable, ERC7540 {
     uint16 public constant MAX_PERFORMANCE_RATE = 5000; // 50 %
     uint16 public constant MAX_PROTOCOL_RATE = 3000; // 30 %
 
-    /// @custom:storage-definition erc7201:hopper.storage.FeeManager
+    /// @custom:storage-location erc7201:hopper.storage.FeeManager
     /// @param newRatesTimestamp the timestamp at which the new rates will be applied
     /// @param lastFeeTime the timestamp of the last fee calculation, it is used to compute management fees
     /// @param highWaterMark the highest price per share ever reached, performance fees are taken when the price per

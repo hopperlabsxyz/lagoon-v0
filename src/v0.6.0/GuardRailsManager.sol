@@ -10,7 +10,7 @@ import {Guardrails} from "./primitives/Struct.sol";
 using Math for uint256;
 
 abstract contract GuardrailsManager is Roles {
-    /// @custom:storage-definition erc7201:hopper.storage.GuardrailsManager
+    /// @custom:storage-location erc7201:hopper.storage.GuardrailsManager
     /// @param guardrails The current guardrails.
     struct GuardrailsManagerStorage {
         Guardrails guardrails;

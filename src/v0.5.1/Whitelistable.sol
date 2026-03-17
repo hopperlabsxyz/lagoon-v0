@@ -10,7 +10,7 @@ abstract contract Whitelistable is Roles {
     // solhint-disable-next-line const-name-snakecase
     bytes32 private constant whitelistableStorage = 0x083cc98ab296d1a1f01854b5f7a2f47df4425a56ba7b35f7faa3a336067e4800;
 
-    /// @custom:storage-definition erc7201:hopper.storage.Whitelistable
+    /// @custom:storage-location erc7201:hopper.storage.Whitelistable
     /// @param isWhitelisted The mapping of whitelisted addresses.
     /// @param isActivated The flag to check if the whitelist is activated.
     struct WhitelistableStorage {

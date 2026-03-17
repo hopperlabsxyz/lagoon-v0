@@ -8,7 +8,7 @@ import {RolesLib} from "./libraries/RolesLib.sol";
 import {AccessMode} from "./primitives/Enums.sol";
 
 abstract contract Accessable is Roles {
-    /// @custom:storage-definition erc7201:hopper.storage.Whitelistable
+    /// @custom:storage-location erc7201:hopper.storage.Whitelistable
     /// @param isWhitelisted The mapping of whitelisted addresses.
     /// @param accessMode The current access mode (whitelist or blacklist).
     /// @param isBlacklisted The mapping of blacklisted addresses.
