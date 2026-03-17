@@ -73,6 +73,11 @@ error SyncRedeemNotAllowed();
 /// @notice Only asynchronous operations are allowed.
 error AsyncOnly();
 
+/// @notice Indicates that the redeemed assets are below the minimum requested.
+/// @param assets The actual assets after fees.
+/// @param minimumAssets The minimum assets requested by the caller.
+error BelowMinimumAssets(uint256 assets, uint256 minimumAssets);
+
 /// @notice Indicates that the controller is invalid.
 /// @param controller The address of the controller.
 error InvalidController(address controller);

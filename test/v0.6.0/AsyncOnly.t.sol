@@ -190,7 +190,7 @@ contract TestAsyncOnly is BaseTest {
         // Try to sync redeem - should revert
         vm.prank(user1.addr);
         vm.expectRevert(AsyncOnly.selector);
-        vault.syncRedeem(shares / 2, user1.addr);
+        vault.syncRedeem(shares / 2, user1.addr, 0);
     }
 
     function test_requestDeposit_succeedsWhenAsyncOnly() public {

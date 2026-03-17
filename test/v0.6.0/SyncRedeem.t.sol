@@ -51,7 +51,7 @@ contract TestSyncRedeem is BaseTest {
         emit WithdrawSync(user1.addr, user1.addr, user1.addr, expectedAssets, sharesToRedeem);
 
         vm.prank(user1.addr);
-        uint256 assets = vault.syncRedeem(sharesToRedeem, user1.addr);
+        uint256 assets = vault.syncRedeem(sharesToRedeem, user1.addr, 0);
 
         assertEq(assets, expectedAssets, "assets returned != previewSyncRedeem");
         assertEq(vault.balanceOf(user1.addr), userSharesBefore - sharesToRedeem, "shares not burned correctly");
@@ -70,7 +70,7 @@ contract TestSyncRedeem is BaseTest {
         vm.warp(block.timestamp + 1001);
 
         vm.prank(user1.addr);
-        vault.syncRedeem(1, user1.addr);
+        vault.syncRedeem(1, user1.addr, 0);
     }
 
     function test_syncRedeem_whenClosed() public {
@@ -96,7 +96,7 @@ contract TestSyncRedeem is BaseTest {
 
         vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closing));
         vm.prank(user1.addr);
-        vault.syncRedeem(1, user1.addr);
+        vault.syncRedeem(1, user1.addr, 0);
 
         vm.startPrank(safe.addr);
         vault.close(vault.newTotalAssets());
@@ -104,7 +104,7 @@ contract TestSyncRedeem is BaseTest {
 
         vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closed));
         vm.prank(user1.addr);
-        vault.syncRedeem(1, user1.addr);
+        vault.syncRedeem(1, user1.addr, 0);
     }
 
     function test_syncRedeem_whitelist() public {
@@ -116,7 +116,7 @@ contract TestSyncRedeem is BaseTest {
         // user2 is not whitelisted
         vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user2.addr));
         vm.prank(user2.addr);
-        vault.syncRedeem(1, user2.addr);
+        vault.syncRedeem(1, user2.addr, 0);
     }
 
     function test_syncRedeem_whenPaused() public {
@@ -137,7 +137,7 @@ contract TestSyncRedeem is BaseTest {
 
         vm.expectRevert(Pausable.EnforcedPause.selector);
         vm.prank(user1.addr);
-        vault.syncRedeem(1, user1.addr);
+        vault.syncRedeem(1, user1.addr, 0);
     }
 
     function test_syncRedeem_differentReceiver() public {
@@ -163,7 +163,7 @@ contract TestSyncRedeem is BaseTest {
         emit WithdrawSync(user1.addr, user2.addr, user1.addr, expectedAssets, sharesToRedeem);
 
         vm.prank(user1.addr);
-        uint256 assets = vault.syncRedeem(sharesToRedeem, user2.addr);
+        uint256 assets = vault.syncRedeem(sharesToRedeem, user2.addr, 0);
 
         assertEq(assets, expectedAssets);
         assertEq(vault.balanceOf(user1.addr), user1SharesBefore - sharesToRedeem, "user1 shares not burned correctly");
@@ -196,7 +196,7 @@ contract TestSyncRedeem is BaseTest {
         uint256 totalAssetsBefore = vault.totalAssets();
 
         vm.prank(user1.addr);
-        uint256 assets = vault.syncRedeem(sharesToRedeem, user1.addr);
+        uint256 assets = vault.syncRedeem(sharesToRedeem, user1.addr, 0);
 
         // Exit fee shares should be minted to fee receivers
         uint256 totalSupplyAfter = vault.totalSupply();
@@ -249,7 +249,7 @@ contract TestSyncRedeem is BaseTest {
         uint256 expectedAssets = vault.convertToAssetsWithRounding(sharesToRedeem - haircutShares, Math.Rounding.Floor);
 
         vm.prank(user1.addr);
-        uint256 assets = vault.syncRedeem(sharesToRedeem, user1.addr);
+        uint256 assets = vault.syncRedeem(sharesToRedeem, user1.addr, 0);
 
         // All shares should be burned
         assertEq(vault.balanceOf(user1.addr), userSharesBefore - sharesToRedeem, "all shares should be burned");
@@ -290,7 +290,7 @@ contract TestSyncRedeem is BaseTest {
         uint256 totalAssetsBefore = vault.totalAssets();
 
         vm.prank(user1.addr);
-        uint256 assets = vault.syncRedeem(sharesToRedeem, user1.addr);
+        uint256 assets = vault.syncRedeem(sharesToRedeem, user1.addr, 0);
 
         uint256 ppsAfter = vault.pricePerShare();
 
@@ -333,7 +333,7 @@ contract TestSyncRedeem is BaseTest {
         uint256 totalAssetsBefore = vault.totalAssets();
 
         vm.prank(user1.addr);
-        uint256 assets = vault.syncRedeem(sharesToRedeem, user1.addr);
+        uint256 assets = vault.syncRedeem(sharesToRedeem, user1.addr, 0);
 
         uint256 ppsAfter = vault.pricePerShare();
 
@@ -357,7 +357,7 @@ contract TestSyncRedeem is BaseTest {
         uint256 totalAssetsBefore = vault.totalAssets();
 
         vm.prank(user1.addr);
-        uint256 assets = vault.syncRedeem(0, user1.addr);
+        uint256 assets = vault.syncRedeem(0, user1.addr, 0);
 
         assertEq(assets, 0, "zero shares should return zero assets");
         assertEq(vault.balanceOf(user1.addr), userSharesBefore, "shares should not change");
@@ -378,7 +378,7 @@ contract TestSyncRedeem is BaseTest {
         emit WithdrawSync(user1.addr, user1.addr, user1.addr, expectedAssets, sharesToRedeem);
 
         vm.prank(user1.addr);
-        vault.syncRedeem(sharesToRedeem, user1.addr);
+        vault.syncRedeem(sharesToRedeem, user1.addr, 0);
     }
 
     function test_syncRedeem_insufficientSafeBalance() public {
@@ -399,7 +399,7 @@ contract TestSyncRedeem is BaseTest {
         // Now try to redeem - should fail because safe doesn't have enough assets
         vm.expectRevert();
         vm.prank(user1.addr);
-        vault.syncRedeem(sharesToRedeem, user1.addr);
+        vault.syncRedeem(sharesToRedeem, user1.addr, 0);
     }
 
     function test_syncRedeem_insufficientUserShares() public {
@@ -418,7 +418,7 @@ contract TestSyncRedeem is BaseTest {
             )
         );
         vm.prank(user1.addr);
-        vault.syncRedeem(sharesToRedeem, user1.addr);
+        vault.syncRedeem(sharesToRedeem, user1.addr, 0);
     }
 
     function test_syncRedeem_notAllowed() public {
@@ -427,6 +427,56 @@ contract TestSyncRedeem is BaseTest {
 
         vm.expectRevert(SyncRedeemNotAllowed.selector);
         vm.prank(user1.addr);
-        vault.syncRedeem(1, user1.addr);
+        vault.syncRedeem(1, user1.addr, 0);
+    }
+
+    function test_syncRedeem_belowMinimumAssets() public {
+        // Set up vault with both exit fee and haircut to ensure fees are non-zero
+        setUpVault(0, 0, 0, 0, 200); // 2% exit fee
+        vm.prank(vault.safe());
+        vault.setIsSyncRedeemAllowed(true);
+
+        Rates memory newRates =
+            Rates({managementRate: 0, performanceRate: 0, entryRate: 0, exitRate: 200, haircutRate: 500});
+        vm.prank(vault.owner());
+        vault.updateRates(newRates);
+        vm.warp(block.timestamp + 1 days);
+
+        dealAndApproveAndWhitelist(user1.addr);
+        vm.prank(vault.safe());
+        vault.updateTotalAssetsLifespan(1000);
+        updateAndSettle(0);
+
+        // Deposit to get shares
+        uint256 depositAmount = assetBalance(user1.addr);
+        vm.prank(user1.addr);
+        uint256 sharesReceived = vault.syncDeposit(depositAmount, user1.addr, address(0));
+
+        uint256 sharesToRedeem = sharesReceived / 2;
+        uint256 expectedAssets = vault.previewSyncRedeem(sharesToRedeem);
+
+        // minimumAssets = expectedAssets + 1 → should revert
+        vm.expectRevert(abi.encodeWithSelector(BelowMinimumAssets.selector, expectedAssets, expectedAssets + 1));
+        vm.prank(user1.addr);
+        vault.syncRedeem(sharesToRedeem, user1.addr, expectedAssets + 1);
+
+        // minimumAssets = expectedAssets → should succeed
+        vm.prank(user1.addr);
+        uint256 assets = vault.syncRedeem(sharesToRedeem, user1.addr, expectedAssets);
+        assertEq(assets, expectedAssets, "assets should equal expectedAssets when minimumAssets == expectedAssets");
+
+        // minimumAssets = expectedAssets - 1 → should succeed
+        // Re-deposit to get fresh shares
+        dealAndApprove(user1.addr);
+        uint256 _depositAmount = assetBalance(user1.addr);
+        vm.prank(user1.addr);
+        sharesReceived = vault.syncDeposit(_depositAmount, user1.addr, address(0));
+
+        sharesToRedeem = sharesReceived / 2;
+        expectedAssets = vault.previewSyncRedeem(sharesToRedeem);
+
+        vm.prank(user1.addr);
+        assets = vault.syncRedeem(sharesToRedeem, user1.addr, expectedAssets - 1);
+        assertEq(assets, expectedAssets, "assets should equal expectedAssets when minimumAssets == expectedAssets - 1");
     }
 }

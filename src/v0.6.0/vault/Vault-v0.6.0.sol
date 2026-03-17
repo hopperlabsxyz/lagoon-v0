@@ -21,6 +21,7 @@ import {AccessMode, State} from "../primitives/Enums.sol";
 import {
     AddressNotAllowed,
     AsyncOnly,
+    BelowMinimumAssets,
     CantDepositNativeToken,
     Closed,
     ERC7540InvalidOperator,
@@ -226,10 +227,12 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     /// @notice Redeem in a synchronous fashion from the vault.
     /// @param shares The shares to redeem.
     /// @param receiver The receiver of the assets.
+    /// @param minimumAssets The minimum amount of assets expected after fees.
     /// @return assets The resulting assets.
     function syncRedeem(
         uint256 shares,
-        address receiver
+        address receiver,
+        uint256 minimumAssets
     ) public onlyOpen onlySyncRedeemAllowed returns (uint256 assets) {
         if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         if (!isAllowed(receiver)) revert AddressNotAllowed(receiver);
@@ -245,6 +248,8 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         uint16 haircutRate = FeeLib.feeRates().haircutRate;
         uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, haircutRate);
         assets = _convertToAssets(shares - haircutShares - exitFeeShares, Math.Rounding.Floor);
+
+        if (assets < minimumAssets) revert BelowMinimumAssets(assets, minimumAssets);
 
         // burn all the shares and remove the assets from the total assets
         _burn(msg.sender, shares);
