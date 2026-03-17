@@ -230,12 +230,14 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     function syncRedeem(
         uint256 shares,
         address receiver
-    ) public onlySyncDeposit onlyOpen onlySyncRedeemAllowed returns (uint256 assets) {
+    ) public onlyOpen onlySyncRedeemAllowed returns (uint256 assets) {
         if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         if (!isAllowed(receiver)) revert AddressNotAllowed(receiver);
         if (receiver == address(0)) revert InvalidReceiver(receiver);
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+
         if ($.isAsyncOnly) revert AsyncOnly();
+
         uint16 exitRate = FeeLib.feeRates().exitRate;
         // first we need to compute the exit fee
         uint256 exitFeeShares = FeeLib.computeFee(shares, exitRate);

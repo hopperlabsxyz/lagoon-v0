@@ -60,7 +60,7 @@ contract TestSyncRedeem is BaseTest {
         assertEq(vault.totalAssets(), totalAssetsBefore - assets, "totalAssets not decreased correctly");
     }
 
-    function test_syncRedeem_lifespanOutdate() public {
+    function test_syncRedeem_lifespanOutdateShouldStillWork() public {
         // First deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
         vm.prank(user1.addr);
@@ -69,7 +69,6 @@ contract TestSyncRedeem is BaseTest {
         // we go one second after the expiration
         vm.warp(block.timestamp + 1001);
 
-        vm.expectRevert(OnlyAsyncDepositAllowed.selector);
         vm.prank(user1.addr);
         vault.syncRedeem(1, user1.addr);
     }
@@ -95,7 +94,7 @@ contract TestSyncRedeem is BaseTest {
         updateNewTotalAssets(vault.totalAssets());
         vm.stopPrank();
 
-        vm.expectRevert(OnlyAsyncDepositAllowed.selector);
+        vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closing));
         vm.prank(user1.addr);
         vault.syncRedeem(1, user1.addr);
 
