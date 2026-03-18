@@ -179,17 +179,21 @@ contract TestAsyncOnly is BaseTest {
 
         uint256 shares = vault.balanceOf(user1.addr);
 
+        vm.prank(vault.safe());
+        vault.setIsSyncRedeemAllowed(true);
+
         // Disable sync deposit forever
         vm.prank(vault.owner());
         vault.activateAsyncOnly();
 
         // Allow sync redeem
         vm.prank(vault.safe());
+        vm.expectRevert(AsyncOnly.selector);
         vault.setIsSyncRedeemAllowed(true);
 
         // Try to sync redeem - should revert
         vm.prank(user1.addr);
-        vm.expectRevert(AsyncOnly.selector);
+        vm.expectRevert(SyncRedeemNotAllowed.selector);
         vault.syncRedeem(shares / 2, user1.addr, 0);
     }
 

@@ -5,8 +5,9 @@ import {ERC7540} from "../ERC7540.sol";
 import {FeeLib} from "../FeeManager.sol";
 import {RolesLib} from "../Roles.sol";
 import {IERC7540Deposit} from "../interfaces/IERC7540Deposit.sol";
+import {VaultLib} from "./VaultLib.sol";
 
-import {FeeType} from "../primitives/Enums.sol";
+import {FeeType, State} from "../primitives/Enums.sol";
 import {
     AddressNotAllowed,
     AsyncOnly,
@@ -16,11 +17,13 @@ import {
     ERC7540PreviewMintDisabled,
     ERC7540PreviewRedeemDisabled,
     ERC7540PreviewWithdrawDisabled,
+    EnableSyncRedeemNotAllowed,
     MaxCapReached,
     NewTotalAssetsMissing,
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
     RequestNotCancelable,
+    ValuationUpdateNotAllowed,
     WrongNewTotalAssets
 } from "../primitives/Errors.sol";
 import {
@@ -41,6 +44,7 @@ import {PausableLib} from "./PausableLib.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -177,22 +181,45 @@ library ERC7540Lib {
 
     /// @notice Permanently disables synchronous behavior for the vault.
     /// @dev This sets the vault in async-only mode by making totalAssets permanently invalid.
-    ///      It resets both totalAssetsExpiration and totalAssetsLifespan to zero and marks
-    ///      the mode as irreversible.
+    ///      It also disables sync redeem.
+    ///      It resets both totalAssetsExpiration and totalAssetsLifespan to zero.
+    ///      This mode is irreversible.
     function setAsyncOnly() public {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+
         $.isAsyncOnly = true;
         $.totalAssetsExpiration = 0;
         $.totalAssetsLifespan = 0;
+        $.isSyncRedeemAllowed = false;
+
         emit AsyncOnlyActivated();
     }
 
+    /// @notice Enables or disables synchronous redeem.
+    /// @param _isAllowed Whether to enable or disable synchronous redeem.
+    /// @dev In async-only this function will revert to avoid switching to sync redeem mode on.
+    ///      It will also revert if newTotalAssets.
     function setIsSyncRedeemAllowed(
         bool _isAllowed
     ) public {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+
+        if ($.isAsyncOnly) revert AsyncOnly();
+        if ($.newTotalAssets != type(uint256).max && _isAllowed) revert EnableSyncRedeemNotAllowed();
+
         $.isSyncRedeemAllowed = _isAllowed;
+
         emit SyncRedeemAllowedSwitched(_isAllowed);
+    }
+
+    function disableSyncOperations() public {
+        ERC7540.ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+
+        if ($.isSyncRedeemAllowed) {
+            $.isSyncRedeemAllowed = false;
+            emit SyncRedeemAllowedSwitched(false);
+        }
+        $.totalAssetsExpiration = 0;
     }
 
     function decimalsOffset() internal view returns (uint8) {
@@ -237,6 +264,25 @@ library ERC7540Lib {
         uint256 _totalSupply = $.settles[settleId].totalSupply + 10 ** decimalsOffset();
 
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
+    }
+
+    function maxWithdraw(
+        address controller
+    ) public view returns (uint256 assets) {
+        if (Pausable(address(this)).paused()) return 0;
+        uint256 shares = claimableRedeemRequest(0, controller);
+        if (shares == 0 && VaultLib._getVaultStorage().state == State.Closed) {
+            uint256 controllerShares = IERC20(address(this)).balanceOf(controller);
+            uint256 _exitFeeShares = FeeLib.computeFee(controllerShares, FeeLib.feeRates().exitRate);
+            return IERC4626(address(this)).convertToAssets(controllerShares - _exitFeeShares);
+        }
+        uint40 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
+        // introduced in v0.6.0
+        // we need to take into account the exit fee to compute the assets
+        uint256 exitFeeShares = FeeLib.computeFee(shares, getSettlementExitFeeRate(lastRedeemId));
+        assets = ERC7540(address(this)).convertToAssets(shares - exitFeeShares, lastRedeemId);
+
+        return assets;
     }
 
     function _onlyUnderMaxCap(

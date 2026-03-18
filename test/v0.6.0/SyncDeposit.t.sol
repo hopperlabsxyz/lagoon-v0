@@ -119,7 +119,7 @@ contract TestSyncDeposit is BaseTest {
         vault.initiateClosing();
 
         vm.prank(safe.addr);
-        vault.expireTotalAssets();
+        vault.disableSyncOperations();
 
         updateNewTotalAssets(vault.totalAssets());
         vm.stopPrank();

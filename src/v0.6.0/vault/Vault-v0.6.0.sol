@@ -38,7 +38,14 @@ import {FeeRegistry} from "../../protocol-v1/FeeRegistry.sol";
 import {GuardrailsManager} from "../GuardRailsManager.sol";
 
 import {GuardrailsLib} from "../libraries/GuardrailsLib.sol";
-import {DepositSync, HaircutTaken, Referral, StateUpdated, WithdrawSync} from "../primitives/Events.sol";
+import {
+    DepositSync,
+    HaircutTaken,
+    Referral,
+    StateUpdated,
+    SyncRedeemAllowedSwitched,
+    WithdrawSync
+} from "../primitives/Events.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
@@ -458,6 +465,11 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
             revert ValuationUpdateNotAllowed();
         }
 
+        // if sync redeem is allowed,
+        // we do not allow the valuation manager to propose a new nav
+        // he must call disable synchronous redemptions first.
+        if (ERC7540Lib._getERC7540Storage().isSyncRedeemAllowed) revert ValuationUpdateNotAllowed();
+
         uint256 oneShare = 10 ** decimals();
         uint256 currentPps = convertToAssets(oneShare);
         uint256 nextPps = oneShare.mulDiv(
@@ -580,8 +592,16 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         _unpause();
     }
 
+    /// @notice Expires the total assets, disabling sync deposits.
+    /// @dev Can only be called by the safe.
     function expireTotalAssets() public onlySafe {
         ERC7540Lib._getERC7540Storage().totalAssetsExpiration = 0;
+    }
+
+    /// @notice Disables synchronous operations for the vault.
+    /// @dev Can only be called by the safe.
+    function disableSyncOperations() public onlySafe {
+        ERC7540Lib.disableSyncOperations();
     }
 
     /// @notice Resets the high water mark to the current price per share.
@@ -631,20 +651,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     function maxWithdraw(
         address controller
     ) public view override(IERC4626, ERC4626Upgradeable) returns (uint256 assets) {
-        if (paused()) return 0;
-        uint256 shares = claimableRedeemRequest(0, controller);
-        if (shares == 0 && VaultLib._getVaultStorage().state == State.Closed) {
-            uint256 controllerShares = balanceOf(controller);
-            uint256 _exitFeeShares = FeeLib.computeFee(controllerShares, FeeLib.feeRates().exitRate);
-            return convertToAssets(controllerShares - _exitFeeShares);
-        }
-        uint40 lastRedeemId = ERC7540Lib._getERC7540Storage().lastRedeemRequestId[controller];
-        // introduced in v0.6.0
-        // we need to take into account the exit fee to compute the assets
-        uint256 exitFeeShares = FeeLib.computeFee(shares, ERC7540Lib.getSettlementExitFeeRate(lastRedeemId));
-        assets = convertToAssets(shares - exitFeeShares, lastRedeemId);
-
-        return assets;
+        return ERC7540Lib.maxWithdraw(controller);
     }
 
     /// @notice Returns the maximum amount of assets a controller can use to claim shares.

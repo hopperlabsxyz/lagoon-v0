@@ -187,7 +187,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
 
     /// @notice Make sure sync redeem is allowed.
     modifier onlySyncRedeemAllowed() {
-        if (!ERC7540Lib.isSyncRedeemAllowed()) revert SyncRedeemNotAllowed();
+        if (!ERC7540Lib._getERC7540Storage().isSyncRedeemAllowed) revert SyncRedeemNotAllowed();
         _;
     }
 

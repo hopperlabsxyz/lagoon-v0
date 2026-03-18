@@ -37,7 +37,7 @@ contract TestTotalAssetsExpiry is BaseTest {
 
         vm.prank(vault.valuationManager());
         vm.expectRevert(abi.encodeWithSelector(OnlySafe.selector, vault.safe()));
-        vault.expireTotalAssets();
+        vault.disableSyncOperations();
     }
 
     function test_whenTotalAssetsExpireWithTime_canUpdateNav() public {
@@ -46,8 +46,6 @@ contract TestTotalAssetsExpiry is BaseTest {
         vault.updateNewTotalAssets(1);
 
         vm.warp(block.timestamp + 1 days);
-        vm.prank(vault.valuationManager());
-
         vm.prank(vault.valuationManager());
         vault.updateNewTotalAssets(1);
     }
@@ -60,7 +58,7 @@ contract TestTotalAssetsExpiry is BaseTest {
         vault.updateNewTotalAssets(1);
 
         vm.prank(vault.safe());
-        vault.expireTotalAssets();
+        vault.disableSyncOperations();
 
         assertEq(vault.totalAssetsExpiration(), 0, "ttA is not expired");
     }

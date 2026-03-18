@@ -70,6 +70,9 @@ error MaxCapReached();
 /// @notice Indicates that sync redeem is not allowed.
 error SyncRedeemNotAllowed();
 
+/// @notice Can't enable sync redeem
+error EnableSyncRedeemNotAllowed();
+
 /// @notice Only asynchronous operations are allowed.
 error AsyncOnly();
 

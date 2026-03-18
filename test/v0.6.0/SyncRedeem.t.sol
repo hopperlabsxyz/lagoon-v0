@@ -89,7 +89,7 @@ contract TestSyncRedeem is BaseTest {
         vault.initiateClosing();
 
         vm.prank(safe.addr);
-        vault.expireTotalAssets();
+        vault.disableSyncOperations();
 
         updateNewTotalAssets(vault.totalAssets());
         vm.stopPrank();
@@ -220,8 +220,6 @@ contract TestSyncRedeem is BaseTest {
     function test_syncRedeem_haircutShares_burned() public {
         // Set up vault with haircut rate but no exit fee
         setUpVault(0, 0, 0, 0, 0);
-        vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
 
         // Update rates to set haircut rate
         Rates memory newRates =
@@ -234,6 +232,9 @@ contract TestSyncRedeem is BaseTest {
         vm.prank(vault.safe());
         vault.updateTotalAssetsLifespan(1000);
         updateAndSettle(0);
+
+        vm.prank(vault.safe());
+        vault.setIsSyncRedeemAllowed(true);
 
         // Deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
@@ -306,8 +307,6 @@ contract TestSyncRedeem is BaseTest {
     function test_syncRedeem_pps_increases_when_haircut_non_zero() public {
         // Set up vault with haircut rate but no exit fee
         setUpVault(0, 0, 0, 0, 0);
-        vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
 
         // Update rates to set haircut rate
         Rates memory newRates =
@@ -320,6 +319,9 @@ contract TestSyncRedeem is BaseTest {
         vm.prank(vault.safe());
         vault.updateTotalAssetsLifespan(1000);
         updateAndSettle(0);
+
+        vm.prank(vault.safe());
+        vault.setIsSyncRedeemAllowed(true);
 
         // Deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
@@ -433,8 +435,6 @@ contract TestSyncRedeem is BaseTest {
     function test_syncRedeem_belowMinimumAssets() public {
         // Set up vault with both exit fee and haircut to ensure fees are non-zero
         setUpVault(0, 0, 0, 0, 200); // 2% exit fee
-        vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
 
         Rates memory newRates =
             Rates({managementRate: 0, performanceRate: 0, entryRate: 0, exitRate: 200, haircutRate: 500});
@@ -447,6 +447,8 @@ contract TestSyncRedeem is BaseTest {
         vault.updateTotalAssetsLifespan(1000);
         updateAndSettle(0);
 
+        vm.prank(vault.safe());
+        vault.setIsSyncRedeemAllowed(true);
         // Deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
         vm.prank(user1.addr);
