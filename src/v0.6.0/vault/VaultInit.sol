@@ -5,27 +5,13 @@ import {Accessable} from "../Accessable.sol";
 import {ERC7540} from "../ERC7540.sol";
 import {FeeManager} from "../FeeManager.sol";
 import {Roles} from "../Roles.sol";
-import {AccessMode, State} from "../primitives/Enums.sol";
-import {
-    CantDepositNativeToken,
-    Closed,
-    ERC7540InvalidOperator,
-    NotClosing,
-    NotOpen,
-    OnlyAsyncDepositAllowed,
-    ValuationUpdateNotAllowed
-} from "../primitives/Errors.sol";
+import {State} from "../primitives/Enums.sol";
 import {InitStruct} from "./Vault-v0.6.0.sol";
 
 import {GuardrailsManager} from "../GuardRailsManager.sol";
-import {ERC7540Lib} from "../libraries/ERC7540Lib.sol";
-import {DepositSync, Referral, StateUpdated} from "../primitives/Events.sol";
-import {Guardrails} from "../primitives/Struct.sol";
-import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {StateUpdated} from "../primitives/Events.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FeeRegistry} from "@src/protocol-v2/FeeRegistry.sol";
 
 using SafeERC20 for IERC20;

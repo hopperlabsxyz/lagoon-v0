@@ -13,17 +13,12 @@ import {
     AsyncOnly,
     CantDepositNativeToken,
     ERC7540InvalidOperator,
-    ERC7540PreviewDepositDisabled,
-    ERC7540PreviewMintDisabled,
-    ERC7540PreviewRedeemDisabled,
-    ERC7540PreviewWithdrawDisabled,
     EnableSyncRedeemNotAllowed,
     MaxCapReached,
     NewTotalAssetsMissing,
     OnlyOneRequestAllowed,
     RequestIdNotClaimable,
     RequestNotCancelable,
-    ValuationUpdateNotAllowed,
     WrongNewTotalAssets
 } from "../primitives/Errors.sol";
 import {
@@ -37,8 +32,7 @@ import {
     TotalAssetsLifespanUpdated,
     TotalAssetsUpdated
 } from "../primitives/Events.sol";
-import {EpochData, SettleData} from "../primitives/Struct.sol";
-import {Rates} from "../primitives/Struct.sol";
+import {SettleData} from "../primitives/Struct.sol";
 import {AccessableLib} from "./AccessableLib.sol";
 import {PausableLib} from "./PausableLib.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
@@ -310,6 +304,7 @@ library ERC7540Lib {
             requestId = $.lastRedeemRequestId[controller];
         }
         if (requestId > $.lastRedeemEpochIdSettled) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             return $.epochs[uint40(requestId)].redeemRequest[controller];
         }
     }
@@ -325,6 +320,7 @@ library ERC7540Lib {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         if (requestId == 0) requestId = $.lastRedeemRequestId[controller];
         if (requestId <= $.lastRedeemEpochIdSettled) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             return $.epochs[uint40(requestId)].redeemRequest[controller];
         }
     }
@@ -341,6 +337,7 @@ library ERC7540Lib {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
         if (requestId > $.lastDepositEpochIdSettled) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             return $.epochs[uint40(requestId)].depositRequest[controller];
         }
     }
@@ -356,6 +353,7 @@ library ERC7540Lib {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
         if (requestId == 0) requestId = $.lastDepositRequestId[controller];
         if (requestId <= $.lastDepositEpochIdSettled) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             return $.epochs[uint40(requestId)].depositRequest[controller];
         }
     }

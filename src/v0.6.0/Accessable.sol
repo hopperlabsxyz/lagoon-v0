@@ -4,7 +4,6 @@ pragma solidity 0.8.26;
 import {Roles} from "./Roles.sol";
 import {SanctionsList} from "./interfaces/SanctionsList.sol";
 import {AccessableLib} from "./libraries/AccessableLib.sol";
-import {RolesLib} from "./libraries/RolesLib.sol";
 import {AccessMode} from "./primitives/Enums.sol";
 
 abstract contract Accessable is Roles {

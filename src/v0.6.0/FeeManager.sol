@@ -3,8 +3,6 @@ pragma solidity 0.8.26;
 
 import {FeeLib} from "./libraries/FeeLib.sol";
 import {VaultLib} from "./libraries/VaultLib.sol";
-import {AboveMaxRate} from "./primitives/Errors.sol";
-import {HighWaterMarkUpdated, RatesUpdated} from "./primitives/Events.sol";
 import {Rates} from "./primitives/Struct.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";

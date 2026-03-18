@@ -85,7 +85,7 @@ contract TestWhitelist is BaseTest {
         address receiver = user2.addr;
         whitelist(user2.addr);
         vm.prank(user1.addr);
-        vault.transfer(receiver, shares);
+        assertTrue(vault.transfer(receiver, shares));
     }
 
     function test_whitelist() public {
@@ -190,7 +190,7 @@ contract TestWhitelist is BaseTest {
         uint256 shares = vault.balanceOf(user5.addr);
         address receiver = user1.addr;
         vm.prank(user5.addr);
-        vault.transfer(receiver, shares);
+        assertTrue(vault.transfer(receiver, shares));
         vm.startPrank(receiver);
         vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, receiver));
         vault.requestRedeem(shares, receiver, receiver);
@@ -252,7 +252,7 @@ contract TestWhitelist is BaseTest {
         assertEq(vault.isAllowed(user1.addr), false);
 
         vm.prank(user1.addr);
-        vault.transfer(user2.addr, shares);
+        assertTrue(vault.transfer(user2.addr, shares));
 
         assertEq(vault.balanceOf(user2.addr), shares);
         assertEq(vault.balanceOf(user1.addr), 0);
@@ -271,7 +271,7 @@ contract TestWhitelist is BaseTest {
         unwhitelist(user2.addr);
 
         vm.prank(user1.addr);
-        vault.transfer(user2.addr, shares);
+        assertTrue(vault.transfer(user2.addr, shares));
 
         assertEq(vault.balanceOf(user2.addr), shares);
         assertEq(vault.balanceOf(user1.addr), 0);
@@ -291,7 +291,7 @@ contract TestWhitelist is BaseTest {
         unwhitelist(user2.addr);
 
         vm.prank(user1.addr);
-        vault.transfer(user2.addr, shares);
+        assertTrue(vault.transfer(user2.addr, shares));
 
         assertEq(vault.balanceOf(user2.addr), shares);
         assertEq(vault.balanceOf(user1.addr), 0);
@@ -309,7 +309,7 @@ contract TestWhitelist is BaseTest {
         uint256 shares = vault.balanceOf(user1.addr);
 
         vm.prank(user1.addr);
-        vault.transfer(user2.addr, shares);
+        assertTrue(vault.transfer(user2.addr, shares));
 
         assertEq(vault.balanceOf(user2.addr), shares);
         assertEq(vault.balanceOf(user1.addr), 0);
@@ -332,7 +332,7 @@ contract TestWhitelist is BaseTest {
         vault.approve(user2.addr, shares);
 
         vm.prank(user2.addr);
-        vault.transferFrom(user1.addr, user3.addr, shares);
+        assertTrue(vault.transferFrom(user1.addr, user3.addr, shares));
 
         assertEq(vault.balanceOf(user3.addr), shares);
         assertEq(vault.balanceOf(user1.addr), 0);
@@ -355,7 +355,7 @@ contract TestWhitelist is BaseTest {
         vault.approve(user2.addr, shares);
 
         vm.prank(user2.addr);
-        vault.transferFrom(user1.addr, user3.addr, shares);
+        assertTrue(vault.transferFrom(user1.addr, user3.addr, shares));
 
         assertEq(vault.balanceOf(user3.addr), shares);
         assertEq(vault.balanceOf(user1.addr), 0);
@@ -379,7 +379,7 @@ contract TestWhitelist is BaseTest {
         vault.approve(user2.addr, shares);
 
         vm.prank(user2.addr);
-        vault.transferFrom(user1.addr, user3.addr, shares);
+        assertTrue(vault.transferFrom(user1.addr, user3.addr, shares));
 
         assertEq(vault.balanceOf(user3.addr), shares);
         assertEq(vault.balanceOf(user1.addr), 0);
@@ -401,7 +401,7 @@ contract TestWhitelist is BaseTest {
         vault.approve(user2.addr, shares);
 
         vm.prank(user2.addr);
-        vault.transferFrom(user1.addr, user3.addr, shares);
+        assertTrue(vault.transferFrom(user1.addr, user3.addr, shares));
 
         assertEq(vault.balanceOf(user3.addr), shares);
         assertEq(vault.balanceOf(user1.addr), 0);

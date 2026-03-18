@@ -5,7 +5,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {Roles} from "./Roles.sol";
 import {GuardrailsLib} from "./libraries/GuardrailsLib.sol";
-import {RolesLib} from "./libraries/RolesLib.sol";
 import {Guardrails} from "./primitives/Struct.sol";
 using Math for uint256;
 

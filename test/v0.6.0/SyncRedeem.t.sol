@@ -396,7 +396,7 @@ contract TestSyncRedeem is BaseTest {
         // Remove assets from safe so it doesn't have enough
         IERC20 asset = IERC20(vault.asset());
         vm.prank(vault.safe());
-        asset.transfer(address(0xdead), safeBalance);
+        assertTrue(asset.transfer(address(0xdead), safeBalance));
 
         // Now try to redeem - should fail because safe doesn't have enough assets
         vm.expectRevert();

@@ -7,6 +7,7 @@ import "@src/v0.6.0/ERC7540.sol";
 import "@src/v0.6.0/FeeManager.sol";
 import "@src/v0.6.0/libraries/AccessableLib.sol";
 import "@src/v0.6.0/libraries/FeeLib.sol";
+import "@src/v0.6.0/libraries/GuardrailsLib.sol";
 import "@src/v0.6.0/libraries/RolesLib.sol";
 import "@src/v0.6.0/primitives/Errors.sol";
 import "@src/v0.6.0/primitives/Events.sol";
@@ -24,6 +25,7 @@ contract VaultHelper is Vault {
         uint256 epochId
     ) public view returns (uint256) {
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+        // forge-lint: disable-next-line(unsafe-typecast)
         return $.settles[$.epochs[uint40(epochId)].settleId].totalSupply;
     }
 
@@ -50,6 +52,7 @@ contract VaultHelper is Vault {
         uint256 epochId
     ) public view returns (uint256) {
         ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+        // forge-lint: disable-next-line(unsafe-typecast)
         return $.settles[$.epochs[uint40(epochId)].settleId].totalAssets;
     }
 

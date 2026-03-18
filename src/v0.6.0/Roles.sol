@@ -2,7 +2,6 @@
 pragma solidity 0.8.26;
 
 import {RolesLib} from "./libraries/RolesLib.sol";
-import {OnlySafe, OnlyWhitelistManager, SafeUpgradeabilityNotAllowed} from "./primitives/Errors.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {FeeRegistry} from "@src/protocol-v2/FeeRegistry.sol";
 

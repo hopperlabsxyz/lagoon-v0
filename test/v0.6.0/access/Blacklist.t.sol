@@ -38,7 +38,7 @@ contract TestBlacklist is BaseTest {
         vm.assertEq(vault.isWhitelistActivated(), false);
         uint256 shares = vault.balanceOf(user1.addr);
         vm.prank(user1.addr);
-        vault.transfer(receiver, shares);
+        assertTrue(vault.transfer(receiver, shares));
     }
 
     function test_sanctionedAddress_ShouldReturnFalseInBlacklistMode() public {
@@ -76,6 +76,7 @@ contract TestBlacklist is BaseTest {
 
         vm.prank(user1.addr);
         vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user1.addr));
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
         vault.transfer(user2.addr, shares);
     }
 
@@ -96,6 +97,7 @@ contract TestBlacklist is BaseTest {
 
         vm.prank(user1.addr);
         vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user2.addr));
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
         vault.transfer(user2.addr, shares);
     }
 
@@ -115,7 +117,7 @@ contract TestBlacklist is BaseTest {
         address receiver = user2.addr;
 
         vm.prank(user1.addr);
-        vault.transfer(receiver, shares);
+        assertTrue(vault.transfer(receiver, shares));
 
         assertEq(vault.balanceOf(receiver), shares);
         assertEq(vault.balanceOf(user1.addr), 0);
@@ -142,6 +144,7 @@ contract TestBlacklist is BaseTest {
 
         vm.prank(user2.addr);
         vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user1.addr));
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
         vault.transferFrom(user1.addr, user3.addr, shares);
     }
 
@@ -166,6 +169,7 @@ contract TestBlacklist is BaseTest {
 
         vm.prank(user2.addr);
         vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user3.addr));
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
         vault.transferFrom(user1.addr, user3.addr, shares);
     }
 
@@ -191,6 +195,7 @@ contract TestBlacklist is BaseTest {
 
         vm.prank(user2.addr);
         vm.expectRevert(abi.encodeWithSelector(AddressNotAllowed.selector, user1.addr));
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
         vault.transferFrom(user1.addr, user3.addr, shares);
     }
 
@@ -213,7 +218,7 @@ contract TestBlacklist is BaseTest {
         vault.approve(user2.addr, shares);
 
         vm.prank(user2.addr);
-        vault.transferFrom(user1.addr, user3.addr, shares);
+        assertTrue(vault.transferFrom(user1.addr, user3.addr, shares));
 
         assertEq(vault.balanceOf(user3.addr), shares);
         assertEq(vault.balanceOf(user1.addr), 0);

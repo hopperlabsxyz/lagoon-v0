@@ -5,11 +5,9 @@ import {LogicRegistry} from "../protocol-v2/LogicRegistry.sol";
 
 import {
     ERC1967Utils,
-    ITransparentUpgradeableProxy,
-    TransparentUpgradeableProxy
+    ITransparentUpgradeableProxy
 } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {IERC1967} from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {DelayProxyAdmin} from "./DelayProxyAdmin.sol";

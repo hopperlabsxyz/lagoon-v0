@@ -388,7 +388,9 @@ contract BaseTest is Test, SetUp {
         uint256 depositSettleIdBefore = vault.depositSettleId();
         uint256 redeemSettleIdBefore = vault.redeemSettleId();
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint256 pendingDepositAmount = vault.pendingDeposit(uint40(depositSettleIdBefore));
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint256 pendingRedeemAmount = vault.pendingRedeem(uint40(redeemSettleIdBefore));
 
         vm.startPrank(vault.safe());

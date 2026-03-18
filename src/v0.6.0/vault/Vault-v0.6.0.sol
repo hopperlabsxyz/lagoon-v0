@@ -13,10 +13,7 @@ import {VaultInit} from "./VaultInit.sol";
 
 import {Accessable} from "../Accessable.sol";
 import {FeeManager} from "../FeeManager.sol";
-import {Roles} from "../Roles.sol";
 import {ERC20Lib} from "../libraries/ERC20Lib.sol";
-import {FeeLib} from "../libraries/FeeLib.sol";
-import {GuardrailsLib} from "../libraries/GuardrailsLib.sol";
 import {AccessMode, State} from "../primitives/Enums.sol";
 import {
     AddressNotAllowed,
@@ -27,26 +24,13 @@ import {
     ERC7540InvalidOperator,
     GuardrailsViolation,
     InvalidReceiver,
-    NotClosing,
-    NotOpen,
-    OnlyAsyncDepositAllowed,
     ValuationUpdateNotAllowed,
     VaultInitializationFailed
 } from "../primitives/Errors.sol";
 
-import {FeeRegistry} from "../../protocol-v1/FeeRegistry.sol";
 import {GuardrailsManager} from "../GuardRailsManager.sol";
 
-import {GuardrailsLib} from "../libraries/GuardrailsLib.sol";
-import {
-    DepositSync,
-    HaircutTaken,
-    Referral,
-    StateUpdated,
-    SyncRedeemAllowedSwitched,
-    WithdrawSync
-} from "../primitives/Events.sol";
-import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {DepositSync, HaircutTaken, Referral, WithdrawSync} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";

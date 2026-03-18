@@ -7,38 +7,18 @@ import {IERC7540Redeem} from "./interfaces/IERC7540Redeem.sol";
 import {IWETH9} from "./interfaces/IWETH9.sol";
 import {AccessableLib} from "./libraries/AccessableLib.sol";
 import {ERC7540Lib} from "./libraries/ERC7540Lib.sol";
-import {FeeLib} from "./libraries/FeeLib.sol";
 import {RolesLib} from "./libraries/RolesLib.sol";
-import {State} from "./primitives/Enums.sol";
 import {
     AddressNotAllowed,
-    CantDepositNativeToken,
-    ERC7540InvalidOperator,
     ERC7540PreviewDepositDisabled,
     ERC7540PreviewMintDisabled,
     ERC7540PreviewRedeemDisabled,
     ERC7540PreviewWithdrawDisabled,
     InvalidController,
-    MaxCapReached,
-    NewTotalAssetsMissing,
     OnlyOneRequestAllowed,
-    RequestIdNotClaimable,
-    RequestNotCancelable,
-    SyncRedeemNotAllowed,
-    WrongNewTotalAssets
+    SyncRedeemNotAllowed
 } from "./primitives/Errors.sol";
-import {
-    DepositRequestCanceled,
-    DepositSync,
-    MaxCapUpdated,
-    NewTotalAssetsUpdated,
-    PreMint,
-    SettleDeposit,
-    SettleRedeem,
-    TotalAssetsLifespanUpdated,
-    TotalAssetsUpdated
-} from "./primitives/Events.sol";
-import {Rates} from "./primitives/Struct.sol";
+import {DepositSync, MaxCapUpdated, PreMint} from "./primitives/Events.sol";
 import {EpochData, SettleData} from "./primitives/Struct.sol";
 import {
     ERC20Upgradeable,
@@ -49,7 +29,6 @@ import {
     ERC20PausableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -545,6 +524,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 assets,
         uint256 requestId
     ) public view returns (uint256) {
+        // forge-lint: disable-next-line(unsafe-typecast)
         return ERC7540Lib.convertToShares(assets, uint40(requestId), Math.Rounding.Floor);
     }
 
@@ -555,6 +535,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint256 shares,
         uint256 requestId
     ) public view returns (uint256) {
+        // forge-lint: disable-next-line(unsafe-typecast)
         return ERC7540Lib.convertToAssets(shares, uint40(requestId), Math.Rounding.Floor);
     }
 

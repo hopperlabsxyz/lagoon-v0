@@ -2,19 +2,9 @@
 pragma solidity 0.8.26;
 
 import {ERC7540} from "../ERC7540.sol";
-import {FeeManager} from "../FeeManager.sol";
 import {FeeLib} from "../libraries/FeeLib.sol";
-import {FeeType, State} from "../primitives/Enums.sol";
-import {
-    CantDepositNativeToken,
-    Closed,
-    ERC7540InvalidOperator,
-    NotClosing,
-    NotOpen,
-    OnlyAsyncDepositAllowed,
-    OnlySyncDepositAllowed,
-    ValuationUpdateNotAllowed
-} from "../primitives/Errors.sol";
+import {State} from "../primitives/Enums.sol";
+import {Closed, NotClosing, NotOpen, OnlyAsyncDepositAllowed, OnlySyncDepositAllowed} from "../primitives/Errors.sol";
 import {StateUpdated} from "../primitives/Events.sol";
 import {VaultStorage} from "../primitives/VaultStorage.sol";
 import {ERC7540Lib} from "./ERC7540Lib.sol";

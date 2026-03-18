@@ -8,7 +8,6 @@ import {
     AccessModeUpdated,
     BlacklistUpdated,
     ExternalSanctionsListUpdated,
-    WhitelistDisabled,
     WhitelistUpdated
 } from "../primitives/Events.sol";
 import {RolesLib} from "./RolesLib.sol";
