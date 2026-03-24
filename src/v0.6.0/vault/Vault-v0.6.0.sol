@@ -30,7 +30,14 @@ import {
 
 import {GuardrailsManager} from "../GuardRailsManager.sol";
 
-import {DepositSync, HaircutTaken, Referral, WithdrawSync} from "../primitives/Events.sol";
+import {
+    DepositSync,
+    HaircutTaken,
+    Referral,
+    TotalAssetsExpirationUpdated,
+    TotalAssetsExpired,
+    WithdrawSync
+} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -485,6 +492,11 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
             revert ValuationUpdateNotAllowed();
         }
 
+        // if sync redeem is allowed,
+        // we do not allow the security council to propose a new nav
+        // it must call disable synchronous redemptions first.
+        if (ERC7540Lib._getERC7540Storage().isSyncRedeemAllowed) revert ValuationUpdateNotAllowed();
+
         ERC7540Lib.updateNewTotalAssets(_newTotalAssets);
     }
 
@@ -579,7 +591,10 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     /// @notice Expires the total assets, disabling sync deposits.
     /// @dev Can only be called by the safe.
     function expireTotalAssets() public onlySafe {
+        uint128 oldExpiration = ERC7540Lib._getERC7540Storage().totalAssetsExpiration;
         ERC7540Lib._getERC7540Storage().totalAssetsExpiration = 0;
+        emit TotalAssetsExpirationUpdated(oldExpiration, 0);
+        emit TotalAssetsExpired();
     }
 
     /// @notice Disables synchronous operations for the vault.
@@ -682,7 +697,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     function previewSyncRedeem(
         uint256 shares
     ) public view returns (uint256 assets) {
-        if (paused() || !isTotalAssetsValid() || !ERC7540Lib.isSyncRedeemAllowed()) return 0;
+        if (paused() || !ERC7540Lib.isSyncRedeemAllowed()) return 0;
         uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
         uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, FeeLib.feeRates().haircutRate);
         assets = _convertToAssets(shares - exitFeeShares - haircutShares, Math.Rounding.Floor);

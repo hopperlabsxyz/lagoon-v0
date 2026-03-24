@@ -140,6 +140,18 @@ event NewTotalAssetsUpdated(uint256 totalAssets);
 /// @param controller The address of the controller of the canceled request.
 event DepositRequestCanceled(uint256 indexed requestId, address indexed controller);
 
+/// @notice Emitted when the total assets expiration is updated.
+/// @param oldExpiration The previous expiration timestamp.
+/// @param newExpiration The new expiration timestamp.
+event TotalAssetsExpirationUpdated(uint128 oldExpiration, uint128 newExpiration);
+
+/// @notice Emitted when the total assets expiration is reset (expired).
+/// @dev Kept for backward compatibility. TotalAssetsExpirationUpdated is also emitted.
+event TotalAssetsExpired();
+
+/// @notice Emitted when synchronous operations are disabled.
+event SyncOperationsDisabled();
+
 /// @notice Emitted when the lifespan is updated.
 /// @param oldLifespan The old lifespan.
 /// @param newLifespan The new lifespan.

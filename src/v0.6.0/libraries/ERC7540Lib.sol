@@ -28,7 +28,10 @@ import {
     Referral,
     SettleDeposit,
     SettleRedeem,
+    SyncOperationsDisabled,
     SyncRedeemAllowedSwitched,
+    TotalAssetsExpirationUpdated,
+    TotalAssetsExpired,
     TotalAssetsLifespanUpdated,
     TotalAssetsUpdated
 } from "../primitives/Events.sol";
@@ -123,7 +126,10 @@ library ERC7540Lib {
 
         // If the vault has been set to async-only, we never make totalAssets valid again.
         if (!$.isAsyncOnly) {
-            $.totalAssetsExpiration = uint128(block.timestamp) + $.totalAssetsLifespan;
+            uint128 oldExpiration = $.totalAssetsExpiration;
+            uint128 newExpiration = uint128(block.timestamp) + $.totalAssetsLifespan;
+            $.totalAssetsExpiration = newExpiration;
+            emit TotalAssetsExpirationUpdated(oldExpiration, newExpiration);
         }
         emit TotalAssetsUpdated(newTotalAssets);
     }
@@ -182,10 +188,13 @@ library ERC7540Lib {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
         $.isAsyncOnly = true;
+        uint128 oldExpiration = $.totalAssetsExpiration;
         $.totalAssetsExpiration = 0;
         $.totalAssetsLifespan = 0;
         $.isSyncRedeemAllowed = false;
 
+        emit TotalAssetsExpirationUpdated(oldExpiration, 0);
+        emit TotalAssetsExpired();
         emit AsyncOnlyActivated();
     }
 
@@ -213,7 +222,11 @@ library ERC7540Lib {
             $.isSyncRedeemAllowed = false;
             emit SyncRedeemAllowedSwitched(false);
         }
+        uint128 oldExpiration = $.totalAssetsExpiration;
         $.totalAssetsExpiration = 0;
+        emit TotalAssetsExpirationUpdated(oldExpiration, 0);
+        emit TotalAssetsExpired();
+        emit SyncOperationsDisabled();
     }
 
     function decimalsOffset() internal view returns (uint8) {

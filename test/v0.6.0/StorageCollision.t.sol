@@ -55,12 +55,12 @@ contract TestStorageCollision is BaseTest {
         _vault = VaultHelper_v0_5_1(
             OptinProxyFactory_v0_5_0(address(factory))
                 .createVaultProxy({
-                    _logic: address(0),
-                    _initialOwner: initStruct.admin,
-                    _initialDelay: 86_400,
-                    _init: initStruct,
-                    salt: keccak256("42")
-                })
+                _logic: address(0),
+                _initialOwner: initStruct.admin,
+                _initialDelay: 86_400,
+                _init: initStruct,
+                salt: keccak256("42")
+            })
         );
         proxyV0_6_0 = VaultHelper_v0_6_0(address(_vault));
         assertEq(_vault.version(), "v0.5.1");
