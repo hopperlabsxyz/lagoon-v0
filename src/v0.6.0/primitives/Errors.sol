@@ -118,9 +118,6 @@ error OnlyWhitelistManager(address whitelistManager);
 /// @param valuationManager The address of the valuation manager.
 error OnlyValuationManager(address valuationManager);
 
-/// @notice Indicates that the safe upgradeability has been given up..
-error SafeUpgradeabilityNotAllowed();
-
 /// @notice Indicates that the caller is not the security council.
 /// @param securityCouncil The address of the security council.
 error OnlySecurityCouncil(address securityCouncil);

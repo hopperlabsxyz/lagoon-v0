@@ -78,9 +78,6 @@ event ValuationManagerUpdated(address oldManager, address newManager);
 /// @param newSafe The address of the new safe.
 event SafeUpdated(address oldSafe, address newSafe);
 
-/// @notice Emitted when the safe upgradeability is given up.
-event SafeUpgradeabilityGivenUp();
-
 /// @notice Emitted when the security council role is updated.
 /// @param oldSecurityCouncil The address of the old security council.
 /// @param newSecurityCouncil The address of the new security council.
