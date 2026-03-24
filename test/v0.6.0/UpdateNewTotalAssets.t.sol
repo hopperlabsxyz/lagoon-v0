@@ -104,6 +104,41 @@ contract TestUpdateNewTotalAssets is BaseTest {
         vault.setIsSyncRedeemAllowed(true);
     }
 
+    // --- isSyncRedeemAllowed blocks securityCouncilUpdateTotalAssets ---
+
+    function test_securityCouncil_whenSyncRedeemAllowed_cantUpdateNav() public {
+        // let totalAssets lifespan expire so only isSyncRedeemAllowed blocks
+        vm.warp(block.timestamp + 1 days);
+
+        vm.prank(vault.safe());
+        vault.setIsSyncRedeemAllowed(true);
+
+        vm.prank(vault.securityCouncil());
+        vm.expectRevert(ValuationUpdateNotAllowed.selector);
+        vault.securityCouncilUpdateTotalAssets(1);
+    }
+
+    function test_securityCouncil_disableSyncOperations_clearsSyncRedeemAllowed() public {
+        vm.warp(block.timestamp + 1 days);
+
+        vm.prank(vault.safe());
+        vault.setIsSyncRedeemAllowed(true);
+
+        // verify blocked
+        vm.prank(vault.securityCouncil());
+        vm.expectRevert(ValuationUpdateNotAllowed.selector);
+        vault.securityCouncilUpdateTotalAssets(1);
+
+        // disableSyncOperations should clear isSyncRedeemAllowed
+        vm.prank(vault.safe());
+        vault.disableSyncOperations();
+
+        vm.prank(vault.securityCouncil());
+        vault.securityCouncilUpdateTotalAssets(1);
+    }
+
+    // --- setIsSyncRedeemAllowed reverts in asyncOnly mode ---
+
     function test_setIsSyncRedeemAllowed_disableAlsoRevertsWhenNewTotalAssetsPending() public {
         // enable sync redeem first (while newTotalAssets == max)
         vm.prank(vault.safe());
