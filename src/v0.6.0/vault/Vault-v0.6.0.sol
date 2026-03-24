@@ -35,7 +35,6 @@ import {
     HaircutTaken,
     Referral,
     TotalAssetsExpirationUpdated,
-    TotalAssetsExpired,
     WithdrawSync
 } from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
@@ -594,7 +593,6 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         uint128 oldExpiration = ERC7540Lib._getERC7540Storage().totalAssetsExpiration;
         ERC7540Lib._getERC7540Storage().totalAssetsExpiration = 0;
         emit TotalAssetsExpirationUpdated(oldExpiration, 0);
-        emit TotalAssetsExpired();
     }
 
     /// @notice Disables synchronous operations for the vault.

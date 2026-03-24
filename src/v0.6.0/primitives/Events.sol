@@ -142,10 +142,6 @@ event DepositRequestCanceled(uint256 indexed requestId, address indexed controll
 /// @param newExpiration The new expiration timestamp.
 event TotalAssetsExpirationUpdated(uint128 oldExpiration, uint128 newExpiration);
 
-/// @notice Emitted when the total assets expiration is reset (expired).
-/// @dev Kept for backward compatibility. TotalAssetsExpirationUpdated is also emitted.
-event TotalAssetsExpired();
-
 /// @notice Emitted when synchronous operations are disabled.
 event SyncOperationsDisabled();
 

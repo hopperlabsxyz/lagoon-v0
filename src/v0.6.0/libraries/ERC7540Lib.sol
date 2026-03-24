@@ -31,7 +31,6 @@ import {
     SyncOperationsDisabled,
     SyncRedeemAllowedSwitched,
     TotalAssetsExpirationUpdated,
-    TotalAssetsExpired,
     TotalAssetsLifespanUpdated,
     TotalAssetsUpdated
 } from "../primitives/Events.sol";
@@ -194,7 +193,6 @@ library ERC7540Lib {
         $.isSyncRedeemAllowed = false;
 
         emit TotalAssetsExpirationUpdated(oldExpiration, 0);
-        emit TotalAssetsExpired();
         emit AsyncOnlyActivated();
     }
 
@@ -225,7 +223,6 @@ library ERC7540Lib {
         uint128 oldExpiration = $.totalAssetsExpiration;
         $.totalAssetsExpiration = 0;
         emit TotalAssetsExpirationUpdated(oldExpiration, 0);
-        emit TotalAssetsExpired();
         emit SyncOperationsDisabled();
     }
 
