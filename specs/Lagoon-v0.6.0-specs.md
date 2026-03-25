@@ -76,6 +76,8 @@
 
 - **General description:** The name, symbol and Safe can be updated by the owner.
 
+
+
 ## General considerations about the code
 
 - We had to move a lot of the existing code from contracts to libraries to reduce bytecode size. For the same reason, we have move the initialisation function outside of the vault into a separate contract, vaultInit, deployed at construction and delegate called by the vault in its initialize function.
