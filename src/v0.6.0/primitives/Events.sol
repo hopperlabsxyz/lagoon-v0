@@ -137,6 +137,12 @@ event NewTotalAssetsUpdated(uint256 totalAssets);
 /// @param controller The address of the controller of the canceled request.
 event DepositRequestCanceled(uint256 indexed requestId, address indexed controller);
 
+/// @notice Emitted when a redeem request is canceled.
+/// @param requestId The ID of the canceled request.
+/// @param controller The address of the controller of the canceled request.
+/// @param requestedAmount The amount of assets requested in the redeem request.
+event RedeemRequestCanceled(uint256 indexed requestId, address indexed controller, uint256 requestedAmount);
+
 /// @notice Emitted when the total assets expiration is updated.
 /// @param oldExpiration The previous expiration timestamp.
 /// @param newExpiration The new expiration timestamp.

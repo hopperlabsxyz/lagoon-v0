@@ -395,6 +395,15 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         ERC7540Lib.cancelRequestDeposit(controller);
     }
 
+    /// @dev Unusable when paused. Protected by ERC20PausableUpgradeable's _update function.
+    /// @notice Cancel a redeem request on behalf of a controller.
+    /// @param controller The controller, who owns the redeem request.
+    function cancelRequestRedeem(
+        address controller
+    ) external onlyOperatorOrSuperOperator(controller) {
+        ERC7540Lib.cancelRequestRedeem(controller);
+    }
+
     ///////////////////////////////
     // ## EIP7540 REDEEM FLOW ## //
     ///////////////////////////////
@@ -499,6 +508,22 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         // only the vault can burn shares
         require(msg.sender == address(this));
         _burn(from, shares);
+    }
+
+    /// @notice Transfers shares without any checks. This function is used to allow a transfer shares from a library
+    /// function.
+    /// @param from The address from which the shares will be transferred.
+    /// @param to The address to which the shares will be transferred.
+    /// @param value The amount of shares to transfer.
+    function transmitFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool) {
+        // only the vault can burn shares
+        require(msg.sender == address(this));
+        ERC20Upgradeable._transfer(from, to, value);
+        return true;
     }
 
     function _updateMaxCap(

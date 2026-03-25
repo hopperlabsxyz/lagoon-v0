@@ -24,6 +24,7 @@ import {
     AsyncOnlyActivated,
     DepositRequestCanceled,
     NewTotalAssetsUpdated,
+    RedeemRequestCanceled,
     Referral,
     SettleDeposit,
     SettleRedeem,
@@ -496,6 +497,26 @@ library ERC7540Lib {
         IERC20(asset()).safeTransferFrom(address($.pendingSilo), controller, requestedAmount);
 
         emit DepositRequestCanceled(requestId, controller);
+    }
+
+    /// @dev Unusable when paused. Protected by whenNotPaused.
+    /// @notice Cancel a redeem request.
+    /// @dev It can only be called in the same epoch.
+    function cancelRequestRedeem(
+        address controller
+    ) public {
+        ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
+
+        uint40 requestId = $.lastRedeemRequestId[controller];
+        if (requestId != $.redeemEpochId) {
+            revert RequestNotCancelable(requestId);
+        }
+
+        uint256 requestedAmount = $.epochs[requestId].redeemRequest[controller];
+        $.epochs[requestId].redeemRequest[controller] = 0;
+        ERC7540(address(this)).transmitFrom(address($.pendingSilo), controller, requestedAmount);
+
+        emit RedeemRequestCanceled(requestId, controller, requestedAmount);
     }
 
     ///////////////////////////////
