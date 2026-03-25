@@ -8,7 +8,7 @@ import {BaseTest} from "./Base.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {State} from "@src/v0.6.0/primitives/Enums.sol";
+import {State, SyncMode} from "@src/v0.6.0/primitives/Enums.sol";
 import {WithdrawSync} from "@src/v0.6.0/primitives/Events.sol";
 import {Rates} from "@src/v0.6.0/primitives/Struct.sol";
 
@@ -29,7 +29,7 @@ contract TestSyncRedeem is BaseTest {
         updateAndSettle(0);
         vm.warp(block.timestamp + 1);
         vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
+        vault.setSyncMode(SyncMode.Both);
     }
 
     function test_syncRedeem_simple() public {
@@ -60,7 +60,7 @@ contract TestSyncRedeem is BaseTest {
         assertEq(vault.totalAssets(), totalAssetsBefore - assets, "totalAssets not decreased correctly");
     }
 
-    function test_syncRedeem_lifespanOutdateShouldStillWork() public {
+    function test_syncRedeem_lifespanOutdateShouldRevert() public {
         // First deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
         vm.prank(user1.addr);
@@ -69,6 +69,7 @@ contract TestSyncRedeem is BaseTest {
         // we go one second after the expiration
         vm.warp(block.timestamp + 1001);
 
+        vm.expectRevert(TotalAssetsExpired.selector);
         vm.prank(user1.addr);
         vault.syncRedeem(1, user1.addr, 0);
     }
@@ -89,7 +90,9 @@ contract TestSyncRedeem is BaseTest {
         vault.initiateClosing();
 
         vm.prank(safe.addr);
-        vault.disableSyncOperations();
+        vault.setSyncMode(SyncMode.None);
+        vm.prank(safe.addr);
+        vault.expireTotalAssets();
 
         updateNewTotalAssets(vault.totalAssets());
         vm.stopPrank();
@@ -179,7 +182,7 @@ contract TestSyncRedeem is BaseTest {
         vault.updateTotalAssetsLifespan(1000);
         updateAndSettle(0);
         vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
+        vault.setSyncMode(SyncMode.Both);
 
         // Deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
@@ -234,7 +237,7 @@ contract TestSyncRedeem is BaseTest {
         updateAndSettle(0);
 
         vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
+        vault.setSyncMode(SyncMode.Both);
 
         // Deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
@@ -273,7 +276,7 @@ contract TestSyncRedeem is BaseTest {
         vault.updateTotalAssetsLifespan(1000);
         updateAndSettle(0);
         vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
+        vault.setSyncMode(SyncMode.Both);
 
         // Deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
@@ -321,7 +324,7 @@ contract TestSyncRedeem is BaseTest {
         updateAndSettle(0);
 
         vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
+        vault.setSyncMode(SyncMode.Both);
 
         // Deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
@@ -425,9 +428,9 @@ contract TestSyncRedeem is BaseTest {
 
     function test_syncRedeem_notAllowed() public {
         vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(false);
+        vault.setSyncMode(SyncMode.SyncDeposit);
 
-        vm.expectRevert(SyncRedeemNotAllowed.selector);
+        vm.expectRevert(SyncOperationNotAllowed.selector);
         vm.prank(user1.addr);
         vault.syncRedeem(1, user1.addr, 0);
     }
@@ -448,7 +451,7 @@ contract TestSyncRedeem is BaseTest {
         updateAndSettle(0);
 
         vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
+        vault.setSyncMode(SyncMode.Both);
         // Deposit to get shares
         uint256 depositAmount = assetBalance(user1.addr);
         vm.prank(user1.addr);

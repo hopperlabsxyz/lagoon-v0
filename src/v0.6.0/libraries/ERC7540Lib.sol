@@ -7,13 +7,12 @@ import {RolesLib} from "../Roles.sol";
 import {IERC7540Deposit} from "../interfaces/IERC7540Deposit.sol";
 import {VaultLib} from "./VaultLib.sol";
 
-import {FeeType, State} from "../primitives/Enums.sol";
+import {FeeType, State, SyncMode} from "../primitives/Enums.sol";
 import {
     AddressNotAllowed,
     AsyncOnly,
     CantDepositNativeToken,
     ERC7540InvalidOperator,
-    EnableSyncRedeemNotAllowed,
     MaxCapReached,
     NewTotalAssetsMissing,
     OnlyOneRequestAllowed,
@@ -28,8 +27,7 @@ import {
     Referral,
     SettleDeposit,
     SettleRedeem,
-    SyncOperationsDisabled,
-    SyncRedeemAllowedSwitched,
+    SyncModeUpdated,
     TotalAssetsExpirationUpdated,
     TotalAssetsLifespanUpdated,
     TotalAssetsUpdated
@@ -180,7 +178,7 @@ library ERC7540Lib {
 
     /// @notice Permanently disables synchronous behavior for the vault.
     /// @dev This sets the vault in async-only mode by making totalAssets permanently invalid.
-    ///      It also disables sync redeem.
+    ///      It also sets sync mode to None.
     ///      It resets both totalAssetsExpiration and totalAssetsLifespan to zero.
     ///      This mode is irreversible.
     function setAsyncOnly() public {
@@ -190,40 +188,28 @@ library ERC7540Lib {
         uint128 oldExpiration = $.totalAssetsExpiration;
         $.totalAssetsExpiration = 0;
         $.totalAssetsLifespan = 0;
-        $.isSyncRedeemAllowed = false;
+        SyncMode oldMode = $.syncMode;
+        $.syncMode = SyncMode.None;
 
         emit TotalAssetsExpirationUpdated(oldExpiration, 0);
+        emit SyncModeUpdated(oldMode, SyncMode.None);
         emit AsyncOnlyActivated();
     }
 
-    /// @notice Enables or disables synchronous redeem.
-    /// @param _isAllowed Whether to enable or disable synchronous redeem.
-    /// @dev In async-only this function will revert to avoid switching to sync redeem mode on.
-    ///      It will also revert if newTotalAssets.
-    function setIsSyncRedeemAllowed(
-        bool _isAllowed
+    /// @notice Updates the sync mode for the vault.
+    /// @param _mode The new sync mode.
+    /// @dev Reverts if the vault is in async-only mode.
+    function setSyncMode(
+        SyncMode _mode
     ) public {
         ERC7540.ERC7540Storage storage $ = _getERC7540Storage();
 
         if ($.isAsyncOnly) revert AsyncOnly();
-        if ($.newTotalAssets != type(uint256).max && _isAllowed) revert EnableSyncRedeemNotAllowed();
 
-        $.isSyncRedeemAllowed = _isAllowed;
+        SyncMode oldMode = $.syncMode;
+        $.syncMode = _mode;
 
-        emit SyncRedeemAllowedSwitched(_isAllowed);
-    }
-
-    function disableSyncOperations() public {
-        ERC7540.ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
-
-        if ($.isSyncRedeemAllowed) {
-            $.isSyncRedeemAllowed = false;
-            emit SyncRedeemAllowedSwitched(false);
-        }
-        uint128 oldExpiration = $.totalAssetsExpiration;
-        $.totalAssetsExpiration = 0;
-        emit TotalAssetsExpirationUpdated(oldExpiration, 0);
-        emit SyncOperationsDisabled();
+        emit SyncModeUpdated(oldMode, _mode);
     }
 
     function decimalsOffset() internal view returns (uint8) {
@@ -712,7 +698,13 @@ library ERC7540Lib {
     }
 
     function isSyncRedeemAllowed() public view returns (bool) {
-        return _getERC7540Storage().isSyncRedeemAllowed;
+        SyncMode mode = _getERC7540Storage().syncMode;
+        return mode == SyncMode.SyncRedeem || mode == SyncMode.Both;
+    }
+
+    function isSyncDepositAllowed() public view returns (bool) {
+        SyncMode mode = _getERC7540Storage().syncMode;
+        return mode == SyncMode.SyncDeposit || mode == SyncMode.Both;
     }
 
     function supportsInterface(

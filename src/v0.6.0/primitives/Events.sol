@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {AccessMode, FeeType, State} from "./Enums.sol";
+import {AccessMode, FeeType, State, SyncMode} from "./Enums.sol";
 import {Rates} from "./Struct.sol";
 import {Guardrails} from "./Struct.sol";
 
@@ -142,9 +142,6 @@ event DepositRequestCanceled(uint256 indexed requestId, address indexed controll
 /// @param newExpiration The new expiration timestamp.
 event TotalAssetsExpirationUpdated(uint128 oldExpiration, uint128 newExpiration);
 
-/// @notice Emitted when synchronous operations are disabled.
-event SyncOperationsDisabled();
-
 /// @notice Emitted when the lifespan is updated.
 /// @param oldLifespan The old lifespan.
 /// @param newLifespan The new lifespan.
@@ -209,6 +206,7 @@ event NameUpdated(string previousName, string newName);
 /// @param newSymbol The new symbol of the ERC20 token.
 event SymbolUpdated(string previousSymbol, string newSymbol);
 
-/// @notice Emitted when the sync redeem allowed is switched.
-/// @param isSyncRedeemAllowed The new sync redeem allowed status.
-event SyncRedeemAllowedSwitched(bool isSyncRedeemAllowed);
+/// @notice Emitted when the sync mode is updated.
+/// @param oldMode The previous sync mode.
+/// @param newMode The new sync mode.
+event SyncModeUpdated(SyncMode oldMode, SyncMode newMode);

@@ -61,17 +61,17 @@ error WrongNewTotalAssets();
 /// @notice Indicates that totalAssets value is outdated and that synchronous deposits are not allowed.
 error OnlyAsyncDepositAllowed();
 
+/// @notice Indicates that the total assets value is expired.
+error TotalAssetsExpired();
+
 /// @notice Indicates that deposit can only happen via the synchronous path.
 error OnlySyncDepositAllowed();
 
 /// @notice Indicates that the max cap is reached.
 error MaxCapReached();
 
-/// @notice Indicates that sync redeem is not allowed.
-error SyncRedeemNotAllowed();
-
-/// @notice Can't enable sync redeem
-error EnableSyncRedeemNotAllowed();
+/// @notice Indicates that the sync operation is not allowed by the current sync mode.
+error SyncOperationNotAllowed();
 
 /// @notice Only asynchronous operations are allowed.
 error AsyncOnly();

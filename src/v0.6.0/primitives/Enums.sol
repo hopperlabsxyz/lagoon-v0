@@ -24,3 +24,12 @@ enum AccessMode {
     Blacklist,
     Whitelist
 }
+
+// ********************* ERC7540 ********************* //
+
+enum SyncMode {
+    Both, // Both sync deposit and sync redeem are allowed (default)
+    SyncDeposit, // Only sync deposit is allowed
+    SyncRedeem, // Only sync redeem is allowed
+    None // No sync operations are allowed
+}
