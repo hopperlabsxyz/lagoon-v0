@@ -3,8 +3,16 @@ pragma solidity 0.8.26;
 
 import {ERC7540} from "../ERC7540.sol";
 import {FeeLib} from "../libraries/FeeLib.sol";
-import {State} from "../primitives/Enums.sol";
-import {Closed, NotClosing, NotOpen, OnlyAsyncDepositAllowed, OnlySyncDepositAllowed} from "../primitives/Errors.sol";
+import {State, SyncMode} from "../primitives/Enums.sol";
+import {
+    Closed,
+    NotClosing,
+    NotOpen,
+    OnlyAsyncDepositAllowed,
+    OnlySyncDepositAllowed,
+    SyncOperationNotAllowed,
+    TotalAssetsExpired
+} from "../primitives/Errors.sol";
 import {StateUpdated} from "../primitives/Events.sol";
 import {VaultStorage} from "../primitives/VaultStorage.sol";
 import {ERC7540Lib} from "./ERC7540Lib.sol";
@@ -45,10 +53,25 @@ library VaultLib {
         if (_state == State.Closed) revert Closed();
     }
 
-    function _onlySyncDeposit() internal view {
-        // if total assets is not valid we can only do asynchronous deposit
+    function _syncDepositAllowed() internal view {
+        ERC7540.ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+        SyncMode mode = $.syncMode;
+        if (mode != SyncMode.SyncDeposit && mode != SyncMode.Both) {
+            revert SyncOperationNotAllowed();
+        }
         if (!isTotalAssetsValid()) {
-            revert OnlyAsyncDepositAllowed();
+            revert TotalAssetsExpired();
+        }
+    }
+
+    function _syncRedeemAllowed() internal view {
+        ERC7540.ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+        SyncMode mode = $.syncMode;
+        if (mode != SyncMode.SyncRedeem && mode != SyncMode.Both) {
+            revert SyncOperationNotAllowed();
+        }
+        if (!isTotalAssetsValid()) {
+            revert TotalAssetsExpired();
         }
     }
 

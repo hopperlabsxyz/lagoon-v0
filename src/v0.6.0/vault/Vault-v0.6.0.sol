@@ -6,7 +6,7 @@ import {ERC7540Lib} from "../libraries/ERC7540Lib.sol";
 import {FeeLib} from "../libraries/FeeLib.sol";
 import {RolesLib} from "../libraries/RolesLib.sol";
 import {VaultLib} from "../libraries/VaultLib.sol";
-import {FeeType} from "../primitives/Enums.sol";
+import {FeeType, SyncMode} from "../primitives/Enums.sol";
 import {VaultStorage} from "../primitives/VaultStorage.sol";
 
 import {VaultInit} from "./VaultInit.sol";
@@ -30,7 +30,13 @@ import {
 
 import {GuardrailsManager} from "../GuardRailsManager.sol";
 
-import {DepositSync, HaircutTaken, Referral, WithdrawSync} from "../primitives/Events.sol";
+import {
+    DepositSync,
+    HaircutTaken,
+    Referral,
+    TotalAssetsExpirationUpdated,
+    WithdrawSync
+} from "../primitives/Events.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -128,15 +134,21 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         _;
     }
 
-    /// @notice Reverts if totalAssets is expired.
-    modifier onlySyncDeposit() {
-        VaultLib._onlySyncDeposit();
+    /// @notice Reverts if totalAssets is expired or sync deposit is not allowed.
+    modifier syncDepositAllowed() {
+        VaultLib._syncDepositAllowed();
         _;
     }
 
     /// @notice Reverts if totalAssets is valid.
     modifier onlyAsyncDeposit() {
         VaultLib._onlyAsyncDeposit();
+        _;
+    }
+
+    /// @notice Reverts if totalAssets is expired or sync redeem is not allowed.
+    modifier syncRedeemAllowed() {
+        VaultLib._syncRedeemAllowed();
         _;
     }
 
@@ -178,7 +190,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         uint256 assets,
         address receiver,
         address referral
-    ) public payable onlySyncDeposit onlyOpen returns (uint256 shares) {
+    ) public payable syncDepositAllowed onlyOpen returns (uint256 shares) {
         if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         if (!isAllowed(receiver)) revert AddressNotAllowed(receiver);
 
@@ -224,7 +236,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         uint256 shares,
         address receiver,
         uint256 minimumAssets
-    ) public onlyOpen onlySyncRedeemAllowed returns (uint256 assets) {
+    ) public onlyOpen syncRedeemAllowed returns (uint256 assets) {
         if (!isAllowed(msg.sender)) revert AddressNotAllowed(msg.sender);
         if (!isAllowed(receiver)) revert AddressNotAllowed(receiver);
         if (receiver == address(0)) revert InvalidReceiver(receiver);
@@ -442,17 +454,12 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
             revert Closed();
         }
 
-        // if totalAssets is not expired yet it means syncDeposit are allowed
+        // if totalAssets is not expired yet it means sync operations are allowed
         // in this case we do not allow the valuation manager to propose a new nav
-        // he must call unvalidateTotalAssets first.
+        // he must call expireTotalAssets first.
         if (isTotalAssetsValid()) {
             revert ValuationUpdateNotAllowed();
         }
-
-        // if sync redeem is allowed,
-        // we do not allow the valuation manager to propose a new nav
-        // he must call disable synchronous redemptions first.
-        if (ERC7540Lib._getERC7540Storage().isSyncRedeemAllowed) revert ValuationUpdateNotAllowed();
 
         uint256 oneShare = 10 ** decimals();
         uint256 currentPps = convertToAssets(oneShare);
@@ -530,14 +537,22 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         _updateMaxCap(_maxCap);
     }
 
-    ////////////////////////////////
-    // ## SYNC REDEEM ALLOWED ## //
-    ////////////////////////////////
+    //////////////////////////
+    // ## SYNC MODE ## //
+    //////////////////////////
 
-    function setIsSyncRedeemAllowed(
-        bool _isAllowed
+    /// @notice Updates the sync mode for the vault.
+    /// @param _mode The new sync mode.
+    /// @dev Can only be called by the safe. Reverts if the vault is in async-only mode.
+    function setSyncMode(
+        SyncMode _mode
     ) external onlySafe {
-        ERC7540Lib.setIsSyncRedeemAllowed(_isAllowed);
+        ERC7540Lib.setSyncMode(_mode);
+    }
+
+    /// @notice Returns the current sync mode.
+    function syncMode() public view returns (SyncMode) {
+        return ERC7540Lib._getERC7540Storage().syncMode;
     }
 
     /////////////////////////////
@@ -579,13 +594,9 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     /// @notice Expires the total assets, disabling sync deposits.
     /// @dev Can only be called by the safe.
     function expireTotalAssets() public onlySafe {
+        uint128 oldExpiration = ERC7540Lib._getERC7540Storage().totalAssetsExpiration;
         ERC7540Lib._getERC7540Storage().totalAssetsExpiration = 0;
-    }
-
-    /// @notice Disables synchronous operations for the vault.
-    /// @dev Can only be called by the safe.
-    function disableSyncOperations() public onlySafe {
-        ERC7540Lib.disableSyncOperations();
+        emit TotalAssetsExpirationUpdated(oldExpiration, 0);
     }
 
     /// @notice Resets the high water mark to the current price per share.
@@ -672,7 +683,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     function previewSyncDeposit(
         uint256 assets
     ) public view returns (uint256 shares) {
-        if (paused() || !isTotalAssetsValid()) return 0;
+        if (paused() || !isTotalAssetsValid() || !ERC7540Lib.isSyncDepositAllowed()) return 0;
         shares = _convertToShares(assets, Math.Rounding.Floor);
         uint256 entryFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
         shares -= entryFeeShares;

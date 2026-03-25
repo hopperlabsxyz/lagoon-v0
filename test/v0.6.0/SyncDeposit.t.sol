@@ -8,6 +8,7 @@ import {BaseTest} from "./Base.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {SyncMode} from "@src/v0.6.0/primitives/Enums.sol";
 
 contract TestSyncDeposit is BaseTest {
     using Math for uint256;
@@ -47,7 +48,7 @@ contract TestSyncDeposit is BaseTest {
         // we go one second after the expiration
         vm.warp(block.timestamp + 1001);
 
-        vm.expectRevert(OnlyAsyncDepositAllowed.selector);
+        vm.expectRevert(TotalAssetsExpired.selector);
         vm.prank(user1.addr);
         vault.syncDeposit(1, user1.addr, address(0));
     }
@@ -119,12 +120,14 @@ contract TestSyncDeposit is BaseTest {
         vault.initiateClosing();
 
         vm.prank(safe.addr);
-        vault.disableSyncOperations();
+        vault.setSyncMode(SyncMode.None);
+        vm.prank(safe.addr);
+        vault.expireTotalAssets();
 
         updateNewTotalAssets(vault.totalAssets());
         vm.stopPrank();
 
-        vm.expectRevert(OnlyAsyncDepositAllowed.selector);
+        vm.expectRevert(SyncOperationNotAllowed.selector);
         vm.prank(user1.addr);
         vault.syncDeposit(1, user1.addr, address(0));
 
@@ -132,9 +135,8 @@ contract TestSyncDeposit is BaseTest {
         vault.close(vault.newTotalAssets());
         vm.stopPrank();
 
-        // make sure he is wl
-
-        vm.expectRevert(abi.encodeWithSelector(NotOpen.selector, State.Closed));
+        // syncMode is None, so SyncOperationNotAllowed fires before NotOpen
+        vm.expectRevert(SyncOperationNotAllowed.selector);
         vm.prank(user1.addr);
         vault.syncDeposit(1, user1.addr, address(0));
     }

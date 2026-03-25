@@ -8,6 +8,8 @@ import {IWETH9} from "./interfaces/IWETH9.sol";
 import {AccessableLib} from "./libraries/AccessableLib.sol";
 import {ERC7540Lib} from "./libraries/ERC7540Lib.sol";
 import {RolesLib} from "./libraries/RolesLib.sol";
+import {VaultLib} from "./libraries/VaultLib.sol";
+import {SyncMode} from "./primitives/Enums.sol";
 import {
     AddressNotAllowed,
     ERC7540PreviewDepositDisabled,
@@ -16,9 +18,9 @@ import {
     ERC7540PreviewWithdrawDisabled,
     InvalidController,
     OnlyOneRequestAllowed,
-    SyncRedeemNotAllowed
+    SyncOperationNotAllowed
 } from "./primitives/Errors.sol";
-import {DepositSync, MaxCapUpdated, PreMint} from "./primitives/Events.sol";
+import {DepositSync, MaxCapUpdated, PreMint, SyncModeUpdated} from "./primitives/Events.sol";
 import {EpochData, SettleData} from "./primitives/Struct.sol";
 import {
     ERC20Upgradeable,
@@ -78,8 +80,7 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         uint128 totalAssetsLifespan;
         // New variables introduce with v0.6.0
         uint256 maxCap;
-        bool isSyncRedeemAllowed;
-        // New variables introduce with v0.6.0 (async-only mode)
+        SyncMode syncMode;
         // When true, the vault permanently forbids synchronous deposits by keeping totalAssets invalid.
         bool isAsyncOnly;
     }
@@ -119,6 +120,8 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
             _preMint(initialTotalAssets, _safe);
         }
         _updateMaxCap(type(uint256).max);
+        // syncMode defaults to SyncMode.Both (enum value 0)
+        emit SyncModeUpdated(SyncMode.Both, SyncMode.Both);
     }
 
     /// @notice Pre-mints shares to the receiver based on the provided assets amount.
@@ -161,12 +164,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         address controller
     ) {
         ERC7540Lib._onlyOperator(controller);
-        _;
-    }
-
-    /// @notice Make sure sync redeem is allowed.
-    modifier onlySyncRedeemAllowed() {
-        if (!ERC7540Lib._getERC7540Storage().isSyncRedeemAllowed) revert SyncRedeemNotAllowed();
         _;
     }
 
