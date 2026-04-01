@@ -720,12 +720,16 @@ library ERC7540Lib {
 
     function isSyncRedeemAllowed() public view returns (bool) {
         SyncMode mode = _getERC7540Storage().syncMode;
-        return mode == SyncMode.SyncRedeem || mode == SyncMode.Both;
+        return (mode == SyncMode.SyncRedeem || mode == SyncMode.Both) && isTotalAssetsValid();
     }
 
     function isSyncDepositAllowed() public view returns (bool) {
         SyncMode mode = _getERC7540Storage().syncMode;
-        return mode == SyncMode.SyncDeposit || mode == SyncMode.Both;
+        return (mode == SyncMode.SyncDeposit || mode == SyncMode.Both) && isTotalAssetsValid();
+    }
+
+    function isTotalAssetsValid() public view returns (bool) {
+        return block.timestamp < _getERC7540Storage().totalAssetsExpiration;
     }
 
     function supportsInterface(

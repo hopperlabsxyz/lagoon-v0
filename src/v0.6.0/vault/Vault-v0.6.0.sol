@@ -683,7 +683,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     function previewSyncDeposit(
         uint256 assets
     ) public view returns (uint256 shares) {
-        if (paused() || !isTotalAssetsValid() || !ERC7540Lib.isSyncDepositAllowed()) return 0;
+        if (paused() || !ERC7540Lib.isSyncDepositAllowed()) return 0;
         shares = _convertToShares(assets, Math.Rounding.Floor);
         uint256 entryFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().entryRate);
         shares -= entryFeeShares;
@@ -693,7 +693,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     function previewSyncRedeem(
         uint256 shares
     ) public view returns (uint256 assets) {
-        if (paused() || !isTotalAssetsValid() || !ERC7540Lib.isSyncRedeemAllowed()) return 0;
+        if (paused() || !ERC7540Lib.isSyncRedeemAllowed()) return 0;
         uint256 exitFeeShares = FeeLib.computeFee(shares, FeeLib.feeRates().exitRate);
         uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, FeeLib.feeRates().haircutRate);
         assets = _convertToAssets(shares - exitFeeShares - haircutShares, Math.Rounding.Floor);
@@ -701,7 +701,7 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     }
 
     function isTotalAssetsValid() public view returns (bool) {
-        return VaultLib.isTotalAssetsValid();
+        return ERC7540Lib.isTotalAssetsValid();
     }
 
     function isAllowed(

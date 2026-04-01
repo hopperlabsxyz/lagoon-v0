@@ -59,7 +59,7 @@ library VaultLib {
         if (mode != SyncMode.SyncDeposit && mode != SyncMode.Both) {
             revert SyncOperationNotAllowed();
         }
-        if (!isTotalAssetsValid()) {
+        if (!ERC7540Lib.isTotalAssetsValid()) {
             revert TotalAssetsExpired();
         }
     }
@@ -70,20 +70,16 @@ library VaultLib {
         if (mode != SyncMode.SyncRedeem && mode != SyncMode.Both) {
             revert SyncOperationNotAllowed();
         }
-        if (!isTotalAssetsValid()) {
+        if (!ERC7540Lib.isTotalAssetsValid()) {
             revert TotalAssetsExpired();
         }
     }
 
     function _onlyAsyncDeposit() internal view {
         // if total assets is valid we can only do synchronous deposit
-        if (isTotalAssetsValid()) {
+        if (ERC7540Lib.isTotalAssetsValid()) {
             revert OnlySyncDepositAllowed();
         }
-    }
-
-    function isTotalAssetsValid() public view returns (bool) {
-        return block.timestamp < ERC7540Lib._getERC7540Storage().totalAssetsExpiration;
     }
 
     /// @notice Initiates the closing of the vault. Can only be called by the owner.
