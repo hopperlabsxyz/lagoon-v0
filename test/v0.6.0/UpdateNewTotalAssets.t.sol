@@ -5,6 +5,7 @@ import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
+import {SyncMode} from "@src/v0.6.0/primitives/Enums.sol";
 
 contract TestUpdateNewTotalAssets is BaseTest {
     function setUp() public {
@@ -16,109 +17,79 @@ contract TestUpdateNewTotalAssets is BaseTest {
         updateAndSettle(0);
     }
 
-    // --- isSyncRedeemAllowed blocks updateNewTotalAssets ---
+    // --- isTotalAssetsValid blocks updateNewTotalAssets ---
 
-    function test_whenSyncRedeemAllowed_cantUpdateNav() public {
-        // let totalAssets lifespan expire so only isSyncRedeemAllowed blocks
-        vm.warp(block.timestamp + 1 days);
-
-        vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
-
+    function test_whenTotalAssetsValid_cantUpdateNav() public {
         vm.prank(vault.valuationManager());
         vm.expectRevert(ValuationUpdateNotAllowed.selector);
         vault.updateNewTotalAssets(1);
     }
 
-    function test_whenSyncRedeemDisabled_canUpdateNav() public {
+    function test_whenTotalAssetsExpired_canUpdateNav() public {
         vm.warp(block.timestamp + 1 days);
-
-        // enable then disable sync redeem
-        vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
-
-        vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(false);
 
         vm.prank(vault.valuationManager());
         vault.updateNewTotalAssets(1);
     }
 
-    function test_disableSyncOperations_clearsSyncRedeemAllowed() public {
-        vm.warp(block.timestamp + 1 days);
-
-        vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
-
-        // verify blocked
+    function test_expireTotalAssets_allowsUpdateNav() public {
         vm.prank(vault.valuationManager());
         vm.expectRevert(ValuationUpdateNotAllowed.selector);
         vault.updateNewTotalAssets(1);
 
-        // disableSyncOperations should clear isSyncRedeemAllowed
         vm.prank(vault.safe());
-        vault.disableSyncOperations();
+        vault.expireTotalAssets();
 
         vm.prank(vault.valuationManager());
         vault.updateNewTotalAssets(1);
     }
 
-    // --- setAsyncOnly clears isSyncRedeemAllowed ---
+    // --- syncMode does NOT block updateNewTotalAssets ---
 
-    function test_setAsyncOnly_clearsSyncRedeemAllowed() public {
-        vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
+    function test_syncModeDoesNotBlockUpdateNav() public {
+        // let totalAssets expire
+        vm.warp(block.timestamp + 1 days);
 
+        // even with syncMode = Both (default), updateNewTotalAssets succeeds
+        // because only isTotalAssetsValid gates it
+        vm.prank(vault.valuationManager());
+        vault.updateNewTotalAssets(1);
+    }
+
+    // --- setAsyncOnly clears syncMode ---
+
+    function test_setAsyncOnly_clearsSyncMode() public {
         vm.prank(vault.owner());
         vault.activateAsyncOnly();
 
-        // should succeed: setAsyncOnly clears isSyncRedeemAllowed
+        // should succeed: setAsyncOnly expires totalAssets
         vm.prank(vault.valuationManager());
         vault.updateNewTotalAssets(1);
     }
 
-    // --- setIsSyncRedeemAllowed reverts in asyncOnly mode ---
+    // --- setSyncMode reverts in asyncOnly mode ---
 
-    function test_setIsSyncRedeemAllowed_revertsWhenAsyncOnly() public {
+    function test_setSyncMode_revertsWhenAsyncOnly() public {
         vm.prank(vault.owner());
         vault.activateAsyncOnly();
 
         vm.prank(vault.safe());
         vm.expectRevert(AsyncOnly.selector);
-        vault.setIsSyncRedeemAllowed(true);
+        vault.setSyncMode(SyncMode.SyncRedeem);
     }
 
-    // --- setIsSyncRedeemAllowed reverts when newTotalAssets is pending ---
+    // --- securityCouncil ---
 
-    function test_setIsSyncRedeemAllowed_revertsWhenNewTotalAssetsPending() public {
-        // let totalAssets lifespan expire so updateNewTotalAssets succeeds
-        vm.warp(block.timestamp + 1 days);
-
-        // propose a new NAV — newTotalAssets is now != type(uint256).max
-        vm.prank(vault.valuationManager());
-        vault.updateNewTotalAssets(1);
-
-        // enabling sync redeem should revert because a NAV update is pending
-        vm.prank(vault.safe());
-        vm.expectRevert(EnableSyncRedeemNotAllowed.selector);
-        vault.setIsSyncRedeemAllowed(true);
+    function test_securityCouncil_whenTotalAssetsValid_cantUpdateNav() public {
+        vm.prank(vault.securityCouncil());
+        vm.expectRevert(ValuationUpdateNotAllowed.selector);
+        vault.securityCouncilUpdateTotalAssets(1);
     }
 
-    function test_setIsSyncRedeemAllowed_disableAlsoRevertsWhenNewTotalAssetsPending() public {
-        // enable sync redeem first (while newTotalAssets == max)
-        vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
-
-        // let totalAssets lifespan expire and propose a new NAV
+    function test_securityCouncil_whenTotalAssetsExpired_canUpdateNav() public {
         vm.warp(block.timestamp + 1 days);
-        // disableSyncOperations so updateNewTotalAssets can go through
-        vm.prank(vault.safe());
-        vault.disableSyncOperations();
-        vm.prank(vault.valuationManager());
-        vault.updateNewTotalAssets(1);
 
-        // trying to disable sync redeem when newTotalAssets is pending succeeds
-        vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(false);
+        vm.prank(vault.securityCouncil());
+        vault.securityCouncilUpdateTotalAssets(1);
     }
 }

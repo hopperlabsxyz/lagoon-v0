@@ -6,7 +6,8 @@ import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {AsyncOnly, OnlyAsyncDepositAllowed} from "@src/v0.6.0/primitives/Errors.sol";
+import {SyncMode} from "@src/v0.6.0/primitives/Enums.sol";
+import {AsyncOnly, OnlyAsyncDepositAllowed, SyncOperationNotAllowed} from "@src/v0.6.0/primitives/Errors.sol";
 import {AsyncOnlyActivated} from "@src/v0.6.0/primitives/Events.sol";
 
 // Tests for the ActivateAsyncOnly functionality
@@ -165,7 +166,7 @@ contract TestAsyncOnly is BaseTest {
 
         dealAndApproveAndWhitelist(user2.addr);
         vm.prank(user2.addr);
-        vm.expectRevert(OnlyAsyncDepositAllowed.selector);
+        vm.expectRevert(SyncOperationNotAllowed.selector);
         vault.syncDeposit(100 * 10 ** underlyingDecimals, user2.addr, address(0));
     }
 
@@ -179,21 +180,18 @@ contract TestAsyncOnly is BaseTest {
 
         uint256 shares = vault.balanceOf(user1.addr);
 
-        vm.prank(vault.safe());
-        vault.setIsSyncRedeemAllowed(true);
-
-        // Disable sync deposit forever
+        // Disable sync operations forever
         vm.prank(vault.owner());
         vault.activateAsyncOnly();
 
-        // Allow sync redeem
+        // Try to set sync mode - should revert
         vm.prank(vault.safe());
         vm.expectRevert(AsyncOnly.selector);
-        vault.setIsSyncRedeemAllowed(true);
+        vault.setSyncMode(SyncMode.SyncRedeem);
 
         // Try to sync redeem - should revert
         vm.prank(user1.addr);
-        vm.expectRevert(SyncRedeemNotAllowed.selector);
+        vm.expectRevert(SyncOperationNotAllowed.selector);
         vault.syncRedeem(shares / 2, user1.addr, 0);
     }
 

@@ -117,7 +117,6 @@ contract DeployVaultV060SdkTest is Script {
         // ────────────────────────────
         vault.updateMaxCap(MAX_CAP);
         vault.updateTotalAssetsLifespan(TOTAL_ASSETS_LIFESPAN);
-        vault.setIsSyncRedeemAllowed(true);
 
         // ── 7. WhitelistManager: whitelist role addresses
         // ─────────────────────

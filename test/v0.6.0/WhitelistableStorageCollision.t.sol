@@ -55,12 +55,12 @@ contract TestWhitelistableStorageCollision is BaseTest {
         VaultHelper_v0_5_1 vault = VaultHelper_v0_5_1(
             OptinProxyFactory_v0_5_0(address(factory))
                 .createVaultProxy({
-                    _logic: address(0),
-                    _initialOwner: initStruct.admin,
-                    _initialDelay: 86_400,
-                    _init: initStruct,
-                    salt: salt
-                })
+                _logic: address(0),
+                _initialOwner: initStruct.admin,
+                _initialDelay: 86_400,
+                _init: initStruct,
+                salt: salt
+            })
         );
         DelayProxyAdmin proxyAdmin = DelayProxyAdmin(vm.computeCreateAddress(address(vault), 2));
 

@@ -19,6 +19,7 @@ abstract contract Roles is Ownable2StepUpgradeable {
     /// @param securityCouncil The address of the security council that can update total assets without guardrails.
     /// @dev owner The address of the owner of the contract. It considered as the admin. It is not visible in the
     /// struct. It can change the others roles and itself. Initiate the fund closing. Disable the whitelist.
+    /// @custom:storage-location erc7201:hopper.storage.Roles
     struct RolesStorage {
         address whitelistManager;
         address feeReceiver;
