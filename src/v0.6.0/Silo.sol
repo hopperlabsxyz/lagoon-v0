@@ -20,6 +20,7 @@ contract Silo {
         wrappedNativeToken = IWETH9(_wrappedNativeToken);
     }
 
+    /// @notice Wraps received ETH into WETH by depositing into the wrapped native token contract
     function depositEth() external payable {
         IWETH9(wrappedNativeToken).deposit{value: msg.value}();
     }

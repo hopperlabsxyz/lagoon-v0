@@ -28,6 +28,7 @@ library AccessableLib {
     }
 
     /// @notice Adds multiple accounts to the whitelist
+    /// @param accounts The addresses to add to the whitelist
     function addToWhitelist(
         address[] memory accounts
     ) public {
@@ -44,6 +45,7 @@ library AccessableLib {
     }
 
     /// @notice Removes multiple accounts from the whitelist
+    /// @param accounts The addresses to remove from the whitelist
     function revokeFromWhitelist(
         address[] memory accounts
     ) public {
@@ -60,6 +62,7 @@ library AccessableLib {
     }
 
     /// @notice Adds multiple accounts to the blacklist
+    /// @param accounts The addresses to add to the blacklist
     function addToBlacklist(
         address[] memory accounts
     ) public {
@@ -76,6 +79,7 @@ library AccessableLib {
     }
 
     /// @notice Removes multiple accounts from the blacklist
+    /// @param accounts The addresses to remove from the blacklist
     function revokeFromBlacklist(
         address[] memory accounts
     ) public {
@@ -103,7 +107,8 @@ library AccessableLib {
         emit AccessModeUpdated(newMode);
     }
 
-    /// @notice Sets the external sanctions list
+    /// @notice Sets the external sanctions list oracle
+    /// @param externalSanctionList The new sanctions list contract address
     function setExternalSanctionsList(
         SanctionsList externalSanctionList
     ) public {
@@ -113,6 +118,7 @@ library AccessableLib {
     }
 
     /// @notice Returns true if the blacklist is active, false otherwise
+    /// @return True if the access mode is Blacklist
     function isBlacklistMode() internal view returns (bool) {
         Accessable.AccessableStorage storage $ = _getAccessableStorage();
         return $.accessMode == AccessMode.Blacklist;

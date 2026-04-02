@@ -65,6 +65,10 @@ library ERC7540Lib {
         }
     }
 
+    /// @dev Checks if an address is an operator or super operator for a controller
+    /// @param controller The controller address
+    /// @param operator The address to check
+    /// @return True if the address is an operator or super operator
     function _isOperatorOrSuperOperator(
         address controller,
         address operator
@@ -72,6 +76,10 @@ library ERC7540Lib {
         return _isOperator(controller, operator) || _isSuperOperator(controller, operator);
     }
 
+    /// @dev Checks if an address is an operator for a controller
+    /// @param controller The controller address
+    /// @param operator The address to check
+    /// @return True if the address is an operator
     function _isOperator(
         address controller,
         address operator
@@ -79,6 +87,10 @@ library ERC7540Lib {
         return _getERC7540Storage().isOperator[controller][operator];
     }
 
+    /// @dev Checks if an address is the super operator for a controller
+    /// @param controller The controller address
+    /// @param superOperator The address to check
+    /// @return True if the address is the super operator
     function _isSuperOperator(
         address controller,
         address superOperator
@@ -86,6 +98,8 @@ library ERC7540Lib {
         return RolesLib.isSuperOperator(controller, superOperator);
     }
 
+    /// @dev Reverts if msg.sender is not the controller, an operator, or the super operator
+    /// @param controller The controller address to check against
     function _onlyOperatorOrSuperOperator(
         address controller
     ) internal view {
@@ -95,6 +109,8 @@ library ERC7540Lib {
         }
     }
 
+    /// @dev Reverts if msg.sender is not the controller or an operator (excludes super operator)
+    /// @param controller The controller address to check against
     function _onlyOperator(
         address controller
     ) internal view {
@@ -104,7 +120,9 @@ library ERC7540Lib {
         }
     }
 
-    /// @dev Updates the totalAssets variable with the newTotalAssets variable.
+    /// @notice Updates the totalAssets variable with the newTotalAssets variable
+    /// @dev Reverts if newTotalAssets has not been set or if the provided value doesn't match
+    /// @param _newTotalAssets The expected new total assets value (must match the stored newTotalAssets)
     function updateTotalAssets(
         uint256 _newTotalAssets
     ) public {
@@ -161,6 +179,9 @@ library ERC7540Lib {
         emit NewTotalAssetsUpdated(_newTotalAssets);
     }
 
+    /// @notice Updates the lifespan duration for total assets validity
+    /// @dev Reverts if the vault is in async-only mode since totalAssets is never valid in that mode
+    /// @param lifespan The new lifespan duration in seconds
     function updateTotalAssetsLifespan(
         uint128 lifespan
     ) public {
@@ -213,6 +234,8 @@ library ERC7540Lib {
         emit SyncModeUpdated(oldMode, _mode);
     }
 
+    /// @dev Returns the decimals offset used in share/asset conversions to mitigate inflation attacks
+    /// @return The decimals offset value
     function decimalsOffset() internal view returns (uint8) {
         return _getERC7540Storage().decimalsOffset;
     }
@@ -257,6 +280,10 @@ library ERC7540Lib {
         return assets.mulDiv(_totalSupply, _totalAssets, rounding);
     }
 
+    /// @notice Returns the maximum amount of assets that a controller can withdraw
+    /// @dev Accounts for exit fees and considers both claimable redeem requests and closed vault state
+    /// @param controller The address to check the max withdrawable amount for
+    /// @return assets The maximum amount of assets that can be withdrawn
     function maxWithdraw(
         address controller
     ) public view returns (uint256 assets) {
@@ -276,6 +303,8 @@ library ERC7540Lib {
         return assets;
     }
 
+    /// @notice Reverts if depositing the given assets would exceed the vault's max cap
+    /// @param assets The amount of assets being deposited
     function _onlyUnderMaxCap(
         uint256 assets
     ) public view {
@@ -475,9 +504,9 @@ library ERC7540Lib {
         emit IERC4626.Deposit(controller, receiver, assets, shares);
     }
 
-    /// @dev Unusable when paused. Protected by whenNotPaused.
-    /// @notice Cancel a deposit request.
-    /// @dev It can only be called in the same epoch.
+    /// @notice Cancels a pending deposit request and returns assets to the controller
+    /// @dev Can only be called in the same epoch as the request. Unusable when paused.
+    /// @param controller The controller whose deposit request should be canceled
     function cancelRequestDeposit(
         address controller
     ) public {
@@ -499,9 +528,9 @@ library ERC7540Lib {
         emit DepositRequestCanceled(requestId, controller);
     }
 
-    /// @dev Unusable when paused. Protected by whenNotPaused.
-    /// @notice Cancel a redeem request.
-    /// @dev It can only be called in the same epoch.
+    /// @notice Cancels a pending redeem request and returns shares to the controller
+    /// @dev Can only be called in the same epoch as the request. Unusable when paused.
+    /// @param controller The controller whose redeem request should be canceled
     function cancelRequestRedeem(
         address controller
     ) public {
@@ -593,6 +622,10 @@ library ERC7540Lib {
     // ## SETTLEMENT FUNCTIONS ## //
     ////////////////////////////////
 
+    /// @notice Settles pending deposit requests by minting shares and transferring assets to the custodian
+    /// @dev Computes entry fees and distributes them. Updates epoch and settlement tracking state.
+    /// @param assetsCustodian The address that will receive the deposited assets (typically the safe)
+    /// @return sharesToMint The total amount of shares minted during settlement
     function settleDeposit(
         address assetsCustodian
     ) public returns (uint256 sharesToMint) {
@@ -718,20 +751,29 @@ library ERC7540Lib {
         return _getERC7540Storage().settles[settleId].entryFeeRate;
     }
 
+    /// @notice Checks if synchronous redeem is currently allowed
+    /// @return True if the sync mode permits sync redeems and total assets has not expired
     function isSyncRedeemAllowed() public view returns (bool) {
         SyncMode mode = _getERC7540Storage().syncMode;
         return (mode == SyncMode.SyncRedeem || mode == SyncMode.Both) && isTotalAssetsValid();
     }
 
+    /// @notice Checks if synchronous deposit is currently allowed
+    /// @return True if the sync mode permits sync deposits and total assets has not expired
     function isSyncDepositAllowed() public view returns (bool) {
         SyncMode mode = _getERC7540Storage().syncMode;
         return (mode == SyncMode.SyncDeposit || mode == SyncMode.Both) && isTotalAssetsValid();
     }
 
+    /// @notice Checks if the total assets valuation is still valid (not expired)
+    /// @return True if the current timestamp is before the total assets expiration
     function isTotalAssetsValid() public view returns (bool) {
         return block.timestamp < _getERC7540Storage().totalAssetsExpiration;
     }
 
+    /// @notice Checks if the contract supports the given interface
+    /// @param interfaceId The interface identifier to check
+    /// @return True if the interface is supported
     function supportsInterface(
         bytes4 interfaceId
     ) public pure returns (bool) {
@@ -743,6 +785,8 @@ library ERC7540Lib {
             || interfaceId == type(IERC165).interfaceId;
     }
 
+    /// @dev Returns the underlying asset address of the vault
+    /// @return The address of the underlying ERC20 asset
     function asset() internal view returns (address) {
         return IERC4626(address(this)).asset();
     }

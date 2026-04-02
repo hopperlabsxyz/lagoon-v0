@@ -9,7 +9,8 @@ interface IWETH9 is IERC20 {
     function deposit() external payable;
 
     /// @notice Withdraw wrapped ether to get ether
+    /// @param amount The amount of WETH to unwrap
     function withdraw(
-        uint256
+        uint256 amount
     ) external;
 }
