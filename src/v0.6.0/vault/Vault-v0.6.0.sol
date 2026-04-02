@@ -156,9 +156,11 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     // ## DEPOSIT AND REDEEM FLOW FUNCTIONS ## //
     /////////////////////////////////////////////
 
+    /// @notice Requests a deposit of assets into the vault (async flow, no referral).
     /// @param assets The amount of assets to deposit.
     /// @param controller The address of the controller involved in the deposit request.
     /// @param owner The address of the owner for whom the deposit is requested.
+    /// @return requestId The epoch-based request identifier.
     function requestDeposit(
         uint256 assets,
         address controller,
@@ -304,7 +306,11 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     /// @dev Unusable when paused.
     /// @dev First _withdraw path: whenNotPaused via ERC20Pausable._update.
     /// @dev Second _withdraw path: whenNotPaused in ERC7540.
-    /// @return shares The number of shares withdrawn.
+    /// @notice Withdraws assets from the vault, either from a settled redeem request or directly when closed.
+    /// @param assets The amount of assets to withdraw.
+    /// @param receiver The address receiving the assets.
+    /// @param controller The controller who owns the redeem request or shares.
+    /// @return The number of shares burned.
     function withdraw(
         uint256 assets,
         address receiver,
@@ -527,10 +533,14 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     // ## MAX CAP FUNCTIONS ## //
     /////////////////////////////
 
+    /// @notice Returns the maximum deposit cap for the vault
+    /// @return The current max cap in asset units
     function maxCap() external view returns (uint256) {
         return ERC7540Lib._getERC7540Storage().maxCap;
     }
 
+    /// @notice Updates the maximum deposit cap for the vault
+    /// @param _maxCap The new max cap in asset units
     function updateMaxCap(
         uint256 _maxCap
     ) external onlySafe {
@@ -550,7 +560,8 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         ERC7540Lib.setSyncMode(_mode);
     }
 
-    /// @notice Returns the current sync mode.
+    /// @notice Returns the current sync mode
+    /// @return The current SyncMode enum value
     function syncMode() public view returns (SyncMode) {
         return ERC7540Lib._getERC7540Storage().syncMode;
     }
@@ -690,6 +701,9 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         return shares;
     }
 
+    /// @notice Returns the amount of assets a controller would get by redeeming shares in a synchronous fashion
+    /// @param shares The amount of shares to redeem
+    /// @return assets The amount of assets after fees (exit fee + haircut)
     function previewSyncRedeem(
         uint256 shares
     ) public view returns (uint256 assets) {
@@ -700,16 +714,23 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
         return assets;
     }
 
+    /// @notice Checks if the total assets valuation is still valid (not expired)
+    /// @return True if the total assets have not expired
     function isTotalAssetsValid() public view returns (bool) {
         return ERC7540Lib.isTotalAssetsValid();
     }
 
+    /// @notice Checks if an account is allowed to interact with the vault based on access controls
+    /// @param account The address to check
+    /// @return True if the account is allowed
     function isAllowed(
         address account
     ) public view override(ERC7540, Accessable) returns (bool) {
         return Accessable.isAllowed(account);
     }
 
+    /// @notice Returns the address of the safe (asset custodian)
+    /// @return The safe address
     function safe() public view override returns (address) {
         return RolesLib._getRolesStorage().safe;
     }
@@ -718,6 +739,8 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     // ## METADATA FUNCTIONS ## //
     /////////////////////////////
 
+    /// @notice Returns the version of the vault implementation
+    /// @return The version string
     function version() public pure returns (string memory) {
         return "v0.6.0";
     }

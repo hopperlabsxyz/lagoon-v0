@@ -26,8 +26,10 @@ contract VaultInit is ERC7540, Accessable, FeeManager, GuardrailsManager {
         if (disable) _disableInitializers();
     }
 
-    /// @notice Initializes the vault.
-    /// @param data The encoded initialization parameters of the vault.
+    /// @notice Initializes the vault with all required parameters
+    /// @param data The ABI-encoded InitStruct containing vault configuration
+    /// @param feeRegistry The address of the protocol fee registry
+    /// @param wrappedNativeToken The address of the wrapped native token (e.g., WETH)
     function initialize(
         bytes memory data,
         address feeRegistry,
@@ -74,6 +76,8 @@ contract VaultInit is ERC7540, Accessable, FeeManager, GuardrailsManager {
     // ## DEPOSIT AND REDEEM FLOW FUNCTIONS ## //
     /////////////////////////////////////////////
 
+    /// @notice No-op override for the initialization contract
+    /// @return Always returns 0
     function requestDeposit(
         uint256,
         address,
@@ -82,6 +86,8 @@ contract VaultInit is ERC7540, Accessable, FeeManager, GuardrailsManager {
         return 0;
     }
 
+    /// @notice No-op override for the initialization contract
+    /// @return Always returns 0
     function requestRedeem(
         uint256,
         address,
@@ -90,22 +96,30 @@ contract VaultInit is ERC7540, Accessable, FeeManager, GuardrailsManager {
         return 0;
     }
 
+    /// @notice No-op override for the initialization contract
     function settleDeposit(
         uint256
     ) public override {}
 
+    /// @notice No-op override for the initialization contract
     function settleRedeem(
         uint256
     ) public override {}
 
+    /// @notice Always returns false in the initialization contract
+    /// @return Always false
     function isTotalAssetsValid() public view returns (bool) {
         return false;
     }
 
+    /// @notice Always returns address(0) in the initialization contract
+    /// @return Always address(0)
     function safe() public view override returns (address) {
         return address(0);
     }
 
+    /// @notice Always returns false in the initialization contract
+    /// @return Always false
     function isAllowed(
         address
     ) public view override(ERC7540, Accessable) returns (bool) {

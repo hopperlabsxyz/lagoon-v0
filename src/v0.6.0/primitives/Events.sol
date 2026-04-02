@@ -18,6 +18,13 @@ event Referral(address indexed referral, address indexed owner, uint256 indexed 
 /// @param state The new state of the vault. Either Open, Closing or Close.
 event StateUpdated(State state);
 
+/// @notice Emitted when a deposit settlement is processed
+/// @param epochId The epoch identifier for the settlement
+/// @param settledId The unique settlement identifier
+/// @param totalAssets The total assets after settlement
+/// @param totalSupply The total share supply after settlement
+/// @param assetsDeposited The amount of assets deposited in this settlement
+/// @param sharesMinted The amount of shares minted in this settlement
 event SettleDeposit(
     uint40 indexed epochId,
     uint40 indexed settledId,
@@ -27,6 +34,13 @@ event SettleDeposit(
     uint256 sharesMinted
 );
 
+/// @notice Emitted when a redeem settlement is processed
+/// @param epochId The epoch identifier for the settlement
+/// @param settledId The unique settlement identifier
+/// @param totalAssets The total assets after settlement
+/// @param totalSupply The total share supply after settlement
+/// @param assetsWithdrawed The amount of assets withdrawn in this settlement
+/// @param sharesBurned The amount of shares burned in this settlement
 event SettleRedeem(
     uint40 indexed epochId,
     uint40 indexed settledId,

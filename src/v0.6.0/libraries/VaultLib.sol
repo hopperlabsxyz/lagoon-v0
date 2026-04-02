@@ -38,21 +38,25 @@ library VaultLib {
         }
     }
 
+    /// @dev Reverts if the vault is not in the Open state
     function _onlyOpen() internal view {
         State _state = _getVaultStorage().state;
         if (_state != State.Open) revert NotOpen(_state);
     }
 
+    /// @dev Reverts if the vault is not in the Closing state
     function _onlyClosing() internal view {
         State _state = _getVaultStorage().state;
         if (_state != State.Closing) revert NotClosing(_state);
     }
 
+    /// @dev Reverts if the vault is in the Closed state
     function _onlyNotClosed() internal view {
         State _state = _getVaultStorage().state;
         if (_state == State.Closed) revert Closed();
     }
 
+    /// @dev Reverts if synchronous deposits are not allowed by the current sync mode or if total assets is expired
     function _syncDepositAllowed() internal view {
         ERC7540.ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
         SyncMode mode = $.syncMode;
@@ -64,6 +68,7 @@ library VaultLib {
         }
     }
 
+    /// @dev Reverts if synchronous redeems are not allowed by the current sync mode or if total assets is expired
     function _syncRedeemAllowed() internal view {
         ERC7540.ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
         SyncMode mode = $.syncMode;
@@ -75,6 +80,7 @@ library VaultLib {
         }
     }
 
+    /// @dev Reverts if total assets is valid (meaning sync deposit should be used instead)
     function _onlyAsyncDeposit() internal view {
         // if total assets is valid we can only do synchronous deposit
         if (ERC7540Lib.isTotalAssetsValid()) {
@@ -95,6 +101,9 @@ library VaultLib {
         emit StateUpdated(State.Closing);
     }
 
+    /// @notice Closes the vault permanently, settling all pending requests and transferring assets
+    /// @dev Takes management/performance fees, settles all deposits and redeems, then transfers total assets from the
+    /// safe @param _newTotalAssets The final total assets value for the vault
     function close(
         uint256 _newTotalAssets
     ) public {

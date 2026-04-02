@@ -39,11 +39,11 @@ library FeeLib {
         }
     }
 
-    /// @dev Calculate the management fee
-    /// @param assets the total assets under management
-    /// @param annualRate the management rate, expressed in BPS and corresponding to the annual
-    /// @param timeElapsed the time elapsed since the last fee calculation in seconds
-    /// @return managementFee the management fee expressed in assets
+    /// @notice Calculates the management fee for a given period
+    /// @param assets The total assets under management
+    /// @param annualRate The annual management rate, expressed in BPS
+    /// @param timeElapsed The time elapsed since the last fee calculation in seconds
+    /// @return managementFee The management fee expressed in assets
     function calculateManagementFee(
         uint256 assets,
         uint256 annualRate,
@@ -53,15 +53,13 @@ library FeeLib {
         managementFee = annualFee.mulDiv(timeElapsed, ONE_YEAR, Math.Rounding.Ceil);
     }
 
-    /// @dev Calculate the performance fee
-    /// @dev The performance is calculated as the difference between the current price per share and the high water mark
-    /// @dev The performance fee is calculated as the product of the performance and the performance rate
-    /// @param _rate the performance rate, expressed in BPS
-    /// @param _totalSupply the total supply of shares
-    /// @param _pricePerShare the current price per share
-    /// @param _highWaterMark the highest price per share ever reached
-    /// @param _decimals the number of decimals of the shares
-    /// @return performanceFee the performance fee express in assets
+    /// @notice Calculates the performance fee based on profit above the high water mark
+    /// @param _rate The performance rate, expressed in BPS
+    /// @param _totalSupply The total supply of shares
+    /// @param _pricePerShare The current price per share
+    /// @param _highWaterMark The highest price per share ever reached
+    /// @param _decimals The number of decimals of the shares
+    /// @return performanceFee The performance fee expressed in assets
     function calculatePerformanceFee(
         uint256 _rate,
         uint256 _totalSupply,
@@ -79,10 +77,10 @@ library FeeLib {
         }
     }
 
-    /// @dev Compute the fee for a given amount and rate
+    /// @notice Computes the fee for a given amount and rate
     /// @param amount The amount to compute the fee for
     /// @param rate The rate to compute the fee for, expressed in BPS
-    /// @return fee The fee, expressed in the same unit as the amount
+    /// @return The fee, expressed in the same unit as the amount
     function computeFee(
         uint256 amount,
         uint256 rate
@@ -91,10 +89,10 @@ library FeeLib {
         return amount.mulDiv(rate, BPS_DIVIDER, Math.Rounding.Ceil);
     }
 
-    /// @dev Compute the fee for a given amount and rate
-    /// @param amount The amount to compute the fee for
+    /// @notice Computes the fee amount from a net (post-fee) amount, reversing the fee deduction
+    /// @param amount The net amount (after fee deduction) to compute the gross fee for
     /// @param rate The rate to compute the fee for, expressed in BPS
-    /// @return fee The fee, expressed in the same unit as the amount
+    /// @return The fee, expressed in the same unit as the amount
     function computeFeeReverse(
         uint256 amount,
         uint256 rate
@@ -103,9 +101,9 @@ library FeeLib {
         return amount.mulDiv(BPS_DIVIDER, (BPS_DIVIDER - rate), Math.Rounding.Ceil) - amount;
     }
 
-    /// @dev Update the high water mark only if the new value is greater than the current one
+    /// @notice Updates the high water mark only if the new value is greater than the current one
     /// @dev The high water mark is the highest price per share ever reached
-    /// @param _newHighWaterMark the new high water mark
+    /// @param _newHighWaterMark The candidate new high water mark value
     function setHighWaterMark(
         uint256 _newHighWaterMark
     ) public {
@@ -119,8 +117,8 @@ library FeeLib {
         }
     }
 
-    /// @dev Reset the high water mark to the current price per share
-    /// @dev Can only be called by the safe and only if allowHighWaterMarkReset was set to true at initialization
+    /// @notice Resets the high water mark to the current price per share
+    /// @dev Can only be called if allowHighWaterMarkReset was set to true at initialization
     function resetHighWaterMark() public {
         FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
 
@@ -227,8 +225,11 @@ library FeeLib {
         $.lastFeeTime = block.timestamp;
     }
 
-    /// @notice update the fee rates, applied immediately
-    /// @param newRates the new fee rates
+    /// @notice Updates the fee rates, applied immediately
+    /// @dev Entry and exit fee rates can only decrease after initial configuration
+    /// @param $ The fee manager storage reference
+    /// @param newRates The new fee rates to apply
+    /// @param isFirstInitialization True if this is the first rate configuration (allows increasing entry/exit rates)
     function updateRates(
         FeeManager.FeeManagerStorage storage $,
         Rates memory newRates,
@@ -277,7 +278,8 @@ library FeeLib {
         return _protocolRate;
     }
 
-    /// @notice the current fee rates
+    /// @notice Returns the current fee rates
+    /// @return The current Rates struct containing all fee rates
     function feeRates() public view returns (Rates memory) {
         FeeManager.FeeManagerStorage storage $ = _getFeeManagerStorage();
 
