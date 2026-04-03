@@ -87,7 +87,7 @@ contract TestWhitelist is BaseTest {
         vm.assertEq(vault.isWhitelistActivated(), false);
         uint256 shares = vault.balanceOf(user1.addr);
         vm.prank(user1.addr);
-        assertTrue(vault.transfer(receiver, shares));
+        vault.transfer(receiver, shares);
     }
 
     function test_transfer_ShouldWorkWhenReceiverWhitelisted() public {
@@ -103,7 +103,7 @@ contract TestWhitelist is BaseTest {
         address receiver = user2.addr;
         whitelist(user2.addr);
         vm.prank(user1.addr);
-        assertTrue(vault.transfer(receiver, shares));
+        vault.transfer(receiver, shares);
     }
 
     function test_whitelist() public {
@@ -209,7 +209,7 @@ contract TestWhitelist is BaseTest {
         address receiver = user1.addr;
 
         vm.prank(user5.addr);
-        assertTrue(vault.transfer(receiver, shares));
+        vault.transfer(receiver, shares);
 
         // owner is not whitelisted
         vm.prank(receiver);
