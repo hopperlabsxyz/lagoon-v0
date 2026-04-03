@@ -7,6 +7,8 @@ import "forge-std/Test.sol";
 import {BaseTest} from "./Base.sol";
 
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {VmSafe} from "forge-std/Vm.sol";
 
@@ -393,10 +395,10 @@ contract TestInitiateClosing is BaseTest {
         vault.close(vault.newTotalAssets());
         vm.stopPrank();
 
-        uint256 firstRedeem = redeem(12_500 * 10 ** vault.decimals(), user2.addr);
-        assertEq(firstRedeem, 12_500 * 10 ** vault.underlyingDecimals(), "did not received expected assets");
-        uint256 secondRedeem = redeem(12_500 * 10 ** vault.decimals(), user2.addr);
-        assertEq(secondRedeem, 12_500 * 10 ** vault.underlyingDecimals(), "did not received expected assets 2");
+        uint256 firstRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
+        assertEq(firstRedeem, (25_000 / 2) * 10 ** vault.underlyingDecimals(), "did not received expected assets");
+        uint256 secondRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
+        assertEq(secondRedeem, (25_000 / 2) * 10 ** vault.underlyingDecimals(), "did not received expected assets 2");
         uint256 thirdRedeem = redeem(25_000 * 10 ** vault.decimals(), user2.addr);
         assertEq(thirdRedeem, 25_000 * 10 ** vault.underlyingDecimals(), "did not received expected assets 3");
         assertEq(vault.balanceOf(user2.addr), 0, "should not have any shares anymore");
@@ -432,12 +434,11 @@ contract TestInitiateClosing is BaseTest {
 
         assertEq(vault.totalAssets() / 10 ** vault.underlyingDecimals(), 250_000, "wrong total assets");
 
-        uint256 firstRedeem = redeem(12_500 * 10 ** vault.decimals(), user2.addr);
-        assertEq(firstRedeem / 10 ** vault.underlyingDecimals(), 12_500, "did not received expected assets");
+        uint256 firstRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
+        assertEq(firstRedeem / 10 ** vault.underlyingDecimals(), (25_000 / 2), "did not received expected assets");
         // no profit here because settle associated with this request did not bring any profits
-        uint256 secondRedeem = redeem(12_500 * 10 ** vault.decimals(), user2.addr);
-        assertEq(secondRedeem, (25_000) * 10 ** vault.underlyingDecimals() / 2, "did not received expected assets 2"); // same
-        // here
+        uint256 secondRedeem = redeem((25_000 / 2) * 10 ** vault.decimals(), user2.addr);
+        assertEq(secondRedeem, (25_000 / 2) * 10 ** vault.underlyingDecimals(), "did not received expected assets 2"); // same
 
         uint256 thirdRedeem = redeem(25_000 * 10 ** vault.decimals(), user2.addr);
         assertApproxEqAbs(

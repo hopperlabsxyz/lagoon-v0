@@ -5,6 +5,7 @@ import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
 import {BaseTest} from "./Base.sol";
+import {InvalidController} from "@src/v0.5.1/primitives/Errors.sol";
 
 contract TestRequestDeposit is BaseTest {
     function setUp() public {
