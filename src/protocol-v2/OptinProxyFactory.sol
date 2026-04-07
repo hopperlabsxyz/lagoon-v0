@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
-
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {OptinProxy} from "@src/proxy/OptinProxy.sol";
+import {LagoonVault} from "@src/proxy/OptinProxy.sol";
 
 interface IVault {
     function initialize(
@@ -51,7 +50,7 @@ struct InitStruct {
     uint16 performanceRate;
     /// @notice Flag to enable whitelist functionality
     bool enableWhitelist;
-    /// @notice Cooldown period for rate updates
+    /// @notice Rate update cooldown for v0.5.0 compatibility, pass 0 for v0.6.0+
     uint256 rateUpdateCooldown;
 }
 
@@ -64,7 +63,6 @@ contract OptinProxyFactory is OwnableUpgradeable {
     /// @param proxy Address of the newly deployed proxy
     /// @param deployer Address that initiated the deployment
     event ProxyDeployed(address proxy, address deployer);
-
     // Storage slot for OptinProxyFactoryStorage
     // keccak256(abi.encode(uint256(keccak256("hopper.storage.opt-inProxyFactory")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant proxyFactoryStorage = 0xda29f9cce8913a5999de49b73cd9d621b583d9cae78170dc4846b93899df8600;
@@ -123,7 +121,7 @@ contract OptinProxyFactory is OwnableUpgradeable {
         bytes memory call_data = abi.encodeCall(IVault.initialize, (abi.encode(_init), $.REGISTRY, $.WRAPPED_NATIVE));
 
         address proxy = address(
-            new OptinProxy{salt: salt}({
+            new LagoonVault{salt: salt}({
                 _logic: _logic,
                 _logicRegistry: $.REGISTRY,
                 _initialOwner: _initialOwner,
@@ -131,10 +129,8 @@ contract OptinProxyFactory is OwnableUpgradeable {
                 _data: call_data
             })
         );
-
         $.isInstance[proxy] = true;
         emit ProxyDeployed(proxy, msg.sender);
-
         return proxy;
     }
 

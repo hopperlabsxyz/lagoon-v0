@@ -19,6 +19,7 @@ contract TestRequestRedeem is BaseTest {
         requestDeposit(balance, user1.addr);
         requestDeposit(balance, user2.addr);
         updateAndSettle(0);
+        vm.warp(block.timestamp + 1);
         deposit(balance, user1.addr);
         deposit(balance, user2.addr);
     }
@@ -133,6 +134,7 @@ contract TestRequestRedeem is BaseTest {
         /// ------------------ settlement ------------------ ///
 
         updateAndSettle(assetBalance(vault.safe()));
+        vm.warp(block.timestamp + 1);
 
         // pendings
         assertEq(vault.pendingRedeemRequest(requestId_1, user1.addr), 0, "[1 - pending - requestId 1]: wrong amount");
@@ -177,7 +179,7 @@ contract TestRequestRedeem is BaseTest {
 
         /// ------------------ settlement ------------------ ///
         updateAndSettle(assetBalance(vault.safe()));
-
+        vm.warp(block.timestamp + 1);
         // pendings
         assertEq(vault.pendingRedeemRequest(requestId_1, user1.addr), 0, "[3 - pending - requestId 1]: wrong amount");
         assertEq(vault.pendingRedeemRequest(requestId_2, user1.addr), 0, "[3 - pending - requestId 2]: wrong amount");
@@ -277,6 +279,7 @@ contract TestRequestRedeem is BaseTest {
 
         // the asset manager settle the vault
         settleRedeem();
+        vm.warp(block.timestamp + 1);
 
         // We expect the pending Silo to only send the assets of the first deposit and not the one from user2
         assertEq(vault.balanceOf(vault.pendingSilo()), amountToRedeem);

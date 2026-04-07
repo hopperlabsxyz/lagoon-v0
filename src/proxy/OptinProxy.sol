@@ -5,11 +5,9 @@ import {LogicRegistry} from "../protocol-v2/LogicRegistry.sol";
 
 import {
     ERC1967Utils,
-    ITransparentUpgradeableProxy,
-    TransparentUpgradeableProxy
+    ITransparentUpgradeableProxy
 } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {IERC1967} from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {DelayProxyAdmin} from "./DelayProxyAdmin.sol";
@@ -54,11 +52,11 @@ import {DelayProxyAdmin} from "./DelayProxyAdmin.sol";
  * could render the `upgradeToAndCall` function inaccessible, preventing upgradeability and compromising transparency.
  */
 
-/// @title OptinProxy
+/// @title LagoonVault
 /// @notice A transparent upgradeable proxy that allows opting into logic upgrades through a registry
 /// @dev Extends TransparentUpgradeableProxy with additional logic verification through a registry
 /// @custom:contact team@hopperlabs.xyz
-contract OptinProxy is ERC1967Proxy {
+contract LagoonVault is ERC1967Proxy {
     // An immutable address for the admin to avoid unnecessary SLOADs before each call
     // at the expense of removing the ability to change the admin once it's set.
     // This is acceptable if the admin is always a ProxyAdmin instance or similar contract

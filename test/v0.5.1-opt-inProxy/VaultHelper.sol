@@ -22,6 +22,7 @@ contract VaultHelper is Vault {
         uint256 epochId
     ) public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
+        // forge-lint: disable-next-line(unsafe-typecast)
         return $.settles[$.epochs[uint40(epochId)].settleId].totalSupply;
     }
 
@@ -44,6 +45,7 @@ contract VaultHelper is Vault {
         uint256 epochId
     ) public view returns (uint256) {
         ERC7540Storage storage $ = _getERC7540Storage();
+        // forge-lint: disable-next-line(unsafe-typecast)
         return $.settles[$.epochs[uint40(epochId)].settleId].totalAssets;
     }
 

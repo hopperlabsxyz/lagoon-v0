@@ -111,9 +111,10 @@ contract Constants is Test {
             feeReceiver: feeReceiver.addr,
             managementRate: _managementRate,
             performanceRate: _performanceRate,
-            rateUpdateCooldown: rateUpdateCooldown,
-            enableWhitelist: enableWhitelist
+            enableWhitelist: enableWhitelist,
+            rateUpdateCooldown: rateUpdateCooldown
         });
+
         address vaultHelper = factory.createVaultProxy({
             _logic: address(0),
             _initialOwner: initStruct.admin,

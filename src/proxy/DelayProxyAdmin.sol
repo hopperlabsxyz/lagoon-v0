@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
@@ -16,16 +15,16 @@ contract DelayProxyAdmin is ProxyAdmin {
     ///@notice The `new delay` must be under `maxDelay`
     error DelayTooHigh(uint256 maxDelay);
 
-    ///@notice The implemenation to update to must the one submitted previously.
+    ///@notice The implementation to update to must be the one submitted previously.
     error ImplementationInconsistent(address expected);
 
-    /// @notice The `newImplementation` address will be enforcable at `implementationUpdateTime`
+    /// @notice The `newImplementation` address will be enforceable at `implementationUpdateTime`
     event ImplementationUpdateSubmited(address indexed newImplementation, uint256 implementationUpdateTime);
 
-    /// @notice The `currentDelay` will be enforcable to `newDelay`  at `delayUpdateTime`
+    /// @notice The `currentDelay` will be enforceable to `newDelay`  at `delayUpdateTime`
     event DelayUpdateSubmited(uint256 currentDelay, uint256 newDelay, uint256 delayUpdateTime);
 
-    /// @notice The `currentDelay` will be replacable by a `newDelay` period at `delayUpdateTime`
+    /// @notice The `currentDelay` will be replaceable by a `newDelay` period at `delayUpdateTime`
     event DelayUpdated(uint256 newDelay, uint256 oldDelay);
 
     /// @notice The maximum delay before which the implementation and the delay can be upgraded

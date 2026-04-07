@@ -1,0 +1,125 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.26;
+
+import {ERC7540} from "../ERC7540.sol";
+import {FeeLib} from "../libraries/FeeLib.sol";
+import {State, SyncMode} from "../primitives/Enums.sol";
+import {
+    Closed,
+    NotClosing,
+    NotOpen,
+    OnlyAsyncDepositAllowed,
+    OnlySyncDepositAllowed,
+    SyncOperationNotAllowed,
+    TotalAssetsExpired
+} from "../primitives/Errors.sol";
+import {StateUpdated} from "../primitives/Events.sol";
+import {VaultStorage} from "../primitives/VaultStorage.sol";
+import {ERC7540Lib} from "./ERC7540Lib.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+library VaultLib {
+    using SafeERC20 for IERC20;
+    using Math for uint256;
+
+    // keccak256(abi.encode(uint256(keccak256("hopper.storage.vault")) - 1)) & ~bytes32(uint256(0xff))
+    /// @custom:storage-location erc7201:hopper.storage.vault
+    // solhint-disable-next-line const-name-snakecase
+    bytes32 private constant vaultStorage = 0x0e6b3200a60a991c539f47dddaca04a18eb4bcf2b53906fb44751d827f001400;
+
+    /// @notice Returns the storage struct of the vault.
+    /// @return _vaultStorage The storage struct of the vault.
+    function _getVaultStorage() internal pure returns (VaultStorage storage _vaultStorage) {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            _vaultStorage.slot := vaultStorage
+        }
+    }
+
+    /// @dev Reverts if the vault is not in the Open state
+    function _onlyOpen() internal view {
+        State _state = _getVaultStorage().state;
+        if (_state != State.Open) revert NotOpen(_state);
+    }
+
+    /// @dev Reverts if the vault is not in the Closing state
+    function _onlyClosing() internal view {
+        State _state = _getVaultStorage().state;
+        if (_state != State.Closing) revert NotClosing(_state);
+    }
+
+    /// @dev Reverts if the vault is in the Closed state
+    function _onlyNotClosed() internal view {
+        State _state = _getVaultStorage().state;
+        if (_state == State.Closed) revert Closed();
+    }
+
+    /// @dev Reverts if synchronous deposits are not allowed by the current sync mode or if total assets is expired
+    function _syncDepositAllowed() internal view {
+        ERC7540.ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+        SyncMode mode = $.syncMode;
+        if (mode != SyncMode.SyncDeposit && mode != SyncMode.Both) {
+            revert SyncOperationNotAllowed();
+        }
+        if (!ERC7540Lib.isTotalAssetsValid()) {
+            revert TotalAssetsExpired();
+        }
+    }
+
+    /// @dev Reverts if synchronous redeems are not allowed by the current sync mode or if total assets is expired
+    function _syncRedeemAllowed() internal view {
+        ERC7540.ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+        SyncMode mode = $.syncMode;
+        if (mode != SyncMode.SyncRedeem && mode != SyncMode.Both) {
+            revert SyncOperationNotAllowed();
+        }
+        if (!ERC7540Lib.isTotalAssetsValid()) {
+            revert TotalAssetsExpired();
+        }
+    }
+
+    /// @dev Reverts if total assets is valid (meaning sync deposit should be used instead)
+    function _onlyAsyncDeposit() internal view {
+        // if total assets is valid we can only do synchronous deposit
+        if (ERC7540Lib.isTotalAssetsValid()) {
+            revert OnlySyncDepositAllowed();
+        }
+    }
+
+    /// @notice Initiates the closing of the vault. Can only be called by the owner.
+    /// @dev we make sure that initiate closing will make an epoch changement if the variable newTotalAssets is
+    /// "defined"
+    /// @dev (!= type(uint256).max). This guarantee that no userShares will be locked in a pending state.
+    function initiateClosing() public {
+        ERC7540.ERC7540Storage storage $ = ERC7540Lib._getERC7540Storage();
+        if ($.newTotalAssets != type(uint256).max) {
+            ERC7540Lib.updateNewTotalAssets($.newTotalAssets);
+        }
+        _getVaultStorage().state = State.Closing;
+        emit StateUpdated(State.Closing);
+    }
+
+    /// @notice Closes the vault permanently, settling all pending requests and transferring assets
+    /// @dev Takes management/performance fees, settles all deposits and redeems, then transfers total assets from the
+    /// safe @param _newTotalAssets The final total assets value for the vault
+    function close(
+        uint256 _newTotalAssets
+    ) public {
+        uint256 _previousTotalAssets = ERC7540Lib._getERC7540Storage().totalAssets;
+        ERC7540Lib.updateTotalAssets(_newTotalAssets);
+        uint40 contextId = ERC7540Lib._getERC7540Storage().depositSettleId;
+        FeeLib.takeManagementAndPerformanceFees(contextId, _previousTotalAssets);
+        ERC7540Lib.settleDeposit(msg.sender);
+        ERC7540Lib.settleRedeem(msg.sender);
+        _getVaultStorage().state = State.Closed;
+
+        // Transfer will fail if there are not enough assets inside the safe, making sure that redeem requests are
+        // fulfilled
+        uint256 _totalAssets = ERC7540Lib._getERC7540Storage().totalAssets;
+        IERC20(IERC4626(address(this)).asset()).safeTransferFrom(msg.sender, address(this), _totalAssets);
+
+        emit StateUpdated(State.Closed);
+    }
+}
