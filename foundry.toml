@@ -1,47 +1,16 @@
 [profile.default]
 src = "src"
 out = "out"
-libs = ["lib", "dependencies"]
+libs = ["dependencies"]
 cache = true
-cache_path = 'cache'
-ffi = true
-ast = true
-build_info = true
-extra_output = ["storageLayout"]
+cache_path = "cache"
 optimizer = true
 optimizer_runs = 1
 solc_version = "0.8.26"
-evm_version = 'shanghai'
-
-[fmt]
-line_width = 120
-single_line_statement_blocks = "preserve"
-multiline_func_header = "params_first"
-sort_imports = true
-override_spacing = false
-int_types = "long"
-quote_style = "double"
-number_underscore = "thousands"
-wrap_comments = true
-ignore = ["./lib"]
+evm_version = "shanghai"
 
 [dependencies]
 forge-std = "1.9.7"
 openzeppelin-foundry-upgrades = "0.4.0"
 "@openzeppelin-contracts" = "5.0.0"
 "@openzeppelin-contracts-upgradeable" = "5.0.0"
-
-[etherscan]
-berachain = { key="", chain = 80094, url = "https://api.berascan.com/api" }
-unichain = { key="", chain = 130, url = "https://api.uniscan.xyz/api" }
-worldchain = { key="", chain = 480, url = "https://api.worldscan.org/api" }
-mantle = { key="", chain = 5000, url = "https://api.mantlescan.xyz/api" }
-katana = { key="", chain = 747474, url = "https://api.etherscan.io/v2/api?chainid=747474"}
-monad_testnet = { key="", chain = 10143, url = "https://api-testnet.monadscan.com/api" }
-sei = { key="${ETHERSCAN_API_KEY}", chain = 1329, url = "https://api.etherscan.io/v2/api?chainid=1329" }
-monad = { key="${ETHERSCAN_API_KEY}", chain = 143, url = "https://api.etherscan.io/v2/api?chainid=143" }
-unknown_chain = { key = "${ETHERSCAN_API_KEY}" }
-plasma = { key = "${ETHERSCAN_API_KEY}", chain = 9745, url = "https://api.etherscan.io/v2/api?chainid=9745" }
-
-
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
