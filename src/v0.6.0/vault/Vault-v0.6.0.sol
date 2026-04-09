@@ -87,7 +87,9 @@ struct InitStruct {
     bool allowHighWaterMarkReset;
 }
 
-/// @custom:oz-upgrades-from src/v0.5.0/Vault.sol:Vault
+/// @custom:oz-upgrades-unsafe-allow delegatecall
+/// @custom:oz-upgrades-unsafe-allow missing-initializer-call
+/// @custom:oz-upgrades-from src/v0.5.1/Vault.sol:Vault
 contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     VaultInit immutable init;
