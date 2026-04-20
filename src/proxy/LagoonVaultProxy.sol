@@ -56,7 +56,7 @@ import {DelayProxyAdmin} from "./DelayProxyAdmin.sol";
 /// @notice A transparent upgradeable proxy that allows opting into logic upgrades through a registry
 /// @dev Extends TransparentUpgradeableProxy with additional logic verification through a registry
 /// @custom:contact team@hopperlabs.xyz
-contract LagoonVault is ERC1967Proxy {
+contract LagoonVaultProxy is ERC1967Proxy {
     // An immutable address for the admin to avoid unnecessary SLOADs before each call
     // at the expense of removing the ability to change the admin once it's set.
     // This is acceptable if the admin is always a ProxyAdmin instance or similar contract
