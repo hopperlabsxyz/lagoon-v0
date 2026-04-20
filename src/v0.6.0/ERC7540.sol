@@ -624,18 +624,6 @@ abstract contract ERC7540 is IERC7540Redeem, IERC7540Deposit, ERC20PausableUpgra
         return ERC7540Lib.supportsInterface(interfaceId);
     }
 
-    function settlementEntryFeeRate(
-        uint40 settleId
-    ) public view returns (uint16) {
-        return ERC7540Lib._getERC7540Storage().settles[settleId].entryFeeRate;
-    }
-
-    function settlementExitFeeRate(
-        uint40 settleId
-    ) public view returns (uint16) {
-        return ERC7540Lib._getERC7540Storage().settles[settleId].exitFeeRate;
-    }
-
     /// @notice Returns true if the vault has permanently given up the ability to be synchronous.
     /// @dev When true, totalAssets will always be considered invalid and only async flows are allowed.
     function isAsyncOnly() public view returns (bool) {

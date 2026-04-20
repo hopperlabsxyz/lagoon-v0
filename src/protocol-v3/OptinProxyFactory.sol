@@ -2,8 +2,8 @@
 pragma solidity 0.8.26;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {LagoonVault} from "@src/proxy/OptinProxy.sol";
-import {InitStruct} from "@src/v0.6.0/vault/Vault-v0.6.0.sol";
+import {LagoonVaultProxy} from "@src/proxy/LagoonVaultProxy.sol";
+import {InitStruct} from "@src/v0.5.1/Vault.sol";
 
 interface IVault {
     function initialize(
@@ -105,7 +105,7 @@ contract OptinProxyFactory is OwnableUpgradeable {
         OptinProxyFactoryStorage storage $ = _getProxyFactoryStorage();
 
         address proxy = address(
-            new LagoonVault{salt: salt}({
+            new LagoonVaultProxy{salt: salt}({
                 _logic: _logic,
                 _logicRegistry: $.REGISTRY,
                 _initialOwner: _initialOwner,
