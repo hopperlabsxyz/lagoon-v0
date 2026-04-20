@@ -90,7 +90,7 @@ struct InitStruct {
 /// @custom:oz-upgrades-unsafe-allow delegatecall
 /// @custom:oz-upgrades-unsafe-allow missing-initializer-call
 /// @custom:oz-upgrades-from src/v0.5.1/Vault.sol:Vault
-contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
+contract LagoonVault is ERC7540, Accessable, FeeManager, GuardrailsManager {
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     VaultInit immutable init;
 
@@ -254,21 +254,28 @@ contract Vault is ERC7540, Accessable, FeeManager, GuardrailsManager {
 
         uint16 haircutRate = FeeLib.feeRates().haircutRate;
         uint256 haircutShares = FeeLib.computeFee(shares - exitFeeShares, haircutRate);
+
+        // we act like the haircut did not happen for total assets subtraction
+        // this allow us to maintain the same price per share, it will be naturally corrected at the next settlement
+        uint256 assetsWithoutHaircut = _convertToAssets(shares - exitFeeShares, Math.Rounding.Floor);
+
         assets = _convertToAssets(shares - haircutShares - exitFeeShares, Math.Rounding.Floor);
 
         if (assets < minimumAssets) revert BelowMinimumAssets(assets, minimumAssets);
 
         // burn all the shares and remove the assets from the total assets
         _burn(msg.sender, shares);
-        $.totalAssets -= assets;
+        $.totalAssets -= assetsWithoutHaircut;
 
+        // take exit fees
+        FeeLib.takeFees(exitFeeShares, FeeType.Exit, exitRate, 0);
+
+        // transfer the assets to the receiver
         IERC20(asset()).safeTransferFrom(safe(), receiver, assets);
 
         if (haircutShares > 0) {
             emit HaircutTaken(msg.sender, haircutShares, haircutRate);
         }
-
-        FeeLib.takeFees(exitFeeShares, FeeType.Exit, exitRate, 0);
 
         emit WithdrawSync(msg.sender, receiver, msg.sender, assets, shares);
     }
