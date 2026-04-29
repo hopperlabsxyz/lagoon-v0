@@ -462,8 +462,12 @@ library ERC7540Lib {
         }
 
         $.epochs[requestId].depositRequest[controller] -= assets;
-        uint256 entryFeeAssets = FeeLib.computeFee(assets, getSettlementEntryFeeRate(requestId));
-        shares = ERC7540(address(this)).convertToShares(assets - entryFeeAssets, requestId);
+        uint256 grossShares = ERC7540(address(this)).convertToShares(assets, requestId);
+
+        // introduced in v0.6.0
+        // we need to take into account the entry fee to compute the shares
+        uint256 entryFeeShares = FeeLib.computeFee(grossShares, getSettlementEntryFeeRate(requestId));
+        shares = grossShares - entryFeeShares;
 
         IERC20(address(this)).safeTransfer(receiver, shares);
 
@@ -493,10 +497,10 @@ library ERC7540Lib {
             revert RequestIdNotClaimable();
         }
 
-        assets = convertToAssets(shares, requestId, Math.Rounding.Ceil);
         // introduced in v0.6.0
         // we need to take into account the entry fee to compute the assets
-        assets += FeeLib.computeFeeReverse(assets, getSettlementEntryFeeRate(requestId));
+        uint256 grossShares = shares + FeeLib.computeFeeReverse(shares, getSettlementEntryFeeRate(requestId));
+        assets = convertToAssets(grossShares, requestId, Math.Rounding.Ceil);
         $.epochs[requestId].depositRequest[controller] -= assets;
 
         IERC20(address(this)).safeTransfer(receiver, shares);
