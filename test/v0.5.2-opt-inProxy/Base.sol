@@ -4,14 +4,13 @@ pragma solidity 0.8.26;
 import "./VaultHelper.sol";
 import "forge-std/Test.sol";
 
-import {SetUp} from "./SetUp.sol";
+import {Constants} from "./Constants.sol";
 
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {IWETH9} from "@src/v0.6.0/interfaces/IWETH9.sol";
+import {IWETH9} from "@src/v0.5.2/interfaces/IWETH9.sol";
 
-contract BaseTest is Test, SetUp {
+contract BaseTest is Test, Constants {
     using SafeERC20 for IERC20;
 
     function requestDeposit(
@@ -172,18 +171,12 @@ contract BaseTest is Test, SetUp {
         address controller = user;
         uint256 sharesBefore = vault.balanceOf(receiver);
 
-        uint40 lastRequestId = vault.lastDepositRequestId(user);
+        uint256 lastRequestId = vault.lastDepositRequestId(user);
         uint256 maxDeposit = vault.convertToShares(vault.maxDeposit(controller), lastRequestId);
         uint256 maxMint = vault.maxMint(controller);
 
-        uint256 assetsExpected = vault.convertToAssetsRequestIdWithRounding(
-            amount + FeeLib.computeFeeReverse(amount, vault.getSettlementEntryFeeRate(lastRequestId)),
-            lastRequestId,
-            Math.Rounding.Ceil
-        );
         vm.prank(user);
         uint256 assets = vault.mint(amount, user);
-        assertEq(assets, assetsExpected, "mint: wrong assets returned");
 
         uint256 sharesAfter = vault.balanceOf(receiver);
 
@@ -251,7 +244,6 @@ contract BaseTest is Test, SetUp {
         // console.log("user bal             ", vault.balanceOf(controller));
         // console.log("---------");
         uint256 assetsBeforeReceiver = assetBalance(receiver);
-        uint256 sharesBeforeReceiver = balance(receiver);
         uint256 assetsBeforeController = assetBalance(controller);
         uint256 assetsBeforeOperator = assetBalance(operator);
 
@@ -263,29 +255,24 @@ contract BaseTest is Test, SetUp {
         uint256 assets = vault.redeem(amount, receiver, controller);
         uint256 assetsAfterReceiver = assetBalance(receiver);
 
-        assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxWithdraw, "redeem: wrong maxWithdraw");
+        assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxWithdraw, "wrong maxWithdraw");
         // assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxRedeem, "wrong maxRedeem");
 
-        console.log("shares before: ", sharesBeforeReceiver);
-        console.log("shares       : ", amount);
-        console.log("shares after: ", balance(receiver));
         assertEq(
-            assetsBeforeReceiver + assets,
-            assetBalance(receiver),
-            "redeem: Receiver assets balance did not increase properly"
+            assetsBeforeReceiver + assets, assetBalance(receiver), "Receiver assets balance did not increase properly"
         );
         if (controller != receiver) {
             assertEq(
                 assetsBeforeController,
                 assetBalance(controller),
-                "redeem: Controller assets balance should remain the same after redeem"
+                "Controller assets balance should remain the same after redeem"
             );
         }
         if (operator != receiver) {
             assertEq(
                 assetsBeforeOperator,
                 assetBalance(operator),
-                "redeem: Operator assets balance should remain the same after redeem"
+                "Operator assets balance should remain the same after redeem"
             );
         }
         return assets;
@@ -298,80 +285,43 @@ contract BaseTest is Test, SetUp {
         return withdraw(amount, user, user, user);
     }
 
-    struct Balances {
-        uint256 receiver;
-        uint256 controller;
-        uint256 operator;
-    }
-
     function withdraw(
         uint256 amount,
         address controller,
         address operator,
         address receiver
     ) internal returns (uint256) {
-        uint40 lastRequestId = vault.lastRedeemRequestId(controller);
+        uint256 assetsBeforeReceiver = assetBalance(receiver);
+        uint256 assetsBeforeController = assetBalance(controller);
+        uint256 assetsBeforeOperator = assetBalance(operator);
 
-        Balances memory assetsBefore = Balances({
-            receiver: assetBalance(receiver), controller: assetBalance(controller), operator: assetBalance(operator)
-        });
-        Balances memory sharesBefore =
-            Balances({receiver: balance(receiver), controller: balance(controller), operator: balance(operator)});
-
+        uint256 lastRequestId = vault.lastRedeemRequestId(controller);
         uint256 maxWithdraw = vault.maxWithdraw(controller);
-
-        // this value doesn't take into account the exit fee
-        // it can only be used if the vault is closed
-        uint256 convertedAssetsInShares = vault.convertToSharesWithRounding(amount, Math.Rounding.Ceil);
+        uint256 maxRedeem = vault.convertToAssets(vault.maxRedeem(controller), lastRequestId);
 
         vm.prank(operator);
         uint256 shares = vault.withdraw(amount, receiver, controller);
 
-        Balances memory assetsAfter = Balances({
-            receiver: assetBalance(receiver), controller: assetBalance(controller), operator: assetBalance(operator)
-        });
-        Balances memory sharesAfter =
-            Balances({receiver: balance(receiver), controller: balance(controller), operator: balance(operator)});
+        uint256 assetsAfterReceiver = assetBalance(receiver);
 
-        assertLe(assetsAfter.receiver - assetsBefore.receiver, maxWithdraw, "withdraw: wrong maxRedeem");
+        assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxWithdraw, "wrong maxWithdraw");
+        assertLe(assetsAfterReceiver - assetsBeforeReceiver, maxRedeem, "wrong maxRedeem");
 
-        if (vault.state() == State.Closed && vault.claimableRedeemRequest(0, controller) == 0) {
-            assertEq(
-                assetsBefore.receiver + amount,
-                assetsAfter.receiver,
-                "withdraw when closed: Receiver assets balance did not increase properly"
-            );
-            // With exit fees: shares returned = netShares + exitFeeShares
-            uint256 exitFeeShares = FeeLib.computeFeeReverse(convertedAssetsInShares, vault.exitRate());
-            uint256 expectedShares = convertedAssetsInShares + exitFeeShares;
-            assertEq(expectedShares, shares, "withdraw when closed: shares taken from user is wrong");
-            assertEq(
-                sharesBefore.receiver - sharesAfter.receiver,
-                shares,
-                "withdraw when closed: shares taken from user is wrong 2"
-            );
-        } else {
-            shares -= FeeLib.computeFee(shares, vault.getSettlementExitFeeRate(lastRequestId));
-            uint256 expectedAssets = vault.convertToAssets(shares, lastRequestId);
-            expectedAssets += assetsBefore.receiver;
-            assertEq(
-                expectedAssets,
-                assetBalance(receiver),
-                "withdraw when not closed: Receiver assets balance did not increase properly"
-            );
-        }
+        assertEq(
+            assetsBeforeReceiver + amount, assetBalance(receiver), "Receiver assets balance did not increase properly"
+        );
         if (controller != receiver) {
             assertEq(
-                assetsBefore.controller,
+                assetsBeforeController,
                 assetBalance(controller),
-                "withdraw: Controller assets balance should remain the same after redeem"
+                "Controller assets balance should remain the same after redeem"
             );
         }
         if (operator != receiver) {
             assertEq(
-                assetsBefore.operator,
+                assetsBeforeOperator,
                 assetBalance(operator),
-                "withdraw: Operator assets balance should remain the same after redeem"
+                "Operator assets balance should remain the same after redeem"
             );
         }
         return shares;
@@ -380,6 +330,7 @@ contract BaseTest is Test, SetUp {
     function updateNewTotalAssets(
         uint256 newTotalAssets
     ) internal {
+        closeAndReopen();
         vm.prank(vault.valuationManager());
         vault.updateNewTotalAssets(newTotalAssets);
     }
@@ -389,10 +340,8 @@ contract BaseTest is Test, SetUp {
         uint256 depositSettleIdBefore = vault.depositSettleId();
         uint256 redeemSettleIdBefore = vault.redeemSettleId();
 
-        // forge-lint: disable-next-line(unsafe-typecast)
-        uint256 pendingDepositAmount = vault.pendingDeposit(uint40(depositSettleIdBefore));
-        // forge-lint: disable-next-line(unsafe-typecast)
-        uint256 pendingRedeemAmount = vault.pendingRedeem(uint40(redeemSettleIdBefore));
+        uint256 pendingDepositAmount = vault.pendingDeposit();
+        uint256 pendingRedeemAmount = vault.pendingRedeem();
 
         vm.startPrank(vault.safe());
         vault.settleDeposit(vault.newTotalAssets());
@@ -402,14 +351,14 @@ contract BaseTest is Test, SetUp {
         uint256 redeemSettleIdAfter = vault.redeemSettleId();
 
         if (pendingDepositAmount == 0) {
-            assertEq(depositSettleIdBefore, depositSettleIdAfter, "wrong depositSettleId after settle 1");
+            assertEq(depositSettleIdBefore, depositSettleIdAfter);
         } else {
-            assertEq(depositSettleIdBefore + 2, depositSettleIdAfter, "wrong depositSettleId after settle 2");
+            assertEq(depositSettleIdBefore + 2, depositSettleIdAfter);
         }
         if (pendingRedeemAmount == 0) {
-            assertEq(redeemSettleIdBefore, redeemSettleIdAfter, "wrong redeemSettleId after settle 1");
+            assertEq(redeemSettleIdBefore, redeemSettleIdAfter);
         } else {
-            assertEq(redeemSettleIdBefore + 2, redeemSettleIdAfter, "wrong redeemSettleId after settle 2");
+            assertEq(redeemSettleIdBefore + 2, redeemSettleIdAfter);
         }
     }
 
@@ -581,46 +530,6 @@ contract BaseTest is Test, SetUp {
         vault.revokeFromWhitelist(users);
     }
 
-    function blacklist(
-        address user
-    ) public {
-        address[] memory users = new address[](1);
-        users[0] = user;
-        vm.prank(vault.whitelistManager());
-        vault.addToBlacklist(users);
-        assertFalse(vault.isAllowed(user));
-    }
-
-    function blacklist(
-        address[] memory users
-    ) public {
-        vm.prank(vault.whitelistManager());
-        vault.addToBlacklist(users);
-        for (uint256 i = 0; i < users.length; i++) {
-            assertFalse(vault.isAllowed(users[i]));
-        }
-    }
-
-    function unblacklist(
-        address user
-    ) public {
-        address[] memory users = new address[](1);
-        users[0] = user;
-        vm.prank(vault.whitelistManager());
-        vault.revokeFromBlacklist(users);
-        assertTrue(vault.isAllowed(user));
-    }
-
-    function unblacklist(
-        address[] memory users
-    ) public {
-        vm.prank(vault.whitelistManager());
-        vault.revokeFromBlacklist(users);
-        for (uint256 i = 0; i < users.length; i++) {
-            assertTrue(vault.isAllowed(users[i]));
-        }
-    }
-
     function updateRates(
         Rates memory newRates
     ) public {
@@ -639,21 +548,5 @@ contract BaseTest is Test, SetUp {
         uint256 totalAssetsLifespan = vault.totalAssetsLifespan();
 
         assertEq(totalAssetsExpiration, block.timestamp + totalAssetsLifespan);
-    }
-
-    // Helper function to convert percentage per year to scaled bips (multiplied by 1e18)
-    // Example: ratePerYearToBips(20) returns 20% * 1e18 = 2e17
-    function ratePerYearToBips(
-        uint256 ratePercent
-    ) internal pure returns (uint256) {
-        return ratePercent * 1e16; // ratePercent * 1e16 = (ratePercent / 100) * 1e18
-    }
-
-    // Helper function to convert negative percentage per year to scaled bips
-    // Example: negRatePerYearToBips(-10) returns -10% * 1e18 = -1e17
-    function negRatePerYearToBips(
-        int256 ratePercent
-    ) internal pure returns (int256) {
-        return ratePercent * int256(1e16);
     }
 }

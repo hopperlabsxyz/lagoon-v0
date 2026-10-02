@@ -8,6 +8,7 @@ import {Constants} from "./Constants.sol";
 
 import {IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IWETH9} from "@src/v0.5.1/interfaces/IWETH9.sol";
 
 contract BaseTest is Test, Constants {
     using SafeERC20 for IERC20;
@@ -459,10 +460,35 @@ contract BaseTest is Test, Constants {
         uint256 amount
     ) public {
         address asset = vault.asset();
+        dealAsset(user, amount);
         deal(user, type(uint256).max);
-        deal(vault.asset(), user, amount);
         vm.prank(user);
         IERC20(asset).forceApprove(address(vault), UINT256_MAX);
+    }
+
+    /// @notice Sets `user` asset balance to exactly `amount`, wrapping native when the asset is the wrapped native
+    /// token.
+    function dealAsset(
+        address user,
+        uint256 amount
+    ) public {
+        address asset = vault.asset();
+        if (asset != WRAPPED_NATIVE_TOKEN) {
+            deal(asset, user, amount);
+            return;
+        }
+        // deal() only writes the balance slot; wrapped natives with transfer hooks
+        // (WFLR tracks vote power) need a real wrap to keep their bookkeeping consistent.
+        uint256 balance = IERC20(asset).balanceOf(user);
+        if (balance < amount) {
+            deal(user, amount - balance);
+            vm.prank(user);
+            IWETH9(asset).deposit{value: amount - balance}();
+        } else if (balance > amount) {
+            deal(user, 0);
+            vm.prank(user);
+            IWETH9(asset).withdraw(balance - amount);
+        }
     }
 
     function assetBalance(
