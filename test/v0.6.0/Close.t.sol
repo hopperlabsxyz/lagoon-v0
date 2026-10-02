@@ -427,7 +427,7 @@ contract TestInitiateClosing is BaseTest {
         // user 2 here has 50_000 underlying, 25_000 claimableRedeem and 25_000 shares
         updateNewTotalAssets(vault.totalAssets() * multi);
         vm.warp(block.timestamp + 1 days);
-        deal(vault.asset(), safe.addr, vault.totalAssets() * multi);
+        dealAsset(safe.addr, vault.totalAssets() * multi);
         vm.startPrank(safe.addr);
         vault.close(vault.newTotalAssets());
         vm.stopPrank();
